@@ -1492,7 +1492,6 @@ function renderRail() {
     return btn;
   }),
     h('div', { class: 'rail-spacer' }),
-    h('button', { class: 'rail-btn' + (S.view === 'settings' ? ' active' : ''), onclick: () => go('settings') }, icon('mdi-cog'), 'Ajustes'),
     h('button', { class: 'rail-btn', onclick: showAmbient }, icon('mdi-image-filter-hdr'), 'Ambiente'));
 }
 function render() {
@@ -1501,6 +1500,7 @@ function render() {
   let v = VIEWS[S.view];
   if (v.visible && !v.visible()) { S.view = 'home'; v = VIEWS.home; }
   $('#view-title').textContent = v.title;
+  $('#settings-btn').classList.toggle('active', S.view === 'settings');
   const view = $('#view');
   const scroll = view.scrollTop;
   view.replaceChildren(...v.render());
@@ -1638,6 +1638,7 @@ function start() {
   $('#view').replaceChildren(empty('mdi-home-assistant', 'Conectando con Home Assistant…'));
   $('#sheet').addEventListener('click', (e) => { if (e.target.id === 'sheet') closeSheet(); });
   $('#bell').addEventListener('click', openHistory);
+  $('#settings-btn').addEventListener('click', () => go('settings'));
   // Tocar el fondo vuelve a Inicio; tocar una burbuja abre su vista (patinete, impresoras, música…)
   $('#ambient').addEventListener('pointerdown', (e) => {
     e.preventDefault();
