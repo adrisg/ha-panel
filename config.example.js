@@ -7,6 +7,7 @@ window.PANEL_CONFIG = {
   // Token de larga duración: en HA → tu perfil → Seguridad → "Tokens de acceso de larga duración"
   token: "PEGA_AQUI_TU_TOKEN",
 
+  // Valores iniciales: luego se cambian desde la pantalla Ajustes del panel (y se guardan en HA).
   // Segundos sin tocar la pantalla antes de pasar al modo ambiente (reloj/fotos). 0 = nunca.
   idleSeconds: 90,
 
