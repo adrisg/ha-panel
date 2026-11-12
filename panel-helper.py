@@ -11,6 +11,8 @@ Dos servidores en un mismo programa, sin dependencias (solo Python 3):
 2. 0.0.0.0:8080 — tu red de casa. Web de configuración protegida con contraseña:
    http://<nombre-de-la-pi>.local:8080
    El token de Home Assistant se puede cambiar, pero nunca se envía a la web.
+   También permite ver y cambiar la red de la Pi (WiFi, IP fija o automática, nombre)
+   con NetworkManager (nmcli); setup-kiosk.sh da permiso solo a nmcli y hostnamectl.
 
 Uso:
   python3 panel-helper.py                  # arranca (lo hace ~/kiosk-browser.sh)
@@ -22,8 +24,11 @@ import glob
 import hashlib
 import hmac
 import json
+import ipaddress
 import os
+import re
 import secrets
+import socket
 import subprocess
 import sys
 import threading
@@ -181,6 +186,125 @@ def ha_request(method, path, body=None, ha_url=None, token=None):
         return 0, {'error': f'no se pudo conectar: {getattr(e, "reason", e)}'}
 
 
+# ---------------------------------------------------------------- red (NetworkManager)
+def _run(cmd, sudo=False, timeout=20):
+    """Ejecuta un comando; con sudo usa «sudo -n» (sin pedir contraseña: permiso de setup-kiosk.sh)."""
+    try:
+        r = subprocess.run((['sudo', '-n'] if sudo else []) + cmd, capture_output=True, text=True, timeout=timeout)
+        return r.returncode, (r.stdout or '').strip(), (r.stderr or '').strip()
+    except (OSError, subprocess.SubprocessError) as e:
+        return 1, '', str(e)
+
+
+def _nm_fields(line):
+    """Separa una línea de «nmcli -t» por los «:» no escapados."""
+    return [p.replace('\\:', ':') for p in re.split(r'(?<!\\):', line)]
+
+
+def _primary_ip():
+    try:
+        with socket.socket(socket.AF_INET, socket.SOCK_DGRAM) as s:
+            s.connect(('10.255.255.255', 1))      # no envía nada: solo elige la interfaz de salida
+            return s.getsockname()[0]
+    except OSError:
+        return '127.0.0.1'
+
+
+def _active_connection():
+    code, out, _ = _run(['nmcli', '-t', '-f', 'NAME,TYPE,DEVICE', 'connection', 'show', '--active'])
+    if code != 0:
+        return None
+    for line in out.splitlines():
+        name, ctype, dev = (_nm_fields(line) + ['', '', ''])[:3]
+        if dev and dev != 'lo' and ctype in ('802-11-wireless', '802-3-ethernet', 'wifi', 'ethernet'):
+            return {'name': name, 'type': 'wifi' if 'wireless' in ctype or ctype == 'wifi' else 'ethernet', 'device': dev}
+    return None
+
+
+def net_info():
+    host = socket.gethostname()
+    ip = _primary_ip()
+    info = {'hostname': host, 'ip': ip, 'webPort': WEB_PORT,
+            'urls': [f'http://{ip}:{WEB_PORT}', f'http://{host}.local:{WEB_PORT}'],
+            'nmcli': _run(['nmcli', '--version'])[0] == 0}
+    con = _active_connection() if info['nmcli'] else None
+    if con:
+        info['connection'] = con
+        code, out, _ = _run(['nmcli', '-g', 'ipv4.method,ipv4.addresses,ipv4.gateway,ipv4.dns', 'connection', 'show', con['name']])
+        if code == 0:
+            vals = (out.splitlines() + ['', '', '', ''])[:4]
+            info['ipv4'] = {'method': 'manual' if vals[0] == 'manual' else 'auto', 'addresses': vals[1],
+                            'gateway': vals[2], 'dns': vals[3]}
+        code, out, _ = _run(['nmcli', '-g', 'IP4.GATEWAY,IP4.DNS', 'device', 'show', con['device']])
+        if code == 0:
+            vals = (out.splitlines() + ['', ''])[:2]
+            info['gateway'] = vals[0]
+            info['dns'] = vals[1].replace(' | ', ', ')
+        if con['type'] == 'wifi':
+            code, out, _ = _run(['nmcli', '-t', '-f', 'ACTIVE,SSID,SIGNAL', 'device', 'wifi', 'list', '--rescan', 'no'])
+            for line in out.splitlines():
+                f = _nm_fields(line)
+                if len(f) >= 3 and f[0] == 'yes':
+                    info['wifi'] = {'ssid': f[1], 'signal': int(f[2] or 0)}
+    return info
+
+
+def wifi_scan():
+    code, out, err = _run(['nmcli', '-t', '-f', 'IN-USE,SSID,SIGNAL,SECURITY', 'device', 'wifi', 'list', '--rescan', 'yes'], timeout=30)
+    if code != 0:
+        raise RuntimeError(err or 'no se pudo buscar redes WiFi')
+    nets = {}
+    for line in out.splitlines():
+        f = _nm_fields(line)
+        if len(f) < 4 or not f[1]:
+            continue
+        sig = int(f[2] or 0)
+        if f[1] not in nets or sig > nets[f[1]]['signal']:
+            nets[f[1]] = {'ssid': f[1], 'signal': sig, 'secure': bool(f[3] and f[3] != '--'), 'inUse': f[0] == '*'}
+    return sorted(nets.values(), key=lambda n: -n['signal'])
+
+
+def _later(fn, delay=1.5):
+    """Los cambios de red cortan la conexión: se aplican un poco después de contestar a la web."""
+    threading.Timer(delay, fn).start()
+
+
+def wifi_connect(ssid, password):
+    cmd = ['nmcli', 'device', 'wifi', 'connect', ssid] + (['password', password] if password else [])
+    _later(lambda: _run(cmd, sudo=True, timeout=60))
+
+
+def set_ipv4(method, address='', prefix=24, gateway='', dns=''):
+    con = _active_connection()
+    if not con:
+        raise RuntimeError('no hay ninguna conexión de red activa')
+    if method == 'manual':
+        ipaddress.ip_address(address)                    # valida antes de tocar nada
+        if gateway:
+            ipaddress.ip_address(gateway)
+        for d in [x.strip() for x in dns.replace(';', ',').split(',') if x.strip()]:
+            ipaddress.ip_address(d)
+        prefix = int(prefix)
+        if not 8 <= prefix <= 32:
+            raise ValueError('máscara no válida')
+        args = ['ipv4.method', 'manual', 'ipv4.addresses', f'{address}/{prefix}', 'ipv4.gateway', gateway,
+                'ipv4.dns', dns.replace(';', ',').replace(' ', '')]
+    else:
+        args = ['ipv4.method', 'auto', 'ipv4.addresses', '', 'ipv4.gateway', '', 'ipv4.dns', '']
+    code, _, err = _run(['nmcli', 'connection', 'modify', con['name']] + args, sudo=True)
+    if code != 0:
+        raise RuntimeError(err or 'no se pudo cambiar la IP (¿permiso de sudo para nmcli?)')
+    _later(lambda: _run(['nmcli', 'connection', 'up', con['name']], sudo=True, timeout=60))
+
+
+def set_hostname(name):
+    if not re.fullmatch(r'[a-zA-Z0-9](?:[a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?', name or ''):
+        raise ValueError('solo letras, números y guiones (sin espacios)')
+    code, _, err = _run(['hostnamectl', 'set-hostname', name], sudo=True)
+    if code != 0:
+        raise RuntimeError(err or 'no se pudo cambiar el nombre (¿permiso de sudo para hostnamectl?)')
+
+
 # ---------------------------------------------------------------- servidores
 class Base(BaseHTTPRequestHandler):
     server_version = 'PanelHogar'
@@ -245,6 +369,8 @@ class LocalHandler(Base):
                                     'web': WEB_PORT, 'password': PASS_FILE.exists()})
         if u.path == '/config':
             return self._json(200, load_config())
+        if u.path == '/red':
+            return self._json(200, net_info())
         if u.path == '/poll':
             return self._json(200, {'version': load_config()['version'], 'command': COMMAND})
         if u.path == '/proxy':
@@ -331,6 +457,10 @@ class WebHandler(Base):
             panel['hasToken'] = bool(panel.pop('token', None))          # el token nunca sale de la Pi
             panel['hasImmichApiKey'] = bool(panel.pop('immichApiKey', None))
             return self._json(200, {'panel': panel, 'ajustes': cfg['ajustes'], 'version': cfg['version']})
+        if u.path == '/api/red':
+            if not self._guard():
+                return
+            return self._json(200, net_info())
         if u.path == '/api/entidades':
             if not self._guard():
                 return
@@ -371,6 +501,26 @@ class WebHandler(Base):
                 'id': 'prueba_web', 'titulo': 'Aviso de prueba', 'mensaje': 'Enviado desde la web de configuración',
                 'nivel': 'aviso', 'icono': 'mdi:bell-ring', 'duracion': 20})
             return self._json(200, {'ok': code == 200, 'mensaje': 'Aviso enviado al panel' if code == 200 else res.get('error')})
+        if u.path.startswith('/api/red/'):
+            try:
+                if u.path == '/api/red/escanear':
+                    return self._json(200, wifi_scan())
+                if u.path == '/api/red/wifi':
+                    ssid = str(body.get('ssid', '')).strip()
+                    if not ssid:
+                        return self._json(400, {'error': 'elige una red'})
+                    wifi_connect(ssid, str(body.get('password', '')))
+                    return self._json(200, {'ok': True, 'mensaje': f'Conectando a «{ssid}»… Si cambia la IP, entra con la nueva (la verás en la pantalla del panel).'})
+                if u.path == '/api/red/ip':
+                    set_ipv4(body.get('method', 'auto'), str(body.get('address', '')).strip(), body.get('prefix', 24),
+                             str(body.get('gateway', '')).strip(), str(body.get('dns', '')).strip())
+                    return self._json(200, {'ok': True, 'mensaje': 'Aplicando la nueva IP… vuelve a entrar con la dirección nueva.'})
+                if u.path == '/api/red/nombre':
+                    set_hostname(str(body.get('hostname', '')).strip())
+                    return self._json(200, {'ok': True, 'mensaje': 'Nombre cambiado. La dirección .local nueva funciona tras reiniciar la Pi.'})
+            except (ValueError, RuntimeError) as e:
+                return self._json(400, {'error': str(e)})
+            return self._json(404)
         if u.path == '/api/orden':         # recargar, apagar/encender pantalla, modo ambiente, inicio
             tipo = body.get('tipo')
             if tipo not in ('recargar', 'pantalla_off', 'pantalla_on', 'ambiente', 'inicio'):
