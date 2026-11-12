@@ -1321,11 +1321,13 @@ const DEFAULTS = () => ({
     screenOff: false,                      // apagar la pantalla de noche cuando no se usa
   },
   sound: { enabled: true, volume: 70 },
+  photos: { enabled: true, seconds: CFG.photoSeconds || 30 },
 });
 let SET = DEFAULTS();
 const mergeSettings = (saved = {}) => {
   const d = DEFAULTS();
-  return { ...d, ...saved, night: { ...d.night, ...(saved.night || {}) }, sound: { ...d.sound, ...(saved.sound || {}) } };
+  return { ...d, ...saved, night: { ...d.night, ...(saved.night || {}) }, sound: { ...d.sound, ...(saved.sound || {}) },
+    photos: { ...d.photos, ...(saved.photos || {}) } };
 };
 async function loadSettings() {
   let saved = null;
@@ -1451,6 +1453,17 @@ function renderSettings() {
         h('button', { class: 'big-action', onclick: () => showAmbient() }, icon('mdi-image-filter-hdr'), 'Modo ambiente'),
         h('button', { class: 'big-action', onclick: () => { SCREEN.lastTouch = 0; setScreenOff(true); } }, icon('mdi-monitor-off'), 'Apagar ahora'))),
 
+    h('div', { class: 'card set-card' }, h('div', { class: 'set-title' }, icon('mdi-image-multiple'), 'Fotos del modo ambiente'),
+      setRow('Mostrar fotos',
+        PHOTOS.length ? `${PHOTOS.length} fotos cargadas` : CFG.ambientPhotos.length ? 'No se han podido cargar las fotos' : 'Pon un álbum de Immich en ambientPhotos (config.js)',
+        switchBtn(SET.photos.enabled, (v) => { SET.photos.enabled = v; saveSettings(); nextBackground(); })),
+      setBlock('Cambiar de foto cada', null,
+        segmented([[15, '15 s'], [30, '30 s'], [60, '1 min'], [300, '5 min'], [900, '15 min']],
+          SET.photos.seconds, (v) => { SET.photos.seconds = v; saveSettings(); nextBackground(); })),
+      CFG.ambientPhotos.length ? h('div', { class: 'btn-row' },
+        h('button', { class: 'big-action', onclick: async () => { toast('Recargando fotos…'); await loadPhotos(); render(); } }, icon('mdi-image-refresh'), 'Recargar álbum'),
+        h('button', { class: 'big-action', onclick: () => showAmbient() }, icon('mdi-image-filter-hdr'), 'Ver ahora')) : null),
+
     h('div', { class: 'card set-card' }, h('div', { class: 'set-title' }, icon('mdi-weather-night'), 'Modo noche'),
       setRow('Activado', 'Baja el brillo por la noche', switchBtn(SET.night.enabled, (v) => { SET.night.enabled = v; saveSettings(); })),
       setRow('Desde', null, timeStepper(SET.night.start, (v) => { SET.night.start = v; saveSettings(); })),
@@ -1522,6 +1535,7 @@ function showAmbient() {
   closeSheet();
   S.ambient = true;
   renderAmbientChips();
+  if (photosOn()) nextBackground();
   $('#ambient').classList.add('show');
 }
 /** Sale del modo ambiente a Inicio, o a la vista de la burbuja que se haya tocado. */
@@ -1562,26 +1576,99 @@ function renderAmbientChips() {
   $('#amb-chips').replaceChildren(...chips);
 }
 
-// Fondo: fotos en bucle o degradado según la hora del día
-let photoIdx = 0, bgFront = 'a';
+// Fondo: fotos (sueltas o de un álbum de Immich) o degradado según la hora del día
+/* ---------- Fotos del modo ambiente ----------
+ * En config.js → ambientPhotos se pueden poner URLs de fotos sueltas o un álbum de Immich, que se detecta solo:
+ *   https://immich.casa/share/<clave>   enlace compartido (no necesita clave de API)
+ *   https://immich.casa/s/<nombre>      enlace compartido con nombre personalizado
+ *   https://immich.casa/albums/<id>     álbum privado (necesita immichApiKey en config.js)
+ */
+const IMMICH_SHARED = [
+  [/^(https?:\/\/\S+?)\/share\/([\w-]+)\/?(\?.*)?$/, 'key'],
+  [/^(https?:\/\/\S+?)\/s\/([\w-]+)\/?(\?.*)?$/, 'slug'],
+];
+const IMMICH_ALBUM = /^(https?:\/\/\S+?)\/albums\/([0-9a-f-]{36})/;
+let PHOTOS = [], photosAt = 0, photoIdx = 0;
+
+async function getJSON(url, headers) {
+  const r = await fetch(url, { headers });
+  if (!r.ok) throw new Error(`HTTP ${r.status} en ${new URL(url).pathname}`);
+  return r.json();
+}
+function immichPhotos(base, assets, auth) {
+  return (assets || []).filter((a) => a.type === 'IMAGE' && !a.isTrashed).map((a) => {
+    const ex = a.exifInfo || {};
+    const d = new Date(ex.dateTimeOriginal || a.localDateTime || a.fileCreatedAt);
+    const when = isNaN(d) ? '' : cap(d.toLocaleDateString('es-ES', { month: 'long', year: 'numeric' }));
+    // size=preview: ~1440 px, suficiente para la pantalla y ligero para la Pi
+    return { url: `${base}/api/assets/${a.id}/thumbnail?size=preview&${auth}`, caption: [when, ex.city].filter(Boolean).join(' · ') };
+  });
+}
+/** Devuelve las fotos si la URL es de Immich, o null si es una foto normal. */
+async function loadImmich(src) {
+  for (const [re, param] of IMMICH_SHARED) {
+    const m = src.match(re);
+    if (!m) continue;
+    const base = m[1], auth = `${param}=${encodeURIComponent(m[2])}`;
+    const link = await getJSON(`${base}/api/shared-links/me?${auth}`);
+    let assets = link.assets || [];
+    if (link.album && !assets.length) assets = (await getJSON(`${base}/api/albums/${link.album.id}?${auth}`)).assets;
+    return immichPhotos(base, assets, auth);
+  }
+  const m = src.match(IMMICH_ALBUM);
+  if (m) {
+    if (!CFG.immichApiKey) throw new Error('para un álbum privado pon immichApiKey en config.js, o usa un enlace compartido');
+    const album = await getJSON(`${m[1]}/api/albums/${m[2]}`, { 'x-api-key': CFG.immichApiKey });
+    return immichPhotos(m[1], album.assets, 'apiKey=' + encodeURIComponent(CFG.immichApiKey));
+  }
+  return null;
+}
+async function loadPhotos() {
+  photosAt = Date.now();
+  const out = [];
+  for (const src of CFG.ambientPhotos) {
+    try {
+      const im = await loadImmich(String(src).trim());
+      out.push(...(im || [{ url: src, caption: '' }]));
+    } catch (e) {
+      console.warn('Fotos', src, e);
+      toast('Immich: ' + (e.message === 'Failed to fetch' ? 'no se pudo conectar (¿URL o CORS?)' : e.message), true);
+    }
+  }
+  for (let i = out.length - 1; i > 0; i--) { const j = Math.floor(Math.random() * (i + 1)); [out[i], out[j]] = [out[j], out[i]]; }
+  PHOTOS = out; photoIdx = 0;
+}
+const photosOn = () => SET.photos.enabled && PHOTOS.length > 0;
+
+let bgFront = 'a', bgTimer;
 const GRADIENTS = [
   [0, 'linear-gradient(160deg,#0b1026,#1b1f3b 55%,#2a1f3d)'], [6, 'linear-gradient(160deg,#ffb88c,#de6262 60%,#5b2a5c)'],
   [9, 'linear-gradient(160deg,#4facfe,#2b5876 70%,#1a2a44)'], [18, 'linear-gradient(160deg,#f7971e,#c0392b 50%,#3a1c4a)'],
   [21, 'linear-gradient(160deg,#141e30,#243b55)'],
 ];
 function nextBackground() {
+  clearTimeout(bgTimer);
+  bgTimer = setTimeout(nextBackground, (photosOn() ? SET.photos.seconds : 600) * 1000);
+  if (CFG.ambientPhotos.length && Date.now() - photosAt > 3600e3) loadPhotos();   // el álbum se refresca cada hora
   const back = bgFront === 'a' ? 'b' : 'a';
-  const el = $('#amb-bg-' + back), front = $('#amb-bg-' + bgFront);
-  if (CFG.ambientPhotos.length) {
-    const url = CFG.ambientPhotos[photoIdx++ % CFG.ambientPhotos.length];
+  const el = $('#amb-bg-' + back), front = $('#amb-bg-' + bgFront), caption = $('#amb-caption');
+  if (photosOn()) {
+    if (!S.ambient && front.classList.contains('photo')) return;   // solo se descargan fotos mientras se ven
+    const p = PHOTOS[photoIdx++ % PHOTOS.length];
     const img = new Image();
-    img.onload = () => { el.style.backgroundImage = `url("${url}")`; el.classList.add('photo', 'visible'); front.classList.remove('visible'); bgFront = back; };
-    img.src = url;
+    img.onload = () => {
+      el.style.backgroundImage = `url("${p.url}")`;
+      el.classList.add('photo', 'visible'); front.classList.remove('visible'); bgFront = back;
+      caption.textContent = p.caption;
+    };
+    img.src = p.url;
   } else {
+    caption.textContent = '';
     const hr = new Date().getHours();
     const g = GRADIENTS.filter(([from]) => hr >= from).pop()[1];
-    if (front.style.backgroundImage === g) return;
-    el.style.backgroundImage = g; el.classList.add('visible'); front.classList.remove('visible'); bgFront = back;
+    if (front.style.backgroundImage === g && !front.classList.contains('photo')) return;
+    el.style.backgroundImage = g;
+    el.classList.remove('photo'); el.classList.add('visible'); front.classList.remove('visible'); bgFront = back;
   }
 }
 
@@ -1650,7 +1737,7 @@ function start() {
   helperInit();
 
   tick(); setInterval(tick, 5000);
-  nextBackground(); setInterval(nextBackground, (CFG.ambientPhotos.length ? CFG.photoSeconds : 600) * 1000);
+  if (CFG.ambientPhotos.length) loadPhotos().then(nextBackground); else nextBackground();
   // Refresca textos relativos ("hace 5 min") y el saludo de vez en cuando
   setInterval(() => !S.sheetId && !S.ambient && render(), 5 * 60e3);
   if (PARAMS.has('ambient')) showAmbient(); else resetIdle();

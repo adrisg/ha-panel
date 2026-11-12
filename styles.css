@@ -423,3 +423,7 @@ main { display: flex; flex-direction: column; min-width: 0; min-height: 0; heigh
 .fab-settings:active, .fab-settings.active { opacity: 1; color: var(--accent); }
 /* Que lo último de cada vista no quede debajo del engranaje */
 #view { padding-bottom: 60px; }
+
+/* Pie de foto del modo ambiente (fecha y ciudad de Immich) */
+.amb-caption { position: absolute; top: 5%; right: 5%; font-size: 15px; opacity: .85; text-shadow: 0 1px 8px rgba(0,0,0,.7); }
+.amb-caption:empty { display: none; }

@@ -33,9 +33,13 @@ window.PANEL_CONFIG = {
   // Entidad de tiempo. Vacío = la primera weather.* que encuentre
   weatherEntity: "",
 
-  // Fotos para el modo ambiente (como un marco digital). Puedes ponerlas en
-  // /config/www/fotos de HA y usar "http://homeassistant.local:8123/local/fotos/1.jpg"
+  // Fotos para el modo ambiente (como un marco digital). Puedes mezclar:
+  //  - Un álbum de Immich: en Immich → álbum → Compartir → Crear enlace, y pega el enlace aquí
+  //    ("https://immich.casa/share/XXXX"). Se detecta solo y carga todas las fotos del álbum.
+  //  - Un álbum privado: "https://immich.casa/albums/<id>" + immichApiKey (abajo).
+  //  - Fotos sueltas, p. ej. de /config/www/fotos en HA: "http://homeassistant.local:8123/local/fotos/1.jpg"
   ambientPhotos: [],
+  // immichApiKey: "",   // solo para álbumes privados (Immich → Ajustes de la cuenta → Claves API)
   photoSeconds: 30,
 
   // Modo noche: oscurece la pantalla entre estas horas (dim = 0 sin efecto, 0.9 casi negro)
