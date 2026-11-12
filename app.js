@@ -424,6 +424,37 @@ function tap(id, el) {
   openSheet(id);
 }
 
+/* ---------- Color real de las luces ----------
+ * Una luz encendida pinta su ficha con su propio color: el RGB si lo tiene, o el blanco cálido/frío
+ * de su temperatura de color. El texto se pone oscuro o claro según lo luminoso que sea el fondo. */
+function kelvinToRgb(k) {          // aproximación de Tanner Helland
+  const t = k / 100;
+  const r = t <= 66 ? 255 : 329.698727446 * Math.pow(t - 60, -0.1332047592);
+  const g = t <= 66 ? 99.4708025861 * Math.log(t) - 161.1195681661 : 288.1221695283 * Math.pow(t - 60, -0.0755148492);
+  const b = t >= 66 ? 255 : t <= 19 ? 0 : 138.5177312231 * Math.log(t - 10) - 305.0447927307;
+  return [r, g, b].map((v) => Math.max(0, Math.min(255, Math.round(v))));
+}
+function lightColor(st) {
+  const a = st.attributes;
+  if (Array.isArray(a.rgb_color)) return a.rgb_color;
+  if (a.color_temp_kelvin) return kelvinToRgb(a.color_temp_kelvin);
+  if (Array.isArray(a.hs_color)) {                          // por si solo da tono/saturación
+    const [hh, ss] = a.hs_color, c = ss / 100, x = c * (1 - Math.abs(((hh / 60) % 2) - 1));
+    const [r, g, b] = hh < 60 ? [c, x, 0] : hh < 120 ? [x, c, 0] : hh < 180 ? [0, c, x] : hh < 240 ? [0, x, c] : hh < 300 ? [x, 0, c] : [c, 0, x];
+    return [r, g, b].map((v) => Math.round((v + (1 - c)) * 255));
+  }
+  return null;                                               // sin color: se queda el amarillo de siempre
+}
+function paintLight(el, st) {
+  const rgb = st && domain(st.entity_id) === 'light' && st.state === 'on' && lightColor(st);
+  if (!rgb) { el.style.removeProperty('background'); el.style.removeProperty('color'); return; }
+  // Un poco suavizado hacia el blanco para que se lea bien y no deslumbre
+  const soft = rgb.map((v) => Math.round(v * 0.8 + 255 * 0.2));
+  const lum = (0.2126 * soft[0] + 0.7152 * soft[1] + 0.0722 * soft[2]) / 255;
+  el.style.background = `rgb(${soft.join(',')})`;
+  el.style.color = lum > 0.55 ? '#1d1a12' : '#fff';
+}
+
 function tile(id, scope = 'view') {
   const ic = h('div', { class: 'tile-icon' }), nm = h('div', { class: 'tile-name' }), stt = h('div', { class: 'tile-state' });
   const el = h('button', { class: 'tile' }, ic, h('div', { class: 'tile-text' }, nm, stt));
@@ -438,8 +469,7 @@ function tile(id, scope = 'view') {
     el.classList.toggle('unavail', st.state === 'unavailable');
     el.classList.toggle('charging', d === 'vacuum' && !!st.attributes.charging);
     el.classList.remove('pending');
-    const rgb = d === 'light' && st.attributes.rgb_color;
-    if (rgb) el.style.setProperty('--tint', `rgb(${rgb.join(',')})`); else el.style.removeProperty('--tint');
+    paintLight(el, st);
   });
   pressable(el, () => tap(id, el), HAS_SHEET.includes(d) ? () => openSheet(id) : null);
   return el;
@@ -540,7 +570,7 @@ function bigToggle(id) {
   const d = domain(id);
   const b = h('button', { class: 'big-toggle', onclick: () => call(d, 'toggle', {}, id) });
   b.dataset.kind = kindOf(d);
-  bind('sheet', id, (st) => { b.replaceChildren(icon(iconOf(st)), h('span', null, fmtState(st))); b.classList.toggle('on', isActive(st)); });
+  bind('sheet', id, (st) => { b.replaceChildren(icon(iconOf(st)), h('span', null, fmtState(st))); b.classList.toggle('on', isActive(st)); paintLight(b, st); });
   return b;
 }
 const COLORS = [[255, 147, 41], [255, 214, 170], [255, 255, 255], [255, 80, 80], [255, 60, 180], [150, 90, 255], [60, 130, 255], [40, 210, 200], [80, 220, 100], [255, 220, 60]];

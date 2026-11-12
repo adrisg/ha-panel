@@ -100,7 +100,6 @@ main { display: flex; flex-direction: column; min-width: 0; min-height: 0; heigh
 .tile.on[data-kind=media]   { background: var(--on-media);   color: var(--on-media-ink); }
 .tile.on[data-kind=cover]   { background: var(--on-cover);   color: var(--on-cover-ink); }
 .tile.on[data-kind=lock]    { background: var(--on-lock);    color: var(--on-lock-ink); }
-.tile.on .tile-icon .mdi { color: var(--tint, inherit); }
 .tile.unavail { opacity: .45; }
 .tile.pending .tile-icon { animation: pulse 1s infinite; }
 @keyframes pulse { 50% { opacity: .4; } }
