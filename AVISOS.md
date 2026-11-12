@@ -99,7 +99,7 @@ actions:
       titulo: Patinete cargado
       mensaje: "{{ states('sensor.mi_patinete_bateria') }} % de batería"
       nivel: info
-      icono: mdi:scooter-electric
+      icono: mdi:scooter
 ```
 
 **Puerta abierta más de 10 minutos**, con un botón que te avisa al móvil si no estás en casa:
