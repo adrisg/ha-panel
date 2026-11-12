@@ -1622,12 +1622,14 @@ function renderSettings() {
 
     h('div', { class: 'card set-card' }, h('div', { class: 'set-title' }, icon('mdi-image-multiple'), 'Fotos del modo ambiente'),
       setRow('Mostrar fotos',
-        PHOTOS.length ? `${PHOTOS.length} fotos cargadas` : CFG.ambientPhotos.length ? 'No se han podido cargar las fotos' : 'Pon un álbum de Immich en ambientPhotos (config.js)',
+        PHOTOS.length ? `${PHOTOS.length} fotos cargadas` : photoSources().length ? 'No se han podido cargar las fotos' : 'Añade fuentes de fotos desde la web de configuración',
         switchBtn(SET.photos.enabled, (v) => { SET.photos.enabled = v; saveSettings(); nextBackground(); })),
       setBlock('Cambiar de foto cada', null,
         segmented([[15, '15 s'], [30, '30 s'], [60, '1 min'], [300, '5 min'], [900, '15 min']],
           SET.photos.seconds, (v) => { SET.photos.seconds = v; saveSettings(); nextBackground(); })),
-      CFG.ambientPhotos.length ? h('div', { class: 'btn-row' },
+      ...PHOTO_STATS.map((st) => setRow(st.label, st.error ? 'Error: ' + st.error : null,
+        h('span', { class: 'pill' + (st.error ? '' : ' ok') }, st.error ? 'Error' : `${st.count} fotos`))),
+      photoSources().length ? h('div', { class: 'btn-row' },
         h('button', { class: 'big-action', onclick: async () => { toast('Recargando fotos…'); await loadPhotos(); render(); } }, icon('mdi-image-refresh'), 'Recargar álbum'),
         h('button', { class: 'big-action', onclick: () => showAmbient() }, icon('mdi-image-filter-hdr'), 'Ver ahora')) : null),
 
@@ -2114,10 +2116,10 @@ const immichUrl = (base, id, thumbhash, auth) =>
 async function immichAlbumPhotos(base, albumId, auth, headers) {
   const album = await getJSON(`${base}/api/albums/${albumId}?${auth}`, headers);
   if (album.assets && album.assets.length) {
-    return album.assets.filter((a) => a.type === 'IMAGE' && !a.isTrashed).map((a) => {
+    return Object.assign(album.assets.filter((a) => a.type === 'IMAGE' && !a.isTrashed).map((a) => {
       const ex = a.exifInfo || {};
       return { url: immichUrl(base, a.id, a.thumbhash, auth), caption: [monthYear(ex.dateTimeOriginal || a.localDateTime || a.fileCreatedAt), ex.city].filter(Boolean).join(' · ') };
-    });
+    }), { albumName: album.albumName || '' });
   }
   const out = [];
   const buckets = await getJSON(`${base}/api/timeline/buckets?albumId=${albumId}&${auth}`, headers);
@@ -2130,43 +2132,109 @@ async function immichAlbumPhotos(base, albumId, auth, headers) {
         caption: [monthYear(t.fileCreatedAt && t.fileCreatedAt[i]), t.city && t.city[i]].filter(Boolean).join(' · ') });
     });
   }
+  return Object.assign(out, { albumName: album.albumName || '' });
+}
+/* ---------- Conectores de fotos ----------
+ * Cada fuente es { id, type, name, enabled, …su configuración } y se guarda en photoSources (web de configuración).
+ *   immich   { url, apiKey? }   enlace compartido de un álbum, o álbum privado (…/albums/<id>) con clave API
+ *   google   { url }            enlace de un álbum compartido de Google Fotos (lo lee el ayudante de la Pi)
+ *   ha_media { folder }         carpeta de «Medios» de Home Assistant (solo lectura)
+ *   urls     { urls: [] }       fotos sueltas por URL
+ * Sin photoSources se usa el antiguo ambientPhotos (y se detectan los enlaces de Immich). */
+const isImmichUrl = (u) => IMMICH_SHARED.some(([re]) => re.test(u)) || IMMICH_ALBUM.test(u);
+function photoSources() {
+  if (Array.isArray(CFG.photoSources)) return CFG.photoSources.filter((x) => x && x.enabled !== false);
+  const out = [], urls = [];
+  for (const u of CFG.ambientPhotos || []) {
+    if (isImmichUrl(String(u))) out.push({ type: 'immich', url: String(u).trim(), apiKey: CFG.immichApiKey });
+    else urls.push(u);
+  }
+  if (urls.length) out.push({ type: 'urls', urls });
   return out;
 }
-/** Devuelve las fotos si la URL es de Immich, o null si es una foto normal. */
-async function loadImmich(src) {
-  for (const [re, param] of IMMICH_SHARED) {
-    const m = src.match(re);
-    if (!m) continue;
-    const base = m[1], auth = `${param}=${encodeURIComponent(m[2])}`;
-    const link = await getJSON(`${base}/api/shared-links/me?${auth}`);
-    if (link.album) return immichAlbumPhotos(base, link.album.id, auth);
-    return (link.assets || []).filter((a) => a.type === 'IMAGE').map((a) => ({ url: immichUrl(base, a.id, a.thumbhash, auth), caption: monthYear(a.localDateTime || a.fileCreatedAt) }));
-  }
-  const m = src.match(IMMICH_ALBUM);
-  if (m) {
-    if (!CFG.immichApiKey) throw new Error('para un álbum privado pon immichApiKey en config.js, o usa un enlace compartido');
-    return immichAlbumPhotos(m[1], m[2], 'apiKey=' + encodeURIComponent(CFG.immichApiKey), { 'x-api-key': CFG.immichApiKey });
-  }
-  return null;
-}
+const CONNECTORS = {
+  immich: {
+    label: 'Immich',
+    async load(src) {
+      const u = String(src.url || '').trim();
+      for (const [re, param] of IMMICH_SHARED) {
+        const m = u.match(re);
+        if (!m) continue;
+        const base = m[1], auth = `${param}=${encodeURIComponent(m[2])}`;
+        const link = await getJSON(`${base}/api/shared-links/me?${auth}`);
+        if (link.album) {
+          const list = await immichAlbumPhotos(base, link.album.id, auth);
+          return { photos: list, name: link.album.albumName || list.albumName };
+        }
+        return { photos: (link.assets || []).filter((a) => a.type === 'IMAGE').map((a) => ({ url: immichUrl(base, a.id, a.thumbhash, auth), caption: monthYear(a.localDateTime || a.fileCreatedAt) })) };
+      }
+      const m = u.match(IMMICH_ALBUM);
+      if (!m) throw new Error('no es un enlace de Immich');
+      const key = src.apiKey || CFG.immichApiKey;
+      if (!key) throw new Error('para un álbum privado hace falta la clave API, o usa un enlace compartido');
+      const list = await immichAlbumPhotos(m[1], m[2], 'apiKey=' + encodeURIComponent(key), { 'x-api-key': key });
+      return { photos: list, name: list.albumName };
+    },
+  },
+  google: {
+    label: 'Google Fotos',
+    async load(src) {
+      let r;
+      try { r = await fetch(`${HELPER}/gphotos?url=${encodeURIComponent(src.url || '')}`, { cache: 'no-store' }); }
+      catch (e) { throw new Error('Google Fotos necesita el ayudante de la Pi (panel-helper.py)'); }
+      const j = await r.json();
+      if (!r.ok) throw new Error(j.error || 'HTTP ' + r.status);
+      // =w1920-h1080: Google sirve la foto ya reducida al tamaño de pantalla
+      return { photos: j.photos.map((u) => ({ url: u + '=w1920-h1080', caption: '' })), name: j.title };
+    },
+  },
+  ha_media: {
+    label: 'Home Assistant',
+    async load(src) {
+      const folder = String(src.folder || '').replace(/^\/+|\/+$/g, '');
+      const root = 'media-source://media_source/local' + (folder ? '/' + folder : '');
+      const out = [];
+      const walk = async (id, depth) => {
+        const res = await conn.send({ type: 'media_source/browse_media', media_content_id: id });
+        for (const c of res.children || []) {
+          if (c.media_class === 'image' || /\.(jpe?g|png|webp|gif)$/i.test(c.media_content_id)) out.push({ ha: c.media_content_id, caption: '' });
+          else if (c.can_expand && depth < 3) await walk(c.media_content_id, depth + 1);
+        }
+      };
+      await walk(root, 0);
+      return { photos: out, name: folder || 'Medios' };
+    },
+  },
+  urls: {
+    label: 'Fotos',
+    async load(src) { return { photos: (src.urls || []).filter(Boolean).map((u) => ({ url: u, caption: '' })) }; },
+  },
+};
 async function loadPhotos() {
   photosAt = Date.now();
-  const out = [];
-  for (const src of CFG.ambientPhotos) {
+  const out = [], stats = [];
+  for (const src of photoSources()) {
+    const c = CONNECTORS[src.type];
+    if (!c) continue;
     try {
-      const im = await loadImmich(String(src).trim());
-      out.push(...(im || [{ url: src, caption: '' }]));
+      const { photos, name } = await c.load(src);
+      const label = src.name || [c.label, name].filter(Boolean).join(' · ');
+      photos.forEach((p) => { p.source = label; });
+      out.push(...photos);
+      stats.push({ label, count: photos.length });
     } catch (e) {
       console.warn('Fotos', src, e);
-      toast('Immich: ' + (e.message === 'Failed to fetch' ? 'no se pudo conectar (¿URL o CORS?)' : e.message), true);
+      stats.push({ label: src.name || c.label, error: e.message });
+      toast(`${c.label}: ` + (e.message === 'Failed to fetch' ? 'no se pudo conectar' : e.message), true);
     }
   }
   for (let i = out.length - 1; i > 0; i--) { const j = Math.floor(Math.random() * (i + 1)); [out[i], out[j]] = [out[j], out[i]]; }
-  PHOTOS = out; photoIdx = 0;
+  PHOTOS = out; photoIdx = 0; PHOTO_STATS = stats;
   // Si no se pudo cargar (p. ej. el ayudante aún arrancando), se reintenta en 30 s en vez de en 1 h
-  if (!out.length && CFG.ambientPhotos.length) photosAt = Date.now() - 3600e3 + 30e3;
+  if (!out.length && photoSources().length) photosAt = Date.now() - 3600e3 + 30e3;
   $('#amb-next').classList.toggle('hidden', !photosOn());
 }
+let PHOTO_STATS = [];
 const photosOn = () => SET.photos.enabled && PHOTOS.length > 0;
 
 let bgFront = 'a', bgTimer;
@@ -2177,8 +2245,8 @@ const GRADIENTS = [
 ];
 function nextBackground() {
   clearTimeout(bgTimer);
-  bgTimer = setTimeout(nextBackground, (photosOn() ? SET.photos.seconds : CFG.ambientPhotos.length && !PHOTOS.length ? 30 : 600) * 1000);
-  if (CFG.ambientPhotos.length && Date.now() - photosAt > 3600e3) {   // el álbum se refresca cada hora
+  bgTimer = setTimeout(nextBackground, (photosOn() ? SET.photos.seconds : photoSources().length && !PHOTOS.length ? 30 : 600) * 1000);
+  if (photoSources().length && Date.now() - photosAt > 3600e3) {   // los álbumes se refrescan cada hora
     const had = PHOTOS.length;
     loadPhotos().then(() => { if (!had && PHOTOS.length) nextBackground(); });
   }
@@ -2195,17 +2263,21 @@ function nextBackground() {
       if (p.bad) return;
       const img = new Image();
       img.onload = () => {
-        el.style.backgroundImage = `url("${p.url}")`;
+        el.style.backgroundImage = `url("${img.src}")`;
         el.classList.add('photo', 'visible'); front.classList.remove('visible'); bgFront = back;
-        caption.textContent = p.caption;
+        caption.replaceChildren(...[p.caption ? h('div', { class: 'cap-date' }, p.caption) : null,
+          p.source ? h('div', { class: 'cap-src' }, p.source) : null].filter(Boolean));
       };
       // Foto sin versión grande en el servidor (o caída): se salta, hasta 50 seguidas
       img.onerror = () => { p.bad = true; if (++tries < 50) show(); };
-      img.src = p.url;
+      if (p.ha) {   // Medios de Home Assistant: URL firmada en el momento (solo lectura)
+        conn.send({ type: 'media_source/resolve_media', media_content_id: p.ha, expires: 3600 })
+          .then((r) => { img.src = absUrl(r.url); }).catch(() => img.onerror());
+      } else img.src = p.url;
     };
     show();
   } else {
-    caption.textContent = '';
+    caption.replaceChildren();
     const hr = new Date().getHours();
     const g = GRADIENTS.filter(([from]) => hr >= from).pop()[1];
     if (front.style.backgroundImage === g && !front.classList.contains('photo')) return;
@@ -2326,7 +2398,7 @@ function start() {
   setInterval(pollHelper, 5000);
 
   tick(); setInterval(tick, 5000);
-  if (CFG.ambientPhotos.length) loadPhotos().then(nextBackground); else nextBackground();
+  if (photoSources().length) loadPhotos().then(nextBackground); else nextBackground();
   // Refresca textos relativos ("hace 5 min") y el saludo de vez en cuando
   setInterval(() => !S.sheetId && !S.ambient && render(), 5 * 60e3);
   if (PARAMS.has('ambient')) showAmbient(); else resetIdle();

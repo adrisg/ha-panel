@@ -97,12 +97,20 @@ La primera vez se importa sola la configuración de `config.js`. Para cambiar la
 | `night` | Horario y nivel del oscurecimiento nocturno |
 | `weatherEntity` | Qué entidad `weather.*` usar (si no, la primera que haya) |
 
-## Fotos de Immich
+## Fotos del modo ambiente (conectores)
 
-En `ambientPhotos` pega el enlace compartido de un álbum (Immich → álbum → Compartir → Crear enlace). Funciona con Immich 1.x, 2.x y 3.x.
+En la web de configuración, en **Fuentes de fotos**, puedes añadir varias fuentes, que se mezclan entre sí. Cada una tiene su configuración y se puede activar o desactivar:
 
-- **CORS:** si tu Immich está detrás de un proxy (Nginx Proxy Manager, etc.) que no envía cabeceras CORS, el navegador no puede leer la lista del álbum. En la Pi no pasa nada, porque la lee `panel-helper.py`. También puedes añadir en el proxy `add_header Access-Control-Allow-Origin * always;`.
-- **Fotos que no salen:** el panel usa la versión `preview` de cada foto. Si Immich no la ha generado, la salta. Si faltan muchas, en Immich ve a **Administración → Trabajos → Generar miniaturas → Faltantes**.
+| Fuente | Qué pide | Notas |
+|---|---|---|
+| **Immich** | Enlace compartido del álbum (`https://immich…/share/…`), o álbum privado `…/albums/<id>` con clave API | Funciona con Immich 1.x, 2.x y 3.x. Si tu proxy no permite CORS, la lista la lee `panel-helper.py` |
+| **Google Fotos** | Enlace de un álbum compartido (`https://photos.app.goo.gl/…`) | Lo lee `panel-helper.py`, que mira la página pública del álbum |
+| **Carpeta de Home Assistant** | Carpeta dentro de *Medios → My media* (vacío = todo) | Solo lectura |
+| **Fotos por URL** | Una URL por línea | |
+
+Debajo de la fecha de cada foto sale, en pequeño, de dónde es (por ejemplo «Immich · Londres»). En **Ajustes → Fotos** del panel ves cuántas fotos ha cargado cada fuente o el error que ha dado.
+
+- Si las fotos de Immich no salen, puede que falten sus versiones grandes: en Immich, ve a **Administración → Trabajos → Generar miniaturas → Faltantes**.
 
 ## Seguridad
 

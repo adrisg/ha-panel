@@ -489,7 +489,9 @@ main { display: flex; flex-direction: column; min-width: 0; min-height: 0; heigh
 #view { padding-bottom: 60px; }
 
 /* Pie de foto del modo ambiente (fecha y ciudad de Immich) */
-.amb-caption { position: absolute; top: 5%; right: 5%; font-size: 15px; opacity: .85; text-shadow: 0 1px 8px rgba(0,0,0,.7); }
+.amb-caption { position: absolute; top: 5%; right: 5%; font-size: 15px; text-align: right; text-shadow: 0 1px 8px rgba(0,0,0,.7); }
+.amb-caption .cap-date { opacity: .85; }
+.amb-caption .cap-src { font-size: 12px; color: rgba(255,255,255,.55); margin-top: 2px; }
 .amb-caption:empty { display: none; }
 
 /* Botón para pasar de foto en el modo ambiente */

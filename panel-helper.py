@@ -59,7 +59,9 @@ SIM_NETS = [('MiCasa_5G', 82, True), ('MiCasa', 64, True), ('Vecino_2.4', 41, Tr
 IMMICH_PATHS = ('/api/shared-links/me', '/api/albums/', '/api/timeline/buckets', '/api/timeline/bucket')
 # Opciones de config.js que se pueden cambiar desde la web
 PANEL_KEYS = ('haUrl', 'token', 'ambientPhotos', 'immichApiKey', 'favorites', 'hiddenEntities', 'weatherEntity',
-              'excludePlatforms', 'printerPlugs', 'sensorClasses', 'cameraRefreshSeconds', 'hideUnavailable')
+              'excludePlatforms', 'printerPlugs', 'sensorClasses', 'cameraRefreshSeconds', 'hideUnavailable', 'photoSources')
+# Álbumes compartidos de Google Fotos: solo se leen enlaces de estos dominios
+GOOGLE_HOSTS = ('photos.app.goo.gl', 'photos.google.com', 'goo.gl')
 
 LOCK = threading.Lock()
 SESSIONS = {}                        # cookie -> caducidad
@@ -93,6 +95,21 @@ def save_config(cfg):
     return cfg['version']
 
 
+def merge_source_keys(sources, current):
+    """Las claves API de las fuentes de fotos no viajan a la web: vacía = la que ya había (por id)."""
+    old = {s.get('id'): s for s in (current or []) if isinstance(s, dict)}
+    out = []
+    for src in sources or []:
+        if not isinstance(src, dict):
+            continue
+        src = dict(src)
+        src.pop('hasApiKey', None)
+        if not src.get('apiKey') and old.get(src.get('id'), {}).get('apiKey'):
+            src['apiKey'] = old[src['id']]['apiKey']
+        out.append(src)
+    return out
+
+
 def clean_panel(values, current=None, keep_secret_if_empty=True):
     """Solo las claves conocidas. Token o clave de Immich vacíos = «no cambiarlos»."""
     out = dict(current or {})
@@ -100,6 +117,9 @@ def clean_panel(values, current=None, keep_secret_if_empty=True):
         if k not in values:
             continue
         if k in ('token', 'immichApiKey') and keep_secret_if_empty and not values[k]:
+            continue
+        if k == 'photoSources':
+            out[k] = merge_source_keys(values[k], (current or {}).get('photoSources'))
             continue
         out[k] = values[k]
     return out
@@ -359,6 +379,26 @@ def set_hostname(name):
         raise RuntimeError(err or 'no se pudo cambiar el nombre (¿permiso de sudo para hostnamectl?)')
 
 
+# ---------------------------------------------------------------- Google Fotos
+def google_album(url):
+    """Lee las fotos de un álbum compartido de Google Fotos (la página pública del enlace)."""
+    u = urlparse(url)
+    if u.scheme != 'https' or u.hostname not in GOOGLE_HOSTS:
+        raise ValueError('pon el enlace de un álbum compartido de Google Fotos (https://photos.app.goo.gl/…)')
+    req = urllib.request.Request(url, headers={'User-Agent': 'Mozilla/5.0 (X11; Linux armv7l) AppleWebKit/537.36 Chrome/120 Safari/537.36',
+                                               'Accept-Language': 'es-ES,es;q=0.9'})
+    with urllib.request.urlopen(req, timeout=25) as r:
+        if urlparse(r.geturl()).hostname not in GOOGLE_HOSTS:
+            raise ValueError('el enlace no lleva a Google Fotos')
+        html = r.read(8 * 1024 * 1024).decode('utf-8', 'replace')
+    photos = list(dict.fromkeys(re.findall(r'https://lh3\.googleusercontent\.com/pw/[A-Za-z0-9_\-]{40,}', html)))
+    m = re.search(r'<meta property="og:title" content="([^"]*)"', html)
+    title = (m.group(1) if m else '').split(' - ')[0].strip()
+    if not photos:
+        raise ValueError('no se han encontrado fotos (¿el álbum está compartido con enlace?)')
+    return {'title': title, 'photos': photos}
+
+
 # ---------------------------------------------------------------- servidores
 class Base(BaseHTTPRequestHandler):
     server_version = 'PanelHogar'
@@ -432,6 +472,13 @@ class LocalHandler(Base):
             return self._json(200, {'version': load_config()['version'], 'command': COMMAND})
         if u.path == '/proxy':
             return self._proxy(parse_qs(u.query).get('url', [''])[0])
+        if u.path == '/gphotos':
+            try:
+                return self._json(200, google_album(parse_qs(u.query).get('url', [''])[0]))
+            except ValueError as e:
+                return self._json(400, {'error': str(e)})
+            except (urllib.error.URLError, OSError) as e:
+                return self._json(502, {'error': f'no se pudo leer el álbum: {getattr(e, "reason", e)}'})
         self._json(404)
 
     def do_POST(self):
@@ -513,6 +560,9 @@ class WebHandler(Base):
             panel = dict(cfg['panel'])
             panel['hasToken'] = bool(panel.pop('token', None))          # el token nunca sale de la Pi
             panel['hasImmichApiKey'] = bool(panel.pop('immichApiKey', None))
+            if isinstance(panel.get('photoSources'), list):   # sin configurar: la web las crea desde ambientPhotos
+                panel['photoSources'] = [dict({k: v for k, v in src.items() if k != 'apiKey'}, hasApiKey=bool(src.get('apiKey')))
+                                         for src in panel['photoSources'] if isinstance(src, dict)]
             return self._json(200, {'panel': panel, 'ajustes': cfg['ajustes'], 'version': cfg['version']})
         if u.path == '/api/red':
             if not self._guard():
