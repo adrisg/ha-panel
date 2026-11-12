@@ -1351,8 +1351,9 @@ function renderAmbientChips() {
   if (k.battery_level) {
     const b = num(k.battery_level);
     const m = chargeMode(k);
+    // Siempre el patinete; si carga, un rayito a la derecha (amarillo cargando, verde cargado)
     chips.push(h('div', { class: 'amb-chip' + (m === 'charged' ? ' charged' : '') },
-      icon(m === 'charged' ? 'mdi-battery-check' : m ? 'mdi-battery-charging' : 'mdi-scooter-electric'), `${isNaN(b) ? '—' : Math.round(b)} %`));
+      icon('mdi-scooter-electric'), `${isNaN(b) ? '—' : Math.round(b)} %`, m ? icon('mdi-lightning-bolt', 'amb-bolt') : null));
   }
   const playing = ids((id) => domain(id) === 'media_player' && S.states[id].state === 'playing');
   if (playing.length) chips.push(h('div', { class: 'amb-chip' }, icon('mdi-music'), S.states[playing[0]].attributes.media_title || nameOf(playing[0])));

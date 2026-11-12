@@ -390,3 +390,5 @@ main { display: flex; flex-direction: column; min-width: 0; min-height: 0; heigh
 .ring-bolt.charged { color: var(--ok); animation: none; opacity: .3; }   /* ya no carga: quieto */
 .rail-badge.charged { background: var(--ok); color: #0d2a17; }
 .amb-chip.charged .mdi { color: var(--ok); }
+.amb-chip .amb-bolt { color: #fdd663; margin-left: -4px; }
+.amb-chip.charged .amb-bolt { color: var(--ok); }
