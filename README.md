@@ -67,7 +67,7 @@ Abre `http://localhost:8765` (a 800x480 se ve como en la pantalla de la Pi).
 | `favorites` | Entidades que aparecen en Inicio, por ejemplo `["light.salon", "climate.salon"]` |
 | `hiddenEntities` | Entidades que no quieres ver nunca |
 | `idleSeconds` | Segundos sin tocar la pantalla antes de pasar al modo ambiente (0 = nunca) |
-| `ambientPhotos` | Lista de URLs de fotos para usar el modo ambiente como marco digital |
+| `ambientPhotos` | Fotos del modo ambiente: pega el **enlace compartido de un álbum de Immich** (`https://immich…/share/…`) y se cargan todas sus fotos con fecha y ciudad. También vale un álbum privado con `immichApiKey`, o URLs de fotos sueltas |
 | `night` | Horario y nivel del oscurecimiento nocturno |
 | `weatherEntity` | Qué entidad `weather.*` usar (si no, la primera que haya) |
 
