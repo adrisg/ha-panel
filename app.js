@@ -1331,10 +1331,14 @@ const mergeSettings = (saved = {}) => {
 };
 async function loadSettings() {
   let saved = null;
-  try {
-    if (DEMO) saved = JSON.parse(localStorage.getItem(SETTINGS_KEY) || 'null');
-    else saved = (await conn.send({ type: 'frontend/get_user_data', key: SETTINGS_KEY }) || {}).value;
-  } catch (e) { /* sin ajustes guardados: valores por defecto */ }
+  const helper = window.PANEL_HELPER;
+  if (helper && helper.ajustes && Object.keys(helper.ajustes).length) saved = helper.ajustes;   // los de la web
+  else {
+    try {
+      if (DEMO) saved = JSON.parse(localStorage.getItem(SETTINGS_KEY) || 'null');
+      else saved = (await conn.send({ type: 'frontend/get_user_data', key: SETTINGS_KEY }) || {}).value;
+    } catch (e) { /* sin ajustes guardados: valores por defecto */ }
+  }
   SET = mergeSettings(saved || {});
   applySettings();
 }
@@ -1344,7 +1348,10 @@ function saveSettings() {
   clearTimeout(saveTimer);
   saveTimer = setTimeout(async () => {
     try {
-      if (DEMO) { try { localStorage.setItem(SETTINGS_KEY, JSON.stringify(SET)); } catch (e) { /* sin almacenamiento */ } }
+      if (window.PANEL_HELPER) {        // en la Pi: se guardan en el ayudante (así la web los ve)
+        const r = await fetch(HELPER + '/ajustes', { method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(SET) });
+        const j = await r.json(); REMOTE.version = j.version;
+      } else if (DEMO) { try { localStorage.setItem(SETTINGS_KEY, JSON.stringify(SET)); } catch (e) { /* sin almacenamiento */ } }
       else await conn.send({ type: 'frontend/set_user_data', key: SETTINGS_KEY, value: SET });
       toast('Ajustes guardados');
     } catch (e) { toast('No se pudieron guardar: ' + e.message, true); }
@@ -1360,7 +1367,7 @@ function isNight(now = new Date()) {
 }
 
 /* ---------- Brillo y apagado de pantalla ----------
- * Con el ayudante de la Pi (screen-helper.py en 127.0.0.1:8766) se cambia el brillo real y se apaga
+ * Con el ayudante de la Pi (panel-helper.py en 127.0.0.1:8766) se cambia el brillo real y se apaga
  * la pantalla de verdad. Sin él, se oscurece con una capa negra (funciona en cualquier pantalla). */
 const HELPER = 'http://127.0.0.1:8766';
 const SCREEN = { off: false, lastTouch: Date.now(), helper: null, level: null };
@@ -1724,6 +1731,46 @@ function tick() {
   screenTick();   // brillo, modo noche y apagado (con un aviso abierto, pantalla encendida y a tope)
 }
 
+/* ====================== Web de configuración (ayudante de la Pi) ======================
+ * La web http://<pi>.local:8080 guarda la configuración en el ayudante. El panel le pregunta cada 5 s:
+ * si la versión cambia se recarga, y ejecuta las órdenes del «mando a distancia». */
+const REMOTE = { version: window.PANEL_HELPER ? window.PANEL_HELPER.version : null, command: null, seeded: false };
+const SEED_KEYS = ['haUrl', 'token', 'ambientPhotos', 'immichApiKey', 'favorites', 'hiddenEntities', 'weatherEntity',
+  'excludePlatforms', 'printerPlugs'];
+async function seedHelper() {
+  if (!window.PANEL_HELPER || REMOTE.seeded || DEMO) return;
+  REMOTE.seeded = true;
+  const h = window.PANEL_HELPER;
+  if (h.panel && h.panel.haUrl && h.ajustes && Object.keys(h.ajustes).length) return;   // ya tiene todo
+  const panel = {};
+  for (const k of SEED_KEYS) if (CFG[k] !== undefined && CFG[k] !== '') panel[k] = CFG[k];
+  try {
+    const r = await fetch(HELPER + '/seed', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ panel, ajustes: SET }) });
+    REMOTE.version = (await r.json()).version;
+  } catch (e) { /* sin ayudante */ }
+}
+function runRemote(type) {
+  if (type === 'recargar') location.reload();
+  else if (type === 'ambiente') showAmbient();
+  else if (type === 'inicio') { hideAmbient('home'); wakeScreen(); }
+  else if (type === 'pantalla_off') { SCREEN.lastTouch = 0; setScreenOff(true); }
+  else if (type === 'pantalla_on') { wakeScreen(); }
+}
+async function pollHelper() {
+  if (!window.PANEL_HELPER) {
+    // En la Pi: si el ayudante arrancó después que el panel, recargar para usar su configuración
+    if (location.protocol === 'file:') fetch(HELPER + '/status', { cache: 'no-store' }).then(() => location.reload()).catch(() => {});
+    return;
+  }
+  try {
+    const r = await (await fetch(HELPER + '/poll', { cache: 'no-store' })).json();
+    if (REMOTE.command === null) REMOTE.command = r.command.id;          // al arrancar no se repiten órdenes viejas
+    else if (r.command.id !== REMOTE.command) { REMOTE.command = r.command.id; runRemote(r.command.type); }
+    if (REMOTE.version !== null && r.version !== REMOTE.version) location.reload();   // cambiaron la config desde la web
+    REMOTE.version = r.version;
+  } catch (e) { /* ayudante reiniciándose */ }
+}
+
 /* ====================== Arranque ====================== */
 async function loadAll() {
   const safe = (p) => p.catch(() => []);
@@ -1745,6 +1792,7 @@ async function loadAll() {
   await conn.subscribe('panel_notificacion_cerrar', onNotifClose);
   S.forecastAt = 0;
   await loadSettings();
+  seedHelper();
   if (!S.sheetId) render();
   tick();
 }
@@ -1775,6 +1823,7 @@ function start() {
   document.addEventListener('pointerdown', () => { SCREEN.lastTouch = Date.now(); resetIdle(); }, true);
   $('#blackout').addEventListener('pointerdown', (e) => { e.preventDefault(); e.stopPropagation(); wakeScreen(); });
   helperInit();
+  setInterval(pollHelper, 5000);
 
   tick(); setInterval(tick, 5000);
   if (CFG.ambientPhotos.length) loadPhotos().then(nextBackground); else nextBackground();
