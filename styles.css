@@ -415,3 +415,7 @@ main { display: flex; flex-direction: column; min-width: 0; min-height: 0; heigh
 .amb-chip.charged .amb-bolt { color: var(--ok); }
 .amb-chip[data-go] { cursor: pointer; }
 .amb-chip[data-go]:active { background: rgba(0,0,0,.55); }
+
+/* Engranaje de Ajustes en la barra superior */
+.top-btn { font-size: 22px; line-height: 1; color: var(--muted); padding: 4px; margin: -4px -6px -4px 0; border-radius: 10px; }
+.top-btn.active, .top-btn:active { color: var(--accent); }
