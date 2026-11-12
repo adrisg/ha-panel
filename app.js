@@ -782,7 +782,7 @@ const VIEWS = {
     },
   },
   scooter: {
-    title: 'Patinete', icon: 'mdi-scooter-electric',
+    title: 'Patinete', icon: 'mdi-scooter',
     visible: () => !!scooterIds().battery_level,
     render() {
       const k = scooterIds();
@@ -1353,7 +1353,7 @@ function renderAmbientChips() {
     const m = chargeMode(k);
     // Siempre el patinete; si carga, un rayito a la derecha (amarillo cargando, verde cargado)
     chips.push(h('div', { class: 'amb-chip' + (m === 'charged' ? ' charged' : '') },
-      icon('mdi-scooter-electric'), `${isNaN(b) ? '—' : Math.round(b)} %`, m ? icon('mdi-lightning-bolt', 'amb-bolt') : null));
+      icon('mdi-scooter'), `${isNaN(b) ? '—' : Math.round(b)} %`, m ? icon('mdi-lightning-bolt', 'amb-bolt') : null));
   }
   const playing = ids((id) => domain(id) === 'media_player' && S.states[id].state === 'playing');
   if (playing.length) chips.push(h('div', { class: 'amb-chip' }, icon('mdi-music'), S.states[playing[0]].attributes.media_title || nameOf(playing[0])));
