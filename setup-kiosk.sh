@@ -25,6 +25,11 @@ if [ ! -f "$PANEL_DIR/config.js" ]; then
   echo "!!  Creado config.js: edítalo con tu URL y token de Home Assistant (nano $PANEL_DIR/config.js)"
 fi
 
+echo "==> Permiso para cambiar el brillo de la pantalla (si tiene retroiluminación controlable)..."
+echo 'SUBSYSTEM=="backlight", RUN+="/bin/chmod 666 /sys/class/backlight/%k/brightness /sys/class/backlight/%k/bl_power"' \
+  | sudo tee /etc/udev/rules.d/99-panel-backlight.rules >/dev/null
+sudo udevadm control --reload-rules && sudo udevadm trigger --subsystem-match=backlight || true
+
 echo "==> Creando ~/kiosk-browser.sh y ~/kiosk.sh..."
 cat > "$HOME/kiosk-browser.sh" <<EOF
 #!/usr/bin/env bash
@@ -33,6 +38,9 @@ ROTATE=""   # pon 90, 180 o 270 si tu pantalla está girada
 if [ -n "\$ROTATE" ]; then
   wlr-randr --output "\$(wlr-randr | head -n1 | cut -d' ' -f1)" --transform "\$ROTATE" || true
 fi
+# Ayudante de pantalla (brillo y apagado reales). Va dentro de cage para poder usar wlr-randr.
+pkill -f screen-helper.py 2>/dev/null
+python3 "$PANEL_DIR/screen-helper.py" &
 BROWSER="\$(command -v chromium || command -v chromium-browser)"
 exec "\$BROWSER" --kiosk --incognito --noerrdialogs --disable-infobars --no-first-run \
   --ozone-platform=wayland --enable-low-end-device-mode \

@@ -799,6 +799,7 @@ const VIEWS = {
       return [h('div', { class: 'printers' }, list.map(printerPanel))];
     },
   },
+  settings: { title: 'Ajustes', icon: 'mdi-cog', rail: 'bottom', render: () => renderSettings() },
   scooter: {
     title: 'Patinete', icon: 'mdi-scooter',
     visible: () => !!scooterIds().battery_level,
@@ -1276,7 +1277,7 @@ function tone(freqs, dur) {
       const o = ctx.createOscillator(), g = ctx.createGain();
       o.type = 'sine'; o.frequency.value = f;
       g.gain.setValueAtTime(0.0001, t);
-      g.gain.exponentialRampToValueAtTime(0.5, t + 0.02);
+      g.gain.exponentialRampToValueAtTime(Math.max(0.001, 0.6 * SET.sound.volume / 100), t + 0.02);
       g.gain.exponentialRampToValueAtTime(0.0001, t + dur);
       o.connect(g).connect(ctx.destination);
       o.start(t); o.stop(t + dur + 0.05);
@@ -1286,6 +1287,7 @@ function tone(freqs, dur) {
 }
 function playSound(nivel) {
   stopSound();
+  if (!SET.sound.enabled) return;
   if (nivel === 'critico') {                           // pitido insistente hasta que lo cierres
     const beep = () => tone([880, 660, 880, 660], 0.18);
     beep(); N.soundTimer = setInterval(beep, 1500);
@@ -1297,10 +1299,177 @@ function playSound(nivel) {
 }
 function stopSound() { clearInterval(N.soundTimer); clearTimeout(N.soundStop); N.soundTimer = null; }
 
+/* ====================== Ajustes (se guardan en Home Assistant) ======================
+ * Se guardan con frontend/set_user_data en el usuario del token, así sobreviven a reinicios
+ * de la Pi aunque Chromium vaya en modo incógnito. En modo demo van a localStorage. */
+const SETTINGS_KEY = 'panel_hogar_ajustes';
+const DEFAULTS = () => ({
+  idleSeconds: CFG.idleSeconds,            // segundos sin tocar hasta el modo ambiente (0 = nunca)
+  screenOffMinutes: 0,                     // minutos en ambiente hasta apagar la pantalla (0 = nunca)
+  brightness: 100,                         // brillo de día (%)
+  night: {
+    enabled: !!(CFG.night && CFG.night.dim), start: (CFG.night && CFG.night.start) || '23:00',
+    end: (CFG.night && CFG.night.end) || '07:00', brightness: Math.round((1 - ((CFG.night && CFG.night.dim) ?? 0.6)) * 100),
+    screenOff: false,                      // apagar la pantalla de noche cuando no se usa
+  },
+  sound: { enabled: true, volume: 70 },
+});
+let SET = DEFAULTS();
+const mergeSettings = (saved = {}) => {
+  const d = DEFAULTS();
+  return { ...d, ...saved, night: { ...d.night, ...(saved.night || {}) }, sound: { ...d.sound, ...(saved.sound || {}) } };
+};
+async function loadSettings() {
+  let saved = null;
+  try {
+    if (DEMO) saved = JSON.parse(localStorage.getItem(SETTINGS_KEY) || 'null');
+    else saved = (await conn.send({ type: 'frontend/get_user_data', key: SETTINGS_KEY }) || {}).value;
+  } catch (e) { /* sin ajustes guardados: valores por defecto */ }
+  SET = mergeSettings(saved || {});
+  applySettings();
+}
+let saveTimer;
+function saveSettings() {
+  applySettings();
+  clearTimeout(saveTimer);
+  saveTimer = setTimeout(async () => {
+    try {
+      if (DEMO) { try { localStorage.setItem(SETTINGS_KEY, JSON.stringify(SET)); } catch (e) { /* sin almacenamiento */ } }
+      else await conn.send({ type: 'frontend/set_user_data', key: SETTINGS_KEY, value: SET });
+      toast('Ajustes guardados');
+    } catch (e) { toast('No se pudieron guardar: ' + e.message, true); }
+  }, 600);
+}
+function applySettings() { resetIdle(); screenTick(); }
+
+function isNight(now = new Date()) {
+  const n = SET.night;
+  if (!n.enabled) return false;
+  const m = now.getHours() * 60 + now.getMinutes(), a = toMin(n.start), b = toMin(n.end);
+  return a > b ? (m >= a || m < b) : (m >= a && m < b);
+}
+
+/* ---------- Brillo y apagado de pantalla ----------
+ * Con el ayudante de la Pi (screen-helper.py en 127.0.0.1:8766) se cambia el brillo real y se apaga
+ * la pantalla de verdad. Sin él, se oscurece con una capa negra (funciona en cualquier pantalla). */
+const HELPER = 'http://127.0.0.1:8766';
+const SCREEN = { off: false, lastTouch: Date.now(), helper: null, level: null };
+async function helperInit() {
+  try {
+    const r = await fetch(HELPER + '/status', { cache: 'no-store' });
+    SCREEN.helper = await r.json();
+  } catch (e) { SCREEN.helper = null; }
+  SCREEN.level = null;
+  screenTick();
+}
+const helperPost = (path) => SCREEN.helper && fetch(HELPER + path, { method: 'POST' }).catch(() => {});
+
+function setBrightness(level) {
+  const hw = SCREEN.helper && SCREEN.helper.backlight;
+  if (hw && level !== SCREEN.level) helperPost('/brightness?value=' + level);
+  SCREEN.level = level;
+  $('#dim').style.opacity = hw ? 0 : Math.min(0.9, (100 - level) / 100);
+}
+function setScreenOff(off) {
+  if (off === SCREEN.off) return;
+  SCREEN.off = off;
+  $('#blackout').classList.toggle('hidden', !off);
+  if (SCREEN.helper && SCREEN.helper.power) helperPost('/power?on=' + (off ? 0 : 1));
+  if (off) stopSound();
+}
+/** Decide brillo y apagado: se llama cada 5 s, al tocar, al cambiar ajustes y al llegar un aviso. */
+function screenTick() {
+  const night = isNight(), alert = alertOpen();
+  const idle = (Date.now() - SCREEN.lastTouch) / 1000;
+  let off = false;
+  if (!alert) {
+    if (SET.screenOffMinutes > 0 && idle >= Math.max(0, SET.idleSeconds) + SET.screenOffMinutes * 60) off = true;
+    if (night && SET.night.screenOff && idle >= Math.max(60, SET.idleSeconds)) off = true;
+  }
+  setScreenOff(off);
+  setBrightness(alert ? 100 : night ? SET.night.brightness : SET.brightness);
+}
+function wakeScreen() { SCREEN.lastTouch = Date.now(); screenTick(); }
+
+/* ---------- Controles de la vista Ajustes ---------- */
+function segmented(options, value, onpick) {
+  const wrap = h('div', { class: 'seg' });
+  const paint = (v) => wrap.querySelectorAll('button').forEach((b) => b.classList.toggle('active', b.dataset.v === String(v)));
+  for (const [v, label] of options) wrap.append(h('button', { 'data-v': String(v), onclick: () => { paint(v); onpick(v); } }, label));
+  paint(value);
+  return wrap;
+}
+function switchBtn(value, onchange) {
+  const sw = h('button', { class: 'switch' + (value ? ' on' : ''), role: 'switch' }, h('span'));
+  sw.addEventListener('click', () => { value = !value; sw.classList.toggle('on', value); onchange(value); });
+  return sw;
+}
+const fmtHM = (x) => `${String(Math.floor(x / 60)).padStart(2, '0')}:${String(x % 60).padStart(2, '0')}`;
+function timeStepper(value, onchange) {
+  let m = toMin(value);
+  const lab = h('span', { class: 'time-val' }, fmtHM(m));
+  const step = (d) => { m = (m + d + 1440) % 1440; lab.textContent = fmtHM(m); onchange(fmtHM(m)); };
+  return h('div', { class: 'stepper' }, h('button', { class: 'round-btn', onclick: () => step(-30) }, icon('mdi-minus')), lab,
+    h('button', { class: 'round-btn', onclick: () => step(30) }, icon('mdi-plus')));
+}
+const setRow = (label, sub, control) => h('div', { class: 'set-row' },
+  h('div', { class: 'set-text' }, h('div', null, label), sub ? h('div', { class: 'muted small' }, sub) : null), control);
+const setBlock = (label, sub, control) => h('div', { class: 'set-block' },
+  h('div', { class: 'set-text' }, h('div', null, label), sub ? h('div', { class: 'muted small' }, sub) : null), control);
+
+function renderSettings() {
+  const pct = (v) => v + ' %';
+  const bright = slider({ min: 5, max: 100, step: 5, label: 'Brillo', fmt: pct, onchange: (v) => { SET.brightness = v; saveSettings(); } });
+  bright.set(SET.brightness);
+  const nightBright = slider({ min: 5, max: 100, step: 5, label: 'Brillo de noche', fmt: pct, onchange: (v) => { SET.night.brightness = v; saveSettings(); } });
+  nightBright.set(SET.night.brightness);
+  const vol = slider({ min: 10, max: 100, step: 10, label: 'Volumen', fmt: pct, onchange: (v) => { SET.sound.volume = v; saveSettings(); tone([784, 622], 0.4); } });
+  vol.set(SET.sound.volume);
+
+  const hw = SCREEN.helper;
+  const helperText = !hw ? 'No detectado: el brillo y el apagado se hacen oscureciendo la imagen'
+    : hw.backlight ? 'Brillo real y apagado de la pantalla' : hw.power ? 'Apagado real de la pantalla; brillo por software' : 'Detectado, pero esta pantalla no se puede controlar';
+
+  return [h('div', { class: 'settings' },
+    h('div', { class: 'card set-card' }, h('div', { class: 'set-title' }, icon('mdi-monitor'), 'Pantalla'),
+      bright,
+      setBlock('Modo ambiente', 'Tiempo sin tocar la pantalla hasta mostrar el reloj',
+        segmented([[0, 'Nunca'], [30, '30 s'], [60, '1 min'], [90, '1,5 min'], [180, '3 min'], [300, '5 min'], [600, '10 min']],
+          SET.idleSeconds, (v) => { SET.idleSeconds = v; saveSettings(); })),
+      setBlock('Apagar la pantalla', 'Tiempo en modo ambiente hasta apagarla. Se enciende al tocarla o si llega un aviso',
+        segmented([[0, 'Nunca'], [5, '5 min'], [15, '15 min'], [30, '30 min'], [60, '1 h'], [120, '2 h']],
+          SET.screenOffMinutes, (v) => { SET.screenOffMinutes = v; saveSettings(); })),
+      h('div', { class: 'btn-row' },
+        h('button', { class: 'big-action', onclick: () => showAmbient() }, icon('mdi-image-filter-hdr'), 'Modo ambiente'),
+        h('button', { class: 'big-action', onclick: () => { SCREEN.lastTouch = 0; setScreenOff(true); } }, icon('mdi-monitor-off'), 'Apagar ahora'))),
+
+    h('div', { class: 'card set-card' }, h('div', { class: 'set-title' }, icon('mdi-weather-night'), 'Modo noche'),
+      setRow('Activado', 'Baja el brillo por la noche', switchBtn(SET.night.enabled, (v) => { SET.night.enabled = v; saveSettings(); })),
+      setRow('Desde', null, timeStepper(SET.night.start, (v) => { SET.night.start = v; saveSettings(); })),
+      setRow('Hasta', null, timeStepper(SET.night.end, (v) => { SET.night.end = v; saveSettings(); })),
+      nightBright,
+      setRow('Apagar la pantalla de noche', 'Si no la estás usando (al minuto de dejar de tocarla)',
+        switchBtn(SET.night.screenOff, (v) => { SET.night.screenOff = v; saveSettings(); }))),
+
+    h('div', { class: 'card set-card' }, h('div', { class: 'set-title' }, icon('mdi-bell-ring'), 'Avisos'),
+      setRow('Sonido', 'Ding-dong en los avisos y pitido en los críticos', switchBtn(SET.sound.enabled, (v) => { SET.sound.enabled = v; saveSettings(); })),
+      vol,
+      h('div', { class: 'btn-row' },
+        h('button', { class: 'big-action', onclick: () => onNotif({ data: { id: 'prueba_ajustes', titulo: 'Aviso de prueba', mensaje: 'Así se ven los avisos que lances desde Home Assistant', nivel: 'aviso', icono: 'mdi:bell-ring', duracion: 15 } }) },
+          icon('mdi-bell-badge'), 'Probar aviso'))),
+
+    h('div', { class: 'card set-card' }, h('div', { class: 'set-title' }, icon('mdi-information-outline'), 'Panel'),
+      setRow('Home Assistant', DEMO ? 'Modo demo (sin conexión real)' : CFG.haUrl,
+        h('span', { class: 'pill' + (S.connected ? ' ok' : '') }, S.connected ? 'Conectado' : 'Desconectado')),
+      setRow('Control de pantalla', helperText, h('span', { class: 'pill' + (hw ? ' ok' : '') }, hw ? 'Ayudante' : 'Software')),
+      h('div', { class: 'btn-row' },
+        h('button', { class: 'big-action', onclick: () => location.reload() }, icon('mdi-refresh'), 'Recargar panel'))))];
+}
+
 /* ====================== Navegación y renderizado ====================== */
 function renderRail() {
   const rail = $('#rail');
-  const items = Object.entries(VIEWS).filter(([, v]) => !v.visible || v.visible());
+  const items = Object.entries(VIEWS).filter(([, v]) => !v.rail && (!v.visible || v.visible()));
   rail.replaceChildren(...items.map(([key, v]) => {
     const btn = h('button', { class: 'rail-btn' + (S.view === key ? ' active' : ''), onclick: () => go(key) }, icon(v.icon), v.title);
     if (key === 'scooter') {          // mini rayo sobre el icono mientras el patinete carga
@@ -1315,6 +1484,7 @@ function renderRail() {
     return btn;
   }),
     h('div', { class: 'rail-spacer' }),
+    h('button', { class: 'rail-btn' + (S.view === 'settings' ? ' active' : ''), onclick: () => go('settings') }, icon('mdi-cog'), 'Ajustes'),
     h('button', { class: 'rail-btn', onclick: showAmbient }, icon('mdi-image-filter-hdr'), 'Ambiente'));
 }
 function render() {
@@ -1338,7 +1508,7 @@ function go(view) {
 let idleTimer;
 function resetIdle() {
   clearTimeout(idleTimer);
-  if (CFG.idleSeconds > 0) idleTimer = setTimeout(() => !S.sheetId && !alertOpen() && showAmbient(), CFG.idleSeconds * 1000);
+  if (SET.idleSeconds > 0) idleTimer = setTimeout(() => !S.sheetId && !alertOpen() && showAmbient(), SET.idleSeconds * 1000);
 }
 function showAmbient() {
   closeSheet();
@@ -1417,12 +1587,7 @@ function tick() {
   $('#amb-date').textContent = cap(now.toLocaleDateString('es-ES', { weekday: 'long', day: 'numeric', month: 'long' }));
   const wid = weatherId();
   $('#weather-mini').replaceChildren(...(wid ? [icon(wIcon(S.states[wid].state)), ' ' + fmtNum(S.states[wid].attributes.temperature) + '°'] : []));
-  const n = CFG.night;
-  if (n && n.dim) {
-    const m = now.getHours() * 60 + now.getMinutes(), a = toMin(n.start), b = toMin(n.end);
-    const night = a > b ? (m >= a || m < b) : (m >= a && m < b);
-    $('#dim').style.opacity = night && !alertOpen() ? n.dim : 0;   // con un aviso abierto, pantalla a tope
-  }
+  screenTick();   // brillo, modo noche y apagado (con un aviso abierto, pantalla encendida y a tope)
 }
 
 /* ====================== Arranque ====================== */
@@ -1445,6 +1610,7 @@ async function loadAll() {
   await conn.subscribe('panel_notificacion', onNotif);
   await conn.subscribe('panel_notificacion_cerrar', onNotifClose);
   S.forecastAt = 0;
+  await loadSettings();
   if (!S.sheetId) render();
   tick();
 }
@@ -1470,7 +1636,9 @@ function start() {
     const chip = e.target.closest('.amb-chip[data-go]');
     hideAmbient(chip ? chip.dataset.go : 'home');
   });
-  document.addEventListener('pointerdown', resetIdle, true);
+  document.addEventListener('pointerdown', () => { SCREEN.lastTouch = Date.now(); resetIdle(); }, true);
+  $('#blackout').addEventListener('pointerdown', (e) => { e.preventDefault(); e.stopPropagation(); wakeScreen(); });
+  helperInit();
 
   tick(); setInterval(tick, 5000);
   nextBackground(); setInterval(nextBackground, (CFG.ambientPhotos.length ? CFG.photoSeconds : 600) * 1000);

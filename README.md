@@ -14,6 +14,7 @@ No usa los dashboards de Home Assistant: es una página web propia (HTML + JS pu
 | **Patinete** | Batería, autonomía, estado de carga, estadísticas, límite de carga y ajustes (integración `mi_scooter_ble`) |
 | **Impresoras** | Bambu y Snapmaker (Moonraker): cámara con miniatura, progreso, tiempo, boquillas, enchufe y botones. Si imprimen, salen en Inicio y en el modo ambiente |
 | **Avisos** | Lanzados desde automatizaciones de Home Assistant, con botones (p. ej. abrir la puerta del telefonillo). Ver [AVISOS.md](AVISOS.md) |
+| **Ajustes** | Brillo, tiempo hasta el modo ambiente, apagado de pantalla, modo noche (horario, brillo, apagar de noche) y sonido de los avisos. Se guardan en Home Assistant |
 | **Ambiente** | Tras 90 s sin tocar la pantalla: reloj grande, fecha, tiempo y avisos, sobre un degradado según la hora o tus fotos |
 
 - **Toque corto** en una ficha: enciende o apaga.
@@ -57,6 +58,7 @@ Abre `http://localhost:8765` (a 800x480 se ve como en la pantalla de la Pi).
 - **Táctil por HDMI** (táctil por USB): suele funcionar sin hacer nada más.
 - **Táctil SPI** (por ejemplo Waveshare de 3,5" sobre los pines GPIO): necesita el overlay del fabricante en `/boot/firmware/config.txt`. Sigue la guía de tu modelo y comprueba que la consola se ve en la pantalla antes de ejecutar el script. El panel se adapta a 480x320.
 - Si la imagen sale girada, edita `ROTATE` en `~/kiosk-browser.sh`.
+- **Brillo y apagado:** `screen-helper.py` (lo arranca el kiosko) controla la retroiluminación de verdad si la pantalla lo permite (la oficial DSI y algunas SPI) y apaga la salida HDMI con `wlr-randr`. Si tu pantalla no se deja, el panel oscurece la imagen por software. En **Ajustes → Panel** ves qué método está usando.
 
 ## Configuración (`config.js`)
 
@@ -83,4 +85,5 @@ app.js              conexión con HA, vistas y controles
 demo.js             datos falsos para el modo demo
 config.example.js   plantilla de config.js
 setup-kiosk.sh      instalación del kiosko en la Pi
+screen-helper.py    ayudante en la Pi para el brillo y el apagado reales de la pantalla
 ```
