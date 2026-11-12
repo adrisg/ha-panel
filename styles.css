@@ -467,3 +467,19 @@ main { display: flex; flex-direction: column; min-width: 0; min-height: 0; heigh
 ::-webkit-scrollbar-thumb:hover { background: #3c4250; }
 ::-webkit-scrollbar-corner { background: transparent; }
 .sheet-card::-webkit-scrollbar-track { margin: 18px 0; }
+
+/* Reproductores: los botones redondos nunca se aplastan */
+.round-btn { flex: none; }
+.cards:has(> .media-card) { grid-template-columns: repeat(auto-fit, minmax(360px, 1fr)); }
+.media-card { container-type: inline-size; }
+.mc-ctrls { flex-wrap: wrap; }
+/* Tarjeta estrecha: carátula y botones algo más pequeños en lugar de deformarse */
+@container (max-width: 380px) {
+  .mc-art { width: 84px; height: 84px; }
+  .mc-ctrls { gap: 6px; }
+  .mc-ctrls .round-btn { width: 40px; height: 40px; font-size: 22px; }
+  .mc-ctrls .round-btn.big { width: 48px; height: 48px; font-size: 28px; }
+}
+@container (max-width: 300px) {
+  .mc-art { width: 64px; height: 64px; }
+}
