@@ -312,7 +312,7 @@ function iconOf(st) {
   if (d === 'vacuum') return s === 'error' ? 'mdi-robot-vacuum-alert' : 'mdi-robot-vacuum';   // sin el «zzz» de la integración
   if (a.icon) return a.icon.replace('mdi:', 'mdi-');
   if (d === 'light') return s === 'on' ? 'mdi-lightbulb-on' : 'mdi-lightbulb-outline';
-  if (d === 'lock') return s === 'locked' ? 'mdi-lock' : 'mdi-lock-open-variant';
+  if (d === 'lock') return s === 'locked' ? 'mdi-lock' : s === 'unavailable' || s === 'unknown' ? 'mdi-lock-question' : 'mdi-lock-open-variant';
   if (d === 'cover') return s === 'closed' ? 'mdi-window-shutter' : 'mdi-window-shutter-open';
   if (d === 'binary_sensor' && ['door', 'garage_door', 'opening'].includes(a.device_class))
     return s === 'on' ? 'mdi-door-open' : 'mdi-door-closed';
@@ -412,6 +412,11 @@ const HAS_SHEET = ['light', 'fan', 'cover', 'climate', 'media_player', 'lock', '
 
 function tap(id, el) {
   const d = domain(id);
+  // Un interruptor sin conexión no se intenta encender: se abre su detalle (o se avisa)
+  if (S.states[id] && S.states[id].state === 'unavailable' && TOGGLE.includes(d)) {
+    if (HAS_SHEET.includes(d)) openSheet(id); else toast(`${nameOf(id)} no está disponible`, true);
+    return;
+  }
   if (TOGGLE.includes(d)) {
     el.classList.add('pending');
     el.classList.toggle('on');
@@ -639,7 +644,7 @@ const SHEETS = {
   media_player(id) { return [mediaCard(id, 'sheet')]; },
   lock(id) {
     const status = h('div', { class: 'big-toggle' });
-    bind('sheet', id, (st) => { status.replaceChildren(icon(iconOf(st)), h('span', null, fmtState(st))); status.classList.toggle('on', st.state !== 'locked'); });
+    bind('sheet', id, (st) => { status.replaceChildren(icon(iconOf(st)), h('span', null, fmtState(st))); status.classList.toggle('on', st.state === 'unlocked' || st.state === 'open'); });
     status.dataset.kind = 'cover';
     return [status, h('div', { class: 'btn-row' },
       h('button', { class: 'big-action', onclick: () => call('lock', 'lock', {}, id) }, icon('mdi-lock'), 'Cerrar'),
@@ -737,7 +742,17 @@ function openSheet(id) {
   const head = h('div', { class: 'sheet-head' }, h('div', { class: 'tile-icon' }), h('div', { class: 'sheet-title' }, nameOf(id, false)),
     h('button', { class: 'icon-btn', onclick: closeSheet }, icon('mdi-close')));
   bind('sheet', id, (s) => head.firstChild.replaceChildren(icon(iconOf(s))));
-  $('#sheet-card').replaceChildren(head, h('div', { class: 'sheet-body' }, builder(id)));
+  const notice = h('div', { class: 'unavail-notice hidden' }, icon('mdi-lan-disconnect'),
+    h('span', null, 'Este dispositivo no está disponible ahora mismo. Los controles se activarán cuando vuelva a conectarse.'));
+  const body = h('div', { class: 'sheet-body' }, builder(id));
+  $('#sheet-card').replaceChildren(head, notice, body);
+  // Sin conexión con el dispositivo: los controles se desactivan (y se reactivan solos si vuelve)
+  bind('sheet', id, (s) => {
+    const off = !s || s.state === 'unavailable';
+    notice.classList.toggle('hidden', !off);
+    body.classList.toggle('disabled', off);
+    body.querySelectorAll('button, input, select').forEach((c) => { c.disabled = off; });
+  });
   $('#sheet').classList.remove('hidden');
   S.sheetId = id;
 }
