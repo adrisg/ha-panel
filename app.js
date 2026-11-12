@@ -1479,7 +1479,8 @@ function netCard() {
       r('Nombre', net.hostname),
       r('IP', net.ip + (net.ipv4 ? (net.ipv4.method === 'manual' ? ' · fija' : ' · automática') : '')),
       net.wifi ? r('WiFi', `${net.wifi.ssid} · ${net.wifi.signal} %`) : net.connection ? r('Conexión', net.connection.type === 'ethernet' ? 'Cable de red' : net.connection.name) : null,
-      r('Web de configuración', net.urls[0])].filter(Boolean));
+      r('Web de configuración', net.urls[0]),
+      net.simulated ? h('div', { class: 'muted small' }, '🧪 Red simulada (modo pruebas en el ordenador)') : null].filter(Boolean));
   });
   return h('div', { class: 'card set-card' }, h('div', { class: 'set-title' }, icon('mdi-wifi'), 'Red y configuración desde el móvil'),
     rows,
@@ -1498,6 +1499,7 @@ function renderSettings() {
 
   const hw = SCREEN.helper;
   const helperText = !hw ? 'No detectado: el brillo y el apagado se hacen oscureciendo la imagen'
+    : hw.simulated ? 'Simulado en el ordenador: se oscurece la imagen y no se toca el hardware'
     : hw.backlight ? 'Brillo real y apagado de la pantalla' : hw.power ? 'Apagado real de la pantalla; brillo por software' : 'Detectado, pero esta pantalla no se puede controlar';
 
   return [h('div', { class: 'settings' },
@@ -1544,7 +1546,7 @@ function renderSettings() {
     h('div', { class: 'card set-card' }, h('div', { class: 'set-title' }, icon('mdi-information-outline'), 'Panel'),
       setRow('Home Assistant', DEMO ? 'Modo demo (sin conexión real)' : CFG.haUrl,
         h('span', { class: 'pill' + (S.connected ? ' ok' : '') }, S.connected ? 'Conectado' : 'Desconectado')),
-      setRow('Control de pantalla', helperText, h('span', { class: 'pill' + (hw ? ' ok' : '') }, hw ? 'Ayudante' : 'Software')),
+      setRow('Control de pantalla', helperText, h('span', { class: 'pill' + (hw ? ' ok' : '') }, hw ? (hw.simulated ? 'Simulado' : 'Ayudante') : 'Software')),
       h('div', { class: 'btn-row' },
         h('button', { class: 'big-action', onclick: () => location.reload() }, icon('mdi-refresh'), 'Recargar panel'))))];
 }
