@@ -206,6 +206,8 @@
     <div class="card">
       <h2>🖼️ Fotos del modo ambiente</h2>
       <div class="row"><label for="photos-enabled">Mostrar fotos</label><label class="switch"><input id="photos-enabled" type="checkbox"><span></span></label></div>
+      <div class="row"><label for="photos-fit">Cómo se ve la foto</label>
+        <select id="photos-fit"><option value="cover">Rellenar la pantalla</option><option value="blur">Entera + fondo difuminado</option><option value="contain">Entera (fondo negro)</option></select></div>
       <div class="row"><label for="photos-seconds">Cambiar de foto cada</label>
         <select id="photos-seconds"><option value="15">15 s</option><option value="30">30 s</option><option value="60">1 min</option><option value="300">5 min</option><option value="900">15 min</option></select></div>
       <div class="field">
@@ -273,7 +275,7 @@ const $ = (s) => document.querySelector(s);
 const DEF = {   // mismos valores por defecto que el panel
   idleSeconds: 90, screenOffMinutes: 0, brightness: 100,
   night: { enabled: true, start: '23:00', end: '07:00', brightness: 40, screenOff: false },
-  sound: { enabled: true, volume: 70 }, photos: { enabled: true, seconds: 30 },
+  sound: { enabled: true, volume: 70 }, photos: { enabled: true, seconds: 30, fit: 'blur' },
 };
 const lists = { favorites: [], hiddenEntities: [], excludePlatforms: [] };
 const AMB = [['weather', '🌤️ Tiempo'], ['alarm', '⏰ Próxima alarma'], ['printers', '🖨️ Impresoras imprimiendo'], ['scooter', '🛴 Patinete'],
@@ -342,6 +344,7 @@ function fill(cfg) {
   $('#night-screenOff').checked = a.night.screenOff;
   $('#sound-enabled').checked = a.sound.enabled; $('#sound-volume').value = a.sound.volume;
   $('#photos-enabled').checked = a.photos.enabled; $('#photos-seconds').value = String(a.photos.seconds);
+  $('#photos-fit').value = a.photos.fit || 'blur';
   sources = Array.isArray(p.photoSources) ? p.photoSources.map((x) => ({ ...x })) : legacySources(p);
   renderSources();
   $('#printerPlugs').value = Object.entries(p.printerPlugs || {}).map(([k, v]) => `${k} = ${v}`).join('\n');
@@ -379,7 +382,7 @@ function collect() {
     night: { enabled: $('#night-enabled').checked, start: $('#night-start').value || '23:00', end: $('#night-end').value || '07:00',
       brightness: +$('#night-brightness').value, screenOff: $('#night-screenOff').checked },
     sound: { enabled: $('#sound-enabled').checked, volume: +$('#sound-volume').value },
-    photos: { enabled: $('#photos-enabled').checked, seconds: +$('#photos-seconds').value },
+    photos: { enabled: $('#photos-enabled').checked, seconds: +$('#photos-seconds').value, fit: $('#photos-fit').value },
     ambientChips: ambChips,
     defaultSpeaker: $('#defaultSpeaker').value,
   };
