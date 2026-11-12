@@ -206,7 +206,7 @@
     <div class="card">
       <h2>🖼️ Fotos del modo ambiente</h2>
       <div class="row"><label for="photos-enabled">Mostrar fotos</label><label class="switch"><input id="photos-enabled" type="checkbox"><span></span></label></div>
-      <div class="row"><label for="photos-fit">Cómo se ve la foto</label>
+      <div class="row"><label for="photos-fit">Cómo se ve la foto <span class="hint">(por defecto)</span></label>
         <select id="photos-fit"><option value="cover">Rellenar la pantalla</option><option value="blur">Entera + fondo difuminado</option><option value="contain">Entera (fondo negro)</option></select></div>
       <div class="row"><label for="photos-seconds">Cambiar de foto cada</label>
         <select id="photos-seconds"><option value="15">15 s</option><option value="30">30 s</option><option value="60">1 min</option><option value="300">5 min</option><option value="900">15 min</option></select></div>
@@ -345,6 +345,7 @@ function fill(cfg) {
   $('#sound-enabled').checked = a.sound.enabled; $('#sound-volume').value = a.sound.volume;
   $('#photos-enabled').checked = a.photos.enabled; $('#photos-seconds').value = String(a.photos.seconds);
   $('#photos-fit').value = a.photos.fit || 'blur';
+  renderSources();   // para que «por defecto (…)» muestre el modo general ya cargado
   sources = Array.isArray(p.photoSources) ? p.photoSources.map((x) => ({ ...x })) : legacySources(p);
   renderSources();
   $('#printerPlugs').value = Object.entries(p.printerPlugs || {}).map(([k, v]) => `${k} = ${v}`).join('\n');
@@ -458,6 +459,14 @@ function renderSources() {
     head.append(title, sw, del);
     const body = document.createElement('div'); body.className = 'src-body';
     body.append(input(src.name, 'Nombre (opcional; si no, el del álbum)', (v) => { src.name = v; }));
+    // Modo de visualización propio de esta fuente (vacío = el de por defecto)
+    const fit = document.createElement('select');
+    const defLabel = $('#photos-fit').selectedOptions[0] ? $('#photos-fit').selectedOptions[0].textContent : '';
+    [['', `Cómo se ve: por defecto (${defLabel})`], ['cover', 'Cómo se ve: rellenar la pantalla'], ['blur', 'Cómo se ve: entera + fondo difuminado'], ['contain', 'Cómo se ve: entera (fondo negro)']]
+      .forEach(([v, t]) => fit.append(new Option(t, v)));
+    fit.value = src.fit || '';
+    fit.onchange = () => { src.fit = fit.value || undefined; dirty(); };
+    body.append(fit);
     if (src.type === 'immich') {
       body.append(input(src.url, 'https://immich.casa/share/XXXX', (v) => { src.url = v.trim(); }),
         input('', src.hasApiKey ? 'Clave API guardada (escribe para cambiarla)' : 'Clave API (solo para álbumes privados …/albums/<id>)', (v) => { src.apiKey = v.trim(); }, 'password'),
@@ -475,6 +484,7 @@ function renderSources() {
     return card;
   }));
 }
+$('#photos-fit').addEventListener('change', () => renderSources());
 $('#src-add').onclick = () => {
   const type = $('#src-type').value;
   sources.push({ id: newId(), type, enabled: true, ...(type === 'urls' ? { urls: [] } : {}) });

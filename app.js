@@ -1624,7 +1624,7 @@ function renderSettings() {
       setRow('Mostrar fotos',
         PHOTOS.length ? `${PHOTOS.length} fotos cargadas` : photoSources().length ? 'No se han podido cargar las fotos' : 'Añade fuentes de fotos desde la web de configuración',
         switchBtn(SET.photos.enabled, (v) => { SET.photos.enabled = v; saveSettings(); nextBackground(); })),
-      setBlock('Cómo se ve la foto', 'Entera + difuminado: sin recortar, con la misma foto desenfocada detrás (ideal para fotos verticales)',
+      setBlock('Cómo se ve la foto (por defecto)', 'Cada fuente puede tener el suyo en la web de configuración. Entera + difuminado: sin recortar, con la misma foto desenfocada detrás',
         segmented([['cover', 'Rellenar'], ['blur', 'Entera + difuminado'], ['contain', 'Entera']],
           SET.photos.fit || 'blur', (v) => { SET.photos.fit = v; saveSettings(); refitPhotos(); })),
       setBlock('Cambiar de foto cada', null,
@@ -2222,7 +2222,7 @@ async function loadPhotos() {
     try {
       const { photos, name } = await c.load(src);
       const label = src.name || [c.label, name].filter(Boolean).join(' · ');
-      photos.forEach((p) => { p.source = label; });
+      photos.forEach((p) => { p.source = label; p.fit = src.fit || ''; });
       out.push(...photos);
       stats.push({ label, count: photos.length });
     } catch (e) {
@@ -2247,15 +2247,16 @@ const GRADIENTS = [
   [21, 'linear-gradient(160deg,#141e30,#243b55)'],
 ];
 /** Una capa del fondo: foto (rellenando, entera con fondo difuminado o entera) o nada. */
-function setPhotoLayer(el, url) {
+function setPhotoLayer(el, url, fit) {
   const v = url ? `url("${url}")` : '';
   el.style.backgroundImage = '';
   el.querySelector('.amb-fg').style.backgroundImage = v;
   el.querySelector('.amb-blur').style.backgroundImage = v;
-  el.dataset.fit = SET.photos.fit || 'blur';
+  el.dataset.srcfit = fit || '';                       // modo propio de la fuente (vacío = el general)
+  el.dataset.fit = fit || SET.photos.fit || 'blur';
 }
-/** Al cambiar el modo en Ajustes se aplica a la foto que ya se está viendo. */
-function refitPhotos() { document.querySelectorAll('.amb-bg').forEach((el) => { el.dataset.fit = SET.photos.fit || 'blur'; }); }
+/** Al cambiar el modo general en Ajustes se aplica a la foto que ya se está viendo (si su fuente no tiene uno propio). */
+function refitPhotos() { document.querySelectorAll('.amb-bg').forEach((el) => { el.dataset.fit = el.dataset.srcfit || SET.photos.fit || 'blur'; }); }
 
 function nextBackground() {
   clearTimeout(bgTimer);
@@ -2277,7 +2278,7 @@ function nextBackground() {
       if (p.bad) return;
       const img = new Image();
       img.onload = () => {
-        setPhotoLayer(el, img.src);
+        setPhotoLayer(el, img.src, p.fit);
         el.classList.add('photo', 'visible'); front.classList.remove('visible'); bgFront = back;
         caption.replaceChildren(...[p.caption ? h('div', { class: 'cap-date' }, p.caption) : null,
           p.source ? h('div', { class: 'cap-src' }, p.source) : null].filter(Boolean));
