@@ -1421,7 +1421,7 @@ const DEFAULTS = () => ({
     screenOff: false,                      // apagar la pantalla de noche cuando no se usa
   },
   sound: { enabled: true, volume: 70 },
-  photos: { enabled: true, seconds: CFG.photoSeconds || 30 },
+  photos: { enabled: true, seconds: CFG.photoSeconds || 30, fit: 'blur' },   // fit: cover | blur | contain
   alarms: [],
   ambientChips: null,   // null = orden y selección por defecto
   defaultSpeaker: '',   // media_player que se controla desde el modo ambiente
@@ -1624,6 +1624,9 @@ function renderSettings() {
       setRow('Mostrar fotos',
         PHOTOS.length ? `${PHOTOS.length} fotos cargadas` : photoSources().length ? 'No se han podido cargar las fotos' : 'Añade fuentes de fotos desde la web de configuración',
         switchBtn(SET.photos.enabled, (v) => { SET.photos.enabled = v; saveSettings(); nextBackground(); })),
+      setBlock('Cómo se ve la foto', 'Entera + difuminado: sin recortar, con la misma foto desenfocada detrás (ideal para fotos verticales)',
+        segmented([['cover', 'Rellenar'], ['blur', 'Entera + difuminado'], ['contain', 'Entera']],
+          SET.photos.fit || 'blur', (v) => { SET.photos.fit = v; saveSettings(); refitPhotos(); })),
       setBlock('Cambiar de foto cada', null,
         segmented([[15, '15 s'], [30, '30 s'], [60, '1 min'], [300, '5 min'], [900, '15 min']],
           SET.photos.seconds, (v) => { SET.photos.seconds = v; saveSettings(); nextBackground(); })),
@@ -2243,6 +2246,17 @@ const GRADIENTS = [
   [9, 'linear-gradient(160deg,#4facfe,#2b5876 70%,#1a2a44)'], [18, 'linear-gradient(160deg,#f7971e,#c0392b 50%,#3a1c4a)'],
   [21, 'linear-gradient(160deg,#141e30,#243b55)'],
 ];
+/** Una capa del fondo: foto (rellenando, entera con fondo difuminado o entera) o nada. */
+function setPhotoLayer(el, url) {
+  const v = url ? `url("${url}")` : '';
+  el.style.backgroundImage = '';
+  el.querySelector('.amb-fg').style.backgroundImage = v;
+  el.querySelector('.amb-blur').style.backgroundImage = v;
+  el.dataset.fit = SET.photos.fit || 'blur';
+}
+/** Al cambiar el modo en Ajustes se aplica a la foto que ya se está viendo. */
+function refitPhotos() { document.querySelectorAll('.amb-bg').forEach((el) => { el.dataset.fit = SET.photos.fit || 'blur'; }); }
+
 function nextBackground() {
   clearTimeout(bgTimer);
   bgTimer = setTimeout(nextBackground, (photosOn() ? SET.photos.seconds : photoSources().length && !PHOTOS.length ? 30 : 600) * 1000);
@@ -2263,7 +2277,7 @@ function nextBackground() {
       if (p.bad) return;
       const img = new Image();
       img.onload = () => {
-        el.style.backgroundImage = `url("${img.src}")`;
+        setPhotoLayer(el, img.src);
         el.classList.add('photo', 'visible'); front.classList.remove('visible'); bgFront = back;
         caption.replaceChildren(...[p.caption ? h('div', { class: 'cap-date' }, p.caption) : null,
           p.source ? h('div', { class: 'cap-src' }, p.source) : null].filter(Boolean));
@@ -2281,6 +2295,7 @@ function nextBackground() {
     const hr = new Date().getHours();
     const g = GRADIENTS.filter(([from]) => hr >= from).pop()[1];
     if (front.style.backgroundImage === g && !front.classList.contains('photo')) return;
+    setPhotoLayer(el, null);
     el.style.backgroundImage = g;
     el.classList.remove('photo'); el.classList.add('visible'); front.classList.remove('visible'); bgFront = back;
   }

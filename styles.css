@@ -434,6 +434,14 @@ main { display: flex; flex-direction: column; min-width: 0; min-height: 0; heigh
   .ambient.has-player .amb-content { right: 6%; bottom: 150px; }
 }
 
+/* Modos de foto: rellenar (cover), entera con fondo difuminado (blur) o entera (contain) */
+.amb-blur, .amb-fg { position: absolute; inset: 0; background-repeat: no-repeat; background-position: center; }
+.amb-fg { background-size: cover; }
+.amb-blur { display: none; background-size: cover; filter: blur(28px) brightness(.55) saturate(1.2); transform: scale(1.15); }
+.amb-bg[data-fit="blur"] .amb-blur { display: block; }
+.amb-bg[data-fit="blur"] .amb-fg, .amb-bg[data-fit="contain"] .amb-fg { background-size: contain; }
+.amb-bg { overflow: hidden; }
+
 /* ---------- Pantallas pequeñas (3.5" 480x320) ---------- */
 @media (max-width: 560px), (max-height: 340px) {
   :root { --rail: 58px; --radius: 16px; }
