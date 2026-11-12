@@ -58,7 +58,20 @@ Abre `http://localhost:8765` (a 800x480 se ve como en la pantalla de la Pi).
 - **Táctil por HDMI** (táctil por USB): suele funcionar sin hacer nada más.
 - **Táctil SPI** (por ejemplo Waveshare de 3,5" sobre los pines GPIO): necesita el overlay del fabricante en `/boot/firmware/config.txt`. Sigue la guía de tu modelo y comprueba que la consola se ve en la pantalla antes de ejecutar el script. El panel se adapta a 480x320.
 - Si la imagen sale girada, edita `ROTATE` en `~/kiosk-browser.sh`.
-- **Brillo y apagado:** `screen-helper.py` (lo arranca el kiosko) controla la retroiluminación de verdad si la pantalla lo permite (la oficial DSI y algunas SPI) y apaga la salida HDMI con `wlr-randr`. Si tu pantalla no se deja, el panel oscurece la imagen por software. En **Ajustes → Panel** ves qué método está usando.
+- **Brillo y apagado:** `panel-helper.py` (lo arranca el kiosko) controla la retroiluminación de verdad si la pantalla lo permite (la oficial DSI y algunas SPI) y apaga la salida HDMI con `wlr-randr`. Si tu pantalla no se deja, el panel oscurece la imagen por software. En **Ajustes → Panel** ves qué método está usando.
+
+## Configurar desde el móvil o el PC (sin tocar la Pi)
+
+Con el panel instalado, abre **`http://<nombre-de-la-pi>.local:8080`** (por ejemplo `http://raspberrypi.local:8080`) desde cualquier dispositivo de tu red y entra con la contraseña que pusiste al instalar.
+
+Desde ahí cambias todo y el panel se actualiza solo en unos segundos:
+- **Home Assistant:** dirección y token, con botón para probar la conexión. El token guardado nunca se muestra.
+- **Pantalla:** brillo, modo ambiente, apagado y modo noche.
+- **Avisos y fotos:** sonido de los avisos, álbumes de Immich y cada cuánto cambian las fotos.
+- **Inicio y entidades:** favoritos (con buscador de entidades), entidad del tiempo, entidades e integraciones ocultas y enchufes de las impresoras.
+- **Mando a distancia:** recargar el panel, ir a Inicio o al modo ambiente, apagar o encender la pantalla y enviar un aviso de prueba.
+
+La primera vez se importa sola la configuración de `config.js`. Para cambiar la contraseña, en la Pi ejecuta `python3 ~/ha-panel/panel-helper.py --set-password`.
 
 ## Configuración (`config.js`)
 
@@ -75,7 +88,7 @@ Abre `http://localhost:8765` (a 800x480 se ve como en la pantalla de la Pi).
 
 En `ambientPhotos` pega el enlace compartido de un álbum (Immich → álbum → Compartir → Crear enlace). Funciona con Immich 1.x, 2.x y 3.x.
 
-- **CORS:** si tu Immich está detrás de un proxy (Nginx Proxy Manager, etc.) que no envía cabeceras CORS, el navegador no puede leer la lista del álbum. En la Pi no pasa nada, porque la lee `screen-helper.py`. También puedes añadir en el proxy `add_header Access-Control-Allow-Origin * always;`.
+- **CORS:** si tu Immich está detrás de un proxy (Nginx Proxy Manager, etc.) que no envía cabeceras CORS, el navegador no puede leer la lista del álbum. En la Pi no pasa nada, porque la lee `panel-helper.py`. También puedes añadir en el proxy `add_header Access-Control-Allow-Origin * always;`.
 - **Fotos que no salen:** el panel usa la versión `preview` de cada foto. Si Immich no la ha generado, la salta. Si faltan muchas, en Immich ve a **Administración → Trabajos → Generar miniaturas → Faltantes**.
 
 ## Seguridad
@@ -92,5 +105,7 @@ app.js              conexión con HA, vistas y controles
 demo.js             datos falsos para el modo demo
 config.example.js   plantilla de config.js
 setup-kiosk.sh      instalación del kiosko en la Pi
-screen-helper.py    ayudante en la Pi para el brillo y el apagado reales de la pantalla
+panel-helper.py     ayudante en la Pi: brillo y apagado reales, álbumes de Immich y web de configuración
+config.html         la web de configuración (la sirve panel-helper.py en el puerto 8080)
+boot.js             carga en el panel la configuración guardada desde la web
 ```

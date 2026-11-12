@@ -38,9 +38,12 @@ ROTATE=""   # pon 90, 180 o 270 si tu pantalla está girada
 if [ -n "\$ROTATE" ]; then
   wlr-randr --output "\$(wlr-randr | head -n1 | cut -d' ' -f1)" --transform "\$ROTATE" || true
 fi
-# Ayudante de pantalla (brillo y apagado reales). Va dentro de cage para poder usar wlr-randr.
-pkill -f screen-helper.py 2>/dev/null
-python3 "$PANEL_DIR/screen-helper.py" &
+# Ayudante: brillo y apagado reales, álbumes de Immich y web de configuración (puerto 8080).
+# Va dentro de cage para poder usar wlr-randr.
+pkill -f panel-helper.py 2>/dev/null
+python3 "$PANEL_DIR/panel-helper.py" &
+# Espera (máx. 10 s) a que el ayudante responda, para que el panel lea su configuración al arrancar
+for i in \$(seq 20); do curl -s -o /dev/null http://127.0.0.1:8766/status && break; sleep 0.5; done
 BROWSER="\$(command -v chromium || command -v chromium-browser)"
 exec "\$BROWSER" --kiosk --incognito --noerrdialogs --disable-infobars --no-first-run \
   --ozone-platform=wayland --enable-low-end-device-mode \
@@ -59,6 +62,11 @@ while true; do
 done
 EOF
 chmod +x "$HOME/kiosk-browser.sh" "$HOME/kiosk.sh"
+
+if [ ! -f "$HOME/.config/panel-hogar/admin.json" ]; then
+  echo "==> Contraseña para la web de configuración (http://$(hostname).local:8080)"
+  python3 "$PANEL_DIR/panel-helper.py" --set-password
+fi
 
 echo "==> Arranque automático en tty1..."
 sudo raspi-config nonint do_boot_behaviour B2   # consola con auto-login
