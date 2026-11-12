@@ -1424,6 +1424,7 @@ const DEFAULTS = () => ({
   photos: { enabled: true, seconds: CFG.photoSeconds || 30 },
   alarms: [],
   ambientChips: null,   // null = orden y selección por defecto
+  defaultSpeaker: '',   // media_player que se controla desde el modo ambiente
 });
 let SET = DEFAULTS();
 const mergeSettings = (saved = {}) => {
@@ -1648,6 +1649,8 @@ function renderSettings() {
     alarmsCard(),
 
     ambChipsCard(),
+
+    speakerCard(),
 
     netCard(),
 
@@ -1995,6 +1998,60 @@ function renderAmbientChips() {
     if (Array.isArray(out)) chips.push(...out); else if (out) chips.push(out);
   }
   $('#amb-chips').replaceChildren(...chips);
+  renderAmbientPlayer();
+}
+
+/* ---------- Mini reproductor del altavoz por defecto (modo ambiente, abajo a la derecha) ---------- */
+function renderAmbientPlayer() {
+  const box = $('#amb-player'), id = SET.defaultSpeaker, st = id && S.states[id];
+  const show = !!st && st.state !== 'unavailable';
+  box.classList.toggle('hidden', !show);
+  $('#ambient').classList.toggle('has-player', show);
+  if (!show) return;
+  const a = st.attributes, playing = st.state === 'playing';
+  const pic = a.entity_picture ? absUrl(a.entity_picture) : '';
+  const title = a.media_title || nameOf(id);
+  const sub = a.media_title ? (a.media_artist || a.app_name || nameOf(id)) : (T[st.state] || cap(st.state));
+  const vol = a.volume_level != null ? Math.round(a.volume_level * 100) + ' %' : '';
+  const btn = (act, ic, cls = '') => h('button', { class: 'amb-pbtn ' + cls, 'data-act': act }, icon(ic));
+  box.replaceChildren(
+    h('div', { class: 'amb-pinfo' },
+      h('div', { class: 'amb-part' + (pic ? '' : ' empty'), style: pic ? `background-image:url("${pic}")` : '' }),
+      h('div', { class: 'amb-ptext' }, h('div', { class: 'amb-ptitle' }, title), h('div', { class: 'amb-psub' }, sub))),
+    h('div', { class: 'amb-pctrls' },
+      btn('vol-', 'mdi-volume-minus', 'small'),
+      btn('prev', 'mdi-skip-previous'), btn('play', playing ? 'mdi-pause' : 'mdi-play', 'main'), btn('next', 'mdi-skip-next'),
+      btn('vol+', 'mdi-volume-plus', 'small')),
+    vol ? h('div', { class: 'amb-pvol' }, vol) : null);
+}
+function ambientPlayerAction(act) {
+  const id = SET.defaultSpeaker, st = id && S.states[id];
+  if (!st) return;
+  const v = st.attributes.volume_level ?? 0.3;
+  if (act === 'play') call('media_player', st.state === 'off' ? 'turn_on' : 'media_play_pause', {}, id);
+  else if (act === 'prev') call('media_player', 'media_previous_track', {}, id);
+  else if (act === 'next') call('media_player', 'media_next_track', {}, id);
+  else if (act === 'vol-' || act === 'vol+')
+    call('media_player', 'volume_set', { volume_level: Math.round(Math.max(0, Math.min(1, v + (act === 'vol+' ? 0.05 : -0.05))) * 100) / 100 }, id);
+}
+
+/** Ajustes: elegir el altavoz por defecto. */
+function speakerCard() {
+  const players = dedupeMedia(ids((id) => domain(id) === 'media_player'))
+    .sort((x, y) => (S.states[x].state === 'unavailable') - (S.states[y].state === 'unavailable') || nameOf(x).localeCompare(nameOf(y), 'es'));
+  const list = h('div', { class: 'speaker-list' });
+  const paint = () => list.replaceChildren(...[['', 'Ninguno', 'mdi-volume-off', '']].concat(players.map((id) => [id, nameOf(id), iconOf(S.states[id]),
+    S.states[id].state === 'unavailable' ? 'No disponible' : (S.areaById[areaOf(id)] || {}).name || '']))
+    .map(([id, name, ic, sub]) => {
+      const b = h('button', { class: 'speaker-opt' + (SET.defaultSpeaker === id ? ' on' : '') }, icon(ic),
+        h('div', { class: 'speaker-text' }, h('div', null, name), sub ? h('div', { class: 'muted small' }, sub) : null),
+        SET.defaultSpeaker === id ? icon('mdi-check-circle', 'speaker-check') : null);
+      b.addEventListener('click', () => { SET.defaultSpeaker = id; saveSettings(); paint(); });
+      return b;
+    }));
+  paint();
+  return h('div', { class: 'card set-card' }, h('div', { class: 'set-title' }, icon('mdi-speaker'), 'Altavoz por defecto'),
+    h('div', { class: 'muted small' }, 'Sus controles salen abajo a la derecha en el modo ambiente.'), list);
 }
 /** Ajustes: elegir y ordenar las burbujas. */
 function ambChipsCard() {
@@ -2257,6 +2314,9 @@ function start() {
   $('#ambient').addEventListener('pointerdown', (e) => {
     e.preventDefault();
     if (e.target.closest('#amb-next')) { e.stopPropagation(); nextBackground(); resetIdle(); return; }
+    const act = e.target.closest('[data-act]');
+    if (act) { e.stopPropagation(); ambientPlayerAction(act.dataset.act); resetIdle(); return; }
+    if (e.target.closest('#amb-player')) { resetIdle(); return; }
     const chip = e.target.closest('.amb-chip[data-go]');
     hideAmbient(chip ? chip.dataset.go : 'home');
   });

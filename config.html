@@ -206,6 +206,10 @@
         <span class="hint">Enlace compartido de un álbum de Immich (Álbum → Compartir → Crear enlace), un álbum privado (…/albums/&lt;id&gt; + clave API) o URLs de fotos.</span>
       </div>
       <div class="field">
+        <label for="defaultSpeaker">Altavoz por defecto <span class="hint">(sus controles salen en el modo ambiente)</span></label>
+        <select id="defaultSpeaker"><option value="">Ninguno</option></select>
+      </div>
+      <div class="field">
         <label>Burbujas debajo del reloj <span class="hint">(cuáles salen y en qué orden)</span></label>
         <div id="amb-list" class="amb-web"></div>
       </div>
@@ -341,6 +345,9 @@ function fill(cfg) {
   const saved = Array.isArray(a.ambientChips) ? a.ambientChips.filter((c) => AMB.some((x) => x[0] === c.key)) : [];
   for (const [key] of AMB) if (!saved.some((c) => c.key === key)) saved.push({ key, on: key !== 'openings' });
   ambChips = saved.map((c) => ({ ...c })); renderAmb();
+  $('#defaultSpeaker').dataset.value = a.defaultSpeaker || '';
+  if (![...$('#defaultSpeaker').options].some((o) => o.value === (a.defaultSpeaker || ''))) $('#defaultSpeaker').append(new Option(a.defaultSpeaker, a.defaultSpeaker));
+  $('#defaultSpeaker').value = a.defaultSpeaker || '';
   window.__ajustes = cfg.ajustes || {};
 }
 function collect() {
@@ -365,6 +372,7 @@ function collect() {
     sound: { enabled: $('#sound-enabled').checked, volume: +$('#sound-volume').value },
     photos: { enabled: $('#photos-enabled').checked, seconds: +$('#photos-seconds').value },
     ambientChips: ambChips,
+    defaultSpeaker: $('#defaultSpeaker').value,
   };
   return { panel, ajustes };
 }
@@ -380,6 +388,9 @@ async function loadEntities() {
     sel.replaceChildren(new Option('Automática (la primera que haya)', ''),
       ...ents.filter((e) => e.id.startsWith('weather.')).map((e) => new Option(`${e.name} (${e.id})`, e.id)));
     sel.value = cur;
+    const sp = $('#defaultSpeaker'), curSp = sp.dataset.value || '';
+    sp.replaceChildren(new Option('Ninguno', ''), ...ents.filter((e) => e.id.startsWith('media_player.')).map((e) => new Option(`${e.name} (${e.id})`, e.id)));
+    sp.value = curSp;
     Object.keys(lists).forEach(renderChips);
     $('#entidades-msg').textContent = `${ents.length} entidades de Home Assistant para elegir.`;
   } catch (e) { $('#entidades-msg').textContent = 'No se pudo leer la lista de entidades: ' + e.message; }
