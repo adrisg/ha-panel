@@ -1423,6 +1423,7 @@ const DEFAULTS = () => ({
   sound: { enabled: true, volume: 70 },
   photos: { enabled: true, seconds: CFG.photoSeconds || 30 },
   alarms: [],
+  ambientChips: null,   // null = orden y selección por defecto
 });
 let SET = DEFAULTS();
 const mergeSettings = (saved = {}) => {
@@ -1645,6 +1646,8 @@ function renderSettings() {
           icon('mdi-bell-badge'), 'Probar aviso'))),
 
     alarmsCard(),
+
+    ambChipsCard(),
 
     netCard(),
 
@@ -1929,36 +1932,94 @@ function hideAmbient(view = 'home') {
   if (S.view !== view) go(view); else render();
   resetIdle();
 }
+/* Burbujas del modo ambiente: cuáles salen y en qué orden se elige en Ajustes (SET.ambientChips) */
+const AMB_CHIPS = [
+  { key: 'weather', label: 'Tiempo', icon: 'mdi-weather-partly-cloudy' },
+  { key: 'alarm', label: 'Próxima alarma', icon: 'mdi-alarm' },
+  { key: 'printers', label: 'Impresoras imprimiendo', icon: 'mdi-printer-3d-nozzle' },
+  { key: 'scooter', label: 'Patinete', icon: 'mdi-scooter' },
+  { key: 'media', label: 'Música sonando', icon: 'mdi-music' },
+  { key: 'lights', label: 'Luces encendidas', icon: 'mdi-lightbulb-on' },
+  { key: 'openings', label: 'Puertas y ventanas abiertas', icon: 'mdi-door-open', off: true },
+];
+const AMB_BUILD = {
+  weather() {
+    const wid = weatherId();
+    if (!wid) return null;
+    const w = S.states[wid];
+    return h('div', { class: 'amb-chip', 'data-go': 'home' }, icon(wIcon(w.state)), `${fmtNum(w.attributes.temperature)}° ${wText(w.state)}`);
+  },
+  alarm: () => nextAlarmChip('amb-chip'),
+  printers: () => printers().filter(pActive).map((p) => {
+    const prog = num(p.e.progress), r = pRemaining(p);
+    return h('div', { class: 'amb-chip amb-print', 'data-go': 'printers' }, icon('mdi-printer-3d-nozzle'),
+      h('span', null, `${p.name} `, h('b', null, isNaN(prog) ? '—' : Math.round(prog) + ' %'), r > 0 ? ` · ${fmtDuration(r)}` : ''),
+      h('span', { class: 'amb-bar' }, h('span', { style: `width:${isNaN(prog) ? 0 : prog}%` })));
+  }),
+  scooter() {
+    const k = scooterIds();
+    if (!k.battery_level) return null;
+    const b = num(k.battery_level), m = chargeMode(k);
+    // Siempre el patinete; si carga, un rayito a la derecha (amarillo cargando, verde cargado)
+    return h('div', { class: 'amb-chip' + (m === 'charged' ? ' charged' : ''), 'data-go': 'scooter' },
+      icon('mdi-scooter'), `${isNaN(b) ? '—' : Math.round(b)} %`, m ? icon('mdi-lightning-bolt', 'amb-bolt') : null);
+  },
+  media() {
+    const playing = ids((id) => domain(id) === 'media_player' && S.states[id].state === 'playing');
+    return playing.length ? h('div', { class: 'amb-chip', 'data-go': 'media' }, icon('mdi-music'), S.states[playing[0]].attributes.media_title || nameOf(playing[0])) : null;
+  },
+  lights() {
+    const n = ids((id) => domain(id) === 'light' && S.states[id].state === 'on').length;
+    return n ? h('div', { class: 'amb-chip', 'data-go': 'rooms' }, icon('mdi-lightbulb-on'), `${n} encendida${n > 1 ? 's' : ''}`) : null;
+  },
+  openings() {
+    const open = ids((id) => domain(id) === 'binary_sensor' && S.states[id].state === 'on' &&
+      ['door', 'window', 'garage_door', 'opening'].includes(S.states[id].attributes.device_class));
+    if (!open.length) return null;
+    return h('div', { class: 'amb-chip', 'data-go': 'sensors' }, icon('mdi-door-open'),
+      open.length === 1 ? `${nameOf(open[0])} abierta` : `${open.length} abiertas`);
+  },
+};
+/** Orden y visibilidad de las burbujas, completando con las nuevas que no estuvieran guardadas. */
+function ambChipList() {
+  const saved = Array.isArray(SET.ambientChips) ? SET.ambientChips.filter((c) => AMB_BUILD[c.key]) : [];
+  for (const c of AMB_CHIPS) if (!saved.some((x) => x.key === c.key)) saved.push({ key: c.key, on: !c.off });
+  return saved;
+}
 function renderAmbientChips() {
   if (!S.ambient) return;
   const chips = [];
-  const wid = weatherId();
-  if (wid) {
-    const w = S.states[wid];
-    chips.push(h('div', { class: 'amb-chip', 'data-go': 'home' }, icon(wIcon(w.state)), `${fmtNum(w.attributes.temperature)}° ${wText(w.state)}`));
+  for (const c of ambChipList()) {
+    if (!c.on) continue;
+    const out = AMB_BUILD[c.key]();
+    if (Array.isArray(out)) chips.push(...out); else if (out) chips.push(out);
   }
-  const ac = nextAlarmChip('amb-chip');
-  if (ac) chips.push(ac);
-  for (const p of printers().filter(pActive)) {
-    const prog = num(p.e.progress), r = pRemaining(p);
-    chips.push(h('div', { class: 'amb-chip amb-print', 'data-go': 'printers' }, icon('mdi-printer-3d-nozzle'),
-      h('span', null, `${p.name} `, h('b', null, isNaN(prog) ? '—' : Math.round(prog) + ' %'),
-        r > 0 ? ` · ${fmtDuration(r)}` : ''),
-      h('span', { class: 'amb-bar' }, h('span', { style: `width:${isNaN(prog) ? 0 : prog}%` }))));
-  }
-  const k = scooterIds();
-  if (k.battery_level) {
-    const b = num(k.battery_level);
-    const m = chargeMode(k);
-    // Siempre el patinete; si carga, un rayito a la derecha (amarillo cargando, verde cargado)
-    chips.push(h('div', { class: 'amb-chip' + (m === 'charged' ? ' charged' : ''), 'data-go': 'scooter' },
-      icon('mdi-scooter'), `${isNaN(b) ? '—' : Math.round(b)} %`, m ? icon('mdi-lightning-bolt', 'amb-bolt') : null));
-  }
-  const playing = ids((id) => domain(id) === 'media_player' && S.states[id].state === 'playing');
-  if (playing.length) chips.push(h('div', { class: 'amb-chip', 'data-go': 'media' }, icon('mdi-music'), S.states[playing[0]].attributes.media_title || nameOf(playing[0])));
-  const lightsOn = ids((id) => domain(id) === 'light' && S.states[id].state === 'on').length;
-  if (lightsOn) chips.push(h('div', { class: 'amb-chip', 'data-go': 'rooms' }, icon('mdi-lightbulb-on'), `${lightsOn} encendida${lightsOn > 1 ? 's' : ''}`));
   $('#amb-chips').replaceChildren(...chips);
+}
+/** Ajustes: elegir y ordenar las burbujas. */
+function ambChipsCard() {
+  const list = h('div', { class: 'amb-list' });
+  const paint = () => {
+    const items = ambChipList();
+    list.replaceChildren(...items.map((c, i) => {
+      const meta = AMB_CHIPS.find((x) => x.key === c.key);
+      const move = (d) => {
+        const arr = ambChipList(); const j = i + d;
+        if (j < 0 || j >= arr.length) return;
+        [arr[i], arr[j]] = [arr[j], arr[i]];
+        SET.ambientChips = arr; saveSettings(); paint();
+      };
+      return h('div', { class: 'amb-item' + (c.on ? '' : ' off') }, icon(meta.icon), h('span', { class: 'amb-item-label' }, meta.label),
+        h('button', { class: 'round-btn small', disabled: i === 0, onclick: () => move(-1), title: 'Subir' }, icon('mdi-chevron-up')),
+        h('button', { class: 'round-btn small', disabled: i === items.length - 1, onclick: () => move(1), title: 'Bajar' }, icon('mdi-chevron-down')),
+        switchBtn(c.on, (v) => { const arr = ambChipList(); arr[i].on = v; SET.ambientChips = arr; saveSettings(); paint(); }));
+    }));
+  };
+  paint();
+  return h('div', { class: 'card set-card' }, h('div', { class: 'set-title' }, icon('mdi-format-list-bulleted'), 'Burbujas del modo ambiente'),
+    h('div', { class: 'muted small' }, 'Elige cuáles salen debajo del reloj y en qué orden. Solo aparecen cuando tienen algo que contar (p. ej. música si está sonando).'),
+    list,
+    h('div', { class: 'btn-row' }, h('button', { class: 'big-action', onclick: () => showAmbient() }, icon('mdi-image-filter-hdr'), 'Ver el modo ambiente')));
 }
 
 // Fondo: fotos (sueltas o de un álbum de Immich) o degradado según la hora del día
