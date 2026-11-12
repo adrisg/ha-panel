@@ -13,7 +13,8 @@ const CFG = Object.assign({
 }, window.PANEL_CONFIG || {});
 CFG.haUrl = (CFG.haUrl || '').replace(/\/+$/, '');
 const PARAMS = new URLSearchParams(location.search);
-const DEMO = PARAMS.has('demo') || !CFG.token || CFG.token === 'PEGA_AQUI_TU_TOKEN';
+// Sin dirección o sin token no hay nada que mostrar: se enseña cómo conectarlo
+const NEEDS_SETUP = !CFG.haUrl || !CFG.token || CFG.token === 'PEGA_AQUI_TU_TOKEN';
 
 /* ====================== Utilidades ====================== */
 const $ = (s) => document.querySelector(s);
@@ -124,7 +125,7 @@ class HAConn {
   }
 }
 
-const conn = DEMO ? window.createDemoConn() : new HAConn(CFG.haUrl, CFG.token);
+const conn = new HAConn(CFG.haUrl, CFG.token);
 
 const api = {
   callService(dom, service, data, entityId, returnResponse) {
@@ -1406,7 +1407,7 @@ function stopSound() { clearInterval(N.soundTimer); clearTimeout(N.soundStop); N
 
 /* ====================== Ajustes (se guardan en Home Assistant) ======================
  * Se guardan con frontend/set_user_data en el usuario del token, así sobreviven a reinicios
- * de la Pi aunque Chromium vaya en modo incógnito. En modo demo van a localStorage. */
+ * de la Pi aunque Chromium vaya en modo incógnito. */
 const SETTINGS_KEY = 'panel_hogar_ajustes';
 const DEFAULTS = () => ({
   idleSeconds: CFG.idleSeconds,            // segundos sin tocar hasta el modo ambiente (0 = nunca)
@@ -1432,8 +1433,7 @@ async function loadSettings() {
   if (helper && helper.ajustes && Object.keys(helper.ajustes).length) saved = helper.ajustes;   // los de la web
   else {
     try {
-      if (DEMO) saved = JSON.parse(localStorage.getItem(SETTINGS_KEY) || 'null');
-      else saved = (await conn.send({ type: 'frontend/get_user_data', key: SETTINGS_KEY }) || {}).value;
+      saved = (await conn.send({ type: 'frontend/get_user_data', key: SETTINGS_KEY }) || {}).value;
     } catch (e) { /* sin ajustes guardados: valores por defecto */ }
   }
   SET = mergeSettings(saved || {});
@@ -1448,8 +1448,7 @@ function saveSettings() {
       if (window.PANEL_HELPER) {        // en la Pi: se guardan en el ayudante (así la web los ve)
         const r = await fetch(HELPER + '/ajustes', { method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(SET) });
         const j = await r.json(); REMOTE.version = j.version;
-      } else if (DEMO) { try { localStorage.setItem(SETTINGS_KEY, JSON.stringify(SET)); } catch (e) { /* sin almacenamiento */ } }
-      else await conn.send({ type: 'frontend/set_user_data', key: SETTINGS_KEY, value: SET });
+      } else await conn.send({ type: 'frontend/set_user_data', key: SETTINGS_KEY, value: SET });
       toast('Ajustes guardados');
     } catch (e) { toast('No se pudieron guardar: ' + e.message, true); }
   }, 600);
@@ -1641,7 +1640,7 @@ function renderSettings() {
     netCard(),
 
     h('div', { class: 'card set-card' }, h('div', { class: 'set-title' }, icon('mdi-information-outline'), 'Panel'),
-      setRow('Home Assistant', DEMO ? 'Modo demo (sin conexión real)' : CFG.haUrl,
+      setRow('Home Assistant', CFG.haUrl,
         h('span', { class: 'pill' + (S.connected ? ' ok' : '') }, S.connected ? 'Conectado' : 'Desconectado')),
       setRow('Control de pantalla', helperText, h('span', { class: 'pill' + (hw ? ' ok' : '') }, hw ? (hw.simulated ? 'Simulado' : 'Ayudante') : 'Software')),
       h('div', { class: 'btn-row' },
@@ -1668,7 +1667,27 @@ function renderRail() {
     h('div', { class: 'rail-spacer' }),
     h('button', { class: 'rail-btn', onclick: showAmbient }, icon('mdi-image-filter-hdr'), 'Ambiente'));
 }
+/** Sin conexión configurada: QR de la web de configuración (si hay ayudante) o instrucciones. */
+async function showSetup() {
+  $('#rail').replaceChildren();
+  $('#view-title').textContent = 'Configurar el panel';
+  const box = h('div', { class: 'setup' }, icon('mdi-home-assistant', 'setup-icon'), h('h2', null, 'Conecta el panel con Home Assistant'));
+  $('#view').replaceChildren(box);
+  const net = await fetchNet();
+  const svg = net && qrSvg(net.urls[0]);
+  if (net) {
+    box.append(h('p', { class: 'muted' }, 'Escanea el código con el móvil (en la misma WiFi), entra con la contraseña del panel y pon la dirección de Home Assistant y un token de larga duración.'),
+      svg ? h('div', { class: 'qr', html: svg }) : null, h('div', { class: 'qr-url' }, net.urls[0]));
+  } else {
+    box.append(h('p', { class: 'muted' }, 'Abre config.js y rellena haUrl (la dirección de tu Home Assistant) y token.'),
+      h('p', { class: 'muted small' }, 'El token se crea en Home Assistant → tu perfil → Seguridad → Tokens de acceso de larga duración. ' +
+        'Con el ayudante (panel-helper.py) en marcha también puedes configurarlo desde el móvil.'));
+  }
+  box.append(h('p', { class: 'muted small' }, net ? 'En cuanto lo guardes, el panel se pondrá en marcha solo.' : 'Después recarga el panel (o reinicia la Pi).'));
+}
+
 function render() {
+  if (NEEDS_SETUP) { showSetup(); return; }
   B.view.clear();
   S.viewTimers.forEach(clearInterval); S.viewTimers = [];
   let v = VIEWS[S.view];
@@ -1892,7 +1911,7 @@ const REMOTE = { version: window.PANEL_HELPER ? window.PANEL_HELPER.version : nu
 const SEED_KEYS = ['haUrl', 'token', 'ambientPhotos', 'immichApiKey', 'favorites', 'hiddenEntities', 'weatherEntity',
   'excludePlatforms', 'printerPlugs'];
 async function seedHelper() {
-  if (!window.PANEL_HELPER || REMOTE.seeded || DEMO) return;
+  if (!window.PANEL_HELPER || REMOTE.seeded || NEEDS_SETUP) return;
   REMOTE.seeded = true;
   const h = window.PANEL_HELPER;
   if (h.panel && h.panel.haUrl && h.ajustes && Object.keys(h.ajustes).length) return;   // ya tiene todo
@@ -1955,14 +1974,13 @@ async function loadAll() {
 function start() {
   // El puntero solo se oculta en el kiosko de la Pi (abierto como file://) o con ?kiosk en la URL
   if (CFG.hideCursor && (location.protocol === 'file:' || PARAMS.has('kiosk'))) document.body.classList.add('no-cursor');
-  if (DEMO) $('#demo-badge').classList.remove('hidden');
   conn.onstatus = (ok, msg) => {
     S.connected = ok;
     $('#conn').classList.toggle('ok', ok);
     if (msg) toast(msg, true);
   };
   conn.onready = () => loadAll().catch((e) => toast('Error cargando datos: ' + e.message, true));
-  conn.connect();
+  if (NEEDS_SETUP) showSetup(); else conn.connect();
 
   $('#view').replaceChildren(empty('mdi-home-assistant', 'Conectando con Home Assistant…'));
   $('#sheet').addEventListener('click', (e) => { if (e.target.id === 'sheet') closeSheet(); });

@@ -1,5 +1,5 @@
 // Copia este archivo como config.js y rellena tus datos.
-// Sin config.js (o sin token) el panel arranca en MODO DEMO con datos falsos.
+// Sin dirección o sin token, el panel muestra cómo conectarlo (con el QR de la web de configuración).
 window.PANEL_CONFIG = {
   // Dirección de tu Home Assistant (sin barra al final)
   haUrl: "http://homeassistant.local:8123",

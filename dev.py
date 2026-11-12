@@ -82,14 +82,13 @@ def main():
     time.sleep(0.8)
 
     if not (HERE / 'config.js').exists():
-        print('Aviso: no hay config.js → el panel arranca en MODO DEMO (datos falsos).')
-        print('       Pon tu Home Assistant desde la web de configuración, o copia config.example.js a config.js.\n')
+        print('Aviso: no hay config.js → el panel te pedirá conectarlo con Home Assistant.')
+        print('       Pon la dirección y el token desde la web de configuración, o copia config.example.js a config.js.\n')
     ip = lan_ip()
     print(f'''
   Panel Hogar en marcha (modo pruebas)
 
   Panel ............... http://127.0.0.1:{PANEL_PORT}
-  Panel en demo ....... http://127.0.0.1:{PANEL_PORT}/?demo
   Configuración ....... http://127.0.0.1:8080     contraseña: {DEV_PASSWORD}
   Desde el móvil ...... http://{ip}:8080   (misma WiFi; quizá tengas que permitirlo en el cortafuegos)
 
