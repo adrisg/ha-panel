@@ -1262,9 +1262,17 @@ function openHistory() {
   $('#sheet-card').replaceChildren(
     h('div', { class: 'sheet-head' }, h('div', { class: 'tile-icon' }, icon('mdi-bell')), h('div', { class: 'sheet-title' }, 'Avisos'),
       h('button', { class: 'icon-btn', onclick: closeSheet }, icon('mdi-close'))),
-    h('div', { class: 'sheet-body' }, rows.length ? rows : h('div', { class: 'muted' }, 'No hay avisos')));
+    h('div', { class: 'sheet-body' }, rows.length ? rows : h('div', { class: 'muted' }, 'No hay avisos'),
+      rows.length ? h('button', { class: 'big-action', onclick: clearHistory }, icon('mdi-delete-sweep'), 'Borrar todos') : null));
   $('#sheet').classList.remove('hidden');
   S.sheetId = 'avisos';
+}
+/** Vacía el historial de la campana (los avisos que sigan abiertos en pantalla no se tocan). */
+function clearHistory() {
+  N.history = []; N.unread = 0;
+  renderBell();
+  closeSheet();
+  toast('Avisos borrados');
 }
 
 /* Sonidos generados con Web Audio (no hacen falta archivos) */
