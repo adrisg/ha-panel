@@ -402,6 +402,38 @@ main { display: flex; flex-direction: column; min-width: 0; min-height: 0; heigh
 .round-btn.small { width: 36px; height: 36px; font-size: 20px; }
 .round-btn:disabled { opacity: .3; }
 
+/* ---------- Altavoz por defecto ---------- */
+.speaker-list { display: flex; flex-direction: column; gap: 6px; }
+.speaker-opt { display: flex; align-items: center; gap: 12px; padding: 10px 14px; border-radius: 14px; background: var(--surface-2);
+  border: 2px solid transparent; text-align: left; }
+.speaker-opt > .mdi { font-size: 22px; color: var(--muted); }
+.speaker-opt.on { border-color: var(--accent); background: #1d3354; }
+.speaker-opt.on > .mdi { color: var(--accent); }
+.speaker-text { flex: 1; min-width: 0; }
+.speaker-check { margin-left: auto; }
+/* Mini reproductor del modo ambiente (abajo a la derecha) */
+.amb-player { position: absolute; right: 4%; bottom: 7%; width: 290px; padding: 12px 14px; border-radius: 20px;
+  background: rgba(0,0,0,.42); display: flex; flex-direction: column; gap: 10px; }
+.amb-pinfo { display: flex; align-items: center; gap: 12px; min-width: 0; }
+.amb-part { flex: none; width: 52px; height: 52px; border-radius: 10px; background: rgba(255,255,255,.12) center/cover no-repeat; }
+.amb-part.empty::after { content: "\F075A"; font-family: "Material Design Icons"; font-size: 26px; display: grid; place-items: center; height: 100%; opacity: .6; }
+.amb-ptext { min-width: 0; }
+.amb-ptitle { font-weight: 600; font-size: 16px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.amb-psub { font-size: 13px; opacity: .75; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.amb-pctrls { display: flex; align-items: center; justify-content: space-between; }
+.amb-pbtn { width: 46px; height: 46px; border-radius: 50%; display: grid; place-items: center; font-size: 26px; color: #fff; }
+.amb-pbtn.small { width: 38px; height: 38px; font-size: 20px; opacity: .8; }
+.amb-pbtn.main { width: 54px; height: 54px; background: #fff; color: #111; font-size: 30px; }
+.amb-pbtn:active { background: rgba(255,255,255,.2); }
+.amb-pbtn.main:active { background: #ddd; }
+.amb-pvol { position: absolute; top: 12px; right: 14px; font-size: 12px; opacity: .6; }
+.ambient.has-player .amb-content { right: calc(4% + 310px); }
+.ambient.has-player .amb-next { top: 38%; }
+@media (max-width: 640px) {
+  .amb-player { left: 4%; right: 4%; width: auto; bottom: 3%; }
+  .ambient.has-player .amb-content { right: 6%; bottom: 150px; }
+}
+
 /* ---------- Pantallas pequeñas (3.5" 480x320) ---------- */
 @media (max-width: 560px), (max-height: 340px) {
   :root { --rail: 58px; --radius: 16px; }
