@@ -186,6 +186,11 @@ function setState(id, st) {
   if (st) S.states[id] = st; else delete S.states[id];
   fire(id);
   onPrinterStatus(id, old, st);
+  // Si un reproductor empieza o deja de tener algo, se reordena la vista Multimedia
+  if (S.view === 'media' && domain(id) === 'media_player' && mediaRank(old) !== mediaRank(st)) {
+    clearTimeout(structTimer);
+    structTimer = setTimeout(() => !S.sheetId && render(), 1500);
+  }
   clearTimeout(ambTimer);
   ambTimer = setTimeout(renderAmbientChips, 500);
   if (isNew || !st) { clearTimeout(structTimer); structTimer = setTimeout(() => !S.sheetId && render(), 1500); }
@@ -235,6 +240,18 @@ function nameOf(id, strip = true) {
   }
   return cap(n);
 }
+/** Orden de los reproductores: 0 sonando · 1 en pausa con contenido · 2 encendido con algo · 3 encendido vacío · 4 apagado · 5 no disponible */
+function mediaRank(st) {
+  if (!st) return 9;
+  const a = st.attributes, s = st.state, has = !!(a.media_title || a.entity_picture);
+  if (s === 'playing') return 0;
+  if ((s === 'paused' || s === 'buffering') && has) return 1;
+  if (has && !['off', 'standby', 'unavailable', 'unknown'].includes(s)) return 2;
+  if (['idle', 'on', 'paused', 'buffering'].includes(s)) return 3;
+  if (s === 'off' || s === 'standby') return 4;
+  return 5;
+}
+
 /** Quita reproductores repetidos (la misma TV por Cast, Android TV, Music Assistant…). */
 function dedupeMedia(list) {
   const score = (id) => (S.states[id].state !== 'unavailable' ? 2 : 0) + (areaOf(id) ? 1 : 0);
@@ -759,8 +776,9 @@ const VIEWS = {
     title: 'Multimedia', icon: 'mdi-play-circle-outline',
     visible: () => ids((id) => ['media_player', 'camera'].includes(domain(id))).length > 0,
     render() {
+      // Primero los que tienen algo puesto (sonando, en pausa con contenido…), luego los parados
       const players = dedupeMedia(ids((id) => domain(id) === 'media_player'))
-        .sort((a, b) => (S.states[a].state === 'unavailable') - (S.states[b].state === 'unavailable'));
+        .sort((a, b) => (mediaRank(S.states[a]) - mediaRank(S.states[b])) || nameOf(a).localeCompare(nameOf(b), 'es'));
       const cams = ids((id) => domain(id) === 'camera');
       const out = [];
       if (players.length) out.push(h('div', { class: 'section-title' }, 'Reproductores'), h('div', { class: 'cards' }, players.map((id) => mediaCard(id, 'view'))));
