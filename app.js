@@ -1590,19 +1590,44 @@ const IMMICH_SHARED = [
 const IMMICH_ALBUM = /^(https?:\/\/\S+?)\/albums\/([0-9a-f-]{36})/;
 let PHOTOS = [], photosAt = 0, photoIdx = 0;
 
+/** Lee JSON de Immich. Si el navegador lo bloquea por CORS (proxy sin cabeceras), lo pide al ayudante de la Pi. */
 async function getJSON(url, headers) {
-  const r = await fetch(url, { headers });
+  let r;
+  try { r = await fetch(url, { headers }); }
+  catch (e) {
+    const h2 = headers && headers['x-api-key'] ? { 'x-api-key': headers['x-api-key'] } : undefined;
+    try { r = await fetch(`${HELPER}/proxy?url=${encodeURIComponent(url)}`, { headers: h2 }); }
+    catch (e2) { throw new Error('tu servidor no deja leer el álbum desde el navegador (CORS) y el ayudante de la Pi no está en marcha'); }
+  }
   if (!r.ok) throw new Error(`HTTP ${r.status} en ${new URL(url).pathname}`);
   return r.json();
 }
-function immichPhotos(base, assets, auth) {
-  return (assets || []).filter((a) => a.type === 'IMAGE' && !a.isTrashed).map((a) => {
-    const ex = a.exifInfo || {};
-    const d = new Date(ex.dateTimeOriginal || a.localDateTime || a.fileCreatedAt);
-    const when = isNaN(d) ? '' : cap(d.toLocaleDateString('es-ES', { month: 'long', year: 'numeric' }));
-    // size=preview: ~1440 px, suficiente para la pantalla y ligero para la Pi
-    return { url: `${base}/api/assets/${a.id}/thumbnail?size=preview&${auth}`, caption: [when, ex.city].filter(Boolean).join(' · ') };
-  });
+const monthYear = (iso) => { const d = new Date(iso); return isNaN(d) ? '' : cap(d.toLocaleDateString('es-ES', { month: 'long', year: 'numeric' })); };
+// size=preview: ~1440 px, suficiente para la pantalla y ligero para la Pi. c = thumbhash (como la web de Immich, para la caché)
+const immichUrl = (base, id, thumbhash, auth) =>
+  `${base}/api/assets/${id}/thumbnail?size=preview&edited=true${thumbhash ? '&c=' + encodeURIComponent(thumbhash) : ''}&${auth}`;
+
+/** Fotos de un álbum. Immich 1.x/2.x las trae en /albums/<id>; Immich 3 las da por la línea de tiempo (por meses). */
+async function immichAlbumPhotos(base, albumId, auth, headers) {
+  const album = await getJSON(`${base}/api/albums/${albumId}?${auth}`, headers);
+  if (album.assets && album.assets.length) {
+    return album.assets.filter((a) => a.type === 'IMAGE' && !a.isTrashed).map((a) => {
+      const ex = a.exifInfo || {};
+      return { url: immichUrl(base, a.id, a.thumbhash, auth), caption: [monthYear(ex.dateTimeOriginal || a.localDateTime || a.fileCreatedAt), ex.city].filter(Boolean).join(' · ') };
+    });
+  }
+  const out = [];
+  const buckets = await getJSON(`${base}/api/timeline/buckets?albumId=${albumId}&${auth}`, headers);
+  for (const b of buckets) {
+    const t = await getJSON(`${base}/api/timeline/bucket?albumId=${albumId}&timeBucket=${encodeURIComponent(b.timeBucket)}&${auth}`, headers);
+    (t.id || []).forEach((id, i) => {
+      if (t.isImage && !t.isImage[i]) return;
+      if (t.isTrashed && t.isTrashed[i]) return;
+      out.push({ url: immichUrl(base, id, t.thumbhash && t.thumbhash[i], auth),
+        caption: [monthYear(t.fileCreatedAt && t.fileCreatedAt[i]), t.city && t.city[i]].filter(Boolean).join(' · ') });
+    });
+  }
+  return out;
 }
 /** Devuelve las fotos si la URL es de Immich, o null si es una foto normal. */
 async function loadImmich(src) {
@@ -1611,15 +1636,13 @@ async function loadImmich(src) {
     if (!m) continue;
     const base = m[1], auth = `${param}=${encodeURIComponent(m[2])}`;
     const link = await getJSON(`${base}/api/shared-links/me?${auth}`);
-    let assets = link.assets || [];
-    if (link.album && !assets.length) assets = (await getJSON(`${base}/api/albums/${link.album.id}?${auth}`)).assets;
-    return immichPhotos(base, assets, auth);
+    if (link.album) return immichAlbumPhotos(base, link.album.id, auth);
+    return (link.assets || []).filter((a) => a.type === 'IMAGE').map((a) => ({ url: immichUrl(base, a.id, a.thumbhash, auth), caption: monthYear(a.localDateTime || a.fileCreatedAt) }));
   }
   const m = src.match(IMMICH_ALBUM);
   if (m) {
     if (!CFG.immichApiKey) throw new Error('para un álbum privado pon immichApiKey en config.js, o usa un enlace compartido');
-    const album = await getJSON(`${m[1]}/api/albums/${m[2]}`, { 'x-api-key': CFG.immichApiKey });
-    return immichPhotos(m[1], album.assets, 'apiKey=' + encodeURIComponent(CFG.immichApiKey));
+    return immichAlbumPhotos(m[1], m[2], 'apiKey=' + encodeURIComponent(CFG.immichApiKey), { 'x-api-key': CFG.immichApiKey });
   }
   return null;
 }
@@ -1654,14 +1677,23 @@ function nextBackground() {
   const el = $('#amb-bg-' + back), front = $('#amb-bg-' + bgFront), caption = $('#amb-caption');
   if (photosOn()) {
     if (!S.ambient && front.classList.contains('photo')) return;   // solo se descargan fotos mientras se ven
-    const p = PHOTOS[photoIdx++ % PHOTOS.length];
-    const img = new Image();
-    img.onload = () => {
-      el.style.backgroundImage = `url("${p.url}")`;
-      el.classList.add('photo', 'visible'); front.classList.remove('visible'); bgFront = back;
-      caption.textContent = p.caption;
+    let tries = 0;
+    const show = () => {
+      let p = PHOTOS[photoIdx++ % PHOTOS.length];
+      // las que ya fallaron antes no se vuelven a pedir
+      for (let k = 0; p.bad && k < PHOTOS.length; k++) p = PHOTOS[photoIdx++ % PHOTOS.length];
+      if (p.bad) return;
+      const img = new Image();
+      img.onload = () => {
+        el.style.backgroundImage = `url("${p.url}")`;
+        el.classList.add('photo', 'visible'); front.classList.remove('visible'); bgFront = back;
+        caption.textContent = p.caption;
+      };
+      // Foto sin versión grande en el servidor (o caída): se salta, hasta 50 seguidas
+      img.onerror = () => { p.bad = true; if (++tries < 50) show(); };
+      img.src = p.url;
     };
-    img.src = p.url;
+    show();
   } else {
     caption.textContent = '';
     const hr = new Date().getHours();

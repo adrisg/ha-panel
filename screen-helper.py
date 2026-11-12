@@ -6,6 +6,8 @@ La página del panel no puede tocar el hardware, así que este pequeño servidor
   GET  /status                -> qué se puede controlar en esta pantalla
   POST /brightness?value=5..100
   POST /power?on=0|1          -> apagar / encender la pantalla
+  GET  /proxy?url=...         -> lee la lista de un álbum de Immich cuando su servidor no
+                                 permite CORS (solo rutas de álbumes, solo lectura)
 
 - Pantallas con retroiluminación controlable (la oficial DSI de 7", algunas SPI):
   usa /sys/class/backlight/* (brillo real y apagado real).
@@ -15,8 +17,13 @@ Lo arranca ~/kiosk-browser.sh dentro de cage. Sin dependencias: solo Python 3.
 import glob
 import json
 import subprocess
+import urllib.error
+import urllib.request
 from http.server import BaseHTTPRequestHandler, HTTPServer
 from urllib.parse import parse_qs, urlparse
+
+# Rutas de Immich que el panel puede leer a través del ayudante
+IMMICH_PATHS = ('/api/shared-links/me', '/api/albums/', '/api/timeline/buckets', '/api/timeline/bucket')
 
 BACKLIGHT = next(iter(sorted(glob.glob('/sys/class/backlight/*'))), None)
 
@@ -72,6 +79,7 @@ class Handler(BaseHTTPRequestHandler):
         self.send_header('Content-Length', str(len(data)))
         self.send_header('Access-Control-Allow-Origin', '*')
         self.send_header('Access-Control-Allow-Methods', 'GET, POST, OPTIONS')
+        self.send_header('Access-Control-Allow-Headers', 'x-api-key')
         self.send_header('Access-Control-Allow-Private-Network', 'true')
         self.end_headers()
         self.wfile.write(data)
@@ -79,7 +87,24 @@ class Handler(BaseHTTPRequestHandler):
     def do_OPTIONS(self):
         self._send(200)
 
+    def _proxy(self, target):
+        u = urlparse(target)
+        if u.scheme not in ('http', 'https') or not u.path.startswith(IMMICH_PATHS):
+            return self._send(403, {'error': 'solo se permiten rutas de álbumes de Immich'})
+        req = urllib.request.Request(target, headers={'Accept': 'application/json'})
+        if self.headers.get('x-api-key'):
+            req.add_header('x-api-key', self.headers['x-api-key'])
+        try:
+            with urllib.request.urlopen(req, timeout=20) as r:
+                return self._send(r.status, json.loads(r.read() or b'null'))
+        except urllib.error.HTTPError as e:
+            return self._send(e.code, {'error': e.reason})
+        except (urllib.error.URLError, OSError, ValueError) as e:
+            return self._send(502, {'error': str(e)})
+
     def do_GET(self):
+        if urlparse(self.path).path == '/proxy':
+            return self._proxy(parse_qs(urlparse(self.path).query).get('url', [''])[0])
         if urlparse(self.path).path == '/status':
             outs = _outputs()
             return self._send(200, {'backlight': bool(BACKLIGHT), 'power': bool(BACKLIGHT or outs), 'outputs': outs})
