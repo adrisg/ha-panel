@@ -23,15 +23,26 @@ No usa los dashboards de Home Assistant: es una página web propia (HTML + JS pu
 - Modo noche: oscurece la pantalla entre las horas que elijas.
 - Se reconecta solo si se reinicia Home Assistant o se cae la WiFi.
 
-## Probarlo en el PC (modo demo)
+## Probarlo en el ordenador
 
-Sin `config.js`, el panel arranca con datos falsos. Desde esta carpeta:
+Todo funciona en el PC, sin Raspberry Pi. Desde esta carpeta:
 
 ```bash
-python -m http.server 8765
+python dev.py
 ```
 
-Abre `http://localhost:8765` (a 800x480 se ve como en la pantalla de la Pi).
+Arranca el panel, el ayudante y la web de configuración, y abre el navegador:
+
+| | Dirección |
+|---|---|
+| Panel | http://127.0.0.1:8765 (a 800x480 se ve como en la pantalla de la Pi) |
+| Panel con datos falsos | http://127.0.0.1:8765/?demo |
+| Web de configuración | http://127.0.0.1:8080 · contraseña de pruebas: **`panel`** |
+| Web desde el móvil | `http://<IP-del-PC>:8080`, en la misma WiFi (puede que tengas que permitirlo en el cortafuegos de Windows) |
+
+- **Modo simulación:** el ayudante simula el brillo, el apagado de la pantalla, las redes WiFi, la IP fija y el nombre del equipo. Puedes probar todo **sin que cambie nada del ordenador**.
+- **Datos de prueba:** se guardan en `.dev-data/`, que no se sube a git. `python dev.py --reset` empieza de cero.
+- **Sin `config.js`:** el panel arranca con datos falsos. Pon tu Home Assistant desde la web de configuración.
 
 ## Instalarlo en la Raspberry Pi 2
 
@@ -109,6 +120,7 @@ demo.js             datos falsos para el modo demo
 config.example.js   plantilla de config.js
 setup-kiosk.sh      instalación del kiosko en la Pi
 panel-helper.py     ayudante en la Pi: brillo y apagado reales, álbumes de Immich y web de configuración
+dev.py              arranca todo en el ordenador para probarlo (pantalla y red simuladas)
 config.html         la web de configuración (la sirve panel-helper.py en el puerto 8080)
 lib/qrcode.js       generador de códigos QR (qrcode-generator, de Kazuhiko Arase, licencia MIT)
 boot.js             carga en el panel la configuración guardada desde la web

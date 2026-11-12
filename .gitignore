@@ -5,3 +5,6 @@ vendor/
 # Python
 __pycache__/
 *.pyc
+
+# Datos de prueba de dev.py (llevan una copia del token)
+.dev-data/

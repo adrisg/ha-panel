@@ -55,6 +55,7 @@
   .hidden { display: none !important; }
   .pill { font-size: 12px; padding: 3px 10px; border-radius: 999px; background: var(--surface-2); color: var(--muted); }
   .pill.ok { background: #1f3b2a; color: var(--ok); }
+  .card.sim { background: #3a2f0b; color: #ffd27a; font-size: 14px; }
   .info { display: grid; grid-template-columns: auto 1fr; gap: 4px 14px; font-size: 14px; margin-bottom: 6px; }
   .info dt { color: var(--muted); } .info dd { margin: 0; word-break: break-all; }
   .wifi-list { display: flex; flex-direction: column; gap: 6px; margin-top: 8px; }
@@ -88,6 +89,8 @@
       <h1>Panel Hogar <small>Configuración del panel de la Raspberry Pi</small></h1>
       <button class="btn" id="logout">Salir</button>
     </header>
+
+    <div class="card sim hidden" id="sim-banner">🧪 <b>Modo simulación (ordenador).</b> El brillo, el apagado de pantalla y la red se simulan: puedes probarlo todo sin que cambie nada de este equipo.</div>
 
     <div class="card">
       <h2>📱 Mando a distancia</h2>
@@ -371,6 +374,7 @@ async function loadRed() {
     $('#red-info').replaceChildren(...rows.flatMap(([k, v]) => { const dt = document.createElement('dt'), dd = document.createElement('dd'); dt.textContent = k; dd.textContent = v; return [dt, dd]; }));
     $('#red-controles').classList.toggle('hidden', !r.nmcli);
     if (!r.nmcli) redMsg('Este equipo no usa NetworkManager: solo se muestra la información.');
+    else if (r.simulated) redMsg('Red simulada: los cambios se ven aquí pero no tocan la red del ordenador.');
     $('#hostname').value = r.hostname;
     const m = (r.ipv4 && r.ipv4.method) || 'auto';
     document.querySelector(`input[name=ipm][value=${m}]`).checked = true;
@@ -448,6 +452,7 @@ window.addEventListener('beforeunload', (e) => { if (isDirty) e.preventDefault()
 (async () => {
   try {
     const st = await (await fetch('/api/estado', { credentials: 'same-origin' })).json();
+    $('#sim-banner').classList.toggle('hidden', !st.simulated);
     if (st.session) await load();
     else showLogin(st.password ? '' : 'Aún no hay contraseña. En la Pi ejecuta: python3 ~/ha-panel/panel-helper.py --set-password');
   } catch (e) { showLogin('No se pudo conectar con el panel'); }

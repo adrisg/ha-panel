@@ -14,6 +14,9 @@ Dos servidores en un mismo programa, sin dependencias (solo Python 3):
    También permite ver y cambiar la red de la Pi (WiFi, IP fija o automática, nombre)
    con NetworkManager (nmcli); setup-kiosk.sh da permiso solo a nmcli y hostnamectl.
 
+Fuera de la Pi (Windows, macOS) o con PANEL_SIMULATE=1 funciona en MODO SIMULACIÓN: la pantalla
+y la red se simulan, para probar todo en el ordenador sin tocar nada de verdad (ver dev.py).
+
 Uso:
   python3 panel-helper.py                  # arranca (lo hace ~/kiosk-browser.sh)
   python3 panel-helper.py --set-password   # pone o cambia la contraseña de la web
@@ -46,6 +49,11 @@ PASS_FILE = DATA / 'admin.json'
 LOCAL_PORT = 8766
 WEB_PORT = int(os.environ.get('PANEL_WEB_PORT', '8080'))
 BACKLIGHT = next(iter(sorted(glob.glob('/sys/class/backlight/*'))), None)
+# Simulación: fuera de Linux siempre (no hay nmcli ni retroiluminación que tocar) o si se pide
+SIMULATE = os.environ.get('PANEL_SIMULATE') == '1' or not sys.platform.startswith('linux')
+SIM = {'power': True, 'brightness': 100, 'ssid': 'MiCasa_5G', 'hostname': None,
+       'ipv4': {'method': 'auto', 'addresses': '', 'gateway': '', 'dns': ''}}
+SIM_NETS = [('MiCasa_5G', 82, True), ('MiCasa', 64, True), ('Vecino_2.4', 41, True), ('Invitados', 37, False), ('MOVISTAR_8A3F', 22, True)]
 
 # Rutas de Immich que el panel puede leer a través del ayudante (solo lectura)
 IMMICH_PATHS = ('/api/shared-links/me', '/api/albums/', '/api/timeline/buckets', '/api/timeline/bucket')
@@ -148,6 +156,9 @@ def _outputs():
 
 
 def set_brightness(pct):
+    if SIMULATE:
+        SIM['brightness'] = pct
+        return True
     if not BACKLIGHT:
         return False
     top = int(_read(f'{BACKLIGHT}/max_brightness') or 255)
@@ -155,6 +166,10 @@ def set_brightness(pct):
 
 
 def set_power(on):
+    if SIMULATE:
+        SIM['power'] = on
+        print(f'[simulación] pantalla {"encendida" if on else "apagada"}', flush=True)
+        return True
     if BACKLIGHT and _write(f'{BACKLIGHT}/bl_power', 0 if on else 4):
         return True
     ok = False
@@ -221,9 +236,25 @@ def _active_connection():
     return None
 
 
+def _sim_net_info(host, ip):
+    host = SIM['hostname'] or host
+    v4 = SIM['ipv4']
+    net = dict(SIM_NETS_BY_SSID.get(SIM['ssid'], {'signal': 70}))
+    return {'hostname': host, 'ip': ip, 'webPort': WEB_PORT, 'simulated': True, 'nmcli': True,
+            'urls': [f'http://{ip}:{WEB_PORT}', f'http://{socket.gethostname()}.local:{WEB_PORT}'],
+            'connection': {'name': SIM['ssid'], 'type': 'wifi', 'device': 'wlan0'},
+            'ipv4': dict(v4), 'gateway': v4['gateway'] or '192.168.1.1', 'dns': v4['dns'] or '192.168.1.1',
+            'wifi': {'ssid': SIM['ssid'], 'signal': net.get('signal', 70)}}
+
+
+SIM_NETS_BY_SSID = {n[0]: {'signal': n[1], 'secure': n[2]} for n in SIM_NETS}
+
+
 def net_info():
     host = socket.gethostname()
     ip = _primary_ip()
+    if SIMULATE:
+        return _sim_net_info(host, ip)
     info = {'hostname': host, 'ip': ip, 'webPort': WEB_PORT,
             'urls': [f'http://{ip}:{WEB_PORT}', f'http://{host}.local:{WEB_PORT}'],
             'nmcli': _run(['nmcli', '--version'])[0] == 0}
@@ -250,6 +281,9 @@ def net_info():
 
 
 def wifi_scan():
+    if SIMULATE:
+        time.sleep(1)
+        return [{'ssid': n, 'signal': sig, 'secure': sec, 'inUse': n == SIM['ssid']} for n, sig, sec in SIM_NETS]
     code, out, err = _run(['nmcli', '-t', '-f', 'IN-USE,SSID,SIGNAL,SECURITY', 'device', 'wifi', 'list', '--rescan', 'yes'], timeout=30)
     if code != 0:
         raise RuntimeError(err or 'no se pudo buscar redes WiFi')
@@ -270,20 +304,30 @@ def _later(fn, delay=1.5):
 
 
 def wifi_connect(ssid, password):
+    if SIMULATE:
+        def sim():
+            SIM['ssid'] = ssid
+            print(f'[simulación] conectado a la WiFi «{ssid}»', flush=True)
+        return _later(sim)
     cmd = ['nmcli', 'device', 'wifi', 'connect', ssid] + (['password', password] if password else [])
     _later(lambda: _run(cmd, sudo=True, timeout=60))
 
 
 def set_ipv4(method, address='', prefix=24, gateway='', dns=''):
-    con = _active_connection()
+    con = {'name': SIM['ssid']} if SIMULATE else _active_connection()
     if not con:
         raise RuntimeError('no hay ninguna conexión de red activa')
     if method == 'manual':
-        ipaddress.ip_address(address)                    # valida antes de tocar nada
+        def check(value, label):                       # valida antes de tocar nada
+            try:
+                ipaddress.IPv4Address(value)
+            except ValueError:
+                raise ValueError(f'{label} «{value}» no es una dirección IPv4 válida') from None
+        check(address, 'La IP')
         if gateway:
-            ipaddress.ip_address(gateway)
+            check(gateway, 'La puerta de enlace')
         for d in [x.strip() for x in dns.replace(';', ',').split(',') if x.strip()]:
-            ipaddress.ip_address(d)
+            check(d, 'El DNS')
         prefix = int(prefix)
         if not 8 <= prefix <= 32:
             raise ValueError('máscara no válida')
@@ -291,6 +335,12 @@ def set_ipv4(method, address='', prefix=24, gateway='', dns=''):
                 'ipv4.dns', dns.replace(';', ',').replace(' ', '')]
     else:
         args = ['ipv4.method', 'auto', 'ipv4.addresses', '', 'ipv4.gateway', '', 'ipv4.dns', '']
+    if SIMULATE:
+        SIM['ipv4'] = {'method': method if method == 'manual' else 'auto',
+                       'addresses': f'{address}/{prefix}' if method == 'manual' else '',
+                       'gateway': gateway if method == 'manual' else '', 'dns': dns if method == 'manual' else ''}
+        print(f'[simulación] IP {"fija " + address if method == "manual" else "automática"}', flush=True)
+        return
     code, _, err = _run(['nmcli', 'connection', 'modify', con['name']] + args, sudo=True)
     if code != 0:
         raise RuntimeError(err or 'no se pudo cambiar la IP (¿permiso de sudo para nmcli?)')
@@ -300,6 +350,10 @@ def set_ipv4(method, address='', prefix=24, gateway='', dns=''):
 def set_hostname(name):
     if not re.fullmatch(r'[a-zA-Z0-9](?:[a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?', name or ''):
         raise ValueError('solo letras, números y guiones (sin espacios)')
+    if SIMULATE:
+        SIM['hostname'] = name
+        print(f'[simulación] nombre del equipo: {name}', flush=True)
+        return
     code, _, err = _run(['hostnamectl', 'set-hostname', name], sudo=True)
     if code != 0:
         raise RuntimeError(err or 'no se pudo cambiar el nombre (¿permiso de sudo para hostnamectl?)')
@@ -365,6 +419,9 @@ class LocalHandler(Base):
         u = urlparse(self.path)
         if u.path == '/status':
             outs = _outputs()
+            if SIMULATE:   # sin retroiluminación real: el panel oscurece por software y «apaga» con la capa negra
+                return self._json(200, {'backlight': False, 'power': True, 'outputs': [], 'simulated': True,
+                                        'web': WEB_PORT, 'password': PASS_FILE.exists()})
             return self._json(200, {'backlight': bool(BACKLIGHT), 'power': bool(BACKLIGHT or outs), 'outputs': outs,
                                     'web': WEB_PORT, 'password': PASS_FILE.exists()})
         if u.path == '/config':
@@ -448,7 +505,7 @@ class WebHandler(Base):
             self.wfile.write(data)
             return
         if u.path == '/api/estado':
-            return self._json(200, {'password': PASS_FILE.exists(), 'session': bool(self._session())})
+            return self._json(200, {'password': PASS_FILE.exists(), 'session': bool(self._session()), 'simulated': SIMULATE})
         if u.path == '/api/config':
             if not self._guard():
                 return
@@ -510,14 +567,15 @@ class WebHandler(Base):
                     if not ssid:
                         return self._json(400, {'error': 'elige una red'})
                     wifi_connect(ssid, str(body.get('password', '')))
-                    return self._json(200, {'ok': True, 'mensaje': f'Conectando a «{ssid}»… Si cambia la IP, entra con la nueva (la verás en la pantalla del panel).'})
+                    return self._json(200, {'ok': True, 'mensaje': (f'[Simulación] Conectado a «{ssid}» (la red del PC no cambia).' if SIMULATE else
+                                                                     f'Conectando a «{ssid}»… Si cambia la IP, entra con la nueva (la verás en la pantalla del panel).')})
                 if u.path == '/api/red/ip':
                     set_ipv4(body.get('method', 'auto'), str(body.get('address', '')).strip(), body.get('prefix', 24),
                              str(body.get('gateway', '')).strip(), str(body.get('dns', '')).strip())
-                    return self._json(200, {'ok': True, 'mensaje': 'Aplicando la nueva IP… vuelve a entrar con la dirección nueva.'})
+                    return self._json(200, {'ok': True, 'mensaje': '[Simulación] IP cambiada (la del PC no cambia).' if SIMULATE else 'Aplicando la nueva IP… vuelve a entrar con la dirección nueva.'})
                 if u.path == '/api/red/nombre':
                     set_hostname(str(body.get('hostname', '')).strip())
-                    return self._json(200, {'ok': True, 'mensaje': 'Nombre cambiado. La dirección .local nueva funciona tras reiniciar la Pi.'})
+                    return self._json(200, {'ok': True, 'mensaje': '[Simulación] Nombre cambiado (el del PC no cambia).' if SIMULATE else 'Nombre cambiado. La dirección .local nueva funciona tras reiniciar la Pi.'})
             except (ValueError, RuntimeError) as e:
                 return self._json(400, {'error': str(e)})
             return self._json(404)
@@ -571,6 +629,8 @@ def main():
         set_password(pw)
         print('Contraseña guardada.')
         return
+    if SIMULATE:
+        print('Panel Hogar · ayudante en MODO SIMULACIÓN (pantalla y red simuladas; no se cambia nada del equipo)', flush=True)
     threading.Thread(target=serve, args=(WEB_PORT, WebHandler, '0.0.0.0'), daemon=True).start()
     serve(LOCAL_PORT, LocalHandler, '127.0.0.1')
 
