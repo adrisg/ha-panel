@@ -36,7 +36,6 @@ Arranca el panel, el ayudante y la web de configuración, y abre el navegador:
 | | Dirección |
 |---|---|
 | Panel | http://127.0.0.1:8765 (a 800x480 se ve como en la pantalla de la Pi) |
-| Panel con datos falsos | http://127.0.0.1:8765/?demo |
 | Web de configuración | http://127.0.0.1:8080 · contraseña de pruebas: **`panel`** |
 | Web desde el móvil | `http://<IP-del-PC>:8080`, en la misma WiFi (puede que tengas que permitirlo en el cortafuegos de Windows) |
 
@@ -116,7 +115,6 @@ En `ambientPhotos` pega el enlace compartido de un álbum (Immich → álbum →
 index.html          estructura de la página
 styles.css          diseño (sin desenfoques ni sombras pesadas, para que vaya fluido en la Pi 2)
 app.js              conexión con HA, vistas y controles
-demo.js             datos falsos para el modo demo
 config.example.js   plantilla de config.js
 setup-kiosk.sh      instalación del kiosko en la Pi
 panel-helper.py     ayudante en la Pi: brillo y apagado reales, álbumes de Immich y web de configuración
