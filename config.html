@@ -62,6 +62,9 @@
   .pill { font-size: 12px; padding: 3px 10px; border-radius: 999px; background: var(--surface-2); color: var(--muted); }
   .pill.ok { background: #1f3b2a; color: var(--ok); }
   .card.sim { background: #3a2f0b; color: #ffd27a; font-size: 14px; }
+  .amb-web { display: flex; flex-direction: column; gap: 6px; }
+  .amb-web .row { padding: 6px 10px; background: var(--surface-2); border-radius: 10px; border: 0; }
+  .amb-web .mv { width: 34px; height: 34px; padding: 0; border-radius: 8px; }
   .info { display: grid; grid-template-columns: auto 1fr; gap: 4px 14px; font-size: 14px; margin-bottom: 6px; }
   .info dt { color: var(--muted); } .info dd { margin: 0; word-break: break-all; }
   .wifi-list { display: flex; flex-direction: column; gap: 6px; margin-top: 8px; }
@@ -203,6 +206,10 @@
         <span class="hint">Enlace compartido de un álbum de Immich (Álbum → Compartir → Crear enlace), un álbum privado (…/albums/&lt;id&gt; + clave API) o URLs de fotos.</span>
       </div>
       <div class="field">
+        <label>Burbujas debajo del reloj <span class="hint">(cuáles salen y en qué orden)</span></label>
+        <div id="amb-list" class="amb-web"></div>
+      </div>
+      <div class="field">
         <label for="immichApiKey">Clave API de Immich <span id="immich-pill" class="pill">sin clave</span></label>
         <input id="immichApiKey" type="password" autocomplete="off" placeholder="Solo para álbumes privados">
       </div>
@@ -253,6 +260,22 @@ const DEF = {   // mismos valores por defecto que el panel
   sound: { enabled: true, volume: 70 }, photos: { enabled: true, seconds: 30 },
 };
 const lists = { favorites: [], hiddenEntities: [], excludePlatforms: [] };
+const AMB = [['weather', '🌤️ Tiempo'], ['alarm', '⏰ Próxima alarma'], ['printers', '🖨️ Impresoras imprimiendo'], ['scooter', '🛴 Patinete'],
+  ['media', '🎵 Música sonando'], ['lights', '💡 Luces encendidas'], ['openings', '🚪 Puertas y ventanas abiertas']];
+let ambChips = [];
+function renderAmb() {
+  const box = $('#amb-list');
+  box.replaceChildren(...ambChips.map((c, i) => {
+    const row = document.createElement('div'); row.className = 'row';
+    const lab = document.createElement('label'); lab.textContent = (AMB.find((a) => a[0] === c.key) || [0, c.key])[1];
+    const ctr = document.createElement('div'); ctr.className = 'btns';
+    const mv = (d, t) => { const b = document.createElement('button'); b.type = 'button'; b.className = 'btn mv'; b.textContent = t; b.disabled = !ambChips[i + d];
+      b.onclick = () => { [ambChips[i], ambChips[i + d]] = [ambChips[i + d], ambChips[i]]; renderAmb(); dirty(); }; return b; };
+    const sw = document.createElement('label'); sw.className = 'switch'; sw.innerHTML = '<input type="checkbox"><span></span>';
+    sw.firstChild.checked = c.on; sw.firstChild.onchange = () => { c.on = sw.firstChild.checked; dirty(); };
+    ctr.append(mv(-1, '↑'), mv(1, '↓'), sw); row.append(lab, ctr); return row;
+  }));
+}
 let names = {};
 
 async function api(method, path, body) {
@@ -315,6 +338,9 @@ function fill(cfg) {
   $('#weatherEntity').dataset.value = p.weatherEntity || '';
   $('#weatherEntity').value = p.weatherEntity || '';
   ['brightness', 'night-brightness', 'sound-volume'].forEach(bindRange);
+  const saved = Array.isArray(a.ambientChips) ? a.ambientChips.filter((c) => AMB.some((x) => x[0] === c.key)) : [];
+  for (const [key] of AMB) if (!saved.some((c) => c.key === key)) saved.push({ key, on: key !== 'openings' });
+  ambChips = saved.map((c) => ({ ...c })); renderAmb();
   window.__ajustes = cfg.ajustes || {};
 }
 function collect() {
@@ -338,6 +364,7 @@ function collect() {
       brightness: +$('#night-brightness').value, screenOff: $('#night-screenOff').checked },
     sound: { enabled: $('#sound-enabled').checked, volume: +$('#sound-volume').value },
     photos: { enabled: $('#photos-enabled').checked, seconds: +$('#photos-seconds').value },
+    ambientChips: ambChips,
   };
   return { panel, ajustes };
 }
