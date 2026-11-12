@@ -141,7 +141,7 @@ main { display: flex; flex-direction: column; min-width: 0; min-height: 0; heigh
 .fc-name { color: var(--muted); text-transform: capitalize; }
 .fc-t { font-weight: 600; }
 .fc-low { color: var(--muted); }
-.fc-rain { display: flex; align-items: center; gap: 1px; color: var(--accent); font-size: 12px; }
+.fc-rain { display: flex; align-items: center; gap: 1px; color: var(--accent); font-size: 12px; height: 17px; }
 .fc-rain .mdi { font-size: 13px; color: var(--accent); }
 
 .scooter-card { display: flex; align-items: center; gap: 16px; text-align: left; width: 100%; }
