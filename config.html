@@ -65,6 +65,14 @@
   .amb-web { display: flex; flex-direction: column; gap: 6px; }
   .amb-web .row { padding: 6px 10px; background: var(--surface-2); border-radius: 10px; border: 0; }
   .amb-web .mv { width: 34px; height: 34px; padding: 0; border-radius: 8px; }
+  .sources { display: flex; flex-direction: column; gap: 10px; margin-bottom: 8px; }
+  .src { background: var(--surface-2); border-radius: 14px; padding: 10px 12px; display: flex; flex-direction: column; gap: 8px; }
+  .src.off { opacity: .55; }
+  .src-head { display: flex; align-items: center; gap: 10px; }
+  .src-head b { flex: 1; }
+  .src-head .btn { padding: 6px 12px; }
+  .src-body { display: flex; flex-direction: column; gap: 6px; }
+  .src-body input, .src-body textarea { background: var(--surface); }
   .info { display: grid; grid-template-columns: auto 1fr; gap: 4px 14px; font-size: 14px; margin-bottom: 6px; }
   .info dt { color: var(--muted); } .info dd { margin: 0; word-break: break-all; }
   .wifi-list { display: flex; flex-direction: column; gap: 6px; margin-top: 8px; }
@@ -201,9 +209,17 @@
       <div class="row"><label for="photos-seconds">Cambiar de foto cada</label>
         <select id="photos-seconds"><option value="15">15 s</option><option value="30">30 s</option><option value="60">1 min</option><option value="300">5 min</option><option value="900">15 min</option></select></div>
       <div class="field">
-        <label for="ambientPhotos">Álbumes y fotos <span class="hint">(uno por línea)</span></label>
-        <textarea id="ambientPhotos" placeholder="https://immich.casa/share/XXXX"></textarea>
-        <span class="hint">Enlace compartido de un álbum de Immich (Álbum → Compartir → Crear enlace), un álbum privado (…/albums/&lt;id&gt; + clave API) o URLs de fotos.</span>
+        <label>Fuentes de fotos <span class="hint">(se mezclan todas)</span></label>
+        <div id="sources" class="sources"></div>
+        <div class="add">
+          <select id="src-type">
+            <option value="immich">Immich</option>
+            <option value="google">Google Fotos</option>
+            <option value="ha_media">Carpeta de Home Assistant (Medios)</option>
+            <option value="urls">Fotos por URL</option>
+          </select>
+          <button class="btn" id="src-add" type="button">Añadir fuente</button>
+        </div>
       </div>
       <div class="field">
         <label for="defaultSpeaker">Altavoz por defecto <span class="hint">(sus controles salen en el modo ambiente)</span></label>
@@ -212,10 +228,6 @@
       <div class="field">
         <label>Burbujas debajo del reloj <span class="hint">(cuáles salen y en qué orden)</span></label>
         <div id="amb-list" class="amb-web"></div>
-      </div>
-      <div class="field">
-        <label for="immichApiKey">Clave API de Immich <span id="immich-pill" class="pill">sin clave</span></label>
-        <input id="immichApiKey" type="password" autocomplete="off" placeholder="Solo para álbumes privados">
       </div>
     </div>
 
@@ -321,9 +333,6 @@ function fill(cfg) {
   $('#token').value = '';
   $('#token-pill').textContent = p.hasToken ? 'guardado' : 'sin token';
   $('#token-pill').className = 'pill' + (p.hasToken ? ' ok' : '');
-  $('#immichApiKey').value = '';
-  $('#immich-pill').textContent = p.hasImmichApiKey ? 'guardada' : 'sin clave';
-  $('#immich-pill').className = 'pill' + (p.hasImmichApiKey ? ' ok' : '');
   $('#brightness').value = a.brightness;
   $('#idleSeconds').value = String(a.idleSeconds);
   $('#screenOffMinutes').value = String(a.screenOffMinutes);
@@ -333,7 +342,8 @@ function fill(cfg) {
   $('#night-screenOff').checked = a.night.screenOff;
   $('#sound-enabled').checked = a.sound.enabled; $('#sound-volume').value = a.sound.volume;
   $('#photos-enabled').checked = a.photos.enabled; $('#photos-seconds').value = String(a.photos.seconds);
-  $('#ambientPhotos').value = (p.ambientPhotos || []).join('\n');
+  sources = Array.isArray(p.photoSources) ? p.photoSources.map((x) => ({ ...x })) : legacySources(p);
+  renderSources();
   $('#printerPlugs').value = Object.entries(p.printerPlugs || {}).map(([k, v]) => `${k} = ${v}`).join('\n');
   lists.favorites = [...(p.favorites || [])];
   lists.hiddenEntities = [...(p.hiddenEntities || [])];
@@ -359,8 +369,7 @@ function collect() {
   const panel = {
     haUrl: $('#haUrl').value.trim().replace(/\/+$/, ''),
     token: $('#token').value.trim(),
-    immichApiKey: $('#immichApiKey').value.trim(),
-    ambientPhotos: $('#ambientPhotos').value.split('\n').map((s) => s.trim()).filter(Boolean),
+    photoSources: sources.map(({ hasApiKey, ...x }) => x),
     favorites: lists.favorites, hiddenEntities: lists.hiddenEntities, excludePlatforms: lists.excludePlatforms,
     weatherEntity: $('#weatherEntity').value, printerPlugs: plugs,
   };
@@ -402,6 +411,72 @@ async function load() {
   loadEntities();
   loadRed();
 }
+
+/* ---------- fuentes de fotos (conectores) ---------- */
+const SRC_TYPES = {
+  immich: { icon: '🖼️', label: 'Immich' },
+  google: { icon: '🟦', label: 'Google Fotos' },
+  ha_media: { icon: '🏠', label: 'Carpeta de Home Assistant' },
+  urls: { icon: '🔗', label: 'Fotos por URL' },
+};
+let sources = [];
+const newId = () => 's' + Date.now().toString(36) + Math.random().toString(36).slice(2, 5);
+/** Configuración antigua (ambientPhotos) → fuentes. */
+function legacySources(p) {
+  const out = [], urls = [];
+  for (const u of p.ambientPhotos || []) {
+    if (/\/(share|s|albums)\//.test(u)) out.push({ id: newId(), type: 'immich', url: u, enabled: true, hasApiKey: !!p.hasImmichApiKey });
+    else urls.push(u);
+  }
+  if (urls.length) out.push({ id: newId(), type: 'urls', urls, enabled: true });
+  return out;
+}
+function input(value, placeholder, onInput, type = 'text') {
+  const i = document.createElement(type === 'textarea' ? 'textarea' : 'input');
+  if (type !== 'textarea') i.type = type;
+  i.value = value || ''; i.placeholder = placeholder || ''; i.autocomplete = 'off';
+  i.addEventListener('input', () => { onInput(i.value); dirty(); });
+  return i;
+}
+function hint(text) { const s = document.createElement('span'); s.className = 'hint'; s.textContent = text; return s; }
+function renderSources() {
+  const box = $('#sources');
+  if (!sources.length) { box.replaceChildren(hint('Sin fuentes: el modo ambiente usa un degradado de color.')); return; }
+  box.replaceChildren(...sources.map((src, i) => {
+    const t = SRC_TYPES[src.type] || { icon: '❔', label: src.type };
+    const card = document.createElement('div'); card.className = 'src' + (src.enabled === false ? ' off' : '');
+    const head = document.createElement('div'); head.className = 'src-head';
+    const title = document.createElement('b'); title.textContent = `${t.icon} ${t.label}`;
+    const sw = document.createElement('label'); sw.className = 'switch'; sw.title = 'Activada'; sw.innerHTML = '<input type="checkbox"><span></span>';
+    sw.firstChild.checked = src.enabled !== false;
+    sw.firstChild.onchange = () => { src.enabled = sw.firstChild.checked; card.classList.toggle('off', !src.enabled); dirty(); };
+    const del = document.createElement('button'); del.type = 'button'; del.className = 'btn danger'; del.textContent = 'Quitar';
+    del.onclick = () => { sources.splice(i, 1); renderSources(); dirty(); };
+    head.append(title, sw, del);
+    const body = document.createElement('div'); body.className = 'src-body';
+    body.append(input(src.name, 'Nombre (opcional; si no, el del álbum)', (v) => { src.name = v; }));
+    if (src.type === 'immich') {
+      body.append(input(src.url, 'https://immich.casa/share/XXXX', (v) => { src.url = v.trim(); }),
+        input('', src.hasApiKey ? 'Clave API guardada (escribe para cambiarla)' : 'Clave API (solo para álbumes privados …/albums/<id>)', (v) => { src.apiKey = v.trim(); }, 'password'),
+        hint('Enlace compartido del álbum: en Immich → álbum → Compartir → Crear enlace.'));
+    } else if (src.type === 'google') {
+      body.append(input(src.url, 'https://photos.app.goo.gl/XXXX', (v) => { src.url = v.trim(); }),
+        hint('En Google Fotos → álbum → Compartir → Crear enlace. Lo lee el ayudante de la Pi.'));
+    } else if (src.type === 'ha_media') {
+      body.append(input(src.folder, 'Carpeta, p. ej. fotos (vacío = todo «My media»)', (v) => { src.folder = v.trim(); }),
+        hint('Fotos que subas a Home Assistant → Medios → My media. Solo se leen.'));
+    } else if (src.type === 'urls') {
+      body.append(input((src.urls || []).join('\n'), 'Una URL de foto por línea', (v) => { src.urls = v.split('\n').map((x) => x.trim()).filter(Boolean); }, 'textarea'));
+    }
+    card.append(head, body);
+    return card;
+  }));
+}
+$('#src-add').onclick = () => {
+  const type = $('#src-type').value;
+  sources.push({ id: newId(), type, enabled: true, ...(type === 'urls' ? { urls: [] } : {}) });
+  renderSources(); dirty();
+};
 
 /* ---------- red ---------- */
 let wifiSel = null;
