@@ -1344,10 +1344,12 @@ function showAmbient() {
   renderAmbientChips();
   $('#ambient').classList.add('show');
 }
-function hideAmbient() {
+/** Sale del modo ambiente a Inicio, o a la vista de la burbuja que se haya tocado. */
+function hideAmbient(view = 'home') {
   S.ambient = false;
   $('#ambient').classList.remove('show');
-  if (S.view !== 'home') go('home'); else render();
+  if (!VIEWS[view] || (VIEWS[view].visible && !VIEWS[view].visible())) view = 'home';
+  if (S.view !== view) go(view); else render();
   resetIdle();
 }
 function renderAmbientChips() {
@@ -1356,11 +1358,11 @@ function renderAmbientChips() {
   const wid = weatherId();
   if (wid) {
     const w = S.states[wid];
-    chips.push(h('div', { class: 'amb-chip' }, icon(wIcon(w.state)), `${fmtNum(w.attributes.temperature)}° ${wText(w.state)}`));
+    chips.push(h('div', { class: 'amb-chip', 'data-go': 'home' }, icon(wIcon(w.state)), `${fmtNum(w.attributes.temperature)}° ${wText(w.state)}`));
   }
   for (const p of printers().filter(pActive)) {
     const prog = num(p.e.progress), r = pRemaining(p);
-    chips.push(h('div', { class: 'amb-chip amb-print' }, icon('mdi-printer-3d-nozzle'),
+    chips.push(h('div', { class: 'amb-chip amb-print', 'data-go': 'printers' }, icon('mdi-printer-3d-nozzle'),
       h('span', null, `${p.name} `, h('b', null, isNaN(prog) ? '—' : Math.round(prog) + ' %'),
         r > 0 ? ` · ${fmtDuration(r)}` : ''),
       h('span', { class: 'amb-bar' }, h('span', { style: `width:${isNaN(prog) ? 0 : prog}%` }))));
@@ -1370,13 +1372,13 @@ function renderAmbientChips() {
     const b = num(k.battery_level);
     const m = chargeMode(k);
     // Siempre el patinete; si carga, un rayito a la derecha (amarillo cargando, verde cargado)
-    chips.push(h('div', { class: 'amb-chip' + (m === 'charged' ? ' charged' : '') },
+    chips.push(h('div', { class: 'amb-chip' + (m === 'charged' ? ' charged' : ''), 'data-go': 'scooter' },
       icon('mdi-scooter'), `${isNaN(b) ? '—' : Math.round(b)} %`, m ? icon('mdi-lightning-bolt', 'amb-bolt') : null));
   }
   const playing = ids((id) => domain(id) === 'media_player' && S.states[id].state === 'playing');
-  if (playing.length) chips.push(h('div', { class: 'amb-chip' }, icon('mdi-music'), S.states[playing[0]].attributes.media_title || nameOf(playing[0])));
+  if (playing.length) chips.push(h('div', { class: 'amb-chip', 'data-go': 'media' }, icon('mdi-music'), S.states[playing[0]].attributes.media_title || nameOf(playing[0])));
   const lightsOn = ids((id) => domain(id) === 'light' && S.states[id].state === 'on').length;
-  if (lightsOn) chips.push(h('div', { class: 'amb-chip' }, icon('mdi-lightbulb-on'), `${lightsOn} encendida${lightsOn > 1 ? 's' : ''}`));
+  if (lightsOn) chips.push(h('div', { class: 'amb-chip', 'data-go': 'rooms' }, icon('mdi-lightbulb-on'), `${lightsOn} encendida${lightsOn > 1 ? 's' : ''}`));
   $('#amb-chips').replaceChildren(...chips);
 }
 
@@ -1460,7 +1462,12 @@ function start() {
   $('#view').replaceChildren(empty('mdi-home-assistant', 'Conectando con Home Assistant…'));
   $('#sheet').addEventListener('click', (e) => { if (e.target.id === 'sheet') closeSheet(); });
   $('#bell').addEventListener('click', openHistory);
-  $('#ambient').addEventListener('pointerdown', (e) => { e.preventDefault(); hideAmbient(); });
+  // Tocar el fondo vuelve a Inicio; tocar una burbuja abre su vista (patinete, impresoras, música…)
+  $('#ambient').addEventListener('pointerdown', (e) => {
+    e.preventDefault();
+    const chip = e.target.closest('.amb-chip[data-go]');
+    hideAmbient(chip ? chip.dataset.go : 'home');
+  });
   document.addEventListener('pointerdown', resetIdle, true);
 
   tick(); setInterval(tick, 5000);

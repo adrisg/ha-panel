@@ -392,3 +392,5 @@ main { display: flex; flex-direction: column; min-width: 0; min-height: 0; heigh
 .amb-chip.charged .mdi { color: var(--ok); }
 .amb-chip .amb-bolt { color: #fdd663; margin-left: -4px; }
 .amb-chip.charged .amb-bolt { color: var(--ok); }
+.amb-chip[data-go] { cursor: pointer; }
+.amb-chip[data-go]:active { background: rgba(0,0,0,.55); }
