@@ -1,0 +1,55 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, user-scalable=no">
+  <title>Panel Hogar</title>
+  <!-- Iconos Material Design. El script de instalación los descarga a vendor/ para funcionar sin internet. -->
+  <link rel="stylesheet" href="vendor/mdi/css/materialdesignicons.min.css"
+        onerror="this.onerror=null;this.href='https://cdn.jsdelivr.net/npm/@mdi/font@7.4.47/css/materialdesignicons.min.css'">
+  <link rel="stylesheet" href="styles.css">
+  <script src="config.js" onerror="window.PANEL_CONFIG = null"></script>
+  <script src="demo.js" defer></script>
+  <script src="app.js" defer></script>
+</head>
+<body>
+  <!-- Pantalla ambiente (reloj / fotos) cuando nadie toca el panel -->
+  <div id="ambient" class="ambient">
+    <div class="amb-bg" id="amb-bg-a"></div>
+    <div class="amb-bg" id="amb-bg-b"></div>
+    <div class="amb-content">
+      <div class="amb-clock" id="amb-clock">--:--</div>
+      <div class="amb-date" id="amb-date"></div>
+      <div class="amb-chips" id="amb-chips"></div>
+    </div>
+  </div>
+
+  <div id="app">
+    <nav id="rail"></nav>
+    <main>
+      <header id="topbar">
+        <div id="view-title"></div>
+        <div class="top-right">
+          <span id="demo-badge" class="badge hidden">DEMO</span>
+          <button id="bell" class="bell hidden" title="Avisos"><i class="mdi mdi-bell"></i><span id="bell-count"></span></button>
+          <span id="weather-mini"></span>
+          <span id="clock-mini">--:--</span>
+          <span id="conn" class="conn" title="Conexión con Home Assistant"></span>
+        </div>
+      </header>
+      <section id="view"></section>
+    </main>
+  </div>
+
+  <div id="sheet" class="sheet hidden">
+    <div class="sheet-card" id="sheet-card"></div>
+  </div>
+
+  <!-- Avisos enviados desde Home Assistant (event: panel_notificacion) -->
+  <div id="alert" class="alert hidden"><div class="alert-card" id="alert-card"></div></div>
+  <div id="banner" class="banner"></div>
+
+  <div id="toast" class="toast"></div>
+  <div id="dim"></div>
+</body>
+</html>
