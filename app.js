@@ -1102,7 +1102,9 @@ function weatherCard(id) {
   getForecast().then((f) => fc.replaceChildren(...f.slice(0, 5).map((d) => h('div', { class: 'fc-day' },
     h('div', { class: 'fc-name' }, new Date(d.datetime).toLocaleDateString('es-ES', { weekday: 'short' }).replace('.', '')),
     icon(wIcon(d.condition)), h('div', { class: 'fc-t' }, fmtNum(d.temperature) + '°'),
-    d.precipitation_probability ? h('div', { class: 'fc-rain' }, icon('mdi-water'), d.precipitation_probability + '%') : null,
+    // La fila de lluvia siempre ocupa su sitio (vacía si no llueve) para que las mínimas queden alineadas
+    d.precipitation_probability ? h('div', { class: 'fc-rain' }, icon('mdi-water'), d.precipitation_probability + '%')
+      : h('div', { class: 'fc-rain empty' }, ' '),
     d.templow != null ? h('div', { class: 'fc-low' }, fmtNum(d.templow) + '°') : null))));
   return h('div', { class: 'card weather-card' }, now, fc);
 }
