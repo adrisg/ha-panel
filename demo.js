@@ -39,7 +39,12 @@ window.createDemoConn = function () {
   add('cover.salon_persiana', 'open', { friendly_name: 'Salón Persiana', current_position: 70 }, { area_id: 'salon' });
   add('climate.salon', 'heat', { friendly_name: 'Salón Termostato', current_temperature: 20.5, temperature: 21.5, current_humidity: 47, hvac_modes: ['off', 'heat', 'cool', 'auto'], min_temp: 7, max_temp: 30, target_temp_step: 0.5 }, { area_id: 'salon' });
   add('lock.puerta', 'locked', { friendly_name: 'Entrada Cerradura' }, { area_id: 'entrada' });
-  add('vacuum.robot', 'docked', { friendly_name: 'Robot aspirador', battery_level: 100 });
+  add('vacuum.robot', 'docked', { friendly_name: 'Robot aspirador', battery: 76, charging: true, icon: 'mdi:sleep', selected_map: 'Mapa 1',
+    rooms: { 'Mapa 1': [
+      { id: 1, name: 'Pasillo', icon: 'mdi:foot-print' }, { id: 2, name: 'Cocina', icon: 'mdi:chef-hat' },
+      { id: 3, name: 'Salón', icon: 'mdi:sofa-outline' }, { id: 4, name: 'Dormitorio', icon: 'mdi:bed-outline' },
+      { id: 5, name: 'Baño', icon: 'mdi:shower' }] },
+    shortcuts: { 7: { id: 7, name: 'Limpiar pasillo' }, 8: { id: 8, name: 'Cocina a fondo' } } }, { platform: 'dreame_vacuum' });
 
   // Multimedia y cámaras
   add('media_player.salon_tv', 'playing', { friendly_name: 'Salón TV', device_class: 'tv', media_title: 'Lo-fi para concentrarse', media_artist: 'Radio Chill', volume_level: 0.32, entity_picture: art('#ff7e5f', '#6a3093') }, { area_id: 'salon' });
@@ -187,7 +192,8 @@ window.createDemoConn = function () {
         if (svc === 'media_next_track') update(id, 'playing', { media_title: 'Siguiente canción ' + Math.floor(Math.random() * 99) });
         if (svc === 'media_previous_track') update(id, 'playing', { media_title: 'Canción anterior' });
       } else if (dom === 'lock') update(id, svc === 'lock' ? 'locked' : 'unlocked');
-      else if (dom === 'vacuum') update(id, { start: 'cleaning', pause: 'paused', return_to_base: 'returning' }[svc] || s.state);
+      else if (dom === 'vacuum') update(id, { start: 'cleaning', pause: 'paused', return_to_base: 'returning' }[svc] || s.state, { charging: false });
+      else if (dom === 'dreame_vacuum') update(id, 'cleaning', { charging: false });
       else if (dom === 'number') update(id, data.value);
       else if (dom === 'button' && id === 'button.bambu_pausar') update('sensor.bambu_estado', 'pause');
       else if (dom === 'button' && id === 'button.bambu_continuar') update('sensor.bambu_estado', 'running');

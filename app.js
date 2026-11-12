@@ -238,6 +238,10 @@ function nameOf(id, strip = true) {
     const r2 = rest(a && a.name);
     if (r2) n = r2;
   }
+  // Limpia nombres raros de algunas integraciones: espacios dobles y «Maripili  Maripili»
+  n = n.replace(/\s+/g, ' ').trim();
+  const twice = n.match(/^(.+) \1$/i);
+  if (twice) n = twice[1];
   return cap(n);
 }
 /** Orden de los reproductores: 0 sonando · 1 en pausa con contenido · 2 encendido con algo · 3 encendido vacío · 4 apagado · 5 no disponible */
@@ -305,6 +309,7 @@ const DC_ICON = {
 function iconOf(st) {
   if (!st) return 'mdi-help-circle-outline';
   const a = st.attributes, d = domain(st.entity_id), s = st.state;
+  if (d === 'vacuum') return s === 'error' ? 'mdi-robot-vacuum-alert' : 'mdi-robot-vacuum';   // sin el «zzz» de la integración
   if (a.icon) return a.icon.replace('mdi:', 'mdi-');
   if (d === 'light') return s === 'on' ? 'mdi-lightbulb-on' : 'mdi-lightbulb-outline';
   if (d === 'lock') return s === 'locked' ? 'mdi-lock' : 'mdi-lock-open-variant';
@@ -344,7 +349,11 @@ function fmtState(st) {
   }
   if (d === 'cover' && s === 'open' && a.current_position != null) return `Abierto ${a.current_position} %`;
   if (d === 'media_player' && (s === 'playing' || s === 'paused') && a.media_title) return a.media_title;
-  if (d === 'vacuum' && a.battery_level != null) return `${T[s] || cap(s)} · ${a.battery_level} %`;
+  if (d === 'vacuum') {
+    const b = a.battery_level ?? a.battery;
+    if (a.charging) return `Cargando${b != null ? ' · ' + b + ' %' : ''}`;
+    return (T[s] || cap(s)) + (b != null ? ` · ${b} %` : '');
+  }
   if (['scene', 'script', 'button', 'input_button'].includes(d)) return 'Toca para activar';
   return T[s] || cap(s);
 }
@@ -427,6 +436,7 @@ function tile(id, scope = 'view') {
     stt.textContent = fmtState(st);
     el.classList.toggle('on', isActive(st));
     el.classList.toggle('unavail', st.state === 'unavailable');
+    el.classList.toggle('charging', d === 'vacuum' && !!st.attributes.charging);
     el.classList.remove('pending');
     const rgb = d === 'light' && st.attributes.rgb_color;
     if (rgb) el.style.setProperty('--tint', `rgb(${rgb.join(',')})`); else el.style.removeProperty('--tint');
@@ -607,9 +617,51 @@ const SHEETS = {
   },
   vacuum(id) {
     const status = h('div', { class: 'big-toggle' });
-    bind('sheet', id, (st) => status.replaceChildren(icon(iconOf(st)), h('span', null, fmtState(st))));
-    const b = (ic, label, svc) => h('button', { class: 'big-action', onclick: () => call('vacuum', svc, {}, id) }, icon(ic), label);
-    return [status, h('div', { class: 'btn-row' }, b('mdi-play', 'Limpiar', 'start'), b('mdi-pause', 'Pausa', 'pause'), b('mdi-home-import-outline', 'A la base', 'return_to_base'))];
+    bind('sheet', id, (st) => {
+      status.replaceChildren(...[icon(iconOf(st)), h('span', null, fmtState(st)), st.attributes.charging ? icon('mdi-lightning-bolt', 'vac-bolt') : null].filter(Boolean));
+      status.classList.toggle('on', ['cleaning', 'returning'].includes(st.state));
+    });
+    const a = S.states[id].attributes;
+    const dreame = reg(id).platform === 'dreame_vacuum';
+    const b = (ic, label, svc, cls = '') => h('button', { class: 'big-action ' + cls, onclick: () => call('vacuum', svc, {}, id).then((r) => r !== null && closeSheet()) }, icon(ic), label);
+    const parts = [status];
+
+    // Habitaciones del mapa (Dreame: attributes.rooms[mapa] = [{id, name, icon}])
+    const rooms = a.rooms ? (a.rooms[a.selected_map] || Object.values(a.rooms)[0] || []) : [];
+    if (dreame && rooms.length) {
+      const sel = new Set();
+      const go = h('button', { class: 'big-action primary' }, icon('mdi-play'), h('span'));
+      const paint = () => {
+        go.lastChild.textContent = sel.size ? `Limpiar ${sel.size} habitaci${sel.size > 1 ? 'ones' : 'ón'}` : 'Elige habitaciones';
+        go.classList.toggle('disabled', !sel.size);
+      };
+      go.addEventListener('click', () => {
+        if (!sel.size) return toast('Elige al menos una habitación');
+        const names = rooms.filter((r) => sel.has(r.id)).map((r) => r.name);
+        call('dreame_vacuum', 'vacuum_clean_segment', { segments: [...sel] }, id)
+          .then((r) => { if (r !== null) { toast('Limpiando: ' + names.join(', ')); closeSheet(); } });
+      });
+      const chips = h('div', { class: 'room-chips' }, rooms.map((r) => {
+        const c = h('button', { class: 'room-chip' }, icon(mdi(r.icon) || 'mdi-home-outline'), h('span', null, r.name));
+        c.addEventListener('click', () => { if (sel.has(r.id)) sel.delete(r.id); else sel.add(r.id); c.classList.toggle('on', sel.has(r.id)); paint(); });
+        return c;
+      }));
+      paint();
+      parts.push(h('div', { class: 'vac-title' }, '¿Qué habitaciones limpio?'), chips,
+        h('div', { class: 'btn-row' }, go, b('mdi-home-city-outline', 'Toda la casa', 'start')));
+    } else {
+      parts.push(h('div', { class: 'btn-row' }, b('mdi-play', 'Limpiar', 'start', 'primary')));
+    }
+
+    // Atajos guardados en la app de Dreame
+    const shortcuts = dreame && a.shortcuts ? Object.values(a.shortcuts).filter((s) => s && s.name) : [];
+    if (shortcuts.length) {
+      parts.push(h('div', { class: 'vac-title' }, 'Atajos de la app'), h('div', { class: 'chips vac-shortcuts' }, shortcuts.map((s) =>
+        h('button', { class: 'chip', onclick: () => call('dreame_vacuum', 'vacuum_start_shortcut', { shortcut_id: s.id }, id)
+          .then((r) => { if (r !== null) { toast('En marcha: ' + s.name); closeSheet(); } }) }, icon('mdi-flash'), s.name))));
+    }
+    parts.push(h('div', { class: 'btn-row' }, b('mdi-pause', 'Pausa', 'pause'), b('mdi-home-import-outline', 'A la base', 'return_to_base')));
+    return parts;
   },
   camera(id) { return [cameraImg(id, 'sheet', 2)]; },
   sensor(id) { return [historyChart(id)]; },

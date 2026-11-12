@@ -442,3 +442,20 @@ main { display: flex; flex-direction: column; min-width: 0; min-height: 0; heigh
 .qr-steps { display: flex; flex-direction: column; gap: 8px; text-align: left; margin-top: 6px; }
 .qr-steps div { display: flex; align-items: center; gap: 10px; color: var(--muted); }
 .qr-steps .mdi { font-size: 22px; color: var(--accent); }
+
+/* Aspirador: rayito al cargar y selección de habitaciones */
+.tile-icon { position: relative; }
+.tile.charging .tile-icon::after { content: "\F140B"; font-family: "Material Design Icons"; position: absolute; right: -4px; top: -4px;
+  width: 18px; height: 18px; border-radius: 50%; background: #fdd663; color: #3b2a06; font-size: 13px; line-height: 18px; text-align: center;
+  box-shadow: 0 0 0 2px var(--surface); }
+.vac-bolt { color: #fdd663; font-size: 22px !important; margin-left: auto; }
+.vac-title { font-size: 14px; font-weight: 600; color: var(--muted); margin-top: 4px; }
+.room-chips { display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 8px; }
+.room-chip { display: flex; align-items: center; gap: 8px; padding: 12px 14px; border-radius: 14px; background: var(--surface-2);
+  border: 2px solid transparent; font-weight: 500; text-align: left; }
+.room-chip .mdi { font-size: 20px; color: var(--muted); }
+.room-chip.on { background: #1d3354; border-color: var(--accent); color: var(--text); }
+.room-chip.on .mdi { color: var(--accent); }
+.big-action.disabled { opacity: .5; }
+.vac-shortcuts { flex-wrap: wrap; }
+.vac-shortcuts .chip { background: var(--surface-2); }
