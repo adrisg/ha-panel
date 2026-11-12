@@ -826,6 +826,8 @@ const VIEWS = {
         if (on.length) chips.push(h('button', { class: 'chip', onclick: () => call('light', 'turn_off', {}, on) }, icon('mdi-lightbulb-off-outline'), on.length > 1 ? `Apagar ${on.length} luces` : `Apagar ${nameOf(on[0])}`));
         else if (lights.length) chips.push(h('div', { class: 'chip' }, icon('mdi-lightbulb-outline'), 'Todas las luces apagadas'));
         if (open.length) chips.push(h('div', { class: 'chip' }, icon('mdi-door-open'), open.length === 1 ? `${nameOf(open[0])} abierta` : `${open.length} puertas/ventanas abiertas`));
+        const ac = nextAlarmChip('chip');
+        if (ac) { ac.addEventListener('click', () => go('settings')); chips.push(ac); }
         summary.replaceChildren(...chips);
       });
       out.push(summary, h('div', { style: 'height:10px' }));
@@ -1255,7 +1257,7 @@ function normNotif(d) {
   };
 }
 
-const alertOpen = () => N.queue.some((n) => n.nivel !== 'info');
+const alertOpen = () => !!(typeof RING !== 'undefined' && RING.active) || N.queue.some((n) => n.nivel !== 'info');
 
 function onNotif(ev) {
   const n = normNotif(ev.data);
@@ -1374,7 +1376,7 @@ function clearHistory() {
 }
 
 /* Sonidos generados con Web Audio (no hacen falta archivos) */
-function tone(freqs, dur) {
+function tone(freqs, dur, vol) {
   try {
     const ctx = N.ctx || (N.ctx = new (window.AudioContext || window.webkitAudioContext)());
     if (ctx.state === 'suspended') ctx.resume();
@@ -1383,7 +1385,7 @@ function tone(freqs, dur) {
       const o = ctx.createOscillator(), g = ctx.createGain();
       o.type = 'sine'; o.frequency.value = f;
       g.gain.setValueAtTime(0.0001, t);
-      g.gain.exponentialRampToValueAtTime(Math.max(0.001, 0.6 * SET.sound.volume / 100), t + 0.02);
+      g.gain.exponentialRampToValueAtTime(Math.max(0.001, 0.6 * (vol ?? SET.sound.volume / 100)), t + 0.02);
       g.gain.exponentialRampToValueAtTime(0.0001, t + dur);
       o.connect(g).connect(ctx.destination);
       o.start(t); o.stop(t + dur + 0.05);
@@ -1420,6 +1422,7 @@ const DEFAULTS = () => ({
   },
   sound: { enabled: true, volume: 70 },
   photos: { enabled: true, seconds: CFG.photoSeconds || 30 },
+  alarms: [],
 });
 let SET = DEFAULTS();
 const mergeSettings = (saved = {}) => {
@@ -1637,6 +1640,8 @@ function renderSettings() {
         h('button', { class: 'big-action', onclick: () => onNotif({ data: { id: 'prueba_ajustes', titulo: 'Aviso de prueba', mensaje: 'Así se ven los avisos que lances desde Home Assistant', nivel: 'aviso', icono: 'mdi:bell-ring', duracion: 15 } }) },
           icon('mdi-bell-badge'), 'Probar aviso'))),
 
+    alarmsCard(),
+
     netCard(),
 
     h('div', { class: 'card set-card' }, h('div', { class: 'set-title' }, icon('mdi-information-outline'), 'Panel'),
@@ -1645,6 +1650,200 @@ function renderSettings() {
       setRow('Control de pantalla', helperText, h('span', { class: 'pill' + (hw ? ' ok' : '') }, hw ? (hw.simulated ? 'Simulado' : 'Ayudante') : 'Software')),
       h('div', { class: 'btn-row' },
         h('button', { class: 'big-action', onclick: () => location.reload() }, icon('mdi-refresh'), 'Recargar panel'))))];
+}
+
+/* ====================== Alarmas (despertador) ======================
+ * - Alarmas del panel: se guardan en los Ajustes (SET.alarms) y suenan en la propia pantalla.
+ * - Próxima alarma del móvil: sensores «…_next_alarm» de la app de Home Assistant (solo se muestran).
+ * Días: 0 = lunes … 6 = domingo. Sin días = suena una vez y se desactiva. */
+const DAY_LETTERS = ['L', 'M', 'X', 'J', 'V', 'S', 'D'];
+const idxOfDay = (d) => (d.getDay() + 6) % 7;
+const RING = { active: null, lastKey: null, timer: null, stop: null, started: 0, snooze: {} };
+
+function nextOccurrence(al, from = new Date()) {
+  const [hh, mm] = al.time.split(':').map(Number);
+  for (let i = 0; i < 8; i++) {
+    const d = new Date(from.getFullYear(), from.getMonth(), from.getDate() + i, hh, mm, 0, 0);
+    if (d <= from) continue;
+    if (al.days && al.days.length && !al.days.includes(idxOfDay(d))) continue;
+    return d;
+  }
+  return null;
+}
+function phoneAlarms() {
+  const now = new Date();
+  return Object.keys(S.states).filter((id) => domain(id) === 'sensor' && /_next_alarm$/.test(id))
+    .map((id) => ({ id, when: new Date(S.states[id].state) })).filter((a) => !isNaN(a.when) && a.when > now);
+}
+/** Próximas alarmas (panel y móviles), de la más cercana a la más lejana. */
+function upcomingAlarms() {
+  const out = [];
+  for (const a of SET.alarms || []) {
+    const snoozed = RING.snooze[a.id];
+    const when = snoozed && snoozed > Date.now() ? new Date(snoozed) : a.enabled ? nextOccurrence(a) : null;
+    if (when) out.push({ src: 'panel', when, alarm: a });
+  }
+  for (const p of phoneAlarms()) out.push({ src: 'movil', when: p.when, id: p.id });
+  return out.sort((x, y) => x.when - y.when);
+}
+function whenText(d) {
+  const now = new Date(), tom = new Date(now.getFullYear(), now.getMonth(), now.getDate() + 1);
+  const day = d.toDateString() === now.toDateString() ? 'Hoy' : d.toDateString() === tom.toDateString() ? 'Mañana'
+    : cap(d.toLocaleDateString('es-ES', { weekday: 'long' }));
+  return `${day} ${hhmm(d)}`;
+}
+function daysText(days) {
+  const s = [...(days || [])].sort().join('');
+  if (!s) return 'Una vez';
+  if (s === '0123456') return 'Todos los días';
+  if (s === '01234') return 'De lunes a viernes';
+  if (s === '56') return 'Fines de semana';
+  return [...days].sort().map((i) => DAY_LETTERS[i]).join(' ');
+}
+/** La próxima alarma de las próximas 24 h, para Inicio y el modo ambiente. */
+function nextAlarmChip(cls) {
+  const n = upcomingAlarms()[0];
+  if (!n || n.when - Date.now() > 24 * 3600e3) return null;
+  return h('div', { class: cls, 'data-go': 'settings' }, icon(n.src === 'movil' ? 'mdi-cellphone-sound' : 'mdi-alarm'), whenText(n.when));
+}
+
+/* ---------- Que suene ---------- */
+function checkAlarms(now = new Date()) {
+  if (RING.active || NEEDS_SETUP) return;
+  const minute = `${String(now.getHours()).padStart(2, '0')}:${String(now.getMinutes()).padStart(2, '0')}`;
+  for (const al of SET.alarms || []) {
+    const snoozed = RING.snooze[al.id];
+    const dueSnooze = snoozed && now.getTime() >= snoozed;
+    const dueTime = al.enabled && al.time === minute && (!al.days || !al.days.length || al.days.includes(idxOfDay(now)));
+    const key = al.id + '@' + now.toDateString() + minute;
+    if ((dueSnooze || dueTime) && RING.lastKey !== key) {
+      RING.lastKey = key;
+      delete RING.snooze[al.id];
+      ringAlarm(al);
+      return;
+    }
+  }
+}
+function ringAlarm(al) {
+  RING.active = al;
+  RING.started = Date.now();
+  if (S.ambient) { S.ambient = false; $('#ambient').classList.remove('show'); }
+  closeSheet();
+  SCREEN.lastTouch = Date.now();
+  screenTick();
+  const time = h('div', { class: 'ring-time' }, hhmm(new Date()));
+  $('#ring').replaceChildren(h('div', { class: 'ring-box' },
+    icon('mdi-alarm', 'ring-icon'), time,
+    h('div', { class: 'ring-label' }, al.name || 'Alarma'),
+    h('div', { class: 'ring-actions' },
+      h('button', { class: 'big-action', onclick: () => stopAlarm(true) }, icon('mdi-sleep'), 'Posponer 9 min'),
+      h('button', { class: 'big-action primary', onclick: () => stopAlarm(false) }, icon('mdi-alarm-off'), 'Parar'))));
+  $('#ring').classList.remove('hidden');
+  // Melodía que va subiendo de volumen durante el primer minuto
+  const play = () => {
+    const ramp = Math.min(1, 0.35 + (Date.now() - RING.started) / 60000);
+    const vol = Math.max(SET.sound.volume, 60) / 100 * ramp;
+    tone([523, 659, 784, 1047], 0.2, vol);
+    time.textContent = hhmm(new Date());
+  };
+  play();
+  RING.timer = setInterval(play, 2200);
+  RING.stop = setTimeout(() => stopAlarm(false), 10 * 60e3);     // como mucho 10 minutos sonando
+}
+function stopAlarm(snooze) {
+  const al = RING.active;
+  clearInterval(RING.timer); clearTimeout(RING.stop);
+  RING.active = null;
+  $('#ring').classList.add('hidden');
+  if (!al) return;
+  if (snooze) {
+    RING.snooze[al.id] = Date.now() + 9 * 60e3;
+    toast(`Pospuesta hasta las ${hhmm(new Date(RING.snooze[al.id]))}`);
+  } else if (!al.days || !al.days.length) {               // una sola vez: se desactiva
+    al.enabled = false;
+    saveSettings();
+  }
+  SCREEN.lastTouch = Date.now();
+  resetIdle();
+  screenTick();
+  if (S.view === 'settings') render();
+}
+
+/* ---------- Editor de alarmas ---------- */
+function openAlarmEditor(existing) {
+  closeSheet();
+  const al = existing ? { ...existing, days: [...(existing.days || [])] }
+    : { id: 'a' + Date.now().toString(36), time: '07:30', days: [0, 1, 2, 3, 4], enabled: true, name: '' };
+  let [hh, mm] = al.time.split(':').map(Number);
+  const timeEl = h('div', { class: 'alarm-time' });
+  const paint = () => { timeEl.textContent = `${String(hh).padStart(2, '0')}:${String(mm).padStart(2, '0')}`; };
+  const step = (dh, dm) => { mm += dm; if (mm < 0) { mm += 60; dh -= 1; } if (mm >= 60) { mm -= 60; dh += 1; } hh = (hh + dh + 24) % 24; paint(); };
+  const rb = (ic, fn) => h('button', { class: 'round-btn', onclick: fn }, icon(ic));
+  const days = h('div', { class: 'alarm-days' }, DAY_LETTERS.map((l, i) => {
+    const b = h('button', { class: 'day-btn' + (al.days.includes(i) ? ' on' : '') }, l);
+    b.addEventListener('click', () => {
+      al.days = al.days.includes(i) ? al.days.filter((x) => x !== i) : [...al.days, i];
+      b.classList.toggle('on'); hint.textContent = daysText(al.days);
+    });
+    return b;
+  }));
+  const hint = h('div', { class: 'muted small', style: 'text-align:center' }, daysText(al.days));
+  const presets = h('div', { class: 'chips', style: 'justify-content:center' }, [['Diario', [0, 1, 2, 3, 4, 5, 6]], ['L a V', [0, 1, 2, 3, 4]], ['Finde', [5, 6]], ['Una vez', []]]
+    .map(([label, d]) => h('button', { class: 'chip', onclick: () => {
+      al.days = [...d];
+      days.querySelectorAll('.day-btn').forEach((b, i) => b.classList.toggle('on', d.includes(i)));
+      hint.textContent = daysText(al.days);
+    } }, label)));
+  const names = ['Alarma', 'Despertador', 'Trabajo', 'Siesta', 'Medicinas'];
+  const nameRow = h('div', { class: 'chips', style: 'justify-content:center' }, names.map((n) => {
+    const c = h('button', { class: 'chip' + ((al.name || 'Alarma') === n ? ' sel' : '') }, n);
+    c.addEventListener('click', () => { al.name = n; nameRow.querySelectorAll('.chip').forEach((x) => x.classList.toggle('sel', x === c)); });
+    return c;
+  }));
+  const save = () => {
+    al.time = timeEl.textContent; al.enabled = true;
+    const list = (SET.alarms || []).filter((x) => x.id !== al.id);
+    SET.alarms = [...list, al].sort((x, y) => x.time.localeCompare(y.time));
+    delete RING.snooze[al.id];
+    saveSettings(); closeSheet(); render();
+    const n = nextOccurrence(al);
+    if (n) toast(`Sonará ${whenText(n).toLowerCase()}`);
+  };
+  const del = () => { SET.alarms = (SET.alarms || []).filter((x) => x.id !== al.id); saveSettings(); closeSheet(); render(); toast('Alarma borrada'); };
+  paint();
+  $('#sheet-card').replaceChildren(
+    h('div', { class: 'sheet-head' }, h('div', { class: 'tile-icon' }, icon('mdi-alarm')), h('div', { class: 'sheet-title' }, existing ? 'Editar alarma' : 'Nueva alarma'),
+      h('button', { class: 'icon-btn', onclick: closeSheet }, icon('mdi-close'))),
+    h('div', { class: 'sheet-body' },
+      h('div', { class: 'alarm-editor' },
+        h('div', { class: 'alarm-col' }, rb('mdi-chevron-up', () => step(1, 0)), rb('mdi-chevron-down', () => step(-1, 0))),
+        timeEl,
+        h('div', { class: 'alarm-col' }, rb('mdi-chevron-up', () => step(0, 5)), rb('mdi-chevron-down', () => step(0, -5)))),
+      days, hint, presets, nameRow,
+      h('div', { class: 'btn-row' }, existing ? h('button', { class: 'big-action danger-soft', onclick: del }, icon('mdi-delete'), 'Borrar') : null,
+        h('button', { class: 'big-action primary', onclick: save }, icon('mdi-check'), 'Guardar'))));
+  $('#sheet').classList.remove('hidden');
+  S.sheetId = 'alarma';
+}
+
+/** Tarjeta de Ajustes con las alarmas del panel y la próxima del móvil. */
+function alarmsCard() {
+  const list = (SET.alarms || []).map((al) => {
+    const next = al.enabled ? nextOccurrence(al) : null;
+    const row = h('div', { class: 'alarm-row' + (al.enabled ? '' : ' off') },
+      h('div', { class: 'alarm-row-time' }, al.time),
+      h('div', { class: 'alarm-row-text' }, h('div', null, al.name || 'Alarma'),
+        h('div', { class: 'muted small' }, daysText(al.days) + (next ? ' · ' + whenText(next).toLowerCase() : ''))),
+      switchBtn(al.enabled, (v) => { al.enabled = v; delete RING.snooze[al.id]; saveSettings(); render(); }));
+    row.firstChild.addEventListener('click', () => openAlarmEditor(al));
+    row.children[1].addEventListener('click', () => openAlarmEditor(al));
+    return row;
+  });
+  const phones = phoneAlarms().map((p) => setRow(nameOf(p.id), 'Próxima alarma del móvil', h('span', { class: 'net-val' }, whenText(p.when))));
+  return h('div', { class: 'card set-card' }, h('div', { class: 'set-title' }, icon('mdi-alarm'), 'Alarmas'),
+    list.length ? list : h('div', { class: 'muted small' }, 'No hay alarmas. El panel encenderá la pantalla y sonará a la hora que elijas.'),
+    h('div', { class: 'btn-row' }, h('button', { class: 'big-action primary', onclick: () => openAlarmEditor(null) }, icon('mdi-alarm-plus'), 'Añadir alarma')),
+    phones.length ? phones : null);
 }
 
 /* ====================== Navegación y renderizado ====================== */
@@ -1734,6 +1933,8 @@ function renderAmbientChips() {
     const w = S.states[wid];
     chips.push(h('div', { class: 'amb-chip', 'data-go': 'home' }, icon(wIcon(w.state)), `${fmtNum(w.attributes.temperature)}° ${wText(w.state)}`));
   }
+  const ac = nextAlarmChip('amb-chip');
+  if (ac) chips.push(ac);
   for (const p of printers().filter(pActive)) {
     const prog = num(p.e.progress), r = pRemaining(p);
     chips.push(h('div', { class: 'amb-chip amb-print', 'data-go': 'printers' }, icon('mdi-printer-3d-nozzle'),
@@ -1901,6 +2102,7 @@ function tick() {
   $('#amb-date').textContent = cap(now.toLocaleDateString('es-ES', { weekday: 'long', day: 'numeric', month: 'long' }));
   const wid = weatherId();
   $('#weather-mini').replaceChildren(...(wid ? [icon(wIcon(S.states[wid].state)), ' ' + fmtNum(S.states[wid].attributes.temperature) + '°'] : []));
+  checkAlarms(now);
   screenTick();   // brillo, modo noche y apagado (con un aviso abierto, pantalla encendida y a tope)
 }
 
