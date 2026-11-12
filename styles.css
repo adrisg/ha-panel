@@ -459,3 +459,12 @@ main { display: flex; flex-direction: column; min-width: 0; min-height: 0; heigh
 .big-action.disabled { opacity: .5; }
 .vac-shortcuts { flex-wrap: wrap; }
 .vac-shortcuts .chip { background: var(--surface-2); }
+
+/* Barras de scroll finas, redondeadas y del color del tema (en lugar de las grises de Chromium) */
+* { scrollbar-width: thin; scrollbar-color: var(--surface-3) transparent; }
+::-webkit-scrollbar { width: 6px; height: 6px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb { background: var(--surface-3); border-radius: 3px; }
+::-webkit-scrollbar-thumb:hover { background: #3c4250; }
+::-webkit-scrollbar-corner { background: transparent; }
+.sheet-card::-webkit-scrollbar-track { margin: 18px 0; }

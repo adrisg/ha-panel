@@ -52,6 +52,12 @@
   #msg { color: var(--muted); font-size: 14px; }
   #msg.ok { color: var(--ok); } #msg.err { color: var(--danger); }
   .login { max-width: 360px; margin: 12vh auto; padding: 0 16px; }
+  /* Barras de scroll finas y del color del tema */
+  * { scrollbar-width: thin; scrollbar-color: var(--surface-3) transparent; }
+  ::-webkit-scrollbar { width: 8px; height: 8px; }
+  ::-webkit-scrollbar-track { background: transparent; }
+  ::-webkit-scrollbar-thumb { background: var(--surface-3); border-radius: 4px; }
+  ::-webkit-scrollbar-thumb:hover { background: #3c4250; }
   .hidden { display: none !important; }
   .pill { font-size: 12px; padding: 3px 10px; border-radius: 999px; background: var(--surface-2); color: var(--muted); }
   .pill.ok { background: #1f3b2a; color: var(--ok); }
