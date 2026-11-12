@@ -1660,6 +1660,9 @@ async function loadPhotos() {
   }
   for (let i = out.length - 1; i > 0; i--) { const j = Math.floor(Math.random() * (i + 1)); [out[i], out[j]] = [out[j], out[i]]; }
   PHOTOS = out; photoIdx = 0;
+  // Si no se pudo cargar (p. ej. el ayudante aún arrancando), se reintenta en 30 s en vez de en 1 h
+  if (!out.length && CFG.ambientPhotos.length) photosAt = Date.now() - 3600e3 + 30e3;
+  $('#amb-next').classList.toggle('hidden', !photosOn());
 }
 const photosOn = () => SET.photos.enabled && PHOTOS.length > 0;
 
@@ -1671,10 +1674,14 @@ const GRADIENTS = [
 ];
 function nextBackground() {
   clearTimeout(bgTimer);
-  bgTimer = setTimeout(nextBackground, (photosOn() ? SET.photos.seconds : 600) * 1000);
-  if (CFG.ambientPhotos.length && Date.now() - photosAt > 3600e3) loadPhotos();   // el álbum se refresca cada hora
+  bgTimer = setTimeout(nextBackground, (photosOn() ? SET.photos.seconds : CFG.ambientPhotos.length && !PHOTOS.length ? 30 : 600) * 1000);
+  if (CFG.ambientPhotos.length && Date.now() - photosAt > 3600e3) {   // el álbum se refresca cada hora
+    const had = PHOTOS.length;
+    loadPhotos().then(() => { if (!had && PHOTOS.length) nextBackground(); });
+  }
   const back = bgFront === 'a' ? 'b' : 'a';
   const el = $('#amb-bg-' + back), front = $('#amb-bg-' + bgFront), caption = $('#amb-caption');
+  $('#amb-next').classList.toggle('hidden', !photosOn());
   if (photosOn()) {
     if (!S.ambient && front.classList.contains('photo')) return;   // solo se descargan fotos mientras se ven
     let tries = 0;
@@ -1761,6 +1768,7 @@ function start() {
   // Tocar el fondo vuelve a Inicio; tocar una burbuja abre su vista (patinete, impresoras, música…)
   $('#ambient').addEventListener('pointerdown', (e) => {
     e.preventDefault();
+    if (e.target.closest('#amb-next')) { e.stopPropagation(); nextBackground(); resetIdle(); return; }
     const chip = e.target.closest('.amb-chip[data-go]');
     hideAmbient(chip ? chip.dataset.go : 'home');
   });
