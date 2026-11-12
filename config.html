@@ -55,6 +55,14 @@
   .hidden { display: none !important; }
   .pill { font-size: 12px; padding: 3px 10px; border-radius: 999px; background: var(--surface-2); color: var(--muted); }
   .pill.ok { background: #1f3b2a; color: var(--ok); }
+  .info { display: grid; grid-template-columns: auto 1fr; gap: 4px 14px; font-size: 14px; margin-bottom: 6px; }
+  .info dt { color: var(--muted); } .info dd { margin: 0; word-break: break-all; }
+  .wifi-list { display: flex; flex-direction: column; gap: 6px; margin-top: 8px; }
+  .wifi { display: flex; justify-content: space-between; align-items: center; gap: 10px; padding: 10px 12px; border-radius: 10px;
+    background: var(--surface-2); cursor: pointer; border: 1px solid transparent; text-align: left; width: 100%; }
+  .wifi.sel { border-color: var(--accent); } .wifi.use { color: var(--ok); }
+  .radio { display: flex; gap: 18px; } .radio label { display: flex; gap: 6px; align-items: center; font-weight: 400; }
+  .grid2 { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
   @media (max-width: 520px) { .row { flex-wrap: wrap; } .row select, .row input[type=time] { width: 100%; } }
 </style>
 </head>
@@ -91,6 +99,41 @@
         <button class="btn" data-orden="pantalla_off">🌙 Apagar pantalla</button>
         <button class="btn" id="aviso">🔔 Aviso de prueba</button>
       </div>
+    </div>
+
+    <div class="card">
+      <h2>📶 Red de la Pi</h2>
+      <dl class="info" id="red-info"><dt>Estado</dt><dd>Cargando…</dd></dl>
+      <div id="red-controles">
+        <div class="field">
+          <label>WiFi</label>
+          <div class="btns"><button class="btn" id="wifi-buscar">Buscar redes</button></div>
+          <div class="wifi-list" id="wifi-list"></div>
+          <div id="wifi-form" class="field hidden">
+            <div>Conectar a <b id="wifi-ssid"></b></div>
+            <input id="wifi-pass" type="password" autocomplete="off" placeholder="Contraseña de la WiFi">
+            <div class="btns"><button class="btn primary" id="wifi-ok">Conectar</button></div>
+          </div>
+        </div>
+        <div class="field">
+          <label>Dirección IP</label>
+          <div class="radio"><label><input type="radio" name="ipm" value="auto"> Automática (DHCP)</label><label><input type="radio" name="ipm" value="manual"> Fija</label></div>
+          <div id="ip-manual" class="grid2 hidden">
+            <input id="ip-address" type="text" placeholder="IP (192.168.1.60)">
+            <input id="ip-prefix" type="text" placeholder="Máscara (24)" value="24">
+            <input id="ip-gateway" type="text" placeholder="Puerta de enlace (192.168.1.1)">
+            <input id="ip-dns" type="text" placeholder="DNS (192.168.1.1, 1.1.1.1)">
+          </div>
+          <div class="btns"><button class="btn" id="ip-ok">Aplicar IP</button></div>
+          <span class="hint">Pon una IP fija si quieres que la dirección de esta web no cambie nunca.</span>
+        </div>
+        <div class="field">
+          <label for="hostname">Nombre del equipo</label>
+          <div class="add"><input id="hostname" type="text"><button class="btn" id="host-ok">Cambiar</button></div>
+          <span class="hint">Es el de la dirección http://&lt;nombre&gt;.local:8080</span>
+        </div>
+      </div>
+      <div id="red-msg" class="hint"></div>
     </div>
 
     <div class="card">
@@ -310,7 +353,66 @@ async function load() {
   fill(cfg); isDirty = false; msg('');
   $('#login').classList.add('hidden'); $('#app').classList.remove('hidden');
   loadEntities();
+  loadRed();
 }
+
+/* ---------- red ---------- */
+let wifiSel = null;
+function redMsg(t, ok) { const m = $('#red-msg'); m.textContent = t; m.style.color = ok === false ? 'var(--danger)' : ok ? 'var(--ok)' : ''; }
+async function loadRed() {
+  try {
+    const r = await api('GET', '/api/red');
+    const rows = [['Nombre', r.hostname], ['IP', r.ip + (r.ipv4 ? (r.ipv4.method === 'manual' ? ' (fija)' : ' (automática)') : '')]];
+    if (r.wifi) rows.push(['WiFi', `${r.wifi.ssid} · señal ${r.wifi.signal} %`]);
+    else if (r.connection) rows.push(['Conexión', r.connection.type === 'ethernet' ? 'Cable de red' : r.connection.name]);
+    if (r.gateway) rows.push(['Puerta de enlace', r.gateway]);
+    if (r.dns) rows.push(['DNS', r.dns]);
+    rows.push(['Esta web', r.urls.join('  ·  ')]);
+    $('#red-info').replaceChildren(...rows.flatMap(([k, v]) => { const dt = document.createElement('dt'), dd = document.createElement('dd'); dt.textContent = k; dd.textContent = v; return [dt, dd]; }));
+    $('#red-controles').classList.toggle('hidden', !r.nmcli);
+    if (!r.nmcli) redMsg('Este equipo no usa NetworkManager: solo se muestra la información.');
+    $('#hostname').value = r.hostname;
+    const m = (r.ipv4 && r.ipv4.method) || 'auto';
+    document.querySelector(`input[name=ipm][value=${m}]`).checked = true;
+    $('#ip-manual').classList.toggle('hidden', m !== 'manual');
+    if (r.ipv4 && r.ipv4.addresses) { const [a, p] = r.ipv4.addresses.split(',')[0].split('/'); $('#ip-address').value = a; $('#ip-prefix').value = p || 24; }
+    $('#ip-gateway').value = (r.ipv4 && r.ipv4.gateway) || r.gateway || '';
+    $('#ip-dns').value = (r.ipv4 && r.ipv4.dns) || '';
+  } catch (e) { redMsg('No se pudo leer la red: ' + e.message, false); }
+}
+$('#wifi-buscar').onclick = async () => {
+  redMsg('Buscando redes WiFi…');
+  try {
+    const nets = await api('POST', '/api/red/escanear');
+    $('#wifi-list').replaceChildren(...nets.map((n) => {
+      const b = document.createElement('button'); b.type = 'button'; b.className = 'wifi' + (n.inUse ? ' use' : '');
+      b.innerHTML = `<span></span><span class="hint">${n.secure ? '🔒 ' : ''}${n.signal} %${n.inUse ? ' · conectada' : ''}</span>`;
+      b.firstChild.textContent = n.ssid;
+      b.onclick = () => { wifiSel = n; document.querySelectorAll('.wifi').forEach((x) => x.classList.toggle('sel', x === b));
+        $('#wifi-ssid').textContent = n.ssid; $('#wifi-pass').classList.toggle('hidden', !n.secure); $('#wifi-form').classList.remove('hidden'); };
+      return b;
+    }));
+    redMsg(nets.length ? `${nets.length} redes encontradas. Toca una para conectarte.` : 'No se ha encontrado ninguna red.');
+  } catch (e) { redMsg(e.message, false); }
+};
+$('#wifi-ok').onclick = async () => {
+  if (!wifiSel || !confirm(`¿Conectar la Pi a «${wifiSel.ssid}»? Si la contraseña está mal, la Pi puede quedarse sin red hasta volver a conectarla a mano.`)) return;
+  try { const r = await api('POST', '/api/red/wifi', { ssid: wifiSel.ssid, password: $('#wifi-pass').value }); redMsg(r.mensaje, true); $('#wifi-pass').value = ''; }
+  catch (e) { redMsg(e.message, false); }
+};
+document.querySelectorAll('input[name=ipm]').forEach((r) => (r.onchange = () => $('#ip-manual').classList.toggle('hidden', r.value !== 'manual' || !r.checked)));
+$('#ip-ok').onclick = async () => {
+  const method = document.querySelector('input[name=ipm]:checked').value;
+  const body = { method, address: $('#ip-address').value.trim(), prefix: +$('#ip-prefix').value || 24, gateway: $('#ip-gateway').value.trim(), dns: $('#ip-dns').value.trim() };
+  const txt = method === 'manual' ? `¿Poner la IP fija ${body.address}? Después tendrás que entrar en http://${body.address}:8080` : '¿Volver a la IP automática? La dirección puede cambiar.';
+  if (!confirm(txt)) return;
+  try { const r = await api('POST', '/api/red/ip', body); redMsg(r.mensaje, true); } catch (e) { redMsg(e.message, false); }
+};
+$('#host-ok').onclick = async () => {
+  const name = $('#hostname').value.trim();
+  if (!confirm(`¿Cambiar el nombre de la Pi a «${name}»?`)) return;
+  try { const r = await api('POST', '/api/red/nombre', { hostname: name }); redMsg(r.mensaje, true); } catch (e) { redMsg(e.message, false); }
+};
 
 /* ---------- eventos ---------- */
 $('#login-form').addEventListener('submit', async (e) => {
@@ -337,7 +439,9 @@ document.querySelectorAll('[data-orden]').forEach((b) => (b.onclick = async () =
 }));
 document.querySelectorAll('[data-add-btn]').forEach((b) => (b.onclick = () => addChip(b.dataset.addBtn)));
 document.querySelectorAll('[data-add]').forEach((i) => i.addEventListener('keydown', (e) => { if (e.key === 'Enter') { e.preventDefault(); addChip(i.dataset.add); } }));
-document.querySelectorAll('#app input, #app select, #app textarea').forEach((el) => el.addEventListener('input', () => { if (!el.dataset.add) dirty(); }));
+document.querySelectorAll('#app input, #app select, #app textarea').forEach((el) => el.addEventListener('input', () => {
+  if (!el.dataset.add && !el.closest('#red-controles')) dirty();
+}));
 window.addEventListener('beforeunload', (e) => { if (isDirty) e.preventDefault(); });
 
 /* ---------- arranque ---------- */

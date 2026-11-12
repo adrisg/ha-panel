@@ -1434,6 +1434,59 @@ const setRow = (label, sub, control) => h('div', { class: 'set-row' },
 const setBlock = (label, sub, control) => h('div', { class: 'set-block' },
   h('div', { class: 'set-text' }, h('div', null, label), sub ? h('div', { class: 'muted small' }, sub) : null), control);
 
+/* ---------- Red y configuración desde el móvil ---------- */
+async function fetchNet() {
+  try { return await (await fetch(HELPER + '/red', { cache: 'no-store' })).json(); } catch (e) { return null; }
+}
+function qrSvg(text) {
+  if (typeof qrcode !== 'function') return null;
+  const qr = qrcode(0, 'M');
+  qr.addData(text);
+  qr.make();
+  return qr.createSvgTag({ cellSize: 6, margin: 3, scalable: true });
+}
+/** Hoja con el QR de la web de configuración y la dirección escrita, para abrirla con el móvil. */
+async function openConfigQR() {
+  closeSheet();
+  const net = await fetchNet();
+  const body = h('div', { class: 'sheet-body qr-body' });
+  if (!net) {
+    body.append(h('div', { class: 'muted' }, 'La configuración desde el móvil funciona en la Raspberry Pi, con el ayudante (panel-helper.py) en marcha.'));
+  } else {
+    const url = net.urls[0];
+    const svg = qrSvg(url);
+    body.append(
+      svg ? h('div', { class: 'qr', html: svg }) : null,
+      h('div', { class: 'qr-url' }, url),
+      h('div', { class: 'muted small' }, 'También: ' + net.urls.slice(1).join(' · ')),
+      h('div', { class: 'qr-steps' },
+        h('div', null, icon('mdi-numeric-1-circle'), 'Escanea el código con la cámara del móvil (conectado a la misma WiFi)'),
+        h('div', null, icon('mdi-numeric-2-circle'), 'Entra con la contraseña que pusiste al instalar el panel'),
+        h('div', null, icon('mdi-numeric-3-circle'), 'Cambia lo que quieras y pulsa Guardar: el panel se actualiza solo')));
+  }
+  $('#sheet-card').replaceChildren(
+    h('div', { class: 'sheet-head' }, h('div', { class: 'tile-icon' }, icon('mdi-qrcode')), h('div', { class: 'sheet-title' }, 'Configurar desde el móvil'),
+      h('button', { class: 'icon-btn', onclick: closeSheet }, icon('mdi-close'))), body);
+  $('#sheet').classList.remove('hidden');
+  S.sheetId = 'qr';
+}
+function netCard() {
+  const rows = h('div', { class: 'set-net' }, h('div', { class: 'muted small' }, 'Leyendo la red…'));
+  fetchNet().then((net) => {
+    if (!net) { rows.replaceChildren(h('div', { class: 'muted small' }, 'Disponible en la Raspberry Pi (con el ayudante panel-helper.py).')); return; }
+    const r = (label, val) => setRow(label, null, h('span', { class: 'net-val' }, val));
+    rows.replaceChildren(...[
+      r('Nombre', net.hostname),
+      r('IP', net.ip + (net.ipv4 ? (net.ipv4.method === 'manual' ? ' · fija' : ' · automática') : '')),
+      net.wifi ? r('WiFi', `${net.wifi.ssid} · ${net.wifi.signal} %`) : net.connection ? r('Conexión', net.connection.type === 'ethernet' ? 'Cable de red' : net.connection.name) : null,
+      r('Web de configuración', net.urls[0])].filter(Boolean));
+  });
+  return h('div', { class: 'card set-card' }, h('div', { class: 'set-title' }, icon('mdi-wifi'), 'Red y configuración desde el móvil'),
+    rows,
+    h('div', { class: 'btn-row' }, h('button', { class: 'big-action primary', onclick: openConfigQR }, icon('mdi-qrcode'), 'Configurar desde el móvil')),
+    h('div', { class: 'muted small' }, 'La WiFi, la IP y el nombre de la Pi se cambian desde esa web, en el apartado «Red de la Pi».'));
+}
+
 function renderSettings() {
   const pct = (v) => v + ' %';
   const bright = slider({ min: 5, max: 100, step: 5, label: 'Brillo', fmt: pct, onchange: (v) => { SET.brightness = v; saveSettings(); } });
@@ -1485,6 +1538,8 @@ function renderSettings() {
       h('div', { class: 'btn-row' },
         h('button', { class: 'big-action', onclick: () => onNotif({ data: { id: 'prueba_ajustes', titulo: 'Aviso de prueba', mensaje: 'Así se ven los avisos que lances desde Home Assistant', nivel: 'aviso', icono: 'mdi:bell-ring', duracion: 15 } }) },
           icon('mdi-bell-badge'), 'Probar aviso'))),
+
+    netCard(),
 
     h('div', { class: 'card set-card' }, h('div', { class: 'set-title' }, icon('mdi-information-outline'), 'Panel'),
       setRow('Home Assistant', DEMO ? 'Modo demo (sin conexión real)' : CFG.haUrl,
@@ -1762,6 +1817,7 @@ async function pollHelper() {
     if (location.protocol === 'file:') fetch(HELPER + '/status', { cache: 'no-store' }).then(() => location.reload()).catch(() => {});
     return;
   }
+  if (!SCREEN.helper) helperInit();     // por si al arrancar no respondió a tiempo
   try {
     const r = await (await fetch(HELPER + '/poll', { cache: 'no-store' })).json();
     if (REMOTE.command === null) REMOTE.command = r.command.id;          // al arrancar no se repiten órdenes viejas

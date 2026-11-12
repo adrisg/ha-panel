@@ -70,6 +70,9 @@ Desde ahí cambias todo y el panel se actualiza solo en unos segundos:
 - **Avisos y fotos:** sonido de los avisos, álbumes de Immich y cada cuánto cambian las fotos.
 - **Inicio y entidades:** favoritos (con buscador de entidades), entidad del tiempo, entidades e integraciones ocultas y enchufes de las impresoras.
 - **Mando a distancia:** recargar el panel, ir a Inicio o al modo ambiente, apagar o encender la pantalla y enviar un aviso de prueba.
+- **Red de la Pi:** ver la IP, la WiFi y la señal; cambiar de WiFi, poner IP fija o automática y cambiar el nombre del equipo.
+
+Para no tener que recordar la dirección: en el panel ve a **Ajustes → Red y configuración desde el móvil → Configurar desde el móvil**. Sale un **código QR** con la dirección escrita debajo; escanéalo con la cámara del móvil.
 
 La primera vez se importa sola la configuración de `config.js`. Para cambiar la contraseña, en la Pi ejecuta `python3 ~/ha-panel/panel-helper.py --set-password`.
 
@@ -107,5 +110,6 @@ config.example.js   plantilla de config.js
 setup-kiosk.sh      instalación del kiosko en la Pi
 panel-helper.py     ayudante en la Pi: brillo y apagado reales, álbumes de Immich y web de configuración
 config.html         la web de configuración (la sirve panel-helper.py en el puerto 8080)
+lib/qrcode.js       generador de códigos QR (qrcode-generator, de Kazuhiko Arase, licencia MIT)
 boot.js             carga en el panel la configuración guardada desde la web
 ```
