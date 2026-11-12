@@ -71,6 +71,13 @@ Abre `http://localhost:8765` (a 800x480 se ve como en la pantalla de la Pi).
 | `night` | Horario y nivel del oscurecimiento nocturno |
 | `weatherEntity` | Qué entidad `weather.*` usar (si no, la primera que haya) |
 
+## Fotos de Immich
+
+En `ambientPhotos` pega el enlace compartido de un álbum (Immich → álbum → Compartir → Crear enlace). Funciona con Immich 1.x, 2.x y 3.x.
+
+- **CORS:** si tu Immich está detrás de un proxy (Nginx Proxy Manager, etc.) que no envía cabeceras CORS, el navegador no puede leer la lista del álbum. En la Pi no pasa nada, porque la lee `screen-helper.py`. También puedes añadir en el proxy `add_header Access-Control-Allow-Origin * always;`.
+- **Fotos que no salen:** el panel usa la versión `preview` de cada foto. Si Immich no la ha generado, la salta. Si faltan muchas, en Immich ve a **Administración → Trabajos → Generar miniaturas → Faltantes**.
+
 ## Seguridad
 
 - `config.js` contiene un token con acceso a tu Home Assistant. Déjalo solo en la Pi: **no lo pongas** en la carpeta `/config/www` de Home Assistant, porque todo lo que hay en `/local/` es público. Tampoco lo subas a git (ya está en `.gitignore`).

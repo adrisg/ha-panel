@@ -256,7 +256,7 @@ main { display: flex; flex-direction: column; min-width: 0; min-height: 0; heigh
 .ambient.show { opacity: 1; pointer-events: auto; }
 .amb-bg { position: absolute; inset: 0; background: center/cover no-repeat; opacity: 0; transition: opacity 2s; }
 .amb-bg.visible { opacity: 1; }
-.amb-bg.photo::after { content: ""; position: absolute; inset: 0; background: linear-gradient(transparent 40%, rgba(0,0,0,.65)); }
+.amb-bg.photo::after { content: ""; position: absolute; inset: 0; background: linear-gradient(rgba(0,0,0,.25), rgba(0,0,0,.2) 30%, rgba(0,0,0,.72)); }
 .amb-content { position: absolute; left: 6%; bottom: 9%; right: 6%; text-shadow: 0 2px 12px rgba(0,0,0,.35); }
 .amb-clock { font-size: min(26vh, 19vw); font-weight: 300; line-height: .95; letter-spacing: -2px; font-variant-numeric: tabular-nums; }
 .amb-date { font-size: min(6vh, 4.5vw); margin-top: 6px; opacity: .9; }
