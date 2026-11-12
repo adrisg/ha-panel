@@ -91,13 +91,13 @@ mode: single
 ```yaml
 triggers:
   - trigger: state
-    entity_id: binary_sensor.salon_scooter_adrian_cargado
+    entity_id: binary_sensor.mi_patinete_cargado
     to: "on"
 actions:
   - event: panel_notificacion
     event_data:
       titulo: Patinete cargado
-      mensaje: "{{ states('sensor.salon_scooter_adrian_bateria') }} % de batería"
+      mensaje: "{{ states('sensor.mi_patinete_bateria') }} % de batería"
       nivel: info
       icono: mdi:scooter-electric
 ```
@@ -120,7 +120,7 @@ actions:
       acciones:
         - texto: Avisar al móvil
           icono: mdi:cellphone-message
-          servicio: notify.mobile_app_iphone_adrian
+          servicio: notify.mobile_app_mi_movil
           datos:
             message: La puerta de la cocina sigue abierta
         - texto: Vale

@@ -48,7 +48,7 @@ window.PANEL_CONFIG = {
 
   // Enchufe de cada impresora 3D. Se detecta solo si el switch acaba igual que el nombre
   // de la impresora (p. ej. switch.ikea_plug_bambu_p1s). Si no, ponlo aquí a mano:
-  // printerPlugs: { "Bambu P1S Adrian": "switch.ikea_plug_bambu_p1s" },
+  // printerPlugs: { "Bambu P1S": "switch.enchufe_bambu_p1s" },
 
   // Oculta el puntero del ratón en la Pi (solo en el kiosko; en el PC por http:// se sigue viendo)
   hideCursor: true,
