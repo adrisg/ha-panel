@@ -1408,8 +1408,8 @@ function playSound(nivel) {
 function stopSound() { clearInterval(N.soundTimer); clearTimeout(N.soundStop); N.soundTimer = null; }
 
 /* ====================== Ajustes (se guardan en Home Assistant) ======================
- * Se guardan con frontend/set_user_data en el usuario del token, así sobreviven a reinicios
- * de la Pi aunque Chromium vaya en modo incógnito. */
+ * En la Pi se guardan en el ayudante (panel-helper.py), así sobreviven a reinicios aunque Chromium vaya
+ * en modo incógnito. Sin ayudante, en el navegador. El panel no escribe nada en Home Assistant. */
 const SETTINGS_KEY = 'panel_hogar_ajustes';
 const DEFAULTS = () => ({
   idleSeconds: CFG.idleSeconds,            // segundos sin tocar hasta el modo ambiente (0 = nunca)
@@ -1436,7 +1436,9 @@ async function loadSettings() {
   if (helper && helper.ajustes && Object.keys(helper.ajustes).length) saved = helper.ajustes;   // los de la web
   else {
     try {
-      saved = (await conn.send({ type: 'frontend/get_user_data', key: SETTINGS_KEY }) || {}).value;
+      saved = JSON.parse(localStorage.getItem(SETTINGS_KEY) || 'null');
+      // Ajustes de versiones anteriores, guardados en Home Assistant: solo se leen (nunca se escriben)
+      if (!saved) saved = (await conn.send({ type: 'frontend/get_user_data', key: SETTINGS_KEY }) || {}).value;
     } catch (e) { /* sin ajustes guardados: valores por defecto */ }
   }
   SET = mergeSettings(saved || {});
@@ -1451,7 +1453,9 @@ function saveSettings() {
       if (window.PANEL_HELPER) {        // en la Pi: se guardan en el ayudante (así la web los ve)
         const r = await fetch(HELPER + '/ajustes', { method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(SET) });
         const j = await r.json(); REMOTE.version = j.version;
-      } else await conn.send({ type: 'frontend/set_user_data', key: SETTINGS_KEY, value: SET });
+      } else {                          // sin ayudante: en este navegador (nunca se escribe nada en Home Assistant)
+        try { localStorage.setItem(SETTINGS_KEY, JSON.stringify(SET)); } catch (e) { /* sin almacenamiento */ }
+      }
       toast('Ajustes guardados');
     } catch (e) { toast('No se pudieron guardar: ' + e.message, true); }
   }, 600);
