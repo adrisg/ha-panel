@@ -339,7 +339,7 @@ main { display: flex; flex-direction: column; min-width: 0; min-height: 0; heigh
 .alert-actions > * { flex: 1 1 40%; padding: 18px 12px; font-size: 17px; white-space: nowrap; }
 .big-action.primary { background: var(--accent); color: #0b1d3a; }
 .alert-more { text-align: center; color: var(--muted); font-size: 13px; }
-.banner { position: fixed; top: 12px; left: 50%; transform: translate(-50%, -140%); z-index: 55; display: flex; align-items: center; gap: 12px;
+.banner { position: fixed; top: 12px; left: 50%; transform: translate(-50%, calc(-100% - 24px)); z-index: 55; display: flex; align-items: center; gap: 12px;
   max-width: 92%; padding: 12px 18px; border-radius: 16px; background: #e8eaed; color: #202124; transition: transform .25s; }
 .banner.show { transform: translate(-50%, 0); }
 .banner .mdi { font-size: 24px; color: #1a56c4; }

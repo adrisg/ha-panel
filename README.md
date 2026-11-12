@@ -1,50 +1,61 @@
 # Panel Hogar
 
-Panel táctil propio para Home Assistant, estilo Google Nest Hub, para una Raspberry Pi con pantalla.
+Pantalla táctil para casa, al estilo Google Nest Hub, que se conecta a **Home Assistant**. Se monta con una Raspberry Pi y una pantalla, y sirve para ver y controlar la casa de un vistazo. Cuando nadie la toca, se convierte en un reloj con fotos.
 
-## Cómo funciona
-
-- **Panel** (`index.html` + `app.js`): web en Chromium a pantalla completa que habla con Home Assistant por WebSocket. Solo lee estados y llama a lo que pulses; no cambia la configuración de HA.
-- **Ayudante** (`panel-helper.py`): en la Pi. Brillo y apagado de pantalla, red, álbumes de fotos y la **web de configuración** (`http://<pi>.local:8080`, con contraseña).
-- La configuración se guarda en la Pi (`~/.config/panel-hogar/config.json`); el panel se recarga solo al cambiarla.
+<p align="center">
+  <img src="docs/home.png" width="49%"> <img src="docs/ambient.png" width="49%">
+</p>
 
 ## Qué puedes hacer
 
-- **Inicio**: tiempo, resumen, patinete, impresoras activas, escenas y favoritos.
-- **Casa**: controlar luces (con su color), enchufes, persianas, clima, cerraduras, aspirador (por habitaciones) y altavoces.
-- **Sensores**: valores por habitación e historial de 24 h.
-- **Multimedia**: reproductores y cámaras.
-- **Impresoras** (Bambu, Moonraker): cámara, progreso, boquillas, enchufe y controles.
-- **Patinete** (`mi_scooter_ble`): batería, carga y ajustes.
-- **Modo ambiente**: reloj, fotos, burbujas configurables y mini reproductor.
-- **Alarmas**, **avisos desde HA** con botones ([AVISOS.md](AVISOS.md)) y **mando a distancia** desde la web.
+- **Inicio**: el tiempo, un resumen (luces encendidas, puertas abiertas), el patinete, las impresoras que están imprimiendo, las escenas y los favoritos.
+- **Casa**: encender y apagar luces (cada una con su color), enchufes, persianas, el clima, cerraduras, el aspirador (eligiendo habitaciones) y la TV o los altavoces.
+- **Sensores**: temperatura, humedad y demás por habitación, con gráfica de las últimas 24 h.
+- **Multimedia**: controlar la música y ver las cámaras.
+- **Impresoras 3D**: progreso, cámara, temperaturas y su enchufe.
+- **Patinete**: batería, carga y ajustes.
+- **Modo ambiente**: reloj, fotos de tus álbumes (Immich, Google Fotos…), burbujas con lo importante y un mini reproductor.
+- **Alarmas y avisos**: alarmas de despertador, y avisos que lanzas desde Home Assistant con botones. Por ejemplo, «llaman al telefonillo → Abrir puerta» ([cómo](AVISOS.md)).
+- **Configurarlo desde el móvil**: escanea el QR de la pantalla y cambia todo desde una web con contraseña.
 
-## Parámetros
+<p align="center">
+  <img src="docs/rooms.png" width="32%"> <img src="docs/media.png" width="32%"> <img src="docs/printers.png" width="32%">
+  <img src="docs/scooter.png" width="32%"> <img src="docs/settings.png" width="32%">
+</p>
 
-Se cambian en **Ajustes** del panel o en la **web de configuración**:
+## Qué necesitas
 
-| Grupo | Parámetros |
+- Una Raspberry Pi (vale una Pi 2) con Raspberry Pi OS Lite.
+- Una pantalla táctil (HDMI o de las que van en los pines).
+- Home Assistant y un **token de acceso**: en HA, tu perfil → Seguridad → Tokens de larga duración.
+
+## Montarlo
+
+1. Instala Raspberry Pi OS Lite en la tarjeta, con WiFi y SSH activados.
+2. Entra por SSH y ejecuta:
+   ```bash
+   git clone https://github.com/adrisg/ha-panel ~/ha-panel
+   bash ~/ha-panel/setup-kiosk.sh
+   sudo reboot
+   ```
+   Durante la instalación te pide una contraseña para la web de configuración.
+3. Al arrancar, la pantalla muestra un **QR**. Escanéalo con el móvil, entra con la contraseña y pon la dirección de tu Home Assistant y el token.
+4. ¡Listo! El panel se recarga solo cada vez que guardas cambios.
+
+## Ajustes
+
+Se cambian en el botón ⚙ de la pantalla o desde la web del móvil:
+
+| | |
 |---|---|
-| Home Assistant | dirección, token |
-| Pantalla | brillo, modo ambiente tras, apagar tras |
-| Modo noche | activado, desde, hasta, brillo, apagar de noche |
-| Avisos | sonido, volumen |
-| Fotos | mostrar, cómo se ven (rellenar / entera + difuminado / entera), cada cuánto, fuentes (Immich, Google Fotos, Medios de HA, URLs) |
-| Modo ambiente | burbujas y su orden, altavoz por defecto |
-| Alarmas | hora, días, nombre |
-| Entidades | favoritos, tiempo, ocultas, integraciones excluidas, enchufes de impresoras |
-| Red de la Pi | WiFi, IP fija/automática, nombre |
+| **Pantalla** | brillo, cuándo pasa a modo ambiente, cuándo se apaga |
+| **Modo noche** | horario, brillo bajo o pantalla apagada |
+| **Fotos** | álbumes, cada cuánto cambian, cómo se ven (rellenar / entera con fondo difuminado / entera) |
+| **Modo ambiente** | qué burbujas salen y en qué orden, altavoz por defecto |
+| **Avisos y alarmas** | sonido, volumen, alarmas con hora y días |
+| **Qué se ve** | favoritos, ocultar dispositivos, enchufes de las impresoras |
+| **Red** | WiFi, IP y nombre del panel |
 
-`config.js` (copia de `config.example.js`) sirve como configuración inicial.
+## Probarlo en el ordenador
 
-## Instalar
-
-```bash
-git clone https://github.com/adrisg/ha-panel ~/ha-panel
-bash ~/ha-panel/setup-kiosk.sh
-sudo reboot
-```
-
-Al arrancar, escanea el QR de la pantalla para configurarlo desde el móvil.
-
-**Probar en el PC:** `python dev.py` → panel en `127.0.0.1:8765`, web en `127.0.0.1:8080` (contraseña `panel`, pantalla y red simuladas).
+Con Python instalado: `python dev.py`. Se abre el panel en el navegador; la web de configuración está en `http://127.0.0.1:8080` (contraseña `panel`).
