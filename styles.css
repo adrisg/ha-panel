@@ -369,6 +369,29 @@ main { display: flex; flex-direction: column; min-width: 0; min-height: 0; heigh
 .pill.ok { background: #1f3b2a; color: var(--ok); }
 .blackout { position: fixed; inset: 0; z-index: 80; background: #000; cursor: none; }
 
+/* ---------- Alarmas ---------- */
+.alarm-row { display: flex; align-items: center; gap: 14px; padding: 6px 0; }
+.alarm-row + .alarm-row { border-top: 1px solid var(--surface-2); }
+.alarm-row-time { font-size: 30px; font-weight: 600; font-variant-numeric: tabular-nums; cursor: pointer; }
+.alarm-row-text { flex: 1; min-width: 0; cursor: pointer; }
+.alarm-row.off .alarm-row-time, .alarm-row.off .alarm-row-text { opacity: .45; }
+.alarm-editor { display: flex; align-items: center; justify-content: center; gap: 18px; }
+.alarm-col { display: flex; flex-direction: column; gap: 8px; }
+.alarm-time { font-size: 64px; font-weight: 600; font-variant-numeric: tabular-nums; min-width: 190px; text-align: center; }
+.alarm-days { display: flex; justify-content: center; gap: 8px; }
+.day-btn { width: 44px; height: 44px; border-radius: 50%; background: var(--surface-2); font-weight: 700; }
+.day-btn.on { background: var(--accent); color: #0b1d3a; }
+.chip.sel { background: #1d3354; color: var(--accent); }
+.big-action.danger-soft { background: #4a1d1a; color: var(--danger); }
+.ring-overlay { position: fixed; inset: 0; z-index: 65; display: grid; place-items: center;
+  background: radial-gradient(circle at 50% 40%, #2b3a55, #0b1020 70%); }
+.ring-box { display: flex; flex-direction: column; align-items: center; gap: 6px; text-align: center; padding: 20px; }
+.ring-icon { font-size: 56px; color: var(--accent); animation: ring 1.4s ease-in-out infinite; }
+.ring-time { font-size: min(24vh, 18vw); font-weight: 300; line-height: 1; font-variant-numeric: tabular-nums; }
+.ring-label { font-size: 22px; color: var(--muted); margin-bottom: 18px; }
+.ring-actions { display: flex; gap: 12px; flex-wrap: wrap; justify-content: center; }
+.ring-actions .big-action { padding: 18px 26px; font-size: 18px; min-width: 200px; }
+
 /* ---------- Pantallas pequeñas (3.5" 480x320) ---------- */
 @media (max-width: 560px), (max-height: 340px) {
   :root { --rail: 58px; --radius: 16px; }
@@ -496,3 +519,5 @@ main { display: flex; flex-direction: column; min-width: 0; min-height: 0; heigh
 .setup h2 { margin: 0; font-size: 22px; }
 .setup p { margin: 0; }
 .setup-icon { font-size: 56px; color: var(--accent); }
+#sheet-card .chip { background: var(--surface-2); }
+#sheet-card .chip.sel { background: #1d3354; color: var(--accent); }
