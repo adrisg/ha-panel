@@ -1,3 +1,7 @@
 # Contiene tu token de Home Assistant: no lo subas nunca
 config.js
 vendor/
+
+# Python
+__pycache__/
+*.pyc
