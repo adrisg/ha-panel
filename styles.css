@@ -442,6 +442,23 @@ main { display: flex; flex-direction: column; min-width: 0; min-height: 0; heigh
 .amb-bg[data-fit="blur"] .amb-fg, .amb-bg[data-fit="contain"] .amb-fg { background-size: contain; }
 .amb-bg { overflow: hidden; }
 
+/* ---------- Burbujas y tarjetas de script ---------- */
+.b-ic { color: var(--bc, inherit); }
+.chip .b-ic { color: var(--bc, var(--accent)); }
+.b-badge { margin-left: -4px; }
+.amb-chip.with-bar, .chip.with-bar { flex-wrap: wrap; }
+.chip.with-bar .amb-bar { background: var(--surface-3); }
+.chip.with-bar .amb-bar span { background: var(--accent); }
+.chip.tappable, .amb-chip.tappable { cursor: pointer; }
+.amb-chip.tappable:active { background: rgba(0,0,0,.55); }
+.code-card { display: flex; flex-direction: column; gap: 10px; }
+.cb-text { font-size: 17px; padding: 0 4px; }
+.cb-text.big { font-size: 26px; font-weight: 600; }
+.cb-text.small { font-size: 14px; color: var(--muted); }
+.code-error { display: flex; align-items: center; gap: 8px; background: #3a1f1d; color: var(--danger); border-radius: 14px; padding: 10px 14px; font-size: 14px; }
+.amb-head { background: transparent !important; padding-top: 0; padding-bottom: 0; }
+.amb-col { width: 64px; display: flex; justify-content: center; font-size: 12px; color: var(--muted); flex: none; }
+
 /* ---------- Pantallas pequeñas (3.5" 480x320) ---------- */
 @media (max-width: 560px), (max-height: 340px) {
   :root { --rail: 58px; --radius: 16px; }
