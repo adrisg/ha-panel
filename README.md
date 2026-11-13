@@ -23,6 +23,12 @@ Pantalla táctil para casa, al estilo Google Nest Hub, que se conecta a **Home A
   <img src="docs/scooter.png" width="32%"> <img src="docs/settings.png" width="32%">
 </p>
 
+**Avisos desde Home Assistant**: con botones que hacen cosas, o un aviso discreto arriba.
+
+<p align="center">
+  <img src="docs/aviso.png" width="49%"> <img src="docs/aviso-info.png" width="49%">
+</p>
+
 ## Qué necesitas
 
 - Una Raspberry Pi (vale una Pi 2) con Raspberry Pi OS Lite.

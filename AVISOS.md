@@ -4,6 +4,10 @@ Cualquier automatización de Home Assistant puede mostrar un aviso en el panel l
 
 ## Cómo se ve cada nivel
 
+<p align="center">
+  <img src="docs/aviso.png" width="49%"> <img src="docs/aviso-info.png" width="49%">
+</p>
+
 | `nivel` | En el panel | Sonido | Se cierra solo |
 |---|---|---|---|
 | `info` | Banner arriba; no interrumpe | Un pitido corto | A los 10 s |
