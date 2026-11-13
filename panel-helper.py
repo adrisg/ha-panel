@@ -46,6 +46,9 @@ HERE = Path(__file__).resolve().parent
 DATA = Path(os.environ.get('PANEL_DATA', Path.home() / '.config' / 'panel-hogar'))
 CONFIG_FILE = DATA / 'config.json'
 PASS_FILE = DATA / 'admin.json'
+SCRIPTS_DIR = DATA / 'scripts'        # scripts del panel (burbujas y tarjetas): archivos .js
+SCRIPT_NAME = re.compile(r'^[a-z0-9][a-z0-9_-]{0,39}\.js$')
+SCRIPT_MAX = 100 * 1024
 LOCAL_PORT = 8766
 WEB_PORT = int(os.environ.get('PANEL_WEB_PORT', '8080'))
 BACKLIGHT = next(iter(sorted(glob.glob('/sys/class/backlight/*'))), None)
@@ -93,6 +96,61 @@ def save_config(cfg):
     except OSError:
         pass
     return cfg['version']
+
+
+# ---------------------------------------------------------------- scripts del panel
+def list_scripts():
+    """{nombre.js: código} de los scripts guardados en la Pi."""
+    out = {}
+    if SCRIPTS_DIR.is_dir():
+        for p in sorted(SCRIPTS_DIR.glob('*.js')):
+            if SCRIPT_NAME.match(p.name):
+                try:
+                    out[p.name] = p.read_text(encoding='utf-8')
+                except OSError:
+                    pass
+    return out
+
+
+def script_name(name):
+    name = str(name or '').strip().lower()
+    if not name.endswith('.js'):
+        name += '.js'
+    if not SCRIPT_NAME.match(name):
+        raise ValueError('nombre no válido: letras minúsculas, números, - y _ (p. ej. temperatura-salon)')
+    return name
+
+
+def save_script(name, code):
+    name = script_name(name)
+    code = str(code or '')
+    if len(code.encode()) > SCRIPT_MAX:
+        raise ValueError('el script es demasiado grande (máx. 100 KB)')
+    SCRIPTS_DIR.mkdir(parents=True, exist_ok=True)
+    tmp = SCRIPTS_DIR / (name + '.tmp')
+    tmp.write_text(code, encoding='utf-8')
+    os.replace(tmp, SCRIPTS_DIR / name)
+    return name
+
+
+def bump_version():
+    """Los scripts cambiaron: el panel lo ve en /poll y se recarga."""
+    with LOCK:
+        cfg = load_config()
+        return save_config(cfg)
+
+
+def download_script(url):
+    """Importar un script desde una URL https (p. ej. un raw de GitHub). Solo se descarga, no se ejecuta aquí."""
+    u = urlparse(str(url or ''))
+    if u.scheme != 'https' or not u.hostname:
+        raise ValueError('pon una dirección https://')
+    req = urllib.request.Request(url, headers={'User-Agent': 'PanelHogar'})
+    with urllib.request.urlopen(req, timeout=20) as r:
+        data = r.read(SCRIPT_MAX + 1)
+    if len(data) > SCRIPT_MAX:
+        raise ValueError('el script es demasiado grande (máx. 100 KB)')
+    return data.decode('utf-8', 'replace')
 
 
 def merge_source_keys(sources, current):
@@ -465,7 +523,7 @@ class LocalHandler(Base):
             return self._json(200, {'backlight': bool(BACKLIGHT), 'power': bool(BACKLIGHT or outs), 'outputs': outs,
                                     'web': WEB_PORT, 'password': PASS_FILE.exists()})
         if u.path == '/config':
-            return self._json(200, load_config())
+            return self._json(200, dict(load_config(), modulos=list_scripts()))
         if u.path == '/red':
             return self._json(200, net_info())
         if u.path == '/poll':
@@ -551,8 +609,28 @@ class WebHandler(Base):
             self.end_headers()
             self.wfile.write(data)
             return
+        if u.path == '/lib/modulos.js':     # mismo código que usa el panel, para probar los scripts en la web
+            data = (HERE / 'lib' / 'modulos.js').read_bytes()
+            self.send_response(200)
+            self.send_header('Content-Type', 'text/javascript; charset=utf-8')
+            self.send_header('Content-Length', str(len(data)))
+            self.send_header('Cache-Control', 'no-store')
+            self.end_headers()
+            self.wfile.write(data)
+            return
         if u.path == '/api/estado':
             return self._json(200, {'password': PASS_FILE.exists(), 'session': bool(self._session()), 'simulated': SIMULATE})
+        if u.path == '/api/scripts':
+            if not self._guard():
+                return
+            return self._json(200, list_scripts())
+        if u.path == '/api/estados':        # estados actuales (solo lectura) para probar scripts en la web
+            if not self._guard():
+                return
+            code, states = ha_request('GET', '/api/states')
+            if code != 200:
+                return self._json(502, states)
+            return self._json(200, {st['entity_id']: st for st in states})
         if u.path == '/api/config':
             if not self._guard():
                 return
@@ -600,6 +678,15 @@ class WebHandler(Base):
             return self._json(200, {'ok': True}, {'Set-Cookie': 'panel_sesion=; Path=/; Max-Age=0'})
         if not self._guard(mutating=True):
             return
+        if u.path == '/api/scripts/importar':
+            try:
+                code = download_script(body.get('url'))
+                name = save_script(body.get('name') or os.path.basename(urlparse(body.get('url')).path), code)
+            except ValueError as e:
+                return self._json(400, {'error': str(e)})
+            except (urllib.error.URLError, OSError) as e:
+                return self._json(502, {'error': f'no se pudo descargar: {getattr(e, "reason", e)}'})
+            return self._json(200, {'ok': True, 'name': name, 'code': code, 'version': bump_version()})
         if u.path == '/api/probar':        # probar la conexión con lo escrito en el formulario (o lo guardado)
             code, res = ha_request('GET', '/api/', ha_url=body.get('haUrl') or None, token=body.get('token') or None)
             return self._json(200, {'ok': code == 200, 'mensaje': 'Conectado con Home Assistant' if code == 200 else res.get('error')})
@@ -639,7 +726,32 @@ class WebHandler(Base):
             return self._json(200, {'ok': True})
         self._json(404)
 
+    def do_DELETE(self):
+        u = urlparse(self.path)
+        if u.path != '/api/scripts':
+            return self._json(404)
+        if not self._guard(mutating=True):
+            return
+        try:
+            name = script_name(parse_qs(u.query).get('name', [''])[0])
+        except ValueError as e:
+            return self._json(400, {'error': str(e)})
+        try:
+            (SCRIPTS_DIR / name).unlink()
+        except FileNotFoundError:
+            return self._json(404, {'error': 'no existe'})
+        return self._json(200, {'ok': True, 'version': bump_version()})
+
     def do_PUT(self):
+        if urlparse(self.path).path == '/api/scripts':
+            if not self._guard(mutating=True):
+                return
+            try:
+                body = self._body()
+                name = save_script(body.get('name'), body.get('code'))
+            except ValueError as e:
+                return self._json(400, {'error': str(e)})
+            return self._json(200, {'ok': True, 'name': name, 'version': bump_version()})
         if urlparse(self.path).path != '/api/config':
             return self._json(404)
         if not self._guard(mutating=True):

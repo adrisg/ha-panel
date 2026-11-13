@@ -16,6 +16,7 @@ Pantalla táctil para casa, al estilo Google Nest Hub, que se conecta a **Home A
 - **Patinete**: batería, carga y ajustes.
 - **Modo ambiente**: reloj, fotos de tus álbumes (Immich, Google Fotos…), burbujas con lo importante y un mini reproductor.
 - **Alarmas y avisos**: alarmas de despertador, y avisos que lanzas desde Home Assistant con botones. Por ejemplo, «llaman al telefonillo → Abrir puerta» ([cómo](AVISOS.md)).
+- **A tu medida**: pestañas con las tarjetas que quieras y burbujas programables con pequeños scripts ([cómo](SCRIPTS.md)).
 - **Configurarlo desde el móvil**: escanea el QR de la pantalla y cambia todo desde una web con contraseña.
 
 <p align="center">

@@ -192,8 +192,9 @@ function setState(id, st) {
     clearTimeout(structTimer);
     structTimer = setTimeout(() => !S.sheetId && render(), 1500);
   }
+  markCode(id);
   clearTimeout(ambTimer);
-  ambTimer = setTimeout(renderAmbientChips, 500);
+  ambTimer = setTimeout(paintBullets, 500);
   if (isNew || !st) { clearTimeout(structTimer); structTimer = setTimeout(() => !S.sheetId && render(), 1500); }
 }
 
@@ -815,21 +816,9 @@ const VIEWS = {
       const out = [h('div', { class: 'greeting' }, hello),
         h('div', { class: 'greeting-sub' }, cap(new Date().toLocaleDateString('es-ES', { weekday: 'long', day: 'numeric', month: 'long' })))];
 
-      // Resumen rápido
-      const summary = h('div', { class: 'chips' });
-      const lights = ids((id) => domain(id) === 'light');
-      const openings = ids((id) => domain(id) === 'binary_sensor' && ['door', 'window', 'garage_door', 'opening'].includes(S.states[id].attributes.device_class));
-      bindMany('view', [...lights, ...openings], () => {
-        const on = lights.filter((id) => S.states[id] && S.states[id].state === 'on');
-        const open = openings.filter((id) => S.states[id] && S.states[id].state === 'on');
-        const chips = [];
-        if (on.length) chips.push(h('button', { class: 'chip', onclick: () => call('light', 'turn_off', {}, on) }, icon('mdi-lightbulb-off-outline'), on.length > 1 ? `Apagar ${on.length} luces` : `Apagar ${nameOf(on[0])}`));
-        else if (lights.length) chips.push(h('div', { class: 'chip' }, icon('mdi-lightbulb-outline'), 'Todas las luces apagadas'));
-        if (open.length) chips.push(h('div', { class: 'chip' }, icon('mdi-door-open'), open.length === 1 ? `${nameOf(open[0])} abierta` : `${open.length} puertas/ventanas abiertas`));
-        const ac = nextAlarmChip('chip');
-        if (ac) { ac.addEventListener('click', () => go('settings')); chips.push(ac); }
-        summary.replaceChildren(...chips);
-      });
+      // Resumen rápido: las burbujas marcadas para Inicio
+      const summary = h('div', { class: 'chips', id: 'home-bullets' });
+      paintHomeBullets(summary);
       out.push(summary, h('div', { style: 'height:10px' }));
 
       // Tarjetas: tiempo + patinete
@@ -1425,6 +1414,8 @@ const DEFAULTS = () => ({
   alarms: [],
   ambientChips: null,   // null = orden y selección por defecto
   defaultSpeaker: '',   // media_player que se controla desde el modo ambiente
+  bullets: null,        // burbujas (integradas y de script); null = las de siempre
+  tabs: null,           // pestañas con sus tarjetas; null = una por cada vista
 });
 let SET = DEFAULTS();
 const mergeSettings = (saved = {}) => {
@@ -1653,7 +1644,7 @@ function renderSettings() {
 
     alarmsCard(),
 
-    ambChipsCard(),
+    bulletsCard(),
 
     speakerCard(),
 
@@ -1716,11 +1707,6 @@ function daysText(days) {
   return [...days].sort().map((i) => DAY_LETTERS[i]).join(' ');
 }
 /** La próxima alarma de las próximas 24 h, para Inicio y el modo ambiente. */
-function nextAlarmChip(cls) {
-  const n = upcomingAlarms()[0];
-  if (!n || n.when - Date.now() > 24 * 3600e3) return null;
-  return h('div', { class: cls, 'data-go': 'settings' }, icon(n.src === 'movil' ? 'mdi-cellphone-sound' : 'mdi-alarm'), whenText(n.when));
-}
 
 /* ---------- Que suene ---------- */
 function checkAlarms(now = new Date()) {
@@ -1862,12 +1848,28 @@ function alarmsCard() {
 }
 
 /* ====================== Navegación y renderizado ====================== */
+/* ====================== Pestañas ====================== */
+const PM = window.PanelModulos;
+const tabs = () => PM.tabList(SET.tabs);
+const tabViews = (t) => (t.cards || []).filter((c) => c.type === 'view').map((c) => c.view);
+/** Una pestaña que solo tiene vistas que no aplican (p. ej. Patinete sin patinete) no sale. */
+const tabVisible = (t) => {
+  const v = tabViews(t);
+  return !v.length || v.length < (t.cards || []).length || v.some((k) => VIEWS[k] && (!VIEWS[k].visible || VIEWS[k].visible()));
+};
+const visibleTabs = () => tabs().filter(tabVisible);
+/** Pestaña para un destino: su id o la primera que contenga esa vista. */
+function tabFor(key) {
+  if (key === 'settings') return 'settings';
+  const list = visibleTabs();
+  const t = list.find((x) => x.id === key) || list.find((x) => tabViews(x).includes(key));
+  return t ? t.id : (list[0] || {}).id || 'settings';
+}
 function renderRail() {
   const rail = $('#rail');
-  const items = Object.entries(VIEWS).filter(([, v]) => !v.rail && (!v.visible || v.visible()));
-  rail.replaceChildren(...items.map(([key, v]) => {
-    const btn = h('button', { class: 'rail-btn' + (S.view === key ? ' active' : ''), onclick: () => go(key) }, icon(v.icon), v.title);
-    if (key === 'scooter') {          // mini rayo sobre el icono mientras el patinete carga
+  rail.replaceChildren(...visibleTabs().map((t) => {
+    const btn = h('button', { class: 'rail-btn' + (S.view === t.id ? ' active' : ''), onclick: () => go(t.id) }, icon(PM.mdi(t.icon) || 'mdi-tab'), t.title);
+    if (tabViews(t).includes('scooter')) {          // mini rayo sobre el icono mientras el patinete carga
       const k = scooterIds(), badge = h('span', { class: 'rail-badge hidden' }, icon('mdi-lightning-bolt'));
       btn.append(badge);
       bindMany('view', [k.charging_any, k.charged], () => {
@@ -1881,7 +1883,64 @@ function renderRail() {
     h('div', { class: 'rail-spacer' }),
     h('button', { class: 'rail-btn', onclick: showAmbient }, icon('mdi-image-filter-hdr'), 'Ambiente'));
 }
-/** Sin conexión configurada: QR de la web de configuración (si hay ayudante) o instrucciones. */
+
+/** Contenido de una pestaña: sus tarjetas una detrás de otra. */
+function renderTab(t) {
+  return (t.cards || []).flatMap((c) => {
+    try { return renderCard(c); } catch (e) { console.error(e); return [codeError(c.title || 'Tarjeta', e.message)]; }
+  });
+}
+const anyTile = (id) => (['sensor', 'binary_sensor'].includes(domain(id)) ? sensorTile(id) : tile(id));
+function renderCard(c) {
+  const title = c.title ? h('div', { class: 'section-title' }, c.title) : null;
+  if (c.type === 'view') {
+    const v = VIEWS[c.view];
+    return v && (!v.visible || v.visible()) ? v.render() : [];
+  }
+  if (c.type === 'entities') return [title, h('div', { class: 'grid' }, (c.entities || []).filter((id) => S.states[id]).map(anyTile))];
+  if (c.type === 'camera') return S.states[c.entity] ? [title, h('div', { class: 'cams' }, cameraImg(c.entity, 'view', CFG.cameraRefreshSeconds))] : [];
+  if (c.type === 'bullets') {
+    const box = h('div', { class: 'chips' });
+    const paint = () => box.replaceChildren(...bulletOutputs(c.bullets && c.bullets.length ? c.bullets : 'home').map((b) => bubbleEl(b, 'chip')));
+    paint(); VIEW_CODE.push({ matches: () => true, paint });
+    return [title, box];
+  }
+  if (c.type === 'script') {
+    const m = moduleOf(c.script), name = c.title || c.script;
+    if (m.err) return [title, codeError(name, m.err)];
+    const box = h('div', { class: 'code-card' });
+    const paint = () => {
+      try { box.replaceChildren(...codeBlocks(m.mod.render(HA, 'card'))); } catch (e) { box.replaceChildren(codeError(name, e.message)); }
+    };
+    paint(); VIEW_CODE.push({ matches: m.mod.matches, paint });
+    return [title, box];
+  }
+  return [];
+}
+/** Bloques que devuelve una tarjeta de script. */
+function codeBlocks(out) {
+  const list = out == null ? [] : Array.isArray(out) ? out : [out];
+  return list.filter(Boolean).map((b) => {
+    if (typeof b === 'string') return h('div', { class: 'cb-text' }, b);
+    if (b.title) return h('div', { class: 'section-title' }, b.title);
+    if (b.text != null) return h('div', { class: 'cb-text ' + (b.size || '') }, String(b.text));
+    if (b.tiles) return h('div', { class: 'grid' }, [].concat(b.tiles).filter((id) => S.states[id]).map(anyTile));
+    if (b.stats) return h('div', { class: 'stat-grid' }, [].concat(b.stats).map((x) => h('div', { class: 'stat' }, icon(PM.mdi(x.icon) || 'mdi-information-outline'),
+      h('div', { class: 'stat-value' }, x.value == null ? '—' : String(x.value)), h('div', { class: 'stat-label' }, x.label || ''))));
+    if (b.chips) return h('div', { class: 'chips' }, PM.bubbles(b.chips).map((x) => bubbleEl(x, 'chip')));
+    if (b.button) {
+      const x = b.button;
+      return h('button', { class: 'big-action', onclick: () => runBubble({ action: x.action, go: x.go }) }, icon(PM.mdi(x.icon) || 'mdi-gesture-tap'), x.text || 'Ejecutar');
+    }
+    return null;
+  });
+}
+const codeError = (name, msg) => h('div', { class: 'code-error' }, icon('mdi-alert-circle-outline'), h('b', null, name + ': '), msg);
+/** Tarjetas y burbujas de la pestaña actual que se repintan al cambiar sus entidades. */
+let VIEW_CODE = [], viewCodeTimer;
+const VIEW_DIRTY = new Set();
+
+/** Sin conexión configurada/** Sin conexión configurada: QR de la web de configuración (si hay ayudante) o instrucciones. */
 async function showSetup() {
   $('#rail').replaceChildren();
   $('#view-title').textContent = 'Configurar el panel';
@@ -1902,19 +1961,20 @@ async function showSetup() {
 
 function render() {
   if (NEEDS_SETUP) { showSetup(); return; }
-  B.view.clear();
+  B.view.clear(); VIEW_CODE = []; VIEW_DIRTY.clear();
   S.viewTimers.forEach(clearInterval); S.viewTimers = [];
-  let v = VIEWS[S.view];
-  if (v.visible && !v.visible()) { S.view = 'home'; v = VIEWS.home; }
-  $('#view-title').textContent = v.title;
+  if (S.view !== 'settings' && !visibleTabs().some((t) => t.id === S.view)) S.view = tabFor(S.view);
+  const t = S.view === 'settings' ? null : visibleTabs().find((x) => x.id === S.view);
+  $('#view-title').textContent = t ? t.title : VIEWS.settings.title;
   $('#settings-btn').classList.toggle('active', S.view === 'settings');
   const view = $('#view');
   const scroll = view.scrollTop;
-  view.replaceChildren(...v.render());
+  view.replaceChildren(...(t ? renderTab(t) : VIEWS.settings.render()).filter(Boolean));
   view.scrollTop = scroll;
   renderRail();
 }
 function go(view) {
+  view = tabFor(view);
   if (S.view !== view) { S.view = view; $('#view').scrollTop = 0; }
   render();
 }
@@ -1936,74 +1996,141 @@ function showAmbient() {
 function hideAmbient(view = 'home') {
   S.ambient = false;
   $('#ambient').classList.remove('show');
-  if (!VIEWS[view] || (VIEWS[view].visible && !VIEWS[view].visible())) view = 'home';
+  view = tabFor(view);
   if (S.view !== view) go(view); else render();
   resetIdle();
 }
-/* Burbujas del modo ambiente: cuáles salen y en qué orden se elige en Ajustes (SET.ambientChips) */
-const AMB_CHIPS = [
-  { key: 'weather', label: 'Tiempo', icon: 'mdi-weather-partly-cloudy' },
-  { key: 'alarm', label: 'Próxima alarma', icon: 'mdi-alarm' },
-  { key: 'printers', label: 'Impresoras imprimiendo', icon: 'mdi-printer-3d-nozzle' },
-  { key: 'scooter', label: 'Patinete', icon: 'mdi-scooter' },
-  { key: 'media', label: 'Música sonando', icon: 'mdi-music' },
-  { key: 'lights', label: 'Luces encendidas', icon: 'mdi-lightbulb-on' },
-  { key: 'openings', label: 'Puertas y ventanas abiertas', icon: 'mdi-door-open', off: true },
-];
-const AMB_BUILD = {
+/* ====================== Burbujas ======================
+ * Integradas (BUILTIN) o de script: archivos .js que se crean o importan en la web de configuración,
+ * se guardan en la Pi y el panel los descarga al arrancar. Se ejecutan aquí, en el navegador.
+ * Cada burbuja dice si sale en el modo ambiente y/o en el resumen de Inicio (SET.bullets). */
+const BUILTIN = {
   weather() {
     const wid = weatherId();
     if (!wid) return null;
     const w = S.states[wid];
-    return h('div', { class: 'amb-chip', 'data-go': 'home' }, icon(wIcon(w.state)), `${fmtNum(w.attributes.temperature)}° ${wText(w.state)}`);
+    return { icon: wIcon(w.state), text: `${fmtNum(w.attributes.temperature)}° ${wText(w.state)}`, go: 'home' };
   },
-  alarm: () => nextAlarmChip('amb-chip'),
+  alarm() {
+    const n = upcomingAlarms()[0];
+    if (!n || n.when - Date.now() > 24 * 3600e3) return null;
+    return { icon: n.src === 'movil' ? 'mdi-cellphone-sound' : 'mdi-alarm', text: whenText(n.when), go: 'settings' };
+  },
   printers: () => printers().filter(pActive).map((p) => {
     const prog = num(p.e.progress), r = pRemaining(p);
-    return h('div', { class: 'amb-chip amb-print', 'data-go': 'printers' }, icon('mdi-printer-3d-nozzle'),
-      h('span', null, `${p.name} `, h('b', null, isNaN(prog) ? '—' : Math.round(prog) + ' %'), r > 0 ? ` · ${fmtDuration(r)}` : ''),
-      h('span', { class: 'amb-bar' }, h('span', { style: `width:${isNaN(prog) ? 0 : prog}%` })));
+    return { icon: 'mdi-printer-3d-nozzle', text: `${p.name} ${isNaN(prog) ? '—' : Math.round(prog) + ' %'}${r > 0 ? ' · ' + fmtDuration(r) : ''}`,
+      progress: isNaN(prog) ? null : prog, go: 'printers' };
   }),
   scooter() {
     const k = scooterIds();
     if (!k.battery_level) return null;
     const b = num(k.battery_level), m = chargeMode(k);
     // Siempre el patinete; si carga, un rayito a la derecha (amarillo cargando, verde cargado)
-    return h('div', { class: 'amb-chip' + (m === 'charged' ? ' charged' : ''), 'data-go': 'scooter' },
-      icon('mdi-scooter'), `${isNaN(b) ? '—' : Math.round(b)} %`, m ? icon('mdi-lightning-bolt', 'amb-bolt') : null);
+    return { icon: 'mdi-scooter', text: `${isNaN(b) ? '—' : Math.round(b)} %`, color: m === 'charged' ? 'green' : null,
+      badge: m ? 'mdi-lightning-bolt' : null, badgeColor: m === 'charged' ? 'green' : 'yellow', go: 'scooter' };
   },
   media() {
     const playing = ids((id) => domain(id) === 'media_player' && S.states[id].state === 'playing');
-    return playing.length ? h('div', { class: 'amb-chip', 'data-go': 'media' }, icon('mdi-music'), S.states[playing[0]].attributes.media_title || nameOf(playing[0])) : null;
+    return playing.length ? { icon: 'mdi-music', text: S.states[playing[0]].attributes.media_title || nameOf(playing[0]), go: 'media' } : null;
   },
-  lights() {
-    const n = ids((id) => domain(id) === 'light' && S.states[id].state === 'on').length;
-    return n ? h('div', { class: 'amb-chip', 'data-go': 'rooms' }, icon('mdi-lightbulb-on'), `${n} encendida${n > 1 ? 's' : ''}`) : null;
+  lights(where) {
+    const lights = ids((id) => domain(id) === 'light');
+    const on = lights.filter((id) => S.states[id].state === 'on');
+    if (where === 'home') {
+      if (on.length) return { icon: 'mdi-lightbulb-off-outline', text: on.length > 1 ? `Apagar ${on.length} luces` : `Apagar ${nameOf(on[0])}`,
+        action: { service: 'light.turn_off', entity: on } };
+      return lights.length ? { icon: 'mdi-lightbulb-outline', text: 'Todas las luces apagadas' } : null;
+    }
+    return on.length ? { icon: 'mdi-lightbulb-on', text: `${on.length} encendida${on.length > 1 ? 's' : ''}`, go: 'rooms' } : null;
   },
-  openings() {
+  openings(where) {
     const open = ids((id) => domain(id) === 'binary_sensor' && S.states[id].state === 'on' &&
       ['door', 'window', 'garage_door', 'opening'].includes(S.states[id].attributes.device_class));
     if (!open.length) return null;
-    return h('div', { class: 'amb-chip', 'data-go': 'sensors' }, icon('mdi-door-open'),
-      open.length === 1 ? `${nameOf(open[0])} abierta` : `${open.length} abiertas`);
+    return { icon: 'mdi-door-open', go: 'sensors',
+      text: open.length === 1 ? `${nameOf(open[0])} abierta` : where === 'home' ? `${open.length} puertas/ventanas abiertas` : `${open.length} abiertas` };
   },
 };
-/** Orden y visibilidad de las burbujas, completando con las nuevas que no estuvieran guardadas. */
-function ambChipList() {
-  const saved = Array.isArray(SET.ambientChips) ? SET.ambientChips.filter((c) => AMB_BUILD[c.key]) : [];
-  for (const c of AMB_CHIPS) if (!saved.some((x) => x.key === c.key)) saved.push({ key: c.key, on: !c.off });
-  return saved;
+// Acceso a Home Assistant para los scripts: leer estados. call() solo se usa al tocar un botón o una burbuja.
+const HA = PM.makeHA(() => S.states, {
+  call: (service, data = {}) => { const [d, sv] = String(service).split('.'); return call(d, sv, data); },
+  go: (v) => go(v),
+});
+const bulletList = () => PM.bulletList(SET.bullets, SET.ambientChips);
+
+/* Scripts descargados de la Pi (window.PANEL_HELPER.modulos) o, sin ayudante, de config.js (modulos). */
+const MODULES = (window.PANEL_HELPER && window.PANEL_HELPER.modulos) || CFG.modulos || {};
+const COMPILED = new Map();
+function moduleOf(name) {
+  let m = COMPILED.get(name);
+  if (!m) {
+    m = { cache: {} };
+    if (!(name in MODULES)) m.err = 'no existe el script ' + name;
+    else try { m.mod = PM.compile(MODULES[name]); } catch (e) { m.err = e.message; }
+    COMPILED.set(name, m);
+  }
+  return m;
+}
+/** Un cambio de estado invalida las burbujas y tarjetas que lo vigilan. */
+function markCode(id) {
+  for (const m of COMPILED.values()) if (m.mod && m.mod.matches(id)) m.cache = {};
+  VIEW_CODE.forEach((v, i) => { if (v.matches(id)) VIEW_DIRTY.add(i); });
+  if (VIEW_DIRTY.size) {
+    clearTimeout(viewCodeTimer);
+    viewCodeTimer = setTimeout(() => { if (!S.sheetId) VIEW_DIRTY.forEach((i) => VIEW_CODE[i] && VIEW_CODE[i].paint()); VIEW_DIRTY.clear(); }, 500);
+  }
+}
+/** Lo que pintan las burbujas de un sitio ('ambient' | 'home') o de una lista concreta de ids. */
+function bulletOutputs(where) {
+  const all = bulletList();
+  const list = Array.isArray(where) ? where.map((id) => all.find((b) => b.id === id)).filter(Boolean) : all.filter((b) => b[where]);
+  const place = Array.isArray(where) ? 'home' : where;
+  const out = [];
+  for (const b of list) {
+    if (b.type !== 'script') {
+      try { out.push(...PM.bubbles(BUILTIN[b.key] && BUILTIN[b.key](place))); } catch (e) { console.error(e); }
+      continue;
+    }
+    const m = moduleOf(b.script), name = b.name || b.script;
+    if (!m.err && !m.cache[place]) {
+      try { m.cache[place] = { out: PM.bubbles(m.mod.render(HA, place)) }; } catch (e) { m.cache[place] = { err: e.message }; }
+    }
+    const err = m.err || m.cache[place].err;
+    if (err) out.push({ icon: 'mdi-alert-circle-outline', text: `${name}: ${err}`, color: PM.color('rojo') });
+    else out.push(...m.cache[place].out);
+  }
+  return out;
+}
+/** Una burbuja en pantalla. Al tocarla: su acción o ir a su pestaña. */
+function bubbleEl(b, cls) {
+  const el = h('div', { class: cls + (b.go || b.action ? ' tappable' : '') + (b.progress != null ? ' with-bar' : ''), style: b.color ? `--bc:${b.color}` : null },
+    b.icon ? icon(b.icon, 'b-ic') : null, h('span', null, b.text),
+    b.badge ? h('i', { class: `mdi ${b.badge} b-badge`, style: b.badgeColor ? `color:${b.badgeColor}` : null }) : null,
+    b.progress != null ? h('span', { class: 'amb-bar' }, h('span', { style: `width:${b.progress}%` })) : null);
+  el.bubble = b;
+  if (cls === 'chip' && (b.go || b.action)) el.addEventListener('click', () => runBubble(b));
+  return el;
+}
+/** Al tocar: la acción de la burbuja (lo único que se manda a Home Assistant) o ir a su pestaña. */
+function runBubble(b) {
+  if (b.action) {
+    const a = b.action, [d, sv] = String(a.service || '').split('.');
+    if (d && sv) call(d, sv, a.data || {}, a.entity);
+    return;
+  }
+  if (b.go) go(b.go);
+}
+function paintHomeBullets(box = document.getElementById('home-bullets')) {
+  if (box) box.replaceChildren(...bulletOutputs('home').map((b) => bubbleEl(b, 'chip')));
 }
 function renderAmbientChips() {
   if (!S.ambient) return;
-  const chips = [];
-  for (const c of ambChipList()) {
-    if (!c.on) continue;
-    const out = AMB_BUILD[c.key]();
-    if (Array.isArray(out)) chips.push(...out); else if (out) chips.push(out);
-  }
-  $('#amb-chips').replaceChildren(...chips);
+  $('#amb-chips').replaceChildren(...bulletOutputs('ambient').map((b) => bubbleEl(b, 'amb-chip')));
   renderAmbientPlayer();
+}
+function paintBullets() {
+  renderAmbientChips();
+  if (!S.ambient && !S.sheetId) paintHomeBullets();
 }
 
 /* ---------- Mini reproductor del altavoz por defecto (modo ambiente, abajo a la derecha) ---------- */
@@ -2058,28 +2185,26 @@ function speakerCard() {
   return h('div', { class: 'card set-card' }, h('div', { class: 'set-title' }, icon('mdi-speaker'), 'Altavoz por defecto'),
     h('div', { class: 'muted small' }, 'Sus controles salen abajo a la derecha en el modo ambiente.'), list);
 }
-/** Ajustes: elegir y ordenar las burbujas. */
-function ambChipsCard() {
+/** Ajustes: qué burbujas salen en el modo ambiente y en Inicio, y en qué orden. */
+function bulletsCard() {
   const list = h('div', { class: 'amb-list' });
+  const save = (arr) => { SET.bullets = arr; saveSettings(); paint(); };
   const paint = () => {
-    const items = ambChipList();
-    list.replaceChildren(...items.map((c, i) => {
-      const meta = AMB_CHIPS.find((x) => x.key === c.key);
-      const move = (d) => {
-        const arr = ambChipList(); const j = i + d;
-        if (j < 0 || j >= arr.length) return;
-        [arr[i], arr[j]] = [arr[j], arr[i]];
-        SET.ambientChips = arr; saveSettings(); paint();
-      };
-      return h('div', { class: 'amb-item' + (c.on ? '' : ' off') }, icon(meta.icon), h('span', { class: 'amb-item-label' }, meta.label),
-        h('button', { class: 'round-btn small', disabled: i === 0, onclick: () => move(-1), title: 'Subir' }, icon('mdi-chevron-up')),
-        h('button', { class: 'round-btn small', disabled: i === items.length - 1, onclick: () => move(1), title: 'Bajar' }, icon('mdi-chevron-down')),
-        switchBtn(c.on, (v) => { const arr = ambChipList(); arr[i].on = v; SET.ambientChips = arr; saveSettings(); paint(); }));
-    }));
+    const items = bulletList();
+    list.replaceChildren(h('div', { class: 'amb-item amb-head' }, h('span', { class: 'amb-item-label' }), h('span', { class: 'amb-col' }, 'Ambiente'), h('span', { class: 'amb-col' }, 'Inicio')),
+      ...items.map((b, i) => {
+        const meta = b.type === 'script' ? { label: b.name || b.script, icon: 'mdi-script-text-outline' } : PM.BUILTINS.find((x) => x.key === b.key);
+        const move = (d) => { const arr = bulletList(), j = i + d; if (j < 0 || j >= arr.length) return; [arr[i], arr[j]] = [arr[j], arr[i]]; save(arr); };
+        const flag = (k) => h('span', { class: 'amb-col' }, switchBtn(!!b[k], (v) => { const arr = bulletList(); arr[i][k] = v; save(arr); }));
+        return h('div', { class: 'amb-item' + (b.ambient || b.home ? '' : ' off') }, icon(meta.icon), h('span', { class: 'amb-item-label' }, meta.label),
+          h('button', { class: 'round-btn small', disabled: i === 0, onclick: () => move(-1), title: 'Subir' }, icon('mdi-chevron-up')),
+          h('button', { class: 'round-btn small', disabled: i === items.length - 1, onclick: () => move(1), title: 'Bajar' }, icon('mdi-chevron-down')),
+          flag('ambient'), flag('home'));
+      }));
   };
   paint();
-  return h('div', { class: 'card set-card' }, h('div', { class: 'set-title' }, icon('mdi-format-list-bulleted'), 'Burbujas del modo ambiente'),
-    h('div', { class: 'muted small' }, 'Elige cuáles salen debajo del reloj y en qué orden. Solo aparecen cuando tienen algo que contar (p. ej. música si está sonando).'),
+  return h('div', { class: 'card set-card' }, h('div', { class: 'set-title' }, icon('mdi-format-list-bulleted'), 'Burbujas'),
+    h('div', { class: 'muted small' }, 'Elige cuáles salen debajo del reloj (Ambiente) y en el resumen de Inicio. Solo aparecen cuando tienen algo que contar. Las de script se crean en la web de configuración.'),
     list,
     h('div', { class: 'btn-row' }, h('button', { class: 'big-action', onclick: () => showAmbient() }, icon('mdi-image-filter-hdr'), 'Ver el modo ambiente')));
 }
@@ -2405,8 +2530,9 @@ function start() {
     const act = e.target.closest('[data-act]');
     if (act) { e.stopPropagation(); ambientPlayerAction(act.dataset.act); resetIdle(); return; }
     if (e.target.closest('#amb-player')) { resetIdle(); return; }
-    const chip = e.target.closest('.amb-chip[data-go]');
-    hideAmbient(chip ? chip.dataset.go : 'home');
+    const chip = e.target.closest('.amb-chip');
+    if (chip && chip.bubble && chip.bubble.action) { e.stopPropagation(); runBubble(chip.bubble); resetIdle(); return; }
+    hideAmbient(chip && chip.bubble && chip.bubble.go ? chip.bubble.go : 'home');
   });
   document.addEventListener('pointerdown', () => { SCREEN.lastTouch = Date.now(); resetIdle(); }, true);
   $('#blackout').addEventListener('pointerdown', (e) => { e.preventDefault(); e.stopPropagation(); wakeScreen(); });

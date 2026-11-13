@@ -73,6 +73,31 @@
   .src-head .btn { padding: 6px 12px; }
   .src-body { display: flex; flex-direction: column; gap: 6px; }
   .src-body input, .src-body textarea { background: var(--surface); }
+  .scripts { display: flex; flex-direction: column; gap: 8px; margin-top: 10px; }
+  .script { background: var(--surface-2); border-radius: 14px; padding: 10px 12px; }
+  .script-head { display: flex; align-items: center; gap: 8px; cursor: pointer; }
+  .script-head b { flex: 1; font-family: ui-monospace, Consolas, monospace; font-size: 14px; }
+  .script textarea.code { min-height: 260px; background: #0b0d11; tab-size: 2; white-space: pre; margin-top: 8px; }
+  .script .btns { margin-top: 8px; }
+  .script .btn { padding: 7px 12px; }
+  .preview { margin-top: 8px; background: #0b0d11; border-radius: 10px; padding: 10px; font-size: 13px; }
+  .preview pre, .help pre { margin: 6px 0 0; white-space: pre-wrap; word-break: break-word; font-size: 12px; color: var(--muted); }
+  .preview .err { color: var(--danger); }
+  .pchips { display: flex; flex-wrap: wrap; gap: 6px; }
+  .pchip { background: var(--surface-3); border-radius: 999px; padding: 4px 12px; font-size: 13px; }
+  .help { margin-top: 10px; } .help summary { cursor: pointer; color: var(--accent); font-size: 14px; }
+  code { font-family: ui-monospace, Consolas, monospace; font-size: 13px; background: var(--surface-2); padding: 1px 5px; border-radius: 5px; }
+  .amb-web .cols { display: flex; align-items: center; gap: 8px; }
+  .amb-web .col { width: 64px; display: flex; flex-direction: column; align-items: center; gap: 2px; font-size: 11px; color: var(--muted); }
+  .tabs-web { display: flex; flex-direction: column; gap: 10px; margin-top: 10px; }
+  .tab { background: var(--surface-2); border-radius: 14px; padding: 10px 12px; display: flex; flex-direction: column; gap: 8px; }
+  .tab-head { display: grid; grid-template-columns: 1fr 1fr auto; gap: 6px; align-items: center; }
+  .tab input, .tab select { background: var(--surface); padding: 8px 10px; }
+  .tcard { background: var(--surface); border-radius: 10px; padding: 8px; display: flex; flex-direction: column; gap: 6px; }
+  .tcard-head { display: flex; gap: 6px; align-items: center; }
+  .tcard-head select { flex: 1; }
+  .tcard input, .tcard select { background: var(--surface-2); }
+  .mini { padding: 6px 10px !important; border-radius: 8px !important; }
   .info { display: grid; grid-template-columns: auto 1fr; gap: 4px 14px; font-size: 14px; margin-bottom: 6px; }
   .info dt { color: var(--muted); } .info dd { margin: 0; word-break: break-all; }
   .wifi-list { display: flex; flex-direction: column; gap: 6px; margin-top: 8px; }
@@ -227,9 +252,54 @@
         <label for="defaultSpeaker">Altavoz por defecto <span class="hint">(sus controles salen en el modo ambiente)</span></label>
         <select id="defaultSpeaker"><option value="">Ninguno</option></select>
       </div>
-      <div class="field">
-        <label>Burbujas debajo del reloj <span class="hint">(cuáles salen y en qué orden)</span></label>
-        <div id="amb-list" class="amb-web"></div>
+    </div>
+
+    <div class="card">
+      <h2>🫧 Burbujas</h2>
+      <div class="hint">Cuáles salen debajo del reloj (Ambiente) y en el resumen de Inicio, y en qué orden. Solo aparecen cuando tienen algo que contar.</div>
+      <div id="bullets" class="amb-web" style="margin-top:10px"></div>
+      <div class="add" style="margin-top:8px">
+        <select id="bullet-script"></select>
+        <button class="btn" id="bullet-add" type="button">Añadir burbuja de script</button>
+      </div>
+    </div>
+
+    <div class="card" data-nodirty>
+      <h2>📜 Scripts</h2>
+      <div class="hint">Archivos JavaScript con <code>watch</code> (entidades que lo actualizan) y <code>render(ha)</code> (lo que se pinta).
+        Se guardan en la Pi y el panel los descarga y los ejecuta en el navegador. Se guardan al momento con su botón.</div>
+      <div id="scripts" class="scripts"></div>
+      <div class="add" style="margin-top:10px">
+        <input id="script-new" placeholder="nombre (p. ej. temperatura-salon)">
+        <select id="script-tpl"><option value="burbuja">Burbuja</option><option value="luces">Burbuja con acción</option><option value="tarjeta">Tarjeta</option><option value="">Vacío</option></select>
+        <button class="btn" id="script-create" type="button">Crear</button>
+      </div>
+      <div class="add" style="margin-top:8px">
+        <input id="script-url" placeholder="https://… (importar desde una URL)">
+        <button class="btn" id="script-import" type="button">Importar</button>
+        <label class="btn" style="text-align:center">Subir .js<input id="script-file" type="file" accept=".js,text/javascript" hidden></label>
+      </div>
+      <div id="script-msg" class="hint" style="margin-top:6px"></div>
+      <details class="help"><summary>Qué puede usar un script</summary>
+<pre>ha.state(id)  ha.num(id)  ha.attr(id, 'x')  ha.name(id)  ha.fmt(id)
+ha.isOn(id)   ha.ok(id)   ha.find('light.*', filtro)  ha.count('light.*', 'on')
+ha.minutesSince(id)  ha.entity(id)  ha.states  ha.now()
+
+Burbuja → { icon, text, color, go, action, progress, badge }  (o una lista, o null)
+Tarjeta → [ { title }, { text, size: 'big'|'small' }, { tiles: [ids] },
+            { stats: [{ icon, value, label }] }, { chips: [burbujas] },
+            { button: { text, icon, action } } ]
+action = { service: 'light.turn_off', entity: 'light.x', data: {} }  (solo al tocar)
+go = 'home' | 'rooms' | 'sensors' | 'media' | 'printers' | 'scooter' | id de pestaña</pre></details>
+    </div>
+
+    <div class="card">
+      <h2>🗂️ Pestañas</h2>
+      <div class="hint">Cada pestaña de la barra lateral y sus tarjetas, de arriba abajo.</div>
+      <div id="tabs" class="tabs-web"></div>
+      <div class="btns" style="margin-top:10px">
+        <button class="btn" id="tab-add" type="button">Añadir pestaña</button>
+        <button class="btn" id="tab-reset" type="button">Volver a las de siempre</button>
       </div>
     </div>
 
@@ -269,6 +339,7 @@
   </div></div>
 </div>
 
+<script src="/lib/modulos.js"></script>
 <script>
 'use strict';
 const $ = (s) => document.querySelector(s);
@@ -278,22 +349,171 @@ const DEF = {   // mismos valores por defecto que el panel
   sound: { enabled: true, volume: 70 }, photos: { enabled: true, seconds: 30, fit: 'blur' },
 };
 const lists = { favorites: [], hiddenEntities: [], excludePlatforms: [] };
-const AMB = [['weather', '🌤️ Tiempo'], ['alarm', '⏰ Próxima alarma'], ['printers', '🖨️ Impresoras imprimiendo'], ['scooter', '🛴 Patinete'],
-  ['media', '🎵 Música sonando'], ['lights', '💡 Luces encendidas'], ['openings', '🚪 Puertas y ventanas abiertas']];
-let ambChips = [];
-function renderAmb() {
-  const box = $('#amb-list');
-  box.replaceChildren(...ambChips.map((c, i) => {
-    const row = document.createElement('div'); row.className = 'row';
-    const lab = document.createElement('label'); lab.textContent = (AMB.find((a) => a[0] === c.key) || [0, c.key])[1];
-    const ctr = document.createElement('div'); ctr.className = 'btns';
-    const mv = (d, t) => { const b = document.createElement('button'); b.type = 'button'; b.className = 'btn mv'; b.textContent = t; b.disabled = !ambChips[i + d];
-      b.onclick = () => { [ambChips[i], ambChips[i + d]] = [ambChips[i + d], ambChips[i]]; renderAmb(); dirty(); }; return b; };
-    const sw = document.createElement('label'); sw.className = 'switch'; sw.innerHTML = '<input type="checkbox"><span></span>';
-    sw.firstChild.checked = c.on; sw.firstChild.onchange = () => { c.on = sw.firstChild.checked; dirty(); };
-    ctr.append(mv(-1, '↑'), mv(1, '↓'), sw); row.append(lab, ctr); return row;
+const PM = window.PanelModulos;
+const el = (tag, props = {}, ...kids) => {
+  const e = document.createElement(tag);
+  for (const [k, v] of Object.entries(props)) {
+    if (v == null || v === false) continue;
+    if (k === 'class') e.className = v; else if (k.startsWith('on')) e.addEventListener(k.slice(2), v);
+    else if (k in e && k !== 'list') e[k] = v; else e.setAttribute(k, v === true ? '' : v);
+  }
+  e.append(...kids.flat().filter((x) => x != null && x !== false));
+  return e;
+};
+const switchEl = (checked, onchange) => {
+  const sw = el('label', { class: 'switch' }, el('input', { type: 'checkbox', checked, onchange: (e) => onchange(e.target.checked) }), el('span'));
+  return sw;
+};
+const moveBtns = (arr, i, after) => [-1, 1].map((d) => el('button', { type: 'button', class: 'btn mv', textContent: d < 0 ? '↑' : '↓', disabled: !arr[i + d],
+  onclick: () => { [arr[i], arr[i + d]] = [arr[i + d], arr[i]]; after(); dirty(); } }));
+
+/* ---------- burbujas ---------- */
+let bullets = [];
+function renderBullets() {
+  $('#bullets').replaceChildren(...bullets.map((b, i) => {
+    const meta = b.type === 'script' ? { label: '📜 ' + (b.name || b.script) } : { label: (PM.BUILTINS.find((x) => x.key === b.key) || {}).label || b.key };
+    const flag = (k, t) => el('span', { class: 'col' }, t, switchEl(!!b[k], (v) => { b[k] = v; dirty(); }));
+    return el('div', { class: 'row' }, el('label', { textContent: meta.label }),
+      el('div', { class: 'cols' }, ...moveBtns(bullets, i, renderBullets), flag('ambient', 'Ambiente'), flag('home', 'Inicio'),
+        b.type === 'script' ? el('button', { type: 'button', class: 'btn danger mv', textContent: '×', title: 'Quitar',
+          onclick: () => { bullets.splice(i, 1); renderBullets(); dirty(); } }) : null));
+  }));
+  const sel = $('#bullet-script');
+  sel.replaceChildren(...(Object.keys(scripts).length ? Object.keys(scripts).map((n) => new Option(n, n)) : [new Option('(crea antes un script)', '')]));
+}
+$('#bullet-add').onclick = () => {
+  const name = $('#bullet-script').value;
+  if (!name) return;
+  bullets.push({ id: 's-' + Date.now().toString(36), type: 'script', script: name, name: name.replace(/\.js$/, ''), ambient: true, home: false });
+  renderBullets(); dirty();
+};
+
+/* ---------- scripts (archivos .js en la Pi) ---------- */
+let scripts = {}, openScript = null, states = null;
+const smsg = (t, kind = '') => { $('#script-msg').textContent = t; $('#script-msg').className = 'hint ' + kind; };
+async function loadScripts() { scripts = await api('GET', '/api/scripts'); renderScripts(); renderBullets(); renderTabs(); }
+function renderScripts() {
+  const box = $('#scripts');
+  if (!Object.keys(scripts).length) { box.replaceChildren(el('div', { class: 'hint', textContent: 'Aún no hay scripts.' })); return; }
+  box.replaceChildren(...Object.keys(scripts).map((name) => {
+    const open = openScript === name;
+    const card = el('div', { class: 'script' });
+    const head = el('div', { class: 'script-head', onclick: () => { openScript = open ? null : name; renderScripts(); } },
+      el('b', { textContent: name }), el('span', { class: 'hint', textContent: open ? '▲' : '✎ editar' }));
+    card.append(head);
+    if (!open) return card;
+    const ta = el('textarea', { class: 'code', spellcheck: false, value: scripts[name] });
+    ta.addEventListener('keydown', (e) => {   // Tab = dos espacios
+      if (e.key !== 'Tab') return;
+      e.preventDefault();
+      const a = ta.selectionStart; ta.setRangeText('  ', a, ta.selectionEnd, 'end');
+    });
+    const out = el('div', { class: 'preview hidden' });
+    const test = async () => {
+      out.classList.remove('hidden'); out.replaceChildren(el('span', { class: 'hint', textContent: 'Probando con los estados actuales…' }));
+      try {
+        if (!states) states = await api('GET', '/api/estados');
+        const mod = PM.compile(ta.value);
+        const ha = PM.makeHA(() => states);
+        const t0 = performance.now(), res = mod.render(ha, 'ambient'), ms = performance.now() - t0;
+        const asBubbles = PM.bubbles(res);
+        out.replaceChildren(
+          el('div', { class: 'hint', textContent: `✓ Sin errores · ${ms.toFixed(1)} ms · watch: ${mod.watch ? mod.watch.join(', ') : 'cualquier cambio'}` }),
+          !Array.isArray(res) || res.every((x) => x && (x.text != null || x.icon)) ?
+            el('div', { class: 'pchips', style: 'margin-top:6px' }, ...asBubbles.map((b) => el('span', { class: 'pchip', style: b.color ? `border:1px solid ${b.color}` : '', textContent: b.text || '(sin texto)' }))) : null,
+          el('pre', { textContent: JSON.stringify(res, null, 2) ?? 'null' }));
+      } catch (e) { out.replaceChildren(el('div', { class: 'err', textContent: '✗ ' + e.message })); }
+    };
+    const save = async () => {
+      try { PM.compile(ta.value); } catch (e) { if (!confirm('Tiene un error: ' + e.message + '\n¿Guardar igualmente?')) return; }
+      try { await api('PUT', '/api/scripts', { name, code: ta.value }); scripts[name] = ta.value; smsg(`Guardado ${name}. El panel se actualiza solo ✓`, 'ok'); }
+      catch (e) { smsg(e.message, 'err'); }
+    };
+    const del = async () => {
+      if (!confirm(`¿Borrar ${name}? Las burbujas y tarjetas que lo usen mostrarán un error.`)) return;
+      try { await api('DELETE', '/api/scripts?name=' + encodeURIComponent(name)); delete scripts[name]; openScript = null; renderScripts(); renderBullets(); smsg('Borrado ' + name); }
+      catch (e) { smsg(e.message, 'err'); }
+    };
+    const download = () => {
+      const a = el('a', { href: URL.createObjectURL(new Blob([ta.value], { type: 'text/javascript' })), download: name });
+      a.click(); setTimeout(() => URL.revokeObjectURL(a.href), 1000);
+    };
+    card.append(ta, el('div', { class: 'btns' },
+      el('button', { type: 'button', class: 'btn primary', textContent: 'Guardar', onclick: save }),
+      el('button', { type: 'button', class: 'btn', textContent: 'Probar', onclick: test }),
+      el('button', { type: 'button', class: 'btn', textContent: 'Descargar', onclick: download }),
+      el('button', { type: 'button', class: 'btn danger', textContent: 'Borrar', onclick: del })), out);
+    return card;
   }));
 }
+async function addScript(name, code) {
+  const r = await api('PUT', '/api/scripts', { name, code });
+  scripts[r.name] = code; openScript = r.name; renderScripts(); renderBullets(); renderTabs();
+  smsg(`Creado ${r.name} ✓`, 'ok');
+}
+$('#script-create').onclick = async () => {
+  try { await addScript($('#script-new').value, $('#script-tpl').value ? PM.EXAMPLES[$('#script-tpl').value] : '{\n  watch: [],\n  render(ha) {\n    return null;\n  },\n}\n'); $('#script-new').value = ''; }
+  catch (e) { smsg(e.message, 'err'); }
+};
+$('#script-import').onclick = async () => {
+  smsg('Descargando…');
+  try {
+    const r = await api('POST', '/api/scripts/importar', { url: $('#script-url').value.trim() });
+    scripts[r.name] = r.code; openScript = r.name; $('#script-url').value = ''; renderScripts(); renderBullets(); renderTabs();
+    smsg(`Importado ${r.name}. Revísalo antes de usarlo ✓`, 'ok');
+  } catch (e) { smsg(e.message, 'err'); }
+};
+$('#script-file').onchange = async (e) => {
+  const f = e.target.files[0]; e.target.value = '';
+  if (!f) return;
+  try { await addScript(f.name.toLowerCase().replace(/[^a-z0-9_.-]/g, '-'), await f.text()); } catch (err) { smsg(err.message, 'err'); }
+};
+
+/* ---------- pestañas ---------- */
+let tabs = [];
+const viewOpts = () => PM.VIEWS.map((v) => new Option(v.title, v.key));
+function cardFields(c) {
+  const f = [];
+  const txt = (key, ph) => el('input', { type: 'text', placeholder: ph, value: c[key] || '', oninput: (e) => { c[key] = e.target.value; dirty(); } });
+  if (c.type !== 'view') f.push(txt('title', 'Título (opcional)'));
+  if (c.type === 'view') {
+    const s = el('select', { onchange: (e) => { c.view = e.target.value; dirty(); } }, ...viewOpts()); s.value = c.view || 'home'; c.view = s.value; f.push(s);
+  } else if (c.type === 'entities') {
+    f.push(el('input', { type: 'text', list: 'entidades', placeholder: 'light.salon, sensor.temperatura… (separadas por comas)', value: (c.entities || []).join(', '),
+      oninput: (e) => { c.entities = e.target.value.split(',').map((x) => x.trim()).filter(Boolean); dirty(); } }));
+  } else if (c.type === 'camera') {
+    f.push(el('input', { type: 'text', list: 'entidades', placeholder: 'camera.entrada', value: c.entity || '', oninput: (e) => { c.entity = e.target.value.trim(); dirty(); } }));
+  } else if (c.type === 'bullets') {
+    f.push(el('div', { class: 'hint', textContent: 'Muestra las burbujas marcadas para Inicio.' }));
+  } else if (c.type === 'script') {
+    const s = el('select', { onchange: (e) => { c.script = e.target.value; dirty(); } }, new Option('— elige un script —', ''), ...Object.keys(scripts).map((n) => new Option(n, n)));
+    s.value = c.script || ''; f.push(s);
+  }
+  return f;
+}
+function renderTabs() {
+  const box = $('#tabs');
+  box.replaceChildren(...tabs.map((t, i) => {
+    t.cards = t.cards || [];
+    const cards = t.cards.map((c, j) => el('div', { class: 'tcard' },
+      el('div', { class: 'tcard-head' },
+        (() => { const s = el('select', { onchange: (e) => { t.cards[j] = { type: e.target.value }; renderTabs(); dirty(); } },
+          ...Object.entries(PM.CARD_TYPES).map(([k, v]) => new Option(v, k))); s.value = c.type; return s; })(),
+        ...moveBtns(t.cards, j, renderTabs),
+        el('button', { type: 'button', class: 'btn danger mv', textContent: '×', title: 'Quitar tarjeta', onclick: () => { t.cards.splice(j, 1); renderTabs(); dirty(); } })),
+      ...cardFields(c)));
+    return el('div', { class: 'tab' },
+      el('div', { class: 'tab-head' },
+        el('input', { type: 'text', placeholder: 'Nombre', value: t.title || '', oninput: (e) => { t.title = e.target.value; dirty(); } }),
+        el('input', { type: 'text', placeholder: 'Icono (mdi:home)', value: t.icon || '', oninput: (e) => { t.icon = e.target.value.trim(); dirty(); } }),
+        el('div', { class: 'btns' }, ...moveBtns(tabs, i, renderTabs),
+          el('button', { type: 'button', class: 'btn danger mv', textContent: '×', title: 'Quitar pestaña', onclick: () => { if (confirm(`¿Quitar la pestaña «${t.title}»?`)) { tabs.splice(i, 1); renderTabs(); dirty(); } } }))),
+      ...cards,
+      el('button', { type: 'button', class: 'btn mini', textContent: '+ Tarjeta', onclick: () => { t.cards.push({ type: 'entities', entities: [] }); renderTabs(); dirty(); } }));
+  }));
+}
+$('#tab-add').onclick = () => { tabs.push({ id: 't-' + Date.now().toString(36), title: 'Nueva', icon: 'mdi:star-outline', cards: [] }); renderTabs(); dirty(); };
+$('#tab-reset').onclick = () => { if (confirm('¿Volver a las pestañas de siempre?')) { tabs = PM.tabList(null); renderTabs(); dirty(); } };
 let names = {};
 
 async function api(method, path, body) {
@@ -356,9 +576,9 @@ function fill(cfg) {
   $('#weatherEntity').dataset.value = p.weatherEntity || '';
   $('#weatherEntity').value = p.weatherEntity || '';
   ['brightness', 'night-brightness', 'sound-volume'].forEach(bindRange);
-  const saved = Array.isArray(a.ambientChips) ? a.ambientChips.filter((c) => AMB.some((x) => x[0] === c.key)) : [];
-  for (const [key] of AMB) if (!saved.some((c) => c.key === key)) saved.push({ key, on: key !== 'openings' });
-  ambChips = saved.map((c) => ({ ...c })); renderAmb();
+  bullets = PM.bulletList(a.bullets, a.ambientChips).map((b) => ({ ...b }));
+  tabs = JSON.parse(JSON.stringify(PM.tabList(a.tabs)));
+  renderBullets(); renderTabs();
   $('#defaultSpeaker').dataset.value = a.defaultSpeaker || '';
   if (![...$('#defaultSpeaker').options].some((o) => o.value === (a.defaultSpeaker || ''))) $('#defaultSpeaker').append(new Option(a.defaultSpeaker, a.defaultSpeaker));
   $('#defaultSpeaker').value = a.defaultSpeaker || '';
@@ -384,7 +604,7 @@ function collect() {
       brightness: +$('#night-brightness').value, screenOff: $('#night-screenOff').checked },
     sound: { enabled: $('#sound-enabled').checked, volume: +$('#sound-volume').value },
     photos: { enabled: $('#photos-enabled').checked, seconds: +$('#photos-seconds').value, fit: $('#photos-fit').value },
-    ambientChips: ambChips,
+    bullets, tabs,
     defaultSpeaker: $('#defaultSpeaker').value,
   };
   return { panel, ajustes };
@@ -414,6 +634,7 @@ async function load() {
   $('#login').classList.add('hidden'); $('#app').classList.remove('hidden');
   loadEntities();
   loadRed();
+  loadScripts().catch((e) => smsg('No se pudieron leer los scripts: ' + e.message, 'err'));
 }
 
 /* ---------- fuentes de fotos (conectores) ---------- */
@@ -576,7 +797,7 @@ document.querySelectorAll('[data-orden]').forEach((b) => (b.onclick = async () =
 document.querySelectorAll('[data-add-btn]').forEach((b) => (b.onclick = () => addChip(b.dataset.addBtn)));
 document.querySelectorAll('[data-add]').forEach((i) => i.addEventListener('keydown', (e) => { if (e.key === 'Enter') { e.preventDefault(); addChip(i.dataset.add); } }));
 document.querySelectorAll('#app input, #app select, #app textarea').forEach((el) => el.addEventListener('input', () => {
-  if (!el.dataset.add && !el.closest('#red-controles')) dirty();
+  if (!el.dataset.add && !el.closest('#red-controles') && !el.closest('[data-nodirty]')) dirty();
 }));
 window.addEventListener('beforeunload', (e) => { if (isDirty) e.preventDefault(); });
 
