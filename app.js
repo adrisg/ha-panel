@@ -523,8 +523,8 @@ function ring(sizeClass = '') {
     const mode = charging === true ? 'charging' : charging;
     fg.setAttribute('stroke-dashoffset', C * (1 - p / 100));
     fg.setAttribute('class', 'ring-fg ' + (mode || (p < 20 ? 'low' : p < 45 ? 'mid' : '')));
-    center.replaceChildren(h('div', null, ...centerNodes),
-      bolt ? icon('mdi-lightning-bolt', 'ring-bolt' + (mode === 'charged' ? ' charged' : '')) : null);
+    center.replaceChildren(...[h('div', null, ...centerNodes),
+      bolt ? icon('mdi-lightning-bolt', 'ring-bolt' + (mode === 'charged' ? ' charged' : '')) : null].filter(Boolean));
   };
   return wrap;
 }
