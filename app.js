@@ -1465,7 +1465,7 @@ function isNight(now = new Date()) {
 /* ---------- Brillo y apagado de pantalla ----------
  * Con el ayudante de la Pi (panel-helper.py en 127.0.0.1:8766) se cambia el brillo real y se apaga
  * la pantalla de verdad. Sin él, se oscurece con una capa negra (funciona en cualquier pantalla). */
-const HELPER = 'http://127.0.0.1:8766';
+const HELPER = window.PANEL_HELPER_URL || 'http://127.0.0.1:8766';
 const SCREEN = { off: false, lastTouch: Date.now(), helper: null, level: null };
 async function helperInit() {
   try {
@@ -2001,65 +2001,43 @@ function hideAmbient(view = 'home') {
   resetIdle();
 }
 /* ====================== Burbujas ======================
- * Integradas (BUILTIN) o de script: archivos .js que se crean o importan en la web de configuración,
- * se guardan en la Pi y el panel los descarga al arrancar. Se ejecutan aquí, en el navegador.
+ * Todas son scripts: los de serie (lib/modulos.js) y los que se crean o importan en la web de configuración,
+ * que se guardan en la Pi y el panel descarga al arrancar. Se ejecutan aquí, en el navegador.
  * Cada burbuja dice si sale en el modo ambiente y/o en el resumen de Inicio (SET.bullets). */
-const BUILTIN = {
-  weather() {
-    const wid = weatherId();
-    if (!wid) return null;
-    const w = S.states[wid];
-    return { icon: wIcon(w.state), text: `${fmtNum(w.attributes.temperature)}° ${wText(w.state)}`, go: 'home' };
-  },
-  alarm() {
-    const n = upcomingAlarms()[0];
-    if (!n || n.when - Date.now() > 24 * 3600e3) return null;
-    return { icon: n.src === 'movil' ? 'mdi-cellphone-sound' : 'mdi-alarm', text: whenText(n.when), go: 'settings' };
-  },
-  printers: () => printers().filter(pActive).map((p) => {
-    const prog = num(p.e.progress), r = pRemaining(p);
-    return { icon: 'mdi-printer-3d-nozzle', text: `${p.name} ${isNaN(prog) ? '—' : Math.round(prog) + ' %'}${r > 0 ? ' · ' + fmtDuration(r) : ''}`,
-      progress: isNaN(prog) ? null : prog, go: 'printers' };
-  }),
-  scooter() {
-    const k = scooterIds();
-    if (!k.battery_level) return null;
-    const b = num(k.battery_level), m = chargeMode(k);
-    // Siempre el patinete; si carga, un rayito a la derecha (amarillo cargando, verde cargado)
-    return { icon: 'mdi-scooter', text: `${isNaN(b) ? '—' : Math.round(b)} %`, color: m === 'charged' ? 'green' : null,
-      badge: m ? 'mdi-lightning-bolt' : null, badgeColor: m === 'charged' ? 'green' : 'yellow', go: 'scooter' };
-  },
-  media() {
-    const playing = ids((id) => domain(id) === 'media_player' && S.states[id].state === 'playing');
-    return playing.length ? { icon: 'mdi-music', text: S.states[playing[0]].attributes.media_title || nameOf(playing[0]), go: 'media' } : null;
-  },
-  lights(where) {
-    const lights = ids((id) => domain(id) === 'light');
-    const on = lights.filter((id) => S.states[id].state === 'on');
-    if (where === 'home') {
-      if (on.length) return { icon: 'mdi-lightbulb-off-outline', text: on.length > 1 ? `Apagar ${on.length} luces` : `Apagar ${nameOf(on[0])}`,
-        action: { service: 'light.turn_off', entity: on } };
-      return lights.length ? { icon: 'mdi-lightbulb-outline', text: 'Todas las luces apagadas' } : null;
-    }
-    return on.length ? { icon: 'mdi-lightbulb-on', text: `${on.length} encendida${on.length > 1 ? 's' : ''}`, go: 'rooms' } : null;
-  },
-  openings(where) {
-    const open = ids((id) => domain(id) === 'binary_sensor' && S.states[id].state === 'on' &&
-      ['door', 'window', 'garage_door', 'opening'].includes(S.states[id].attributes.device_class));
-    if (!open.length) return null;
-    return { icon: 'mdi-door-open', go: 'sensors',
-      text: open.length === 1 ? `${nameOf(open[0])} abierta` : where === 'home' ? `${open.length} puertas/ventanas abiertas` : `${open.length} abiertas` };
-  },
-};
 // Acceso a Home Assistant para los scripts: leer estados. call() solo se usa al tocar un botón o una burbuja.
 const HA = PM.makeHA(() => S.states, {
   call: (service, data = {}) => { const [d, sv] = String(service).split('.'); return call(d, sv, data); },
   go: (v) => go(v),
+  name: (id) => (S.states[id] ? nameOf(id) : id),
+  visible: (id) => !!S.states[id] && visible(id) && !isScooter(id),
+  panel: {
+    weather() {
+      const id = weatherId();
+      if (!id) return null;
+      const w = S.states[id];
+      return { id, icon: wIcon(w.state), text: wText(w.state), temp: w.attributes.temperature, tempText: fmtNum(w.attributes.temperature) };
+    },
+    alarm() {
+      const n = upcomingAlarms()[0];
+      return n ? { when: n.when, text: whenText(n.when), phone: n.src === 'movil' } : null;
+    },
+    printers: () => printers().map((p) => {
+      const prog = num(p.e.progress), r = pRemaining(p);
+      return { name: p.name, active: pActive(p), progress: isNaN(prog) ? null : prog, remaining: isNaN(r) ? null : r };
+    }),
+    scooter() {
+      const k = scooterIds();
+      if (!k.battery_level) return null;
+      const b = num(k.battery_level);
+      return { battery: isNaN(b) ? null : b, mode: chargeMode(k) };
+    },
+    duration: (sec) => fmtDuration(sec),
+  },
 });
 const bulletList = () => PM.bulletList(SET.bullets, SET.ambientChips);
 
-/* Scripts descargados de la Pi (window.PANEL_HELPER.modulos) o, sin ayudante, de config.js (modulos). */
-const MODULES = (window.PANEL_HELPER && window.PANEL_HELPER.modulos) || CFG.modulos || {};
+/* Scripts de serie + los descargados de la Pi (window.PANEL_HELPER.modulos) o, sin ayudante, de config.js (modulos). */
+const MODULES = PM.allScripts((window.PANEL_HELPER && window.PANEL_HELPER.modulos) || CFG.modulos);
 const COMPILED = new Map();
 function moduleOf(name) {
   let m = COMPILED.get(name);
@@ -2087,13 +2065,10 @@ function bulletOutputs(where) {
   const place = Array.isArray(where) ? 'home' : where;
   const out = [];
   for (const b of list) {
-    if (b.type !== 'script') {
-      try { out.push(...PM.bubbles(BUILTIN[b.key] && BUILTIN[b.key](place))); } catch (e) { console.error(e); }
-      continue;
-    }
     const m = moduleOf(b.script), name = b.name || b.script;
-    if (!m.err && !m.cache[place]) {
-      try { m.cache[place] = { out: PM.bubbles(m.mod.render(HA, place)) }; } catch (e) { m.cache[place] = { err: e.message }; }
+    // Se recalcula si cambia algo de su watch o si lleva más de un minuto (horas, alarmas…)
+    if (!m.err && (!m.cache[place] || Date.now() - m.cache[place].t > 60e3)) {
+      try { m.cache[place] = { out: PM.bubbles(m.mod.render(HA, place)), t: Date.now() }; } catch (e) { m.cache[place] = { err: e.message, t: Date.now() }; }
     }
     const err = m.err || m.cache[place].err;
     if (err) out.push({ icon: 'mdi-alert-circle-outline', text: `${name}: ${err}`, color: PM.color('rojo') });
@@ -2104,8 +2079,8 @@ function bulletOutputs(where) {
 /** Una burbuja en pantalla. Al tocarla: su acción o ir a su pestaña. */
 function bubbleEl(b, cls) {
   const el = h('div', { class: cls + (b.go || b.action ? ' tappable' : '') + (b.progress != null ? ' with-bar' : ''), style: b.color ? `--bc:${b.color}` : null },
-    b.icon ? icon(b.icon, 'b-ic') : null, h('span', null, b.text),
-    b.badge ? h('i', { class: `mdi ${b.badge} b-badge`, style: b.badgeColor ? `color:${b.badgeColor}` : null }) : null,
+    b.icon ? icon(b.icon, 'b-ic') : null, h('span', { style: b.textColor ? `color:${b.textColor}` : null }, b.text),
+    b.iconEnd ? h('i', { class: `mdi ${b.iconEnd} b-badge`, style: b.iconEndColor ? `color:${b.iconEndColor}` : null }) : null,
     b.progress != null ? h('span', { class: 'amb-bar' }, h('span', { style: `width:${b.progress}%` })) : null);
   el.bubble = b;
   if (cls === 'chip' && (b.go || b.action)) el.addEventListener('click', () => runBubble(b));
@@ -2193,7 +2168,8 @@ function bulletsCard() {
     const items = bulletList();
     list.replaceChildren(h('div', { class: 'amb-item amb-head' }, h('span', { class: 'amb-item-label' }), h('span', { class: 'amb-col' }, 'Ambiente'), h('span', { class: 'amb-col' }, 'Inicio')),
       ...items.map((b, i) => {
-        const meta = b.type === 'script' ? { label: b.name || b.script, icon: 'mdi-script-text-outline' } : PM.BUILTINS.find((x) => x.key === b.key);
+        const x = PM.BUILTINS.find((y) => y.script === b.script);
+        const meta = { label: b.name || b.script, icon: x ? x.icon : 'mdi-script-text-outline' };
         const move = (d) => { const arr = bulletList(), j = i + d; if (j < 0 || j >= arr.length) return; [arr[i], arr[j]] = [arr[j], arr[i]]; save(arr); };
         const flag = (k) => h('span', { class: 'amb-col' }, switchBtn(!!b[k], (v) => { const arr = bulletList(); arr[i][k] = v; save(arr); }));
         return h('div', { class: 'amb-item' + (b.ambient || b.home ? '' : ' off') }, icon(meta.icon), h('span', { class: 'amb-item-label' }, meta.label),
@@ -2204,7 +2180,7 @@ function bulletsCard() {
   };
   paint();
   return h('div', { class: 'card set-card' }, h('div', { class: 'set-title' }, icon('mdi-format-list-bulleted'), 'Burbujas'),
-    h('div', { class: 'muted small' }, 'Elige cuáles salen debajo del reloj (Ambiente) y en el resumen de Inicio. Solo aparecen cuando tienen algo que contar. Las de script se crean en la web de configuración.'),
+    h('div', { class: 'muted small' }, 'Elige cuáles salen debajo del reloj (Ambiente) y en el resumen de Inicio. Solo aparecen cuando tienen algo que contar. Todas son scripts: se editan y se crean nuevas en la web de configuración.'),
     list,
     h('div', { class: 'btn-row' }, h('button', { class: 'big-action', onclick: () => showAmbient() }, icon('mdi-image-filter-hdr'), 'Ver el modo ambiente')));
 }
