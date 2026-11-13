@@ -58,8 +58,9 @@ for i in \$(seq 20); do curl -s -o /dev/null http://127.0.0.1:8766/status && bre
 URL="file://$PANEL_DIR/index.html"
 if ! grep -qw neon /proc/cpuinfo; then
   # Pi 1 / Zero: WPE WebKit
-  exec cog --platform=wl --allow-file-access-from-file-urls --allow-universal-access-from-file-urls \
-    --enable-write-console-messages-to-stdout "\$URL"
+  exec cog --platform=wl --bg-color=black --allow-file-access-from-file-urls=true \
+    --allow-universal-access-from-file-urls=true --media-playback-requires-user-gesture=false \
+    --enable-write-console-messages-to-stdout=true "\$URL"
 fi
 BROWSER="\$(command -v chromium || command -v chromium-browser)"
 exec "\$BROWSER" --kiosk --incognito --noerrdialogs --disable-infobars --no-first-run \
