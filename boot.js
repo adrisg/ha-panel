@@ -3,9 +3,12 @@
  * Es una petición síncrona a la propia Pi: si el ayudante no está, falla al instante. */
 (function () {
   window.PANEL_HELPER = null;
+  // Abierto desde otro equipo (python dev.py --lan): al ayudante se llega a través del propio servidor
+  var remote = location.protocol.indexOf('http') === 0 && !/^(localhost|127\.0\.0\.1|\[::1\])$/.test(location.hostname);
+  window.PANEL_HELPER_URL = remote ? location.origin + '/_helper' : 'http://127.0.0.1:8766';
   try {
     var xhr = new XMLHttpRequest();
-    xhr.open('GET', 'http://127.0.0.1:8766/config', false);
+    xhr.open('GET', window.PANEL_HELPER_URL + '/config', false);
     xhr.send();
     if (xhr.status !== 200) return;
     var cfg = JSON.parse(xhr.responseText);

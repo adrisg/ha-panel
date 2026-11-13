@@ -285,7 +285,7 @@
 ha.isOn(id)   ha.ok(id)   ha.find('light.*', filtro)  ha.count('light.*', 'on')
 ha.minutesSince(id)  ha.entity(id)  ha.states  ha.now()
 
-Burbuja → { icon, text, color, go, action, progress, badge }  (o una lista, o null)
+Burbuja → { icon, text, color, textColor, iconEnd, iconEndColor, go, action, progress }  (o una lista, o null)
 Tarjeta → [ { title }, { text, size: 'big'|'small' }, { tiles: [ids] },
             { stats: [{ icon, value, label }] }, { chips: [burbujas] },
             { button: { text, icon, action } } ]
@@ -371,12 +371,12 @@ const moveBtns = (arr, i, after) => [-1, 1].map((d) => el('button', { type: 'but
 let bullets = [];
 function renderBullets() {
   $('#bullets').replaceChildren(...bullets.map((b, i) => {
-    const meta = b.type === 'script' ? { label: '📜 ' + (b.name || b.script) } : { label: (PM.BUILTINS.find((x) => x.key === b.key) || {}).label || b.key };
+    const meta = { label: '📜 ' + (b.name || b.script) };
     const flag = (k, t) => el('span', { class: 'col' }, t, switchEl(!!b[k], (v) => { b[k] = v; dirty(); }));
     return el('div', { class: 'row' }, el('label', { textContent: meta.label }),
       el('div', { class: 'cols' }, ...moveBtns(bullets, i, renderBullets), flag('ambient', 'Ambiente'), flag('home', 'Inicio'),
-        b.type === 'script' ? el('button', { type: 'button', class: 'btn danger mv', textContent: '×', title: 'Quitar',
-          onclick: () => { bullets.splice(i, 1); renderBullets(); dirty(); } }) : null));
+        PM.BUILTINS.some((x) => x.script === b.script) ? null : el('button', { type: 'button', class: 'btn danger mv', textContent: '×', title: 'Quitar',
+          onclick: () => { bullets.splice(i, 1); renderBullets(); dirty(); } })));
   }));
   const sel = $('#bullet-script');
   sel.replaceChildren(...(Object.keys(scripts).length ? Object.keys(scripts).map((n) => new Option(n, n)) : [new Option('(crea antes un script)', '')]));
@@ -389,9 +389,10 @@ $('#bullet-add').onclick = () => {
 };
 
 /* ---------- scripts (archivos .js en la Pi) ---------- */
-let scripts = {}, openScript = null, states = null;
+let scripts = {}, files = {}, openScript = null, states = null;   // scripts = de serie + files (los guardados en la Pi)
+const isDefault = (name) => name in PM.DEFAULT_SCRIPTS;
 const smsg = (t, kind = '') => { $('#script-msg').textContent = t; $('#script-msg').className = 'hint ' + kind; };
-async function loadScripts() { scripts = await api('GET', '/api/scripts'); renderScripts(); renderBullets(); renderTabs(); }
+async function loadScripts() { files = await api('GET', '/api/scripts'); scripts = PM.allScripts(files); renderScripts(); renderBullets(); renderTabs(); }
 function renderScripts() {
   const box = $('#scripts');
   if (!Object.keys(scripts).length) { box.replaceChildren(el('div', { class: 'hint', textContent: 'Aún no hay scripts.' })); return; }
@@ -399,7 +400,8 @@ function renderScripts() {
     const open = openScript === name;
     const card = el('div', { class: 'script' });
     const head = el('div', { class: 'script-head', onclick: () => { openScript = open ? null : name; renderScripts(); } },
-      el('b', { textContent: name }), el('span', { class: 'hint', textContent: open ? '▲' : '✎ editar' }));
+      el('b', { textContent: name }),
+      el('span', { class: 'hint', textContent: (isDefault(name) ? (name in files ? 'de serie, modificado · ' : 'de serie · ') : '') + (open ? '▲' : '✎ editar') }));
     card.append(head);
     if (!open) return card;
     const ta = el('textarea', { class: 'code', spellcheck: false, value: scripts[name] });
@@ -420,19 +422,25 @@ function renderScripts() {
         out.replaceChildren(
           el('div', { class: 'hint', textContent: `✓ Sin errores · ${ms.toFixed(1)} ms · watch: ${mod.watch ? mod.watch.join(', ') : 'cualquier cambio'}` }),
           !Array.isArray(res) || res.every((x) => x && (x.text != null || x.icon)) ?
-            el('div', { class: 'pchips', style: 'margin-top:6px' }, ...asBubbles.map((b) => el('span', { class: 'pchip', style: b.color ? `border:1px solid ${b.color}` : '', textContent: b.text || '(sin texto)' }))) : null,
+            el('div', { class: 'pchips', style: 'margin-top:6px' }, ...asBubbles.map((b) => el('span', { class: 'pchip', style: (b.color ? `border:1px solid ${b.color};` : '') + (b.textColor ? `color:${b.textColor}` : ''),
+              textContent: (b.text || '(sin texto)') + (b.iconEnd ? ' ‹' + b.iconEnd.replace(/^mdi-/, '') + '›' : '') }))) : null,
           el('pre', { textContent: JSON.stringify(res, null, 2) ?? 'null' }));
       } catch (e) { out.replaceChildren(el('div', { class: 'err', textContent: '✗ ' + e.message })); }
     };
     const save = async () => {
       try { PM.compile(ta.value); } catch (e) { if (!confirm('Tiene un error: ' + e.message + '\n¿Guardar igualmente?')) return; }
-      try { await api('PUT', '/api/scripts', { name, code: ta.value }); scripts[name] = ta.value; smsg(`Guardado ${name}. El panel se actualiza solo ✓`, 'ok'); }
+      try { await api('PUT', '/api/scripts', { name, code: ta.value }); scripts[name] = files[name] = ta.value; renderScripts(); smsg(`Guardado ${name}. El panel se actualiza solo ✓`, 'ok'); }
       catch (e) { smsg(e.message, 'err'); }
     };
+    const def = isDefault(name);
     const del = async () => {
-      if (!confirm(`¿Borrar ${name}? Las burbujas y tarjetas que lo usen mostrarán un error.`)) return;
-      try { await api('DELETE', '/api/scripts?name=' + encodeURIComponent(name)); delete scripts[name]; openScript = null; renderScripts(); renderBullets(); smsg('Borrado ' + name); }
-      catch (e) { smsg(e.message, 'err'); }
+      if (!confirm(def ? `¿Volver a la versión de serie de ${name}? Se pierden tus cambios.` : `¿Borrar ${name}? Las burbujas y tarjetas que lo usen mostrarán un error.`)) return;
+      try {
+        await api('DELETE', '/api/scripts?name=' + encodeURIComponent(name));
+        delete files[name]; scripts = PM.allScripts(files);
+        if (!def) openScript = null;
+        renderScripts(); renderBullets(); smsg(def ? 'Restaurado ' + name : 'Borrado ' + name);
+      } catch (e) { smsg(e.message, 'err'); }
     };
     const download = () => {
       const a = el('a', { href: URL.createObjectURL(new Blob([ta.value], { type: 'text/javascript' })), download: name });
@@ -442,13 +450,13 @@ function renderScripts() {
       el('button', { type: 'button', class: 'btn primary', textContent: 'Guardar', onclick: save }),
       el('button', { type: 'button', class: 'btn', textContent: 'Probar', onclick: test }),
       el('button', { type: 'button', class: 'btn', textContent: 'Descargar', onclick: download }),
-      el('button', { type: 'button', class: 'btn danger', textContent: 'Borrar', onclick: del })), out);
+      def && !(name in files) ? null : el('button', { type: 'button', class: 'btn danger', textContent: def ? 'Restaurar' : 'Borrar', onclick: del })), out);
     return card;
   }));
 }
 async function addScript(name, code) {
   const r = await api('PUT', '/api/scripts', { name, code });
-  scripts[r.name] = code; openScript = r.name; renderScripts(); renderBullets(); renderTabs();
+  scripts[r.name] = files[r.name] = code; openScript = r.name; renderScripts(); renderBullets(); renderTabs();
   smsg(`Creado ${r.name} ✓`, 'ok');
 }
 $('#script-create').onclick = async () => {
@@ -459,7 +467,7 @@ $('#script-import').onclick = async () => {
   smsg('Descargando…');
   try {
     const r = await api('POST', '/api/scripts/importar', { url: $('#script-url').value.trim() });
-    scripts[r.name] = r.code; openScript = r.name; $('#script-url').value = ''; renderScripts(); renderBullets(); renderTabs();
+    scripts[r.name] = files[r.name] = r.code; openScript = r.name; $('#script-url').value = ''; renderScripts(); renderBullets(); renderTabs();
     smsg(`Importado ${r.name}. Revísalo antes de usarlo ✓`, 'ok');
   } catch (e) { smsg(e.message, 'err'); }
 };
