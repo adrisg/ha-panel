@@ -1,15 +1,21 @@
 #!/usr/bin/env bash
-# Instala el panel en modo kiosko en una Raspberry Pi (probado para Pi 2 v1.2 con Raspberry Pi OS Lite).
+# Instala el panel en modo kiosko en una Raspberry Pi con Raspberry Pi OS Lite.
+# Pi 2 o posterior: Chromium. Pi 1 / Zero (sin NEON, Chromium ya no funciona): cog (WPE WebKit, ligero).
 # Uso: copia esta carpeta a la Pi (p. ej. ~/ha-panel) y ejecuta:  bash ~/ha-panel/setup-kiosk.sh
 set -euo pipefail
 
 PANEL_DIR="$(cd "$(dirname "$0")" && pwd)"
 echo "==> Panel en: $PANEL_DIR"
 
-echo "==> Instalando cage (compositor kiosko) y Chromium..."
 sudo apt-get update
 sudo apt-get install -y --no-install-recommends cage curl fonts-noto-core wlr-randr
-sudo apt-get install -y --no-install-recommends chromium || sudo apt-get install -y --no-install-recommends chromium-browser
+if grep -qw neon /proc/cpuinfo; then
+  echo "==> Instalando Chromium..."
+  sudo apt-get install -y --no-install-recommends chromium || sudo apt-get install -y --no-install-recommends chromium-browser
+else
+  echo "==> Procesador sin NEON (Pi 1 / Zero): instalando cog (WPE WebKit) en lugar de Chromium..."
+  sudo apt-get install -y --no-install-recommends cog
+fi
 
 echo "==> Descargando iconos para funcionar sin internet..."
 if [ ! -f "$PANEL_DIR/vendor/mdi/css/materialdesignicons.min.css" ]; then
@@ -49,6 +55,12 @@ pkill -f panel-helper.py 2>/dev/null
 python3 "$PANEL_DIR/panel-helper.py" &
 # Espera (máx. 10 s) a que el ayudante responda, para que el panel lea su configuración al arrancar
 for i in \$(seq 20); do curl -s -o /dev/null http://127.0.0.1:8766/status && break; sleep 0.5; done
+URL="file://$PANEL_DIR/index.html"
+if ! grep -qw neon /proc/cpuinfo; then
+  # Pi 1 / Zero: WPE WebKit
+  exec cog --platform=wl --allow-file-access-from-file-urls --allow-universal-access-from-file-urls \
+    --enable-write-console-messages-to-stdout "\$URL"
+fi
 BROWSER="\$(command -v chromium || command -v chromium-browser)"
 exec "\$BROWSER" --kiosk --incognito --noerrdialogs --disable-infobars --no-first-run \
   --ozone-platform=wayland --enable-low-end-device-mode \
@@ -56,7 +68,7 @@ exec "\$BROWSER" --kiosk --incognito --noerrdialogs --disable-infobars --no-firs
   --overscroll-history-navigation=0 --disable-pinch --password-store=basic \
   --autoplay-policy=no-user-gesture-required \
   --check-for-update-interval=31536000 --disable-session-crashed-bubble \
-  "file://$PANEL_DIR/index.html"
+  "\$URL"
 EOF
 cat > "$HOME/kiosk.sh" <<'EOF'
 #!/usr/bin/env bash
