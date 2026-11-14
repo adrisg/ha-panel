@@ -73,6 +73,19 @@
   .src-head .btn { padding: 6px 12px; }
   .src-body { display: flex; flex-direction: column; gap: 6px; }
   .src-body input, .src-body textarea { background: var(--surface); }
+  .pages { display: flex; gap: 6px; margin-bottom: 12px; position: sticky; top: 0; z-index: 5; background: var(--bg, #0e1014); padding: 6px 0; }
+  .pages button { border: 0; border-radius: 12px; padding: 10px 16px; background: var(--surface); cursor: pointer; font-weight: 600; color: var(--muted); }
+  .pages button.on { background: var(--accent); color: #0b1d3a; }
+  .bubs { display: flex; flex-direction: column; gap: 8px; margin-top: 10px; }
+  .bub { background: var(--surface-2); border-radius: 14px; padding: 8px 10px; }
+  .bub.off .bub-title { opacity: .55; }
+  .bub-head { display: flex; align-items: center; justify-content: space-between; gap: 10px; flex-wrap: wrap; }
+  .bub-title { flex: 1; min-width: 180px; display: flex; align-items: center; gap: 8px; border: 0; background: none; cursor: pointer; text-align: left; padding: 6px 2px; font-size: 15px; }
+  .bub-arrow { color: var(--muted); width: 14px; }
+  .bub-body { display: flex; flex-direction: column; gap: 8px; margin-top: 8px; padding-top: 10px; border-top: 1px solid var(--surface-3); }
+  .bub-body input[type=text] { background: var(--surface); }
+  .bub-body .sub { font-weight: 600; font-size: 14px; margin-top: 4px; }
+  .bub-body textarea.code, .script textarea.code { min-height: 260px; background: #0b0d11; tab-size: 2; white-space: pre; }
   .scripts { display: flex; flex-direction: column; gap: 8px; margin-top: 10px; }
   .script { background: var(--surface-2); border-radius: 14px; padding: 10px 12px; }
   .script-head { display: flex; align-items: center; gap: 8px; cursor: pointer; }
@@ -131,7 +144,42 @@
       <h1>Panel Hogar <small>Configuración del panel de la Raspberry Pi</small></h1>
       <button class="btn" id="logout">Salir</button>
     </header>
+    <nav class="pages">
+      <button type="button" data-page="ajustes" class="on">⚙️ Ajustes</button>
+      <button type="button" data-page="burbujas">🫧 Burbujas</button>
+    </nav>
 
+    <div data-pg="burbujas" class="hidden">
+    <div class="card">
+      <h2>🫧 Burbujas</h2>
+      <div class="hint">Salen debajo del reloj (Ambiente) y en el resumen de Inicio, en este orden, solo cuando tienen algo que contar.
+        Toca una para cambiar su título y su funcionamiento.</div>
+      <div id="bullets" class="bubs amb-web"></div>
+      <div class="add" style="margin-top:12px">
+        <input id="bullet-title" type="text" placeholder="Título de la nueva burbuja (p. ej. Temperatura del salón)">
+        <select id="bullet-tpl"><option value="burbuja">Que muestre algo</option><option value="luces">Que haga algo al tocarla</option><option value="">Vacía</option></select>
+        <button class="btn" id="bullet-add" type="button">Crear</button>
+      </div>
+      <div class="add" style="margin-top:8px">
+        <input id="bullet-url" type="text" placeholder="https://… (traer una burbuja de internet)">
+        <button class="btn" id="bullet-import" type="button">Traer</button>
+        <label class="btn" style="text-align:center">Subir archivo<input id="bullet-file" type="file" accept=".js,text/javascript" hidden></label>
+      </div>
+      <div id="bullet-msg" class="hint" style="margin-top:6px"></div>
+      <details class="help"><summary>Cómo se escribe el funcionamiento</summary>
+<pre>ha.state(id)  ha.num(id)  ha.attr(id, 'x')  ha.name(id)  ha.fmt(id)
+ha.isOn(id)   ha.ok(id)   ha.find('light.*', filtro)  ha.count('light.*', 'on')
+ha.minutesSince(id)  ha.entity(id)  ha.states  ha.now()
+
+Burbuja → { icon, text, color, textColor, iconEnd, iconEndColor, go, action, progress }  (o una lista, o null)
+Tarjeta → [ { title }, { text, size: 'big'|'small' }, { tiles: [ids] },
+            { stats: [{ icon, value, label }] }, { chips: [burbujas] },
+            { button: { text, icon, action } } ]
+action = { service: 'light.turn_off', entity: 'light.x', data: {} }  (solo al tocar)
+go = 'home' | 'rooms' | 'sensors' | 'media' | 'printers' | 'scooter' | id de pestaña</pre></details>
+    </div>
+    </div>
+    <div data-pg="ajustes">
     <div class="card sim hidden" id="sim-banner">🧪 <b>Modo simulación (ordenador).</b> El brillo, el apagado de pantalla y la red se simulan: puedes probarlo todo sin que cambie nada de este equipo.</div>
 
     <div class="card">
@@ -255,42 +303,14 @@
     </div>
 
     <div class="card">
-      <h2>🫧 Burbujas</h2>
-      <div class="hint">Cuáles salen debajo del reloj (Ambiente) y en el resumen de Inicio, y en qué orden. Solo aparecen cuando tienen algo que contar.</div>
-      <div id="bullets" class="amb-web" style="margin-top:10px"></div>
-      <div class="add" style="margin-top:8px">
-        <select id="bullet-script"></select>
-        <button class="btn" id="bullet-add" type="button">Añadir burbuja de script</button>
-      </div>
-    </div>
-
-    <div class="card" data-nodirty>
-      <h2>📜 Scripts</h2>
-      <div class="hint">Archivos JavaScript con <code>watch</code> (entidades que lo actualizan) y <code>render(ha)</code> (lo que se pinta).
-        Se guardan en la Pi y el panel los descarga y los ejecuta en el navegador. Se guardan al momento con su botón.</div>
-      <div id="scripts" class="scripts"></div>
+      <h2>🧩 Tarjetas con código</h2>
+      <div class="hint">Para la tarjeta «Código» de las pestañas. Se guardan al momento con su botón.</div>
+      <div id="cscripts" class="bubs"></div>
       <div class="add" style="margin-top:10px">
-        <input id="script-new" placeholder="nombre (p. ej. temperatura-salon)">
-        <select id="script-tpl"><option value="burbuja">Burbuja</option><option value="luces">Burbuja con acción</option><option value="tarjeta">Tarjeta</option><option value="">Vacío</option></select>
-        <button class="btn" id="script-create" type="button">Crear</button>
+        <input id="cscript-title" type="text" placeholder="Nombre (p. ej. resumen-casa)">
+        <button class="btn" id="cscript-add" type="button">Crear</button>
       </div>
-      <div class="add" style="margin-top:8px">
-        <input id="script-url" placeholder="https://… (importar desde una URL)">
-        <button class="btn" id="script-import" type="button">Importar</button>
-        <label class="btn" style="text-align:center">Subir .js<input id="script-file" type="file" accept=".js,text/javascript" hidden></label>
-      </div>
-      <div id="script-msg" class="hint" style="margin-top:6px"></div>
-      <details class="help"><summary>Qué puede usar un script</summary>
-<pre>ha.state(id)  ha.num(id)  ha.attr(id, 'x')  ha.name(id)  ha.fmt(id)
-ha.isOn(id)   ha.ok(id)   ha.find('light.*', filtro)  ha.count('light.*', 'on')
-ha.minutesSince(id)  ha.entity(id)  ha.states  ha.now()
-
-Burbuja → { icon, text, color, textColor, iconEnd, iconEndColor, go, action, progress }  (o una lista, o null)
-Tarjeta → [ { title }, { text, size: 'big'|'small' }, { tiles: [ids] },
-            { stats: [{ icon, value, label }] }, { chips: [burbujas] },
-            { button: { text, icon, action } } ]
-action = { service: 'light.turn_off', entity: 'light.x', data: {} }  (solo al tocar)
-go = 'home' | 'rooms' | 'sensors' | 'media' | 'printers' | 'scooter' | id de pestaña</pre></details>
+      <div id="cscript-msg" class="hint" style="margin-top:6px"></div>
     </div>
 
     <div class="card">
@@ -331,6 +351,7 @@ go = 'home' | 'rooms' | 'sensors' | 'media' | 'printers' | 'scooter' | id de pes
       </div>
       <div id="entidades-msg" class="hint"></div>
     </div>
+    </div>
   </div>
 
   <div class="savebar"><div class="wrap">
@@ -367,114 +388,167 @@ const switchEl = (checked, onchange) => {
 const moveBtns = (arr, i, after) => [-1, 1].map((d) => el('button', { type: 'button', class: 'btn mv', textContent: d < 0 ? '↑' : '↓', disabled: !arr[i + d],
   onclick: () => { [arr[i], arr[i + d]] = [arr[i + d], arr[i]]; after(); dirty(); } }));
 
-/* ---------- burbujas ---------- */
-let bullets = [];
+/* ---------- páginas de la web ---------- */
+function showPage(p) {
+  document.querySelectorAll('[data-pg]').forEach((x) => x.classList.toggle('hidden', x.dataset.pg !== p));
+  document.querySelectorAll('.pages button').forEach((x) => x.classList.toggle('on', x.dataset.page === p));
+}
+document.querySelectorAll('.pages button').forEach((x) => (x.onclick = () => {
+  history.replaceState(null, '', '#' + x.dataset.page); showPage(x.dataset.page); scrollTo(0, 0);
+}));
+showPage(location.hash === '#burbujas' ? 'burbujas' : 'ajustes');
+
+/* ---------- código (archivos .js guardados en la Pi; los de serie vienen en lib/modulos.js) ---------- */
+let scripts = {}, files = {}, states = null;
+const drafts = {};            // cambios sin guardar del código, para no perderlos al repintar
+const isDefault = (name) => name in PM.DEFAULT_SCRIPTS;
+async function loadScripts() { files = await api('GET', '/api/scripts'); scripts = PM.allScripts(files); renderBullets(); renderCardScripts(); renderTabs(); }
+const slug = (t) => String(t || '').normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase()
+  .replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '').slice(0, 34) || 'burbuja';
+function freeName(t) { const base = slug(t); let n = base + '.js', i = 2; while (n in scripts) n = `${base}-${i++}.js`; return n; }
+const usedInTabs = (name) => tabs.some((t) => (t.cards || []).some((c) => c.type === 'script' && c.script === name));
+async function saveCode(name, code) { await api('PUT', '/api/scripts', { name, code }); scripts[name] = files[name] = code; delete drafts[name]; }
+async function deleteCode(name) {
+  await api('DELETE', '/api/scripts?name=' + encodeURIComponent(name));
+  delete files[name]; delete drafts[name]; scripts = PM.allScripts(files);
+}
+
+/** Editor del funcionamiento: texto + Guardar, Probar, Descargar y Restaurar (las de serie). */
+function codeEditor(name, say) {
+  const def = isDefault(name);
+  const ta = el('textarea', { class: 'code', spellcheck: false, value: drafts[name] ?? scripts[name] ?? '' });
+  ta.addEventListener('input', () => (drafts[name] = ta.value));
+  ta.addEventListener('keydown', (e) => {   // Tab = dos espacios
+    if (e.key !== 'Tab') return;
+    e.preventDefault();
+    ta.setRangeText('  ', ta.selectionStart, ta.selectionEnd, 'end'); drafts[name] = ta.value;
+  });
+  const out = el('div', { class: 'preview hidden' });
+  const test = async () => {
+    out.classList.remove('hidden'); out.replaceChildren(el('span', { class: 'hint', textContent: 'Probando con los estados actuales…' }));
+    try {
+      if (!states) states = await api('GET', '/api/estados');
+      const mod = PM.compile(ta.value);
+      const t0 = performance.now(), res = mod.render(PM.makeHA(() => states), 'ambient'), ms = performance.now() - t0;
+      const looksBubble = !Array.isArray(res) || res.every((x) => x && (x.text != null || x.icon));
+      out.replaceChildren(
+        el('div', { class: 'hint', textContent: `✓ Sin errores · ${ms.toFixed(1)} ms · se actualiza con: ${mod.watch ? mod.watch.join(', ') : 'cualquier cambio'}` }),
+        looksBubble ? el('div', { class: 'pchips', style: 'margin-top:6px' }, ...PM.bubbles(res).map((x) => el('span', { class: 'pchip',
+          style: (x.color ? `border:1px solid ${x.color};` : '') + (x.textColor ? `color:${x.textColor}` : ''),
+          textContent: (x.text || '(sin texto)') + (x.iconEnd ? ' ‹' + x.iconEnd.replace(/^mdi-/, '') + '›' : '') }))) : null,
+        el('pre', { textContent: JSON.stringify(res, null, 2) ?? 'null' }));
+    } catch (e) { out.replaceChildren(el('div', { class: 'err', textContent: '✗ ' + e.message })); }
+  };
+  const save = async () => {
+    try { PM.compile(ta.value); } catch (e) { if (!confirm('Tiene un error: ' + e.message + '\n¿Guardar igualmente?')) return; }
+    try { await saveCode(name, ta.value); say('Guardado. El panel se actualiza solo ✓', 'ok'); renderAll(); }
+    catch (e) { say(e.message, 'err'); }
+  };
+  const restore = async () => {
+    if (!confirm('¿Volver al funcionamiento de serie? Se pierden tus cambios.')) return;
+    try { await deleteCode(name); say('Restaurado ✓', 'ok'); renderAll(); } catch (e) { say(e.message, 'err'); }
+  };
+  const download = () => {
+    const a = el('a', { href: URL.createObjectURL(new Blob([ta.value], { type: 'text/javascript' })), download: name });
+    a.click(); setTimeout(() => URL.revokeObjectURL(a.href), 1000);
+  };
+  return el('div', { 'data-nodirty': '' }, ta, el('div', { class: 'btns', style: 'margin-top:8px' },
+    el('button', { type: 'button', class: 'btn primary', textContent: 'Guardar funcionamiento', onclick: save }),
+    el('button', { type: 'button', class: 'btn', textContent: 'Probar', onclick: test }),
+    el('button', { type: 'button', class: 'btn', textContent: 'Descargar', onclick: download }),
+    def && name in files ? el('button', { type: 'button', class: 'btn', textContent: 'Restaurar el de serie', onclick: restore }) : null), out);
+}
+function renderAll() { renderBullets(); renderCardScripts(); renderTabs(); }
+
+/* ---------- burbujas: título, dónde salen, orden y funcionamiento ---------- */
+let bullets = [], openBullet = null;
+const bmsg = (t, kind = '') => { $('#bullet-msg').textContent = t; $('#bullet-msg').className = 'hint ' + kind; };
 function renderBullets() {
   $('#bullets').replaceChildren(...bullets.map((b, i) => {
-    const meta = { label: '📜 ' + (b.name || b.script) };
-    const flag = (k, t) => el('span', { class: 'col' }, t, switchEl(!!b[k], (v) => { b[k] = v; dirty(); }));
-    return el('div', { class: 'row' }, el('label', { textContent: meta.label }),
-      el('div', { class: 'cols' }, ...moveBtns(bullets, i, renderBullets), flag('ambient', 'Ambiente'), flag('home', 'Inicio'),
-        PM.BUILTINS.some((x) => x.script === b.script) ? null : el('button', { type: 'button', class: 'btn danger mv', textContent: '×', title: 'Quitar',
-          onclick: () => { bullets.splice(i, 1); renderBullets(); dirty(); } })));
-  }));
-  const sel = $('#bullet-script');
-  sel.replaceChildren(...(Object.keys(scripts).length ? Object.keys(scripts).map((n) => new Option(n, n)) : [new Option('(crea antes un script)', '')]));
-}
-$('#bullet-add').onclick = () => {
-  const name = $('#bullet-script').value;
-  if (!name) return;
-  bullets.push({ id: 's-' + Date.now().toString(36), type: 'script', script: name, name: name.replace(/\.js$/, ''), ambient: true, home: false });
-  renderBullets(); dirty();
-};
-
-/* ---------- scripts (archivos .js en la Pi) ---------- */
-let scripts = {}, files = {}, openScript = null, states = null;   // scripts = de serie + files (los guardados en la Pi)
-const isDefault = (name) => name in PM.DEFAULT_SCRIPTS;
-const smsg = (t, kind = '') => { $('#script-msg').textContent = t; $('#script-msg').className = 'hint ' + kind; };
-async function loadScripts() { files = await api('GET', '/api/scripts'); scripts = PM.allScripts(files); renderScripts(); renderBullets(); renderTabs(); }
-function renderScripts() {
-  const box = $('#scripts');
-  if (!Object.keys(scripts).length) { box.replaceChildren(el('div', { class: 'hint', textContent: 'Aún no hay scripts.' })); return; }
-  box.replaceChildren(...Object.keys(scripts).map((name) => {
-    const open = openScript === name;
-    const card = el('div', { class: 'script' });
-    const head = el('div', { class: 'script-head', onclick: () => { openScript = open ? null : name; renderScripts(); } },
-      el('b', { textContent: name }),
-      el('span', { class: 'hint', textContent: (isDefault(name) ? (name in files ? 'de serie, modificado · ' : 'de serie · ') : '') + (open ? '▲' : '✎ editar') }));
-    card.append(head);
+    const open = openBullet === b.id, def = PM.BUILTINS.some((x) => x.script === b.script);
+    const flag = (k, t) => el('span', { class: 'col' }, t, switchEl(!!b[k], (v) => { b[k] = v; dirty(); card.classList.toggle('off', !b.ambient && !b.home); }));
+    const title = el('b', { textContent: b.name || b.script });
+    const head = el('div', { class: 'bub-head' },
+      el('button', { type: 'button', class: 'bub-title', onclick: () => { openBullet = open ? null : b.id; renderBullets(); } },
+        el('span', { class: 'bub-arrow', textContent: open ? '▾' : '▸' }), title,
+        def ? el('span', { class: 'pill', textContent: isDefault(b.script) && b.script in files ? 'de serie · cambiada' : 'de serie' }) : null),
+      el('div', { class: 'cols' }, ...moveBtns(bullets, i, renderBullets), flag('ambient', 'Ambiente'), flag('home', 'Inicio')));
+    const card = el('div', { class: 'bub' + (b.ambient || b.home ? '' : ' off') }, head);
     if (!open) return card;
-    const ta = el('textarea', { class: 'code', spellcheck: false, value: scripts[name] });
-    ta.addEventListener('keydown', (e) => {   // Tab = dos espacios
-      if (e.key !== 'Tab') return;
-      e.preventDefault();
-      const a = ta.selectionStart; ta.setRangeText('  ', a, ta.selectionEnd, 'end');
-    });
-    const out = el('div', { class: 'preview hidden' });
-    const test = async () => {
-      out.classList.remove('hidden'); out.replaceChildren(el('span', { class: 'hint', textContent: 'Probando con los estados actuales…' }));
-      try {
-        if (!states) states = await api('GET', '/api/estados');
-        const mod = PM.compile(ta.value);
-        const ha = PM.makeHA(() => states);
-        const t0 = performance.now(), res = mod.render(ha, 'ambient'), ms = performance.now() - t0;
-        const asBubbles = PM.bubbles(res);
-        out.replaceChildren(
-          el('div', { class: 'hint', textContent: `✓ Sin errores · ${ms.toFixed(1)} ms · watch: ${mod.watch ? mod.watch.join(', ') : 'cualquier cambio'}` }),
-          !Array.isArray(res) || res.every((x) => x && (x.text != null || x.icon)) ?
-            el('div', { class: 'pchips', style: 'margin-top:6px' }, ...asBubbles.map((b) => el('span', { class: 'pchip', style: (b.color ? `border:1px solid ${b.color};` : '') + (b.textColor ? `color:${b.textColor}` : ''),
-              textContent: (b.text || '(sin texto)') + (b.iconEnd ? ' ‹' + b.iconEnd.replace(/^mdi-/, '') + '›' : '') }))) : null,
-          el('pre', { textContent: JSON.stringify(res, null, 2) ?? 'null' }));
-      } catch (e) { out.replaceChildren(el('div', { class: 'err', textContent: '✗ ' + e.message })); }
-    };
-    const save = async () => {
-      try { PM.compile(ta.value); } catch (e) { if (!confirm('Tiene un error: ' + e.message + '\n¿Guardar igualmente?')) return; }
-      try { await api('PUT', '/api/scripts', { name, code: ta.value }); scripts[name] = files[name] = ta.value; renderScripts(); smsg(`Guardado ${name}. El panel se actualiza solo ✓`, 'ok'); }
-      catch (e) { smsg(e.message, 'err'); }
-    };
-    const def = isDefault(name);
-    const del = async () => {
-      if (!confirm(def ? `¿Volver a la versión de serie de ${name}? Se pierden tus cambios.` : `¿Borrar ${name}? Las burbujas y tarjetas que lo usen mostrarán un error.`)) return;
-      try {
-        await api('DELETE', '/api/scripts?name=' + encodeURIComponent(name));
-        delete files[name]; scripts = PM.allScripts(files);
-        if (!def) openScript = null;
-        renderScripts(); renderBullets(); smsg(def ? 'Restaurado ' + name : 'Borrado ' + name);
-      } catch (e) { smsg(e.message, 'err'); }
-    };
-    const download = () => {
-      const a = el('a', { href: URL.createObjectURL(new Blob([ta.value], { type: 'text/javascript' })), download: name });
-      a.click(); setTimeout(() => URL.revokeObjectURL(a.href), 1000);
-    };
-    card.append(ta, el('div', { class: 'btns' },
-      el('button', { type: 'button', class: 'btn primary', textContent: 'Guardar', onclick: save }),
-      el('button', { type: 'button', class: 'btn', textContent: 'Probar', onclick: test }),
-      el('button', { type: 'button', class: 'btn', textContent: 'Descargar', onclick: download }),
-      def && !(name in files) ? null : el('button', { type: 'button', class: 'btn danger', textContent: def ? 'Restaurar' : 'Borrar', onclick: del })), out);
+    const say = (t, kind) => bmsg(`${b.name || b.script}: ${t}`, kind);
+    card.append(el('div', { class: 'bub-body' },
+      el('div', { class: 'field' }, el('label', { textContent: 'Título' }),
+        el('input', { type: 'text', value: b.name || '', oninput: (e) => { b.name = e.target.value; title.textContent = b.name || b.script; dirty(); } })),
+      el('div', { class: 'sub', textContent: 'Funcionamiento' }),
+      b.script in scripts ? codeEditor(b.script, say) : el('div', { class: 'err', textContent: 'No se encuentra su funcionamiento.' }),
+      def ? null : el('div', { class: 'btns' }, el('button', { type: 'button', class: 'btn danger', textContent: 'Borrar burbuja', onclick: () => delBullet(i) }))));
     return card;
   }));
 }
-async function addScript(name, code) {
-  const r = await api('PUT', '/api/scripts', { name, code });
-  scripts[r.name] = files[r.name] = code; openScript = r.name; renderScripts(); renderBullets(); renderTabs();
-  smsg(`Creado ${r.name} ✓`, 'ok');
-}
-$('#script-create').onclick = async () => {
-  try { await addScript($('#script-new').value, $('#script-tpl').value ? PM.EXAMPLES[$('#script-tpl').value] : '{\n  watch: [],\n  render(ha) {\n    return null;\n  },\n}\n'); $('#script-new').value = ''; }
-  catch (e) { smsg(e.message, 'err'); }
-};
-$('#script-import').onclick = async () => {
-  smsg('Descargando…');
+async function delBullet(i) {
+  const b = bullets[i];
+  if (!confirm(`¿Borrar la burbuja «${b.name || b.script}»?`)) return;
+  bullets.splice(i, 1); openBullet = null;
   try {
-    const r = await api('POST', '/api/scripts/importar', { url: $('#script-url').value.trim() });
-    scripts[r.name] = files[r.name] = r.code; openScript = r.name; $('#script-url').value = ''; renderScripts(); renderBullets(); renderTabs();
-    smsg(`Importado ${r.name}. Revísalo antes de usarlo ✓`, 'ok');
-  } catch (e) { smsg(e.message, 'err'); }
+    if (b.script in files && !isDefault(b.script) && !bullets.some((x) => x.script === b.script) && !usedInTabs(b.script)) await deleteCode(b.script);
+  } catch (e) { bmsg(e.message, 'err'); }
+  renderAll(); dirty(); bmsg('Borrada. Pulsa Guardar para que desaparezca del panel.');
+}
+/** Nueva burbuja con su funcionamiento (código nuevo, de una URL o de un archivo). */
+async function addBullet(title, code, viaUrl) {
+  title = String(title || '').trim();
+  if (!title) throw new Error('Ponle un título');
+  let name = freeName(title);
+  if (viaUrl) { const r = await api('POST', '/api/scripts/importar', { url: viaUrl, name }); name = r.name; scripts[name] = files[name] = r.code; }
+  else await saveCode(name, code);
+  const id = 'b-' + Date.now().toString(36);
+  bullets.push({ id, type: 'script', script: name, name: title, ambient: true, home: false });
+  openBullet = id; renderAll(); dirty();
+  bmsg(`Creada «${title}». Revisa su funcionamiento y pulsa Guardar para que salga en el panel.`, 'ok');
+}
+const EMPTY = '{\n  watch: [],\n  render(ha) {\n    return null;\n  },\n}\n';
+$('#bullet-add').onclick = async () => {
+  try { await addBullet($('#bullet-title').value, $('#bullet-tpl').value ? PM.EXAMPLES[$('#bullet-tpl').value] : EMPTY); $('#bullet-title').value = ''; }
+  catch (e) { bmsg(e.message, 'err'); }
 };
-$('#script-file').onchange = async (e) => {
+$('#bullet-import').onclick = async () => {
+  const url = $('#bullet-url').value.trim();
+  bmsg('Descargando…');
+  try { await addBullet(decodeURIComponent(url.split(/[?#]/)[0].split('/').pop() || 'burbuja').replace(/\.js$/i, ''), null, url); $('#bullet-url').value = ''; }
+  catch (e) { bmsg(e.message, 'err'); }
+};
+$('#bullet-file').onchange = async (e) => {
   const f = e.target.files[0]; e.target.value = '';
   if (!f) return;
-  try { await addScript(f.name.toLowerCase().replace(/[^a-z0-9_.-]/g, '-'), await f.text()); } catch (err) { smsg(err.message, 'err'); }
+  try { await addBullet(f.name.replace(/\.js$/i, ''), await f.text()); } catch (err) { bmsg(err.message, 'err'); }
+};
+
+/* ---------- código de las tarjetas «Código» de las pestañas ---------- */
+let openCard = null;
+const cmsg = (t, kind = '') => { $('#cscript-msg').textContent = t; $('#cscript-msg').className = 'hint ' + kind; };
+function renderCardScripts() {
+  const names = Object.keys(scripts).filter((n) => !isDefault(n) && !bullets.some((b) => b.script === n));
+  if (!names.length) { $('#cscripts').replaceChildren(el('div', { class: 'hint', textContent: 'Aún no hay ninguna.' })); return; }
+  $('#cscripts').replaceChildren(...names.map((name) => {
+    const open = openCard === name;
+    const card = el('div', { class: 'bub' }, el('div', { class: 'bub-head' },
+      el('button', { type: 'button', class: 'bub-title', onclick: () => { openCard = open ? null : name; renderCardScripts(); } },
+        el('span', { class: 'bub-arrow', textContent: open ? '▾' : '▸' }), el('b', { textContent: name.replace(/\.js$/, '') }))));
+    if (!open) return card;
+    const del = async () => {
+      if (!confirm(`¿Borrar «${name.replace(/\.js$/, '')}»?` + (usedInTabs(name) ? ' Alguna pestaña la usa y mostrará un error.' : ''))) return;
+      try { await deleteCode(name); openCard = null; renderAll(); cmsg('Borrada'); } catch (e) { cmsg(e.message, 'err'); }
+    };
+    card.append(el('div', { class: 'bub-body' }, codeEditor(name, cmsg),
+      el('div', { class: 'btns' }, el('button', { type: 'button', class: 'btn danger', textContent: 'Borrar', onclick: del }))));
+    return card;
+  }));
+}
+$('#cscript-add').onclick = async () => {
+  try {
+    const name = freeName($('#cscript-title').value || 'tarjeta');
+    await saveCode(name, PM.EXAMPLES.tarjeta); openCard = name; $('#cscript-title').value = ''; renderAll(); cmsg('Creada ✓', 'ok');
+  } catch (e) { cmsg(e.message, 'err'); }
 };
 
 /* ---------- pestañas ---------- */
@@ -494,7 +568,7 @@ function cardFields(c) {
   } else if (c.type === 'bullets') {
     f.push(el('div', { class: 'hint', textContent: 'Muestra las burbujas marcadas para Inicio.' }));
   } else if (c.type === 'script') {
-    const s = el('select', { onchange: (e) => { c.script = e.target.value; dirty(); } }, new Option('— elige un script —', ''), ...Object.keys(scripts).map((n) => new Option(n, n)));
+    const s = el('select', { onchange: (e) => { c.script = e.target.value; dirty(); } }, new Option('— elige cuál —', ''), ...Object.keys(scripts).map((n) => new Option(n, n)));
     s.value = c.script || ''; f.push(s);
   }
   return f;
@@ -642,7 +716,7 @@ async function load() {
   $('#login').classList.add('hidden'); $('#app').classList.remove('hidden');
   loadEntities();
   loadRed();
-  loadScripts().catch((e) => smsg('No se pudieron leer los scripts: ' + e.message, 'err'));
+  loadScripts().catch((e) => bmsg('No se pudo leer el funcionamiento de las burbujas: ' + e.message, 'err'));
 }
 
 /* ---------- fuentes de fotos (conectores) ---------- */

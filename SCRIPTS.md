@@ -1,13 +1,12 @@
 # Scripts: burbujas y pestañas a tu medida
 
 Las burbujas y las tarjetas de las pestañas se pueden programar con pequeños archivos JavaScript.
-**Todas las burbujas son scripts**, también las de serie (`tiempo.js`, `alarma.js`, `impresoras.js`, `patinete.js`, `musica.js`, `luces.js`, `aberturas.js`). Si editas una, se guarda tu versión. Con «Restaurar» vuelves a la de serie.
+**Todas las burbujas funcionan así**, también las de serie (`tiempo.js`, `alarma.js`, `impresoras.js`, `patinete.js`, `musica.js`, `luces.js`, `aberturas.js`). Si editas una, se guarda tu versión. Con «Restaurar» vuelves a la de serie.
 
-- **Dónde:** en la web de configuración, apartado **📜 Scripts**. Ahí puedes crearlos, importarlos (desde una URL o un archivo .js), editarlos y **probarlos** con los datos actuales de tu casa.
-- **Cómo funcionan:** se guardan en la Pi; el panel los descarga y los ejecuta **en el navegador**. Desde Home Assistant solo se leen estados. Lo único que se manda a Home Assistant es una `action` cuando tú tocas la burbuja o el botón.
-- **Para usarlos:**
-  - Una **burbuja**: en **🫧 Burbujas**, «Añadir burbuja de script». Después eliges si sale en Ambiente, en Inicio o en los dos.
-  - Una **tarjeta**: en **🗂️ Pestañas**, añade una tarjeta de tipo «Script».
+- **Dónde:** en la web de configuración, pestaña **🫧 Burbujas**. Cada burbuja tiene un título; al tocarla se despliega su **funcionamiento** (el código), que puedes editar, **probar** con los datos actuales de tu casa, descargar o, en las de serie, restaurar.
+- **Nuevas:** pon un título y «Crear», tráela de una URL o sube un archivo `.js`. Después pulsa **Guardar**.
+- **Cómo funcionan:** se guardan en la Pi; el panel las descarga y las ejecuta **en el navegador**. De Home Assistant solo se leen estados; solo se le manda una `action` cuando tú tocas la burbuja o el botón.
+- **Tarjetas:** en **⚙️ Ajustes → 🧩 Tarjetas con código**, y se usan en **🗂️ Pestañas** con una tarjeta de tipo «Código».
 
 ## Forma de un script
 
@@ -72,4 +71,4 @@ En **🗂️ Pestañas** eliges el nombre, el icono y las tarjetas de cada pesta
 | Dispositivos | los que elijas |
 | Cámara | una cámara |
 | Burbujas | las burbujas de Inicio |
-| Script | lo que devuelva tu script |
+| Código | lo que devuelva su código |
