@@ -44,8 +44,6 @@ sudo visudo -c -f /etc/sudoers.d/panel-hogar >/dev/null || sudo rm -f /etc/sudoe
 echo "==> Puntero del ratón invisible en la pantalla (tema de cursores transparente)..."
 python3 - <<'PY'
 import os, struct
-d = os.path.expanduser('~/.icons/invisible/cursors')
-os.makedirs(d, exist_ok=True)
 # Xcursor de 1x1 píxel transparente
 img = struct.pack('<9I', 36, 0xfffd0002, 1, 1, 1, 1, 0, 0, 0) + struct.pack('<I', 0)
 data = b'Xcur' + struct.pack('<3I', 16, 0x10000, 1) + struct.pack('<3I', 0xfffd0002, 1, 28) + img
@@ -54,11 +52,15 @@ names = ('default left_ptr arrow top_left_arrow pointer hand hand1 hand2 text xt
          'copy alias all-scroll col-resize row-resize ew-resize ns-resize nesw-resize nwse-resize n-resize s-resize '
          'e-resize w-resize ne-resize nw-resize se-resize sw-resize sb_h_double_arrow sb_v_double_arrow zoom-in zoom-out '
          'vertical-text dnd-move dnd-copy dnd-none pirate X_cursor').split()
-for n in names:
-    with open(os.path.join(d, n), 'wb') as f:
-        f.write(data)
-with open(os.path.expanduser('~/.icons/invisible/index.theme'), 'w') as f:
-    f.write('[Icon Theme]\nName=invisible\n')
+# cage carga el tema «default» (no hace caso de XCURSOR_THEME): se pone en los dos
+for theme in ('default', 'invisible'):
+    d = os.path.expanduser('~/.icons/%s/cursors' % theme)
+    os.makedirs(d, exist_ok=True)
+    for n in names:
+        with open(os.path.join(d, n), 'wb') as f:
+            f.write(data)
+    with open(os.path.expanduser('~/.icons/%s/index.theme' % theme), 'w') as f:
+        f.write('[Icon Theme]\nName=%s\n' % theme)
 PY
 
 echo "==> Creando ~/kiosk-browser.sh y ~/kiosk.sh..."
