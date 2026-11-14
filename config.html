@@ -4,6 +4,8 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Panel Hogar · Configuración</title>
+<!-- Iconos, para ver las burbujas como en el panel al probarlas -->
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@mdi/font@7.4.47/css/materialdesignicons.min.css">
 <style>
   :root {
     --bg: #0e1014; --surface: #191c22; --surface-2: #232730; --surface-3: #2d323d;
@@ -96,6 +98,25 @@
   .preview { margin-top: 8px; background: #0b0d11; border-radius: 10px; padding: 10px; font-size: 13px; }
   .preview pre, .help pre { margin: 6px 0 0; white-space: pre-wrap; word-break: break-word; font-size: 12px; color: var(--muted); }
   .preview .err { color: var(--danger); }
+  /* Vista previa de burbujas: igual que en el panel */
+  .bprev { display: grid; grid-template-columns: auto 1fr; gap: 10px 12px; align-items: center; margin-top: 10px; }
+  .bprev > .hint { font-size: 12px; }
+  .bprev-row { display: flex; flex-wrap: wrap; gap: 8px; padding: 10px; border-radius: 12px; min-height: 40px; align-items: center; }
+  .bprev-row.amb { background: linear-gradient(135deg, #1d2b44, #3a2c4d 60%, #4a3a2a); }
+  .bprev-row.home { background: var(--bg); }
+  .bchip { display: flex; align-items: center; gap: 8px; border-radius: 999px; }
+  .bchip .mdi { line-height: 1; }
+  .bchip.amb { padding: 8px 14px; background: rgba(0,0,0,.35); font-size: 17px; color: #fff; }
+  .bchip.amb .mdi { font-size: 22px; }
+  .bchip.home { padding: 10px 16px; background: var(--surface); font-weight: 500; }
+  .bchip.home .b-ic { font-size: 20px; color: var(--bc, var(--accent)); }
+  .bchip.amb .b-ic { color: var(--bc, inherit); }
+  .bchip .b-end { margin-left: -4px; }
+  .bchip.bar { flex-wrap: wrap; }
+  .bchip .bbar { display: block; width: 100%; height: 5px; border-radius: 3px; background: rgba(255,255,255,.25); overflow: hidden; }
+  .bchip.home .bbar { background: var(--surface-3); }
+  .bchip .bbar span { display: block; height: 100%; background: #fff; }
+  .bchip.home .bbar span { background: var(--accent); }
   .pchips { display: flex; flex-wrap: wrap; gap: 6px; }
   .pchip { background: var(--surface-3); border-radius: 999px; padding: 4px 12px; font-size: 13px; }
   .help { margin-top: 10px; } .help summary { cursor: pointer; color: var(--accent); font-size: 14px; }
@@ -430,13 +451,22 @@ function codeEditor(name, say) {
       if (!states) states = await api('GET', '/api/estados');
       const mod = PM.compile(ta.value);
       const t0 = performance.now(), res = mod.render(PM.makeHA(() => states), 'ambient'), ms = performance.now() - t0;
-      const looksBubble = !Array.isArray(res) || res.every((x) => x && (x.text != null || x.icon));
+      const looksBubble = res == null || !Array.isArray(res) || res.every((x) => x && (x.text != null || x.icon));
+      let preview = null;
+      if (looksBubble) {
+        const row = (place, label) => {
+          let list;
+          try { list = PM.bubbles(mod.render(PM.makeHA(() => states), place)); } catch (e) { return [el('span', { class: 'hint', textContent: label }), el('div', { class: 'err', textContent: '✗ ' + e.message })]; }
+          return [el('span', { class: 'hint', textContent: label }), el('div', { class: 'bprev-row ' + (place === 'ambient' ? 'amb' : 'home') },
+            ...(list.length ? list.map((x) => bubblePreview(x, place)) : [el('span', { class: 'hint', textContent: 'No se muestra (devuelve null)' })]))];
+        };
+        preview = el('div', { class: 'bprev' }, ...row('ambient', 'Ambiente'), ...row('home', 'Inicio'));
+      }
       out.replaceChildren(
         el('div', { class: 'hint', textContent: `✓ Sin errores · ${ms.toFixed(1)} ms · se actualiza con: ${mod.watch ? mod.watch.join(', ') : 'cualquier cambio'}` }),
-        looksBubble ? el('div', { class: 'pchips', style: 'margin-top:6px' }, ...PM.bubbles(res).map((x) => el('span', { class: 'pchip',
-          style: (x.color ? `border:1px solid ${x.color};` : '') + (x.textColor ? `color:${x.textColor}` : ''),
-          textContent: (x.text || '(sin texto)') + (x.iconEnd ? ' ‹' + x.iconEnd.replace(/^mdi-/, '') + '›' : '') }))) : null,
-        el('pre', { textContent: JSON.stringify(res, null, 2) ?? 'null' }));
+        preview,
+        el('details', { style: 'margin-top:8px' }, el('summary', { class: 'hint', style: 'cursor:pointer', textContent: 'Ver lo que devuelve' }),
+          el('pre', { textContent: JSON.stringify(res, null, 2) ?? 'null' })));
     } catch (e) { out.replaceChildren(el('div', { class: 'err', textContent: '✗ ' + e.message })); }
   };
   const save = async () => {
@@ -457,6 +487,17 @@ function codeEditor(name, say) {
     el('button', { type: 'button', class: 'btn', textContent: 'Probar', onclick: test }),
     el('button', { type: 'button', class: 'btn', textContent: 'Descargar', onclick: download }),
     def && name in files ? el('button', { type: 'button', class: 'btn', textContent: 'Restaurar el de serie', onclick: restore }) : null), out);
+}
+/** Una burbuja dibujada como en el panel. place: 'ambient' | 'home' */
+function bubblePreview(b, place) {
+  const cls = place === 'ambient' ? 'amb' : 'home';
+  const e = el('div', { class: `bchip ${cls}` + (b.progress != null ? ' bar' : ''), title: b.action ? 'Al tocar: ' + (b.action.service || '') : b.go ? 'Al tocar: ir a ' + b.go : '' });
+  if (b.color) e.style.setProperty('--bc', b.color);
+  if (b.icon) e.append(el('i', { class: `mdi ${b.icon} b-ic` }));
+  e.append(el('span', { textContent: b.text, style: b.textColor ? `color:${b.textColor}` : null }));
+  if (b.iconEnd) e.append(el('i', { class: `mdi ${b.iconEnd} b-end`, style: b.iconEndColor ? `color:${b.iconEndColor}` : null }));
+  if (b.progress != null) e.append(el('span', { class: 'bbar' }, el('span', { style: `width:${b.progress}%` })));
+  return e;
 }
 function renderAll() { renderBullets(); renderCardScripts(); renderTabs(); }
 
