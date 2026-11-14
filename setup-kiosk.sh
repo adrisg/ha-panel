@@ -9,7 +9,8 @@ echo "==> Panel en: $PANEL_DIR"
 
 sudo apt-get update
 sudo apt-get install -y --no-install-recommends cage curl fonts-noto-core wlr-randr
-if ! grep -qw neon /proc/cpuinfo; then
+# 64 bits (aarch64) siempre tiene NEON, aunque /proc/cpuinfo lo llame «asimd»
+if [ "$(uname -m)" != aarch64 ] && ! grep -qwE "neon|asimd" /proc/cpuinfo; then
   echo "!!  Esta Raspberry no puede ejecutar Chromium (Pi 1 / Zero). Usa una Pi 3, 4 o 5."
   exit 1
 fi
