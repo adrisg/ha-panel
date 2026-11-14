@@ -59,7 +59,8 @@ URL="file://$PANEL_DIR/index.html"
 BROWSER="\$(command -v chromium || command -v chromium-browser)"
 exec "\$BROWSER" --kiosk --incognito --noerrdialogs --disable-infobars --no-first-run \
   --ozone-platform=wayland \
-  --disable-features=Translate,TouchpadOverscrollHistoryNavigation \
+  --lang=es-ES --accept-lang=es-ES,es \
+  --disable-features=Translate,TranslateUI,TouchpadOverscrollHistoryNavigation \
   --overscroll-history-navigation=0 --disable-pinch --password-store=basic \
   --autoplay-policy=no-user-gesture-required \
   --check-for-update-interval=31536000 --disable-session-crashed-bubble \
