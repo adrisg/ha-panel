@@ -49,7 +49,7 @@ PASS_FILE = DATA / 'admin.json'
 SCRIPTS_DIR = DATA / 'scripts'        # scripts del panel (burbujas y tarjetas): archivos .js
 SCRIPT_NAME = re.compile(r'^[a-z0-9][a-z0-9_-]{0,39}\.js$')
 SCRIPT_MAX = 100 * 1024
-PANEL_DATA = {}                       # lo último que mandó el panel para ha.panel.* (solo en memoria)
+PANEL_DATA = {}                       # lo último que mandó el panel: screen e info de entidades (solo en memoria)
 LOCAL_PORT = 8766
 WEB_PORT = int(os.environ.get('PANEL_WEB_PORT', '8080'))
 BACKLIGHT = next(iter(sorted(glob.glob('/sys/class/backlight/*'))), None)
@@ -548,9 +548,8 @@ class LocalHandler(Base):
                 return self._json(200, {'ok': set_brightness(int(q.get('value', ['100'])[0]))})
             if u.path == '/power':
                 return self._json(200, {'ok': set_power(q.get('on', ['1'])[0] == '1')})
-            if u.path == '/datos':  # el panel manda lo que calcula (ha.panel.*) para probar burbujas en la web
+            if u.path == '/datos':  # el panel manda screen e info de entidades para probar burbujas en la web
                 body = self._body()
-                PANEL_DATA.clear()
                 PANEL_DATA.update(body if isinstance(body, dict) else {})
                 PANEL_DATA['t'] = time.time()
                 return self._json(200, {'ok': True})
@@ -638,7 +637,7 @@ class WebHandler(Base):
             if code != 200:
                 return self._json(502, states)
             return self._json(200, {st['entity_id']: st for st in states})
-        if u.path == '/api/datos-panel':    # lo que calcula el panel (ha.panel.*), para probar burbujas en la web
+        if u.path == '/api/datos-panel':    # screen e info de entidades del panel, para probar burbujas en la web
             if not self._guard():
                 return
             return self._json(200, PANEL_DATA)

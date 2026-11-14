@@ -188,16 +188,27 @@
       </div>
       <div id="bullet-msg" class="hint" style="margin-top:6px"></div>
       <details class="help"><summary>Cómo se escribe el funcionamiento</summary>
-<pre>ha.state(id)  ha.num(id)  ha.attr(id, 'x')  ha.name(id)  ha.fmt(id)
-ha.isOn(id)   ha.ok(id)   ha.find('light.*', filtro)  ha.count('light.*', 'on')
-ha.minutesSince(id)  ha.entity(id)  ha.states  ha.now()
+<pre>render(ha, screen) → lo que se pinta
 
-Burbuja → { icon, text, color, textColor, iconEnd, iconEndColor, go, action, progress }  (o una lista, o null)
+ha (Home Assistant)
+  ha.state(id)  ha.num(id)  ha.attr(id, 'x')  ha.name(id)  ha.fmt(id)  ha.entity(id)  ha.states
+  ha.isOn(id)  ha.ok(id)  ha.minutesSince(id)
+  ha.find('light.*', (s, id) => …)  ha.count('light.*', 'on')
+  ha.info(id) → { platform, device, deviceId, area, areaId, key }   de qué integración y aparato es
+  ha.number(21.46) → '21,5'   ha.duration(4800) → '1 h 20 min'
+  ha.call('light.turn_off', { entity_id: 'light.x' })   solo dentro de onTap
+
+screen (la pantalla)
+  screen.place → 'ambient' | 'home' | 'card'      screen.brightness  screen.on  screen.night  screen.ambient
+  screen.alarms  screen.nextAlarm() → { name, when, text }      screen.light (sensor de luz, futuro)
+  screen.weatherEntity  screen.visible(id)  screen.go('media')  screen.now()
+
+Burbuja → { icon, text, color, textColor, iconEnd, iconEndColor, progress, go, onTap }  (o una lista, o null)
 Tarjeta → [ { title }, { text, size: 'big'|'small' }, { tiles: [ids] },
             { stats: [{ icon, value, label }] }, { chips: [burbujas] },
-            { button: { text, icon, action } } ]
-action = { service: 'light.turn_off', entity: 'light.x', data: {} }  (solo al tocar)
-go = 'home' | 'rooms' | 'sensors' | 'media' | 'printers' | 'scooter' | id de pestaña</pre></details>
+            { button: { text, icon, go, onTap } } ]
+onTap: (ha, screen) => ha.call('light.toggle', { entity_id: 'light.salon' })
+go = 'home' | 'rooms' | 'sensors' | 'media' | 'printers' | 'scooter' | 'settings' | id de pestaña</pre></details>
     </div>
     </div>
     <div data-pg="ajustes">
@@ -421,15 +432,14 @@ showPage(location.hash === '#burbujas' ? 'burbujas' : 'ajustes');
 
 /* ---------- código (archivos .js guardados en la Pi; los de serie vienen en lib/modulos.js) ---------- */
 let scripts = {}, files = {}, states = null, panelData = null;
-/** ha para probar: estados reales de Home Assistant + lo que calcula el panel (lo manda cada 15 s). */
+/** Para probar: ha con los estados reales de Home Assistant y el registro de entidades que manda el panel;
+ *  screen con los datos de la pantalla que manda el panel (cada 15 s). Aquí ha.call no hace nada. */
 function testHA() {
-  const d = panelData || {};
-  return PM.makeHA(() => states, { panel: {
-    weather: () => d.weather || null,
-    alarm: () => (d.alarm ? { ...d.alarm, when: new Date(d.alarm.when) } : null),
-    printers: () => d.printers || [],
-    scooter: () => d.scooter || null,
-  } });
+  const info = (panelData && panelData.info) || {};
+  return PM.makeHA(() => states, { info: (id) => info[id] });
+}
+function testScreen(place) {
+  return PM.makeScreen(Object.assign({}, (panelData && panelData.screen) || {}, { place }));
 }
 const drafts = {};            // cambios sin guardar del código, para no perderlos al repintar
 const isDefault = (name) => name in PM.DEFAULT_SCRIPTS;
@@ -460,21 +470,21 @@ function codeEditor(name, say) {
     try {
       [states, panelData] = await Promise.all([api('GET', '/api/estados'), api('GET', '/api/datos-panel').catch(() => ({}))]);
       const mod = PM.compile(ta.value);
-      const t0 = performance.now(), res = mod.render(testHA(), 'ambient'), ms = performance.now() - t0;
+      const t0 = performance.now(), res = mod.render(testHA(), testScreen('ambient')), ms = performance.now() - t0;
       const looksBubble = res == null || !Array.isArray(res) || res.every((x) => x && (x.text != null || x.icon));
       let preview = null;
       if (looksBubble) {
         const row = (place, label) => {
           let list;
-          try { list = PM.bubbles(mod.render(testHA(), place)); } catch (e) { return [el('span', { class: 'hint', textContent: label }), el('div', { class: 'err', textContent: '✗ ' + e.message })]; }
+          try { list = PM.bubbles(mod.render(testHA(), testScreen(place))); } catch (e) { return [el('span', { class: 'hint', textContent: label }), el('div', { class: 'err', textContent: '✗ ' + e.message })]; }
           return [el('span', { class: 'hint', textContent: label }), el('div', { class: 'bprev-row ' + (place === 'ambient' ? 'amb' : 'home') },
             ...(list.length ? list.map((x) => bubblePreview(x, place)) : [el('span', { class: 'hint', textContent: 'No se muestra (devuelve null)' })]))];
         };
         preview = el('div', { class: 'bprev' }, ...row('ambient', 'Ambiente'), ...row('home', 'Inicio'));
       }
       out.replaceChildren(...[
-        el('div', { class: 'hint', textContent: `✓ Sin errores · ${ms.toFixed(1)} ms · se actualiza con: ${mod.watch ? mod.watch.join(', ') : 'cualquier cambio'}` }),
-        panelData && panelData.t ? null : el('div', { class: 'hint', textContent: 'ⓘ El panel no está encendido: ha.panel (tiempo, alarma, impresoras, patinete) da null aquí.' }),
+        el('div', { class: 'hint', textContent: `✓ Sin errores · ${ms.toFixed(1)} ms · se actualiza con: ${!mod.watch ? 'cualquier cambio' : mod.watch.length ? mod.watch.join(', ') : 'nada (cada minuto)'}` }),
+        panelData && panelData.t ? null : el('div', { class: 'hint', textContent: 'ⓘ El panel no está encendido: screen (alarmas, brillo…) y ha.info vienen vacíos aquí.' }),
         preview,
         el('details', { style: 'margin-top:8px' }, el('summary', { class: 'hint', style: 'cursor:pointer', textContent: 'Ver lo que devuelve' }),
           el('pre', { textContent: JSON.stringify(res, null, 2) ?? 'null' }))].filter(Boolean));
@@ -502,7 +512,7 @@ function codeEditor(name, say) {
 /** Una burbuja dibujada como en el panel. place: 'ambient' | 'home' */
 function bubblePreview(b, place) {
   const cls = place === 'ambient' ? 'amb' : 'home';
-  const e = el('div', { class: `bchip ${cls}` + (b.progress != null ? ' bar' : ''), title: b.action ? 'Al tocar: ' + (b.action.service || '') : b.go ? 'Al tocar: ir a ' + b.go : '' });
+  const e = el('div', { class: `bchip ${cls}` + (b.progress != null ? ' bar' : ''), title: b.onTap ? 'Al tocar: hace algo (onTap)' : b.action ? 'Al tocar: ' + (b.action.service || '') : b.go ? 'Al tocar: ir a ' + b.go : '' });
   if (b.color) e.style.setProperty('--bc', b.color);
   if (b.icon) e.append(el('i', { class: `mdi ${b.icon} b-ic` }));
   e.append(el('span', { textContent: b.text, style: b.textColor ? `color:${b.textColor}` : null }));
