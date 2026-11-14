@@ -1453,7 +1453,7 @@ function saveSettings() {
     } catch (e) { toast('No se pudieron guardar: ' + e.message, true); }
   }, 600);
 }
-function applySettings() { resetIdle(); screenTick(); }
+function applySettings() { resetIdle(); screenTick(); try { COMPILED.forEach((m) => (m.cache = {})); } catch (e) { /* aún no cargado */ } }
 
 function isNight(now = new Date()) {
   const n = SET.night;
@@ -1901,7 +1901,7 @@ function renderCard(c) {
     if (m.err) return [title, codeError(name, m.err)];
     const box = h('div', { class: 'code-card' });
     const paint = () => {
-      try { box.replaceChildren(...codeBlocks(m.mod.render(HA, 'card'))); } catch (e) { box.replaceChildren(codeError(name, e.message)); }
+      try { box.replaceChildren(...codeBlocks(m.mod.render(HA, screenFor('card')))); } catch (e) { box.replaceChildren(codeError(name, e.message)); }
     };
     paint(); VIEW_CODE.push({ matches: m.mod.matches, paint });
     return [title, box];
@@ -1921,7 +1921,7 @@ function codeBlocks(out) {
     if (b.chips) return h('div', { class: 'chips' }, PM.bubbles(b.chips).map((x) => bubbleEl(x, 'chip')));
     if (b.button) {
       const x = b.button;
-      return h('button', { class: 'big-action', onclick: () => runBubble({ action: x.action, go: x.go }) }, icon(PM.mdi(x.icon) || 'mdi-gesture-tap'), x.text || 'Ejecutar');
+      return h('button', { class: 'big-action', onclick: () => runBubble({ action: x.action, go: x.go, onTap: typeof x.onTap === 'function' ? x.onTap : null }) }, icon(PM.mdi(x.icon) || 'mdi-gesture-tap'), x.text || 'Ejecutar');
     }
     return null;
   });
@@ -1995,43 +1995,53 @@ function hideAmbient(view = 'home') {
  * Todas son scripts: los de serie (lib/modulos.js) y los que se crean o importan en la web de configuración,
  * que se guardan en la Pi y el panel descarga al arrancar. Se ejecutan aquí, en el navegador.
  * Cada burbuja dice si sale en el modo ambiente y/o en el resumen de Inicio (SET.bullets). */
-// Acceso a Home Assistant para los scripts: leer estados. call() solo se usa al tocar un botón o una burbuja.
-const HA = PM.makeHA(() => S.states, {
-  call: (service, data = {}) => { const [d, sv] = String(service).split('.'); return call(d, sv, data); },
-  go: (v) => go(v),
-  name: (id) => (S.states[id] ? nameOf(id) : id),
-  visible: (id) => !!S.states[id] && visible(id) && !isScooter(id),
-  panel: {
-    weather() {
-      const id = weatherId();
-      if (!id) return null;
-      const w = S.states[id];
-      return { id, icon: wIcon(w.state), text: wText(w.state), temp: w.attributes.temperature, tempText: fmtNum(w.attributes.temperature) };
-    },
-    alarm() {
-      const n = upcomingAlarms()[0];
-      return n ? { when: n.when, text: whenText(n.when) } : null;
-    },
-    printers: () => printers().map((p) => {
-      const prog = num(p.e.progress), r = pRemaining(p);
-      return { name: p.name, active: pActive(p), progress: isNaN(prog) ? null : prog, remaining: isNaN(r) ? null : r };
-    }),
-    scooter() {
-      const k = scooterIds();
-      if (!k.battery_level) return null;
-      const b = num(k.battery_level);
-      return { battery: isNaN(b) ? null : b, mode: chargeMode(k) };
-    },
-    duration: (sec) => fmtDuration(sec),
+/* Lo que reciben las burbujas y tarjetas de código: render(ha, screen).
+ * ha     → Home Assistant tal cual (estados y registro de entidades). Para pintar solo lee; ha.call() solo al tocar.
+ * screen → la pantalla: dónde se pinta, brillo, modo noche/ambiente, alarmas del panel, ir a una pestaña. */
+function entInfo(id) {
+  const e = S.ents[id];
+  if (!e) return {};
+  const d = S.devs[e.device_id] || {}, areaId = e.area_id || d.area_id || null;
+  return { platform: e.platform || null, device: d.name_by_user || d.name || null, deviceId: e.device_id || null,
+    area: areaId ? (S.areaById[areaId] || {}).name || null : null, areaId, key: e.translation_key || null };
+}
+const HA_OPTS = { name: (id) => (S.states[id] ? nameOf(id) : id), info: entInfo };
+const HA = PM.makeHA(() => S.states, HA_OPTS);
+const HA_TAP = PM.makeHA(() => S.states, Object.assign({}, HA_OPTS, {
+  call(service, data = {}) {
+    const [d, sv] = String(service).split('.');
+    if (!d || !sv) throw new Error('Servicio no válido: ' + service);
+    return call(d, sv, data);
   },
+}));
+/** Datos de la pantalla (también se mandan a la web para probar). */
+function screenData(place) {
+  return {
+    place, brightness: SCREEN.level, on: !SCREEN.off, night: isNight(), ambient: !!S.ambient, light: null,
+    weatherEntity: weatherId() || null,
+    alarms: (SET.alarms || []).map((a) => {
+      const sn = RING.snooze[a.id];
+      const when = sn && sn > Date.now() ? new Date(sn) : a.enabled ? nextOccurrence(a) : null;
+      return { name: a.name || 'Alarma', time: a.time, days: a.days || [], enabled: !!a.enabled, when, text: when ? whenText(when) : null };
+    }),
+  };
+}
+const screenFor = (place) => PM.makeScreen(screenData(place), {
+  visible: (id) => !!S.states[id] && visible(id) && !isScooter(id),
+  go: (v) => go(v),
 });
 const bulletList = () => PM.bulletList(SET.bullets, SET.ambientChips);
-/* La web de configuración prueba las burbujas con estos mismos datos (ha.panel.*): se los pasamos al ayudante. */
+/* La web de configuración prueba las burbujas con lo mismo que ve el panel: le pasamos al ayudante
+ * los datos de la pantalla (cada 15 s) y el registro de entidades (ha.info; cada 5 min). */
+let infoSentAt = 0;
 function sendPanelData() {
   if (!window.PANEL_HELPER || !S.states || !Object.keys(S.states).length) return;
-  let d;
-  try { d = { weather: HA.panel.weather(), alarm: HA.panel.alarm(), printers: HA.panel.printers(), scooter: HA.panel.scooter() }; }
-  catch (e) { return; }
+  const d = { screen: screenData('ambient') };
+  if (Date.now() - infoSentAt > 300e3) {
+    d.info = {};
+    for (const id of Object.keys(S.states)) { const i = entInfo(id); if (i.platform) d.info[id] = i; }
+    infoSentAt = Date.now();
+  }
   fetch(HELPER + '/datos', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(d) }).catch(() => {});
 }
 setInterval(sendPanelData, 15e3);
@@ -2069,7 +2079,7 @@ function bulletOutputs(where) {
     const m = moduleOf(b.script), name = b.name || b.script;
     // Se recalcula si cambia algo de su watch o si lleva más de un minuto (horas, alarmas…)
     if (!m.err && (!m.cache[place] || Date.now() - m.cache[place].t > 60e3)) {
-      try { m.cache[place] = { out: PM.bubbles(m.mod.render(HA, place)), t: Date.now() }; } catch (e) { m.cache[place] = { err: e.message, t: Date.now() }; }
+      try { m.cache[place] = { out: PM.bubbles(m.mod.render(HA, screenFor(place))), t: Date.now() }; } catch (e) { m.cache[place] = { err: e.message, t: Date.now() }; }
     }
     const err = m.err || m.cache[place].err;
     if (err) out.push({ icon: 'mdi-alert-circle-outline', text: `${name}: ${err}`, color: PM.color('rojo') });
@@ -2079,16 +2089,23 @@ function bulletOutputs(where) {
 }
 /** Una burbuja en pantalla. Al tocarla: su acción o ir a su pestaña. */
 function bubbleEl(b, cls) {
-  const el = h('div', { class: cls + (b.go || b.action ? ' tappable' : '') + (b.progress != null ? ' with-bar' : ''), style: b.color ? `--bc:${b.color}` : null },
+  const el = h('div', { class: cls + (b.go || b.action || b.onTap ? ' tappable' : '') + (b.progress != null ? ' with-bar' : ''), style: b.color ? `--bc:${b.color}` : null },
     b.icon ? icon(b.icon, 'b-ic') : null, h('span', { style: b.textColor ? `color:${b.textColor}` : null }, b.text),
     b.iconEnd ? h('i', { class: `mdi ${b.iconEnd} b-badge`, style: b.iconEndColor ? `color:${b.iconEndColor}` : null }) : null,
     b.progress != null ? h('span', { class: 'amb-bar' }, h('span', { style: `width:${b.progress}%` })) : null);
   el.bubble = b;
-  if (cls === 'chip' && (b.go || b.action)) el.addEventListener('click', () => runBubble(b));
+  if (cls === 'chip' && (b.go || b.action || b.onTap)) el.addEventListener('click', () => runBubble(b));
   return el;
 }
-/** Al tocar: la acción de la burbuja (lo único que se manda a Home Assistant) o ir a su pestaña. */
+/** Al tocar: su onTap(ha, screen) o su action (lo único que manda algo a Home Assistant), o ir a su pestaña. */
 function runBubble(b) {
+  if (b.onTap) {
+    try {
+      const r = b.onTap(HA_TAP, screenFor(S.ambient ? 'ambient' : 'home'));
+      if (r && r.catch) r.catch((e) => toast(e.message || String(e), true));
+    } catch (e) { toast(e.message || String(e), true); }
+    return;
+  }
   if (b.action) {
     const a = b.action, [d, sv] = String(a.service || '').split('.');
     if (d && sv) call(d, sv, a.data || {}, a.entity);
@@ -2508,7 +2525,7 @@ function start() {
     if (act) { e.stopPropagation(); ambientPlayerAction(act.dataset.act); resetIdle(); return; }
     if (e.target.closest('#amb-player')) { resetIdle(); return; }
     const chip = e.target.closest('.amb-chip');
-    if (chip && chip.bubble && chip.bubble.action) { e.stopPropagation(); runBubble(chip.bubble); resetIdle(); return; }
+    if (chip && chip.bubble && (chip.bubble.action || chip.bubble.onTap)) { e.stopPropagation(); runBubble(chip.bubble); resetIdle(); return; }
     hideAmbient(chip && chip.bubble && chip.bubble.go ? chip.bubble.go : 'home');
   });
   document.addEventListener('pointerdown', () => { SCREEN.lastTouch = Date.now(); resetIdle(); }, true);
