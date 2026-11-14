@@ -32,7 +32,7 @@ Pantalla táctil para casa, al estilo Google Nest Hub, que se conecta a **Home A
 
 ## Qué necesitas
 
-- Una Raspberry Pi con Raspberry Pi OS Lite (sin escritorio). Vale hasta una Pi 1, aunque irá más justa.
+- Una Raspberry Pi 3, 4 o 5 (recomendada la Pi 4) con Raspberry Pi OS Lite (sin escritorio).
 - Una pantalla táctil (HDMI o de las que van en los pines).
 - Home Assistant y un **token de acceso**: en HA, tu perfil → Seguridad → Tokens de larga duración.
 
