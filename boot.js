@@ -2,6 +2,8 @@
  * (la que se cambia desde la web http://<pi>.local:8080) manda sobre config.js.
  * Es una petición síncrona a la propia Pi: si el ayudante no está, falla al instante. */
 (function () {
+  // En la pantalla de la Pi (abierto como archivo) no se ve el puntero; en el modo prueba (http) sí
+  if (location.protocol === 'file:') document.documentElement.classList.add('kiosk');
   window.PANEL_HELPER = null;
   // Abierto desde otro equipo (python dev.py --lan): al ayudante se llega a través del propio servidor
   var remote = location.protocol.indexOf('http') === 0 && !/^(localhost|127\.0\.0\.1|\[::1\])$/.test(location.hostname);

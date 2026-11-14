@@ -590,3 +590,6 @@ main { display: flex; flex-direction: column; min-width: 0; min-height: 0; heigh
 .setup-icon { font-size: 56px; color: var(--accent); }
 #sheet-card .chip { background: var(--surface-2); }
 #sheet-card .chip.sel { background: #1d3354; color: var(--accent); }
+
+/* Pantalla de la Pi: sin puntero del ratón (en el modo prueba del ordenador se sigue viendo) */
+.kiosk, .kiosk * { cursor: none !important; }
