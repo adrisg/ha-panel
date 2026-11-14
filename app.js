@@ -2035,6 +2035,16 @@ const HA = PM.makeHA(() => S.states, {
   },
 });
 const bulletList = () => PM.bulletList(SET.bullets, SET.ambientChips);
+/* La web de configuración prueba las burbujas con estos mismos datos (ha.panel.*): se los pasamos al ayudante. */
+function sendPanelData() {
+  if (!window.PANEL_HELPER || !S.states || !Object.keys(S.states).length) return;
+  let d;
+  try { d = { weather: HA.panel.weather(), alarm: HA.panel.alarm(), printers: HA.panel.printers(), scooter: HA.panel.scooter() }; }
+  catch (e) { return; }
+  fetch(HELPER + '/datos', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(d) }).catch(() => {});
+}
+setInterval(sendPanelData, 15e3);
+setTimeout(sendPanelData, 5e3);
 
 /* Scripts de serie + los descargados de la Pi (window.PANEL_HELPER.modulos) o, sin ayudante, de config.js (modulos). */
 const MODULES = PM.allScripts((window.PANEL_HELPER && window.PANEL_HELPER.modulos) || CFG.modulos);

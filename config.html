@@ -420,7 +420,17 @@ document.querySelectorAll('.pages button').forEach((x) => (x.onclick = () => {
 showPage(location.hash === '#burbujas' ? 'burbujas' : 'ajustes');
 
 /* ---------- código (archivos .js guardados en la Pi; los de serie vienen en lib/modulos.js) ---------- */
-let scripts = {}, files = {}, states = null;
+let scripts = {}, files = {}, states = null, panelData = null;
+/** ha para probar: estados reales de Home Assistant + lo que calcula el panel (lo manda cada 15 s). */
+function testHA() {
+  const d = panelData || {};
+  return PM.makeHA(() => states, { panel: {
+    weather: () => d.weather || null,
+    alarm: () => (d.alarm ? { ...d.alarm, when: new Date(d.alarm.when) } : null),
+    printers: () => d.printers || [],
+    scooter: () => d.scooter || null,
+  } });
+}
 const drafts = {};            // cambios sin guardar del código, para no perderlos al repintar
 const isDefault = (name) => name in PM.DEFAULT_SCRIPTS;
 async function loadScripts() { files = await api('GET', '/api/scripts'); scripts = PM.allScripts(files); renderBullets(); renderCardScripts(); renderTabs(); }
@@ -448,25 +458,26 @@ function codeEditor(name, say) {
   const test = async () => {
     out.classList.remove('hidden'); out.replaceChildren(el('span', { class: 'hint', textContent: 'Probando con los estados actuales…' }));
     try {
-      if (!states) states = await api('GET', '/api/estados');
+      [states, panelData] = await Promise.all([api('GET', '/api/estados'), api('GET', '/api/datos-panel').catch(() => ({}))]);
       const mod = PM.compile(ta.value);
-      const t0 = performance.now(), res = mod.render(PM.makeHA(() => states), 'ambient'), ms = performance.now() - t0;
+      const t0 = performance.now(), res = mod.render(testHA(), 'ambient'), ms = performance.now() - t0;
       const looksBubble = res == null || !Array.isArray(res) || res.every((x) => x && (x.text != null || x.icon));
       let preview = null;
       if (looksBubble) {
         const row = (place, label) => {
           let list;
-          try { list = PM.bubbles(mod.render(PM.makeHA(() => states), place)); } catch (e) { return [el('span', { class: 'hint', textContent: label }), el('div', { class: 'err', textContent: '✗ ' + e.message })]; }
+          try { list = PM.bubbles(mod.render(testHA(), place)); } catch (e) { return [el('span', { class: 'hint', textContent: label }), el('div', { class: 'err', textContent: '✗ ' + e.message })]; }
           return [el('span', { class: 'hint', textContent: label }), el('div', { class: 'bprev-row ' + (place === 'ambient' ? 'amb' : 'home') },
             ...(list.length ? list.map((x) => bubblePreview(x, place)) : [el('span', { class: 'hint', textContent: 'No se muestra (devuelve null)' })]))];
         };
         preview = el('div', { class: 'bprev' }, ...row('ambient', 'Ambiente'), ...row('home', 'Inicio'));
       }
-      out.replaceChildren(
+      out.replaceChildren(...[
         el('div', { class: 'hint', textContent: `✓ Sin errores · ${ms.toFixed(1)} ms · se actualiza con: ${mod.watch ? mod.watch.join(', ') : 'cualquier cambio'}` }),
+        panelData && panelData.t ? null : el('div', { class: 'hint', textContent: 'ⓘ El panel no está encendido: ha.panel (tiempo, alarma, impresoras, patinete) da null aquí.' }),
         preview,
         el('details', { style: 'margin-top:8px' }, el('summary', { class: 'hint', style: 'cursor:pointer', textContent: 'Ver lo que devuelve' }),
-          el('pre', { textContent: JSON.stringify(res, null, 2) ?? 'null' })));
+          el('pre', { textContent: JSON.stringify(res, null, 2) ?? 'null' }))].filter(Boolean));
     } catch (e) { out.replaceChildren(el('div', { class: 'err', textContent: '✗ ' + e.message })); }
   };
   const save = async () => {
