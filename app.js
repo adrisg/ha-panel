@@ -1659,8 +1659,7 @@ function renderSettings() {
 }
 
 /* ====================== Alarmas (despertador) ======================
- * - Alarmas del panel: se guardan en los Ajustes (SET.alarms) y suenan en la propia pantalla.
- * - Próxima alarma del móvil: sensores «…_next_alarm» de la app de Home Assistant (solo se muestran).
+ * Son del propio panel: se guardan en los Ajustes (SET.alarms) y suenan en la pantalla. No se lee nada del móvil.
  * Días: 0 = lunes … 6 = domingo. Sin días = suena una vez y se desactiva. */
 const DAY_LETTERS = ['L', 'M', 'X', 'J', 'V', 'S', 'D'];
 const idxOfDay = (d) => (d.getDay() + 6) % 7;
@@ -1676,12 +1675,7 @@ function nextOccurrence(al, from = new Date()) {
   }
   return null;
 }
-function phoneAlarms() {
-  const now = new Date();
-  return Object.keys(S.states).filter((id) => domain(id) === 'sensor' && /_next_alarm$/.test(id))
-    .map((id) => ({ id, when: new Date(S.states[id].state) })).filter((a) => !isNaN(a.when) && a.when > now);
-}
-/** Próximas alarmas (panel y móviles), de la más cercana a la más lejana. */
+/** Próximas alarmas del panel, de la más cercana a la más lejana. */
 function upcomingAlarms() {
   const out = [];
   for (const a of SET.alarms || []) {
@@ -1689,7 +1683,6 @@ function upcomingAlarms() {
     const when = snoozed && snoozed > Date.now() ? new Date(snoozed) : a.enabled ? nextOccurrence(a) : null;
     if (when) out.push({ src: 'panel', when, alarm: a });
   }
-  for (const p of phoneAlarms()) out.push({ src: 'movil', when: p.when, id: p.id });
   return out.sort((x, y) => x.when - y.when);
 }
 function whenText(d) {
@@ -1827,7 +1820,7 @@ function openAlarmEditor(existing) {
   S.sheetId = 'alarma';
 }
 
-/** Tarjeta de Ajustes con las alarmas del panel y la próxima del móvil. */
+/** Tarjeta de Ajustes con las alarmas del panel. */
 function alarmsCard() {
   const list = (SET.alarms || []).map((al) => {
     const next = al.enabled ? nextOccurrence(al) : null;
@@ -1840,11 +1833,9 @@ function alarmsCard() {
     row.children[1].addEventListener('click', () => openAlarmEditor(al));
     return row;
   });
-  const phones = phoneAlarms().map((p) => setRow(nameOf(p.id), 'Próxima alarma del móvil', h('span', { class: 'net-val' }, whenText(p.when))));
   return h('div', { class: 'card set-card' }, h('div', { class: 'set-title' }, icon('mdi-alarm'), 'Alarmas'),
     list.length ? list : h('div', { class: 'muted small' }, 'No hay alarmas. El panel encenderá la pantalla y sonará a la hora que elijas.'),
-    h('div', { class: 'btn-row' }, h('button', { class: 'big-action primary', onclick: () => openAlarmEditor(null) }, icon('mdi-alarm-plus'), 'Añadir alarma')),
-    phones.length ? phones : null);
+    h('div', { class: 'btn-row' }, h('button', { class: 'big-action primary', onclick: () => openAlarmEditor(null) }, icon('mdi-alarm-plus'), 'Añadir alarma')));
 }
 
 /* ====================== Navegación y renderizado ====================== */
@@ -2019,7 +2010,7 @@ const HA = PM.makeHA(() => S.states, {
     },
     alarm() {
       const n = upcomingAlarms()[0];
-      return n ? { when: n.when, text: whenText(n.when), phone: n.src === 'movil' } : null;
+      return n ? { when: n.when, text: whenText(n.when) } : null;
     },
     printers: () => printers().map((p) => {
       const prog = num(p.e.progress), r = pRemaining(p);
