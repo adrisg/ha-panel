@@ -41,6 +41,26 @@ echo "$USER ALL=(root) NOPASSWD: /usr/bin/nmcli, /usr/bin/hostnamectl" | sudo te
 sudo chmod 440 /etc/sudoers.d/panel-hogar
 sudo visudo -c -f /etc/sudoers.d/panel-hogar >/dev/null || sudo rm -f /etc/sudoers.d/panel-hogar
 
+echo "==> Puntero del ratón invisible en la pantalla (tema de cursores transparente)..."
+python3 - <<'PY'
+import os, struct
+d = os.path.expanduser('~/.icons/invisible/cursors')
+os.makedirs(d, exist_ok=True)
+# Xcursor de 1x1 píxel transparente
+img = struct.pack('<9I', 36, 0xfffd0002, 1, 1, 1, 1, 0, 0, 0) + struct.pack('<I', 0)
+data = b'Xcur' + struct.pack('<3I', 16, 0x10000, 1) + struct.pack('<3I', 0xfffd0002, 1, 28) + img
+names = ('default left_ptr arrow top_left_arrow pointer hand hand1 hand2 text xterm ibeam grab grabbing move fleur '
+         'crosshair cross wait watch progress left_ptr_watch not-allowed no-drop help question_arrow context-menu cell '
+         'copy alias all-scroll col-resize row-resize ew-resize ns-resize nesw-resize nwse-resize n-resize s-resize '
+         'e-resize w-resize ne-resize nw-resize se-resize sw-resize sb_h_double_arrow sb_v_double_arrow zoom-in zoom-out '
+         'vertical-text dnd-move dnd-copy dnd-none pirate X_cursor').split()
+for n in names:
+    with open(os.path.join(d, n), 'wb') as f:
+        f.write(data)
+with open(os.path.expanduser('~/.icons/invisible/index.theme'), 'w') as f:
+    f.write('[Icon Theme]\nName=invisible\n')
+PY
+
 echo "==> Creando ~/kiosk-browser.sh y ~/kiosk.sh..."
 cat > "$HOME/kiosk-browser.sh" <<EOF
 #!/usr/bin/env bash
@@ -70,7 +90,7 @@ cat > "$HOME/kiosk.sh" <<'EOF'
 #!/usr/bin/env bash
 # Lanzado al iniciar sesión en tty1. Si Chromium se cierra o falla, se vuelve a abrir.
 while true; do
-  cage -s -- "$HOME/kiosk-browser.sh"
+  XCURSOR_THEME=invisible cage -s -- "$HOME/kiosk-browser.sh"   # sin puntero visible
   sleep 3
 done
 EOF
