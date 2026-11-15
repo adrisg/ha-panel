@@ -2018,7 +2018,6 @@ const HA_TAP = PM.makeHA(() => S.states, Object.assign({}, HA_OPTS, {
 function screenData(place) {
   return {
     place, brightness: SCREEN.level, on: !SCREEN.off, night: isNight(), ambient: !!S.ambient, light: null,
-    weatherEntity: weatherId() || null,
     alarms: (SET.alarms || []).map((a) => {
       const sn = RING.snooze[a.id];
       const when = sn && sn > Date.now() ? new Date(sn) : a.enabled ? nextOccurrence(a) : null;
