@@ -49,7 +49,7 @@ Recibe dos variables:
 | `screen.brightness`, `screen.on`, `screen.night`, `screen.ambient` | brillo, encendida, modo noche, modo ambiente |
 | `screen.alarms`, `screen.nextAlarm()` | alarmas del panel: `{ name, time, days, enabled, when, text }` |
 | `screen.light` | luz ambiente del sensor de la pantalla (de momento `null`) |
-| `screen.weatherEntity`, `screen.visible(id)` | tiempo elegido en ajustes; ¿la entidad no está oculta? |
+| `screen.visible(id)` | ¿la entidad no está oculta en el panel? |
 | `screen.go('media')`, `screen.now()` | ir a una pestaña; hora actual |
 
 Se recalculan cuando cambia algo de su `watch` y, como mínimo, una vez por minuto.
