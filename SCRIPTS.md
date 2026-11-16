@@ -1,7 +1,7 @@
 # Scripts: burbujas y pestañas a tu medida
 
 Las burbujas y las tarjetas de las pestañas se pueden programar con pequeños archivos JavaScript.
-**Todas las burbujas funcionan así**, también las de serie (`tiempo.js`, `alarma.js`, `impresoras.js`, `patinete.js`, `musica.js`, `luces.js`, `aberturas.js`). Si editas una, se guarda tu versión. Con «Restaurar» vuelves a la de serie.
+**Todas las burbujas funcionan así**, también las de serie (`tiempo.js`, `alarma.js`, `impresoras-bambu.js`, `impresoras-klipper.js`, `patinete.js`, `musica.js`, `luces.js`, `aberturas.js`). Si editas una, se guarda tu versión. Con «Restaurar» vuelves a la de serie.
 
 - **Dónde:** en la web de configuración, pestaña **🫧 Burbujas**. Cada burbuja tiene un título; al tocarla se despliega su **funcionamiento** (el código), que puedes editar, **probar** con los datos actuales de tu casa, descargar o, en las de serie, restaurar.
 - **Nuevas:** pon un título y «Crear», tráela de una URL o sube un archivo `.js`. Después pulsa **Guardar**.
@@ -37,6 +37,7 @@ Recibe dos variables:
 | `ha.isOn(id)`, `ha.ok(id)` | ¿encendido/abierto? ¿disponible? |
 | `ha.find('light.*', filtro)`, `ha.count('light.*', 'on')` | buscar y contar entidades |
 | `ha.info(id)` | de qué es: `{ platform, device, deviceId, area, areaId, key }` |
+| `ha.devices('bambu_lab')` | aparatos de una integración: `[{ id, name, area, entities }]` |
 | `ha.minutesSince(id)`, `ha.entity(id)`, `ha.states` | último cambio, estado completo, todo |
 | `ha.number(n)`, `ha.duration(segundos)` | `21,5` y `1 h 20 min` |
 | `ha.call('light.turn_off', { entity_id })` | mandar a Home Assistant. **Solo dentro de `onTap`** |
@@ -69,7 +70,8 @@ Un script puede declarar campos que se rellenan en la web (**🫧 Burbujas → l
 
 | Tipo | Opciones | Valor |
 |---|---|---|
-| `entity` | `domain`, `multiple` | id (vacío = la primera que encaje) o lista de ids |
+| `entity` | `domain`, `deviceClass`, `multiple` | id (vacío = la primera que encaje) o lista de ids (vacía = todas) |
+| `device` | `integration`, `has: { key }` o `{ suffix }`, `multiple` | id del aparato o lista (vacía = todos los de esa integración) |
 | `text`, `number` | `default`, `min`, `max`, `step` | texto o número |
 | `bool` | `default` | `true` / `false` |
 | `select` | `options: ['a', 'b']` o `[{ value, label }]` | la opción elegida |
