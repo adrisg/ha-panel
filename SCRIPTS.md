@@ -52,6 +52,30 @@ Recibe dos variables:
 | `screen.visible(id)` | ¿la entidad no está oculta en el panel? |
 | `screen.go('media')`, `screen.now()` | ir a una pestaña; hora actual |
 
+## Ajustes (`config`)
+
+Un script puede declarar campos que se rellenan en la web (**🫧 Burbujas → la burbuja → Ajustes**), sin tocar el código. Llegan como tercer parámetro de `render`:
+
+```js
+{
+  config: {
+    entity:   { type: 'entity', domain: 'weather', label: 'Entidad del tiempo' },
+    showText: { type: 'bool', label: 'Mostrar descripción', default: true },
+  },
+  watch: (config) => [config.entity],      // watch puede depender de los ajustes
+  render(ha, screen, config) { … config.entity … },
+}
+```
+
+| Tipo | Opciones | Valor |
+|---|---|---|
+| `entity` | `domain`, `multiple` | id (vacío = la primera que encaje) o lista de ids |
+| `text`, `number` | `default`, `min`, `max`, `step` | texto o número |
+| `bool` | `default` | `true` / `false` |
+| `select` | `options: ['a', 'b']` o `[{ value, label }]` | la opción elegida |
+
+Todos admiten `label`, `default` y `hint`. Los valores se guardan en la burbuja, no en el script: si actualizas o restauras el script, se conservan.
+
 Se recalculan cuando cambia algo de su `watch` y, como mínimo, una vez por minuto.
 
 **Una burbuja devuelve** un objeto, una lista de objetos o `null`. Estos son sus campos:
