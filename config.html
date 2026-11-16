@@ -90,6 +90,8 @@
   .bub-body .cfg { display: flex; flex-direction: column; gap: 8px; }
   .bub-body .field.row { flex-direction: row; align-items: center; justify-content: space-between; gap: 12px; }
   .bub-body details.func > summary { cursor: pointer; margin-bottom: 8px; }
+  .bub-body .checks { display: flex; flex-direction: column; gap: 4px; max-height: 220px; overflow: auto; padding: 8px; border-radius: 10px; background: var(--surface); }
+  .bub-body .check { display: flex; gap: 8px; align-items: center; font-size: 14px; cursor: pointer; }
   .bub-body textarea.code, .script textarea.code { min-height: 260px; background: #0b0d11; tab-size: 2; white-space: pre; }
   .scripts { display: flex; flex-direction: column; gap: 8px; margin-top: 10px; }
   .script { background: var(--surface-2); border-radius: 14px; padding: 10px 12px; }
@@ -195,7 +197,7 @@
 
 config (ajustes que se rellenan aquí, en «Ajustes» de la burbuja)
   config: { entity: { type: 'entity', domain: 'weather', label: 'Entidad' },
-            showText: { type: 'bool', default: true } }      tipos: entity, text, number, bool, select
+            showText: { type: 'bool', default: true } }      tipos: entity, device, text, number, bool, select
   watch: (config) => [config.entity]
 
 ha (Home Assistant)
@@ -203,6 +205,7 @@ ha (Home Assistant)
   ha.isOn(id)  ha.ok(id)  ha.minutesSince(id)
   ha.find('light.*', (s, id) => …)  ha.count('light.*', 'on')
   ha.info(id) → { platform, device, deviceId, area, areaId, key }   de qué integración y aparato es
+  ha.devices('bambu_lab') → [{ id, name, area, entities }]   aparatos de una integración
   ha.number(21.46) → '21,5'   ha.duration(4800) → '1 h 20 min'
   ha.call('light.turn_off', { entity_id: 'light.x' })   solo dentro de onTap
 
@@ -451,7 +454,12 @@ function testScreen(place) {
 }
 const drafts = {};            // cambios sin guardar del código, para no perderlos al repintar
 const isDefault = (name) => name in PM.DEFAULT_SCRIPTS;
-async function loadScripts() { files = await api('GET', '/api/scripts'); scripts = PM.allScripts(files); renderBullets(); renderCardScripts(); renderTabs(); }
+async function loadScripts() {
+  files = await api('GET', '/api/scripts'); scripts = PM.allScripts(files);
+  // Para los Ajustes de las burbujas: estados (device_class) y aparatos (los manda el panel)
+  [states, panelData] = await Promise.all([api('GET', '/api/estados').catch(() => states), api('GET', '/api/datos-panel').catch(() => panelData)]);
+  renderBullets(); renderCardScripts(); renderTabs();
+}
 const slug = (t) => String(t || '').normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase()
   .replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '').slice(0, 34) || 'burbuja';
 function freeName(t) { const base = slug(t); let n = base + '.js', i = 2; while (n in scripts) n = `${base}-${i++}.js`; return n; }
@@ -556,6 +564,15 @@ function renderBullets() {
     return card;
   }));
 }
+/** Aparatos de una integración, con lo que manda el panel (ha.info). */
+function deviceList(platform, f = {}) {
+  const info = (panelData && panelData.info) || {}, out = {};
+  for (const [id, i] of Object.entries(info))
+    if (i.deviceId && (!platform || i.platform === platform))
+      (out[i.deviceId] || (out[i.deviceId] = { id: i.deviceId, name: i.device || i.deviceId, area: i.area, entities: [] })).entities.push(id);
+  return Object.values(out).filter((d) => PM.deviceHas(f, d.entities, (id) => info[id]))
+    .sort((a, b) => String(a.name).localeCompare(b.name));
+}
 /** «Ajustes» de una burbuja: los campos que declara su script en config. Se guardan en la burbuja (b.config). */
 function configForm(b) {
   let schema = {};
@@ -569,17 +586,27 @@ function configForm(b) {
     let input;
     if (f.type === 'bool') {
       return el('div', { class: 'field row' }, el('label', { textContent: label }), switchEl(cur(k) ?? !!f.default, (v) => set(k, v)));
-    } else if (f.type === 'entity') {
-      const ids = Object.keys(names).filter((x) => !f.domain || x.startsWith(f.domain + '.')).sort();
+    } else if (f.type === 'entity' || f.type === 'device') {
+      // Opciones: entidades (por domain y device_class) o aparatos de una integración (los manda el panel)
+      let opts;
+      if (f.type === 'device') opts = deviceList(f.integration, f).map((d) => ({ value: d.id, label: d.name + (d.area ? ' · ' + d.area : '') }));
+      else {
+        const ok = PM.entityMatch(f), st = states || {};
+        opts = Object.keys(names).filter((x) => ok(st[x] || (f.deviceClass ? null : {}), x)).sort().map((x) => ({ value: x, label: `${names[x]} (${x})` }));
+      }
       const v = cur(k);
-      if (f.multiple) {
-        input = el('select', { id, multiple: true, size: Math.min(8, Math.max(3, ids.length)), onchange: (e) => set(k, [...e.target.selectedOptions].map((o) => o.value)) },
-          ...ids.map((x) => el('option', { value: x, textContent: `${names[x]} (${x})`, selected: [].concat(v || []).includes(x) })));
+      if (!opts.length) {
+        input = el('div', { class: 'hint', textContent: f.type === 'device' ? 'No hay aparatos de ' + (f.integration || '?') + ' (o el panel no está encendido).' : 'No hay entidades que encajen.' });
+      } else if (f.multiple) {
+        const sel = new Set([].concat(v || []));
+        input = el('div', { class: 'checks', id }, ...opts.map((o) => el('label', { class: 'check' },
+          el('input', { type: 'checkbox', checked: sel.has(o.value), onchange: (e) => { e.target.checked ? sel.add(o.value) : sel.delete(o.value); set(k, [...sel]); } }),
+          el('span', { textContent: o.label }))));
       } else {
         input = el('select', { id, onchange: (e) => set(k, e.target.value) },
           el('option', { value: '', textContent: 'Automática (la primera que haya)' }),
-          ...ids.map((x) => el('option', { value: x, textContent: `${names[x]} (${x})` })),
-          v && !ids.includes(v) ? el('option', { value: v, textContent: `${v} (no existe)` }) : null);
+          ...opts.map((o) => el('option', { value: o.value, textContent: o.label })),
+          v && !opts.some((o) => o.value === v) ? el('option', { value: v, textContent: `${v} (no existe)` }) : null);
         input.value = v || '';
       }
     } else if (f.type === 'select') {
