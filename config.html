@@ -87,6 +87,9 @@
   .bub-body { display: flex; flex-direction: column; gap: 8px; margin-top: 8px; padding-top: 10px; border-top: 1px solid var(--surface-3); }
   .bub-body input[type=text] { background: var(--surface); }
   .bub-body .sub { font-weight: 600; font-size: 14px; margin-top: 4px; }
+  .bub-body .cfg { display: flex; flex-direction: column; gap: 8px; }
+  .bub-body .field.row { flex-direction: row; align-items: center; justify-content: space-between; gap: 12px; }
+  .bub-body details.func > summary { cursor: pointer; margin-bottom: 8px; }
   .bub-body textarea.code, .script textarea.code { min-height: 260px; background: #0b0d11; tab-size: 2; white-space: pre; }
   .scripts { display: flex; flex-direction: column; gap: 8px; margin-top: 10px; }
   .script { background: var(--surface-2); border-radius: 14px; padding: 10px 12px; }
@@ -188,7 +191,12 @@
       </div>
       <div id="bullet-msg" class="hint" style="margin-top:6px"></div>
       <details class="help"><summary>Cómo se escribe el funcionamiento</summary>
-<pre>render(ha, screen) → lo que se pinta
+<pre>render(ha, screen, config) → lo que se pinta
+
+config (ajustes que se rellenan aquí, en «Ajustes» de la burbuja)
+  config: { entity: { type: 'entity', domain: 'weather', label: 'Entidad' },
+            showText: { type: 'bool', default: true } }      tipos: entity, text, number, bool, select
+  watch: (config) => [config.entity]
 
 ha (Home Assistant)
   ha.state(id)  ha.num(id)  ha.attr(id, 'x')  ha.name(id)  ha.fmt(id)  ha.entity(id)  ha.states
@@ -455,7 +463,7 @@ async function deleteCode(name) {
 }
 
 /** Editor del funcionamiento: texto + Guardar, Probar, Descargar y Restaurar (las de serie). */
-function codeEditor(name, say) {
+function codeEditor(name, say, getValues = () => ({})) {
   const def = isDefault(name);
   const ta = el('textarea', { class: 'code', spellcheck: false, value: drafts[name] ?? scripts[name] ?? '' });
   ta.addEventListener('input', () => (drafts[name] = ta.value));
@@ -469,21 +477,21 @@ function codeEditor(name, say) {
     out.classList.remove('hidden'); out.replaceChildren(el('span', { class: 'hint', textContent: 'Probando con los estados actuales…' }));
     try {
       [states, panelData] = await Promise.all([api('GET', '/api/estados'), api('GET', '/api/datos-panel').catch(() => ({}))]);
-      const mod = PM.compile(ta.value);
-      const t0 = performance.now(), res = mod.render(testHA(), testScreen('ambient')), ms = performance.now() - t0;
+      const mod = PM.compile(ta.value), bound = mod.bind(getValues(), testHA());
+      const t0 = performance.now(), res = mod.render(testHA(), testScreen('ambient'), bound.cfg), ms = performance.now() - t0;
       const looksBubble = res == null || !Array.isArray(res) || res.every((x) => x && (x.text != null || x.icon));
       let preview = null;
       if (looksBubble) {
         const row = (place, label) => {
           let list;
-          try { list = PM.bubbles(mod.render(testHA(), testScreen(place))); } catch (e) { return [el('span', { class: 'hint', textContent: label }), el('div', { class: 'err', textContent: '✗ ' + e.message })]; }
+          try { list = PM.bubbles(mod.render(testHA(), testScreen(place), bound.cfg)); } catch (e) { return [el('span', { class: 'hint', textContent: label }), el('div', { class: 'err', textContent: '✗ ' + e.message })]; }
           return [el('span', { class: 'hint', textContent: label }), el('div', { class: 'bprev-row ' + (place === 'ambient' ? 'amb' : 'home') },
             ...(list.length ? list.map((x) => bubblePreview(x, place)) : [el('span', { class: 'hint', textContent: 'No se muestra (devuelve null)' })]))];
         };
         preview = el('div', { class: 'bprev' }, ...row('ambient', 'Ambiente'), ...row('home', 'Inicio'));
       }
       out.replaceChildren(...[
-        el('div', { class: 'hint', textContent: `✓ Sin errores · ${ms.toFixed(1)} ms · se actualiza con: ${!mod.watch ? 'cualquier cambio' : mod.watch.length ? mod.watch.join(', ') : 'nada (cada minuto)'}` }),
+        el('div', { class: 'hint', textContent: `✓ Sin errores · ${ms.toFixed(1)} ms · se actualiza con: ${!bound.watch ? 'cualquier cambio' : bound.watch.length ? bound.watch.join(', ') : 'nada (cada minuto)'}` }),
         panelData && panelData.t ? null : el('div', { class: 'hint', textContent: 'ⓘ El panel no está encendido: screen (alarmas, brillo…) y ha.info vienen vacíos aquí.' }),
         preview,
         el('details', { style: 'margin-top:8px' }, el('summary', { class: 'hint', style: 'cursor:pointer', textContent: 'Ver lo que devuelve' }),
@@ -541,11 +549,50 @@ function renderBullets() {
     card.append(el('div', { class: 'bub-body' },
       el('div', { class: 'field' }, el('label', { textContent: 'Título' }),
         el('input', { type: 'text', value: b.name || '', oninput: (e) => { b.name = e.target.value; title.textContent = b.name || b.script; dirty(); } })),
-      el('div', { class: 'sub', textContent: 'Funcionamiento' }),
-      b.script in scripts ? codeEditor(b.script, say) : el('div', { class: 'err', textContent: 'No se encuentra su funcionamiento.' }),
+      configForm(b),
+      el('details', { class: 'func' }, el('summary', { class: 'sub', textContent: 'Funcionamiento (código)' }),
+        b.script in scripts ? codeEditor(b.script, say, () => b.config || {}) : el('div', { class: 'err', textContent: 'No se encuentra su funcionamiento.' })),
       def ? null : el('div', { class: 'btns' }, el('button', { type: 'button', class: 'btn danger', textContent: 'Borrar burbuja', onclick: () => delBullet(i) }))));
     return card;
   }));
+}
+/** «Ajustes» de una burbuja: los campos que declara su script en config. Se guardan en la burbuja (b.config). */
+function configForm(b) {
+  let schema = {};
+  try { schema = PM.compile(drafts[b.script] ?? scripts[b.script]).config; } catch (e) { return null; }
+  const keys = Object.keys(schema);
+  if (!keys.length) return null;
+  const set = (k, v) => { b.config = Object.assign({}, b.config, { [k]: v }); dirty(); };
+  const cur = (k) => (b.config || {})[k];
+  const field = (k) => {
+    const f = schema[k], id = `cfg-${b.id}-${k}`, label = f.label || k;
+    let input;
+    if (f.type === 'bool') {
+      return el('div', { class: 'field row' }, el('label', { textContent: label }), switchEl(cur(k) ?? !!f.default, (v) => set(k, v)));
+    } else if (f.type === 'entity') {
+      const ids = Object.keys(names).filter((x) => !f.domain || x.startsWith(f.domain + '.')).sort();
+      const v = cur(k);
+      if (f.multiple) {
+        input = el('select', { id, multiple: true, size: Math.min(8, Math.max(3, ids.length)), onchange: (e) => set(k, [...e.target.selectedOptions].map((o) => o.value)) },
+          ...ids.map((x) => el('option', { value: x, textContent: `${names[x]} (${x})`, selected: [].concat(v || []).includes(x) })));
+      } else {
+        input = el('select', { id, onchange: (e) => set(k, e.target.value) },
+          el('option', { value: '', textContent: 'Automática (la primera que haya)' }),
+          ...ids.map((x) => el('option', { value: x, textContent: `${names[x]} (${x})` })),
+          v && !ids.includes(v) ? el('option', { value: v, textContent: `${v} (no existe)` }) : null);
+        input.value = v || '';
+      }
+    } else if (f.type === 'select') {
+      const opts = (f.options || []).map((o) => (o && typeof o === 'object' ? o : { value: o, label: o }));
+      input = el('select', { id, onchange: (e) => set(k, e.target.value) }, ...opts.map((o) => el('option', { value: o.value, textContent: o.label ?? o.value })));
+      input.value = cur(k) ?? f.default ?? (opts[0] || {}).value ?? '';
+    } else {
+      input = el('input', { id, type: f.type === 'number' ? 'number' : 'text', value: cur(k) ?? '', placeholder: f.default != null ? String(f.default) : '',
+        min: f.min, max: f.max, step: f.step, oninput: (e) => set(k, f.type === 'number' && e.target.value !== '' ? +e.target.value : e.target.value) });
+    }
+    return el('div', { class: 'field' }, el('label', { for: id, textContent: label }), input, f.hint ? el('div', { class: 'hint', textContent: f.hint }) : null);
+  };
+  return el('div', { class: 'cfg' }, el('div', { class: 'sub', textContent: 'Ajustes' }), ...keys.map(field));
 }
 async function delBullet(i) {
   const b = bullets[i];

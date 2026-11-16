@@ -1901,9 +1901,9 @@ function renderCard(c) {
     if (m.err) return [title, codeError(name, m.err)];
     const box = h('div', { class: 'code-card' });
     const paint = () => {
-      try { box.replaceChildren(...codeBlocks(m.mod.render(HA, screenFor('card')))); } catch (e) { box.replaceChildren(codeError(name, e.message)); }
+      try { box.replaceChildren(...codeBlocks(m.mod.render(HA, screenFor('card'), m.mod.bind({}, HA).cfg))); } catch (e) { box.replaceChildren(codeError(name, e.message)); }
     };
-    paint(); VIEW_CODE.push({ matches: m.mod.matches, paint });
+    paint(); VIEW_CODE.push({ matches: (id) => m.mod.bind({}, HA).matches(id), paint });
     return [title, box];
   }
   return [];
@@ -2052,7 +2052,7 @@ const COMPILED = new Map();
 function moduleOf(name) {
   let m = COMPILED.get(name);
   if (!m) {
-    m = { cache: {} };
+    m = { cache: {}, watch: {} };
     if (!(name in MODULES)) m.err = 'no existe el script ' + name;
     else try { m.mod = PM.compile(MODULES[name]); } catch (e) { m.err = e.message; }
     COMPILED.set(name, m);
@@ -2061,7 +2061,7 @@ function moduleOf(name) {
 }
 /** Un cambio de estado invalida las burbujas y tarjetas que lo vigilan. */
 function markCode(id) {
-  for (const m of COMPILED.values()) if (m.mod && m.mod.matches(id)) m.cache = {};
+  for (const m of COMPILED.values()) if (m.mod && Object.values(m.watch || {}).some((f) => f(id))) m.cache = {};
   VIEW_CODE.forEach((v, i) => { if (v.matches(id)) VIEW_DIRTY.add(i); });
   if (VIEW_DIRTY.size) {
     clearTimeout(viewCodeTimer);
@@ -2077,12 +2077,18 @@ function bulletOutputs(where) {
   for (const b of list) {
     const m = moduleOf(b.script), name = b.name || b.script;
     // Se recalcula si cambia algo de su watch o si lleva más de un minuto (horas, alarmas…)
-    if (!m.err && (!m.cache[place] || Date.now() - m.cache[place].t > 60e3)) {
-      try { m.cache[place] = { out: PM.bubbles(m.mod.render(HA, screenFor(place))), t: Date.now() }; } catch (e) { m.cache[place] = { err: e.message, t: Date.now() }; }
+    // Cada burbuja con sus ajustes (b.config); la misma caché se separa por burbuja y sitio
+    const key = b.id + ':' + place;
+    if (!m.err && (!m.cache[key] || Date.now() - m.cache[key].t > 60e3)) {
+      try {
+        const bound = m.mod.bind(b.config, HA);
+        m.watch[b.id] = bound.matches;
+        m.cache[key] = { out: PM.bubbles(m.mod.render(HA, screenFor(place), bound.cfg)), t: Date.now() };
+      } catch (e) { m.cache[key] = { err: e.message, t: Date.now() }; }
     }
-    const err = m.err || m.cache[place].err;
+    const err = m.err || m.cache[key].err;
     if (err) out.push({ icon: 'mdi-alert-circle-outline', text: `${name}: ${err}`, color: PM.color('rojo') });
-    else out.push(...m.cache[place].out);
+    else out.push(...m.cache[key].out);
   }
   return out;
 }
