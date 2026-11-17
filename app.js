@@ -1991,6 +1991,12 @@ function componentCard(c, title) {
         },
         children: () => kids,
         widget: componentWidget,
+        change(el, fn) {
+          el.addEventListener('change', (e) => {
+            try { const r = fn(HA_TAP, screenFor('card'), e.target.value); if (r && r.catch) r.catch((x) => toast(x.message || String(x), true)); }
+            catch (x) { toast(x.message || String(x), true); }
+          });
+        },
       });
     } catch (e) { host.replaceChildren(codeError(m.mod.name || name, e.message)); }
   };
@@ -2005,19 +2011,12 @@ function componentWidget(e) {
   const none = () => document.createTextNode('');
   if (t === 'ha-tile') return has ? tile(id) : none();
   if (t === 'ha-sensor') return has ? sensorTile(id) : none();
-  if (t === 'ha-media') return has ? mediaCard(id, 'view') : none();
-  if (t === 'ha-weather') return has ? weatherCard(id, +(e.getAttribute('days') || 5)) : none();
   if (t === 'ha-camera') {
     if (!has) return none();
     const c = cameraImg(id, 'view', CFG.cameraRefreshSeconds);
     pressable(c, () => openSheet(id));
     return c;
   }
-  if (t === 'ha-printer') {
-    const p = printers().find((x) => x.dev === e.getAttribute('device'));
-    return p ? (e.getAttribute('mini') ? printerMini(p) : printerPanel(p)) : none();
-  }
-  if (t === 'ha-scooter') return scooterIds().battery_level ? h('div', { class: 'scooter-view' }, VIEWS.scooter.render()) : none();
   return none();
 }
 /** Al pulsar / mantener: una acción ('toggle', { action: 'navigate', go }…) o una función (ha, screen) */
@@ -2133,7 +2132,14 @@ const HA_OPTS = {
   format: (id) => (S.states[id] ? fmtState(S.states[id]) : '—'),
   mediaOrder: (list) => dedupeMedia((list || Object.keys(S.states).filter((id) => domain(id) === 'media_player')).filter((id) => S.states[id]))
     .sort((a, b) => (mediaRank(S.states[a]) - mediaRank(S.states[b])) || nameOf(a).localeCompare(nameOf(b), 'es')),
-  printers: () => [...printers()].sort((a, b) => pActive(b) - pActive(a)).map((p) => ({ device: p.dev, name: p.name, active: pActive(p) })),
+  printers: () => [...printers()].sort((a, b) => pActive(b) - pActive(a)).map((p) => ({
+    device: p.dev, name: p.name, platform: p.platform, state: pState(p), active: pActive(p), e: Object.assign({}, p.e), nozzles: p.nozzles.map((n) => Object.assign({}, n)) })),
+  picture(id, width) {
+    const a = S.states[id] && S.states[id].attributes.entity_picture;
+    if (!a) return '';
+    const url = absUrl(a);
+    return width && domain(id) === 'camera' && !url.startsWith('data:') ? url + (url.includes('?') ? '&' : '?') + 'width=' + width : url;
+  },
   icon: (id) => iconOf(S.states[id]),
   /** Previsión: la guardada; si no hay o es vieja, se pide y se repinta lo que vigile esa entidad */
   forecast(id) {

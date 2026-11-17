@@ -63,7 +63,7 @@ Un script puede declarar campos que se rellenan en la web (**🫧 Burbujas → l
     entity:   { type: 'entity', domain: 'weather', label: 'Entidad del tiempo' },
     showText: { type: 'bool', label: 'Mostrar descripción', default: true },
   },
-  watch: (config) => [config.entity],      // watch puede depender de los ajustes
+  watch: (config) => [config.entity],      // watch puede depender de los ajustes (y de ha: (config, ha) => …)
   render(ha, screen, config) { … config.entity … },
 }
 ```
@@ -133,11 +133,8 @@ Un componente es un script con `type: 'card'`: sus **campos** (`config`), qué *
 | `<slot></slot>` | aquí van los componentes de dentro (si el script lleva `children: true`, como **Tarjeta**) |
 | `<ha-tile entity=…>` | ficha del panel (pulsar = encender/apagar, mantener = detalle) |
 | `<ha-sensor entity=…>` | ficha de sensor con su valor (mantener = historial) |
-| `<ha-media entity=…>` | reproductor con carátula y controles |
-| `<ha-camera entity=…>` | imagen de una cámara |
-| `<ha-weather entity=… days="5">` | tiempo con previsión |
-| `<ha-printer device=… mini="1">` | impresora 3D (de `ha.printers()`): cámara, progreso, temperaturas y botones; `mini` = la pequeña |
-| `<ha-scooter>` | todo el patinete de `mi_scooter_ble` |
+| `<ha-camera entity=…>` | imagen de una cámara que se refresca sola |
+| `change=${(ha, screen, valor) => …}` | en un `<input>` (deslizadores…): se ejecuta al soltarlo, con su valor |
 
 **CSS (`style`)** solo afecta a ese componente. Clases que ya existen: `card` (fondo de tarjeta) y `hint` (texto gris). Colores del panel:
 
@@ -154,7 +151,7 @@ Un componente es un script con `type: 'card'`: sus **campos** (`config`), qué *
 actions: { apagar: (ha, screen) => ha.call('light.turn_off', { entity_id: 'all' }) },
 ```
 
-Para pintar, además de lo de siempre: `ha.mediaOrder(ids)` (reproductores sin repetidos, lo que suena primero), `ha.printers()`, `screen.favorites` (Favoritos de los Ajustes), `ha.text(id)` (estado traducido: «Encendido», «21,5 °C»), `ha.icon(id)`, `ha.active(id)`, `ha.color(id)` (`{ bg, ink }`: color real de una luz encendida), `ha.forecast(id)` (previsión diaria).
+Para pintar, además de lo de siempre: `ha.mediaOrder(ids)` (reproductores sin repetidos, lo que suena primero), `ha.printers()` (cada impresora con su estado y sus entidades: `e.progress`, `e.camera`, `e.pause`…), `ha.picture(id)` (dirección de su imagen: carátula, miniatura…), `screen.favorites` (Favoritos de los Ajustes), `ha.text(id)` (estado traducido: «Encendido», «21,5 °C»), `ha.icon(id)`, `ha.active(id)`, `ha.color(id)` (`{ bg, ink }`: color real de una luz encendida), `ha.forecast(id)` (previsión diaria).
 
 - **Dónde:** **🧩 Componentes**. Cada uno se despliega con «Probar con estos ajustes», cómo se ve y su código. Para crear uno: desde cero, copiando otro, de una URL o subiendo un `.js`. Se guardan en la Pi y el panel los descarga solo.
 - **Colocarlos:** **🗂️ Pantallas → + Añadir**. Cada sitio donde lo pones tiene sus propios ajustes y su ancho (completo, 3/4, 2/3, 1/2, 1/3, 1/4).

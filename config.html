@@ -688,8 +688,10 @@ interface HA {
   devices(platform?: string): { id: string; name: string; area: string | null; entities: string[] }[];
   /** Reproductores sin repetidos y con lo que suena primero (sin lista: todos) */
   mediaOrder(ids?: string[]): string[];
-  /** Impresoras 3D: para <ha-printer device=…> */
-  printers(): { device: string; name: string; active: boolean }[];
+  /** Impresoras 3D con su estado y sus entidades (e.status, e.progress, e.remaining, e.camera, e.cover, e.pause, e.resume, e.stop, e.light, e.plug, e.plugPower, e.bed…) */
+  printers(): { device: string; name: string; platform: string; state: 'printing' | 'paused' | 'preparing' | 'finished' | 'error' | 'cancelled' | 'idle' | 'offline' | 'off'; active: boolean; e: Record<string, string>; nozzles: { label: string; cur: string; tgt?: string; fil?: string }[] }[];
+  /** Dirección de la imagen de una entidad (carátula, cámara, miniatura) o '' */
+  picture(id: string, width?: number): string;
   /** Mandar a Home Assistant: ha.call('light.turn_off', { entity_id: 'light.salon' }). Solo al pulsar (tap/hold/onTap) */
   call(service: string, data?: Record<string, any>): Promise<any>;
 }
@@ -723,8 +725,7 @@ interface Screen {
 }
 interface HtmlResult { __html: string }
 /** html\\\`<div>\\\${…}</div>\\\`: lo de \\\${…} se escapa solo. Atributos: tap, hold, entity. <ha-icon icon="mdi:…">, <slot>.
- *  Fichas y tarjetas del panel: <ha-tile entity>, <ha-sensor entity>, <ha-media entity>, <ha-camera entity>, <ha-weather entity days>,
- *  <ha-printer device mini>, <ha-scooter> */
+ *  Fichas del panel: <ha-tile entity>, <ha-sensor entity>, <ha-camera entity>. En un <input>: change=\${(ha, screen, valor) => …} */
 interface Html { (strings: TemplateStringsArray, ...values: any[]): HtmlResult; /** HTML sin escapar */ raw(html: string): HtmlResult }
 type ActionName = 'toggle' | 'more-info' | 'navigate' | 'call' | 'none';
 type Action = ActionName | { action: ActionName; go?: string; service?: string; data?: Record<string, any>; entity?: string } | ((ha: HA, screen: Screen) => any);
@@ -754,7 +755,7 @@ interface PanelScript {
   /** Repintar solo cada estos segundos */ refresh?: number;
   /** Campos que se rellenan en la web */ config?: Record<string, Field>;
   /** Entidades que lo actualizan (admite *). null = cualquier cambio */
-  watch?: string[] | null | ((config: any) => string[]);
+  watch?: string[] | null | ((config: any, ha: HA) => string[]);
   /** CSS del componente (solo le afecta a él) */ style?: string;
   /** Funciones para tap="nombre" */ actions?: Record<string, (ha: HA, screen: Screen) => any>;
   /** Lo que se pinta: componentes → html\\\`…\\\`; burbujas → { icon, text… } o null */
