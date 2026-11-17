@@ -1,7 +1,7 @@
 # Scripts: burbujas y pestañas a tu medida
 
 Las burbujas y las tarjetas de las pestañas se pueden programar con pequeños archivos JavaScript.
-**Todas las burbujas funcionan así**, también las de serie (`tiempo.js`, `alarma.js`, `impresoras-bambu.js`, `impresoras-klipper.js`, `patinete.js`, `musica.js`, `luces.js`, `aberturas.js`). Si editas una, se guarda tu versión. Con «Restaurar» vuelves a la de serie.
+**Todas las burbujas funcionan así**, también las de serie (`tiempo.js`, `alarma.js`, `impresoras-bambu.js`, `impresoras-klipper.js`, `vehiculo.js`, `musica.js`, `luces.js`, `aberturas.js`). Si editas una, se guarda tu versión. Con «Restaurar» vuelves a la de serie.
 
 - **Dónde:** en la web de configuración, pestaña **🫧 Burbujas**. Cada burbuja tiene un título; al tocarla se despliega su **funcionamiento** (el código), que puedes editar, **probar** con los datos actuales de tu casa, descargar o, en las de serie, restaurar.
 - **Nuevas:** pon un título y «Crear», tráela de una URL o sube un archivo `.js`. Después pulsa **Guardar**.
