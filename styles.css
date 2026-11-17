@@ -620,3 +620,5 @@ main { display: flex; flex-direction: column; min-width: 0; min-height: 0; heigh
 .veh-ic { margin-right: 6px; color: var(--muted); }
 
 .sheet-state { font-size: 28px; font-weight: 600; padding: 4px 2px 10px; }
+.scooter-view { display: flex; flex-direction: column; gap: 10px; }
+.slot:has(> .cmp-empty) { display: none; }
