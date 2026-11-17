@@ -170,6 +170,14 @@
   .icon-prev { font-size: 24px; width: 32px; align-self: center; color: var(--accent); }
   textarea.bad { border-color: var(--danger); }
   .btn.armed { background: var(--danger); color: #2b0d0b; }
+  .when { display: flex; flex-direction: column; gap: 8px; margin-top: 10px; padding-top: 10px; border-top: 1px solid var(--surface-3); }
+  .when-rule { display: flex; flex-direction: column; gap: 6px; background: var(--surface); border-radius: 12px; padding: 8px; }
+  .when-rule .fs-btn, .when-rule input { background: var(--surface-2) !important; }
+  .when-head { display: flex; align-items: center; gap: 8px; }
+  .when-head .fs-btn { flex: 1; }
+  input.mono { font-family: ui-monospace, Consolas, monospace; font-size: 13px; }
+  .ed-when { color: var(--accent); font-size: 18px; }
+  .ed-slot.when-off { opacity: .45; }
   .ed-prev { margin-top: 8px; pointer-events: none; }
   .ed-prev .cmp-prev { zoom: .8; }
   .monaco { height: 0; border-radius: 10px; overflow: hidden; border: 1px solid var(--surface-3); }
@@ -1267,10 +1275,14 @@ function edGrid(list, base) {
   const grid = el('div', { class: 'ed-layout' });
   list.forEach((c, i) => {
     const path = base.concat(i), s = cardSummary(c), sel = samePath(edSel, path);
-    const box = el('div', { class: 'ed-slot w-' + String(c.width || 'full').replace('/', '-') + (sel ? ' sel' : '') + (c.type === 'component' && (compOf(c.component) || {}).children ? ' group' : ''),
+    const hasWhen = !!(c.when && (c.when.rules || []).length);
+    let whenNow = true;
+    if (hasWhen && states) try { whenNow = PM.checkWhen(c.when, testHA(), testScreen('card')); } catch (e) { /* sin datos */ }
+    const box = el('div', { class: 'ed-slot w-' + String(c.width || 'full').replace('/', '-') + (sel ? ' sel' : '') + (c.type === 'component' && (compOf(c.component) || {}).children ? ' group' : '') + (whenNow ? '' : ' when-off'),
       onclick: (e) => { e.stopPropagation(); edSel = path; edAdd = null; renderTabs(); } },
       el('div', { class: 'ed-head' }, el('i', { class: 'mdi ' + s.icon }), el('div', { class: 'ed-txt' },
         el('b', { textContent: s.title }), el('span', { class: 'hint', textContent: [s.kind !== s.title ? s.kind : '', s.sub].filter(Boolean).join(' · ') })),
+        hasWhen ? el('i', { class: 'mdi mdi-eye-off-outline ed-when', title: whenNow ? 'Con condiciones (ahora se ve)' : 'Con condiciones: ahora no se vería' }) : null,
         el('span', { class: 'ed-w', textContent: c.width && c.width !== 'full' ? c.width : '' })),
       s.body || null,
       c.type === 'component' && (compOf(c.component) || {}).children ? edGrid(c.cards || (c.cards = []), path) : null);
@@ -1337,6 +1349,7 @@ function edCardPanel() {
     }
   } else if (c.type === 'bubbles') body = [bubbleItems(c)];
   else body = cardFields(c);
+  body.push(whenEditor(c));
   return el('div', { class: 'ed-panel' },
     el('div', { class: 'ed-panel-head' }, el('i', { class: 'mdi ' + s.icon }), el('b', { textContent: s.kind }),
       el('div', { class: 'btns' },
@@ -1348,6 +1361,61 @@ function edCardPanel() {
     el('div', { class: 'field' }, el('label', { textContent: 'Ancho' }), widths),
     c.type === 'component' || c.type === 'bubbles' ? null : el('div', { class: 'hint', textContent: 'Estas tarjetas ocupan el ancho que elijas, pero se ven como antes.' }),
     ...body);
+}
+/** «Mostrar solo si…»: condiciones de esta tarjeta en este sitio (c.when) */
+function whenEditor(c) {
+  const w = c.when && Array.isArray(c.when.rules) ? c.when : { mode: 'all', rules: [] };
+  const box = el('div', { class: 'when' });
+  const save = (repaint) => { c.when = w.rules.length ? w : undefined; dirty(); clearTimeout(edTimer); edTimer = setTimeout(paintGrid, 300); if (repaint) paint(); };
+  const allEnts = () => Object.keys(names).sort().map((id) => ({ value: id, label: `${names[id]} (${id})` }));
+  const ruleRow = (r, i) => {
+    const kind = el('select', { onchange: (e) => { w.rules[i] = { type: e.target.value }; if (e.target.value === 'state') w.rules[i].op = 'on'; save(true); } },
+      ...Object.entries(PM.WHEN_TYPES).map(([k, t]) => el('option', { value: k, textContent: t })));
+    kind.value = r.type || 'state';
+    const f = [];
+    if (kind.value === 'state') {
+      const ent = el('select', { onchange: (e) => { r.entity = e.target.value; save(true); } }, el('option', { value: '', textContent: '— elige entidad —' }),
+        ...allEnts().map((o) => el('option', { value: o.value, textContent: o.label })));
+      ent.value = r.entity || '';
+      const op = el('select', { onchange: (e) => { r.op = e.target.value; save(true); } }, ...Object.entries(PM.WHEN_OPS).map(([k, t]) => el('option', { value: k, textContent: t })));
+      op.value = r.op || 'on';
+      f.push(ent, op);
+      if (['is', 'not', 'gt', 'lt'].includes(op.value)) {
+        const st = states && r.entity && states[r.entity];
+        f.push(el('input', { type: 'text', value: r.value ?? '', placeholder: st ? 'Ahora: ' + st.state : 'Valor (p. ej. on, home, 20)', oninput: (e) => { r.value = e.target.value; save(); }, onchange: () => paint() }));
+      }
+    } else if (kind.value === 'time') {
+      f.push(el('div', { class: 'add' }, el('input', { type: 'time', value: r.from || '07:00', onchange: (e) => { r.from = e.target.value; save(); } }),
+        el('span', { class: 'hint', style: 'align-self:center', textContent: 'a' }),
+        el('input', { type: 'time', value: r.to || '09:00', onchange: (e) => { r.to = e.target.value; save(); } })));
+      if (!r.from) { r.from = '07:00'; r.to = '09:00'; }
+    } else if (kind.value === 'night') {
+      const n = el('select', { onchange: (e) => { r.value = e.target.value === 'true'; save(); } },
+        el('option', { value: 'true', textContent: 'está activo' }), el('option', { value: 'false', textContent: 'no está activo' }));
+      n.value = String(r.value !== false); r.value = r.value !== false;
+      f.push(n);
+    } else {
+      f.push(el('input', { type: 'text', value: r.code || '', placeholder: "ha.isOn('light.salon') && !screen.night", spellcheck: false, class: 'mono',
+        oninput: (e) => { r.code = e.target.value; save(); }, onchange: () => paint() }));
+    }
+    let ok = null;
+    try { ok = PM.checkWhen({ rules: [r] }, testHA(), testScreen('card')); } catch (e) { /* sin datos */ }
+    return el('div', { class: 'when-rule' }, el('div', { class: 'when-head' }, kind,
+      states ? el('span', { class: 'pill' + (ok ? ' ok' : ''), textContent: ok ? 'ahora sí' : 'ahora no' }) : null,
+      el('button', { type: 'button', class: 'btn danger mv', textContent: '×', title: 'Quitar condición', onclick: () => { w.rules.splice(i, 1); save(true); } })), ...f);
+  };
+  const paint = () => {
+    const mode = el('select', { onchange: (e) => { w.mode = e.target.value; save(); } },
+      el('option', { value: 'all', textContent: 'Se cumplen todas' }), el('option', { value: 'any', textContent: 'Se cumple alguna' }));
+    mode.value = w.mode || 'all';
+    box.replaceChildren(...[el('div', { class: 'sub', textContent: 'Mostrar solo si…' }),
+      w.rules.length > 1 ? mode : null,
+      ...w.rules.map(ruleRow),
+      w.rules.length ? null : el('div', { class: 'hint', textContent: 'Sin condiciones: siempre se ve.' }),
+      el('button', { type: 'button', class: 'btn mini', textContent: '+ Condición', onclick: () => { w.rules.push({ type: 'state', entity: '', op: 'on' }); c.when = w; save(true); } })].filter(Boolean));
+  };
+  paint();
+  return box;
 }
 let edTimer;
 function paintGrid() { const t = tabs[edTab]; if (t) $('#ed-grid').replaceChildren(edGrid(t.cards || (t.cards = []), [])); }

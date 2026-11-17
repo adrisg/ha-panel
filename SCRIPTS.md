@@ -166,3 +166,16 @@ Las pestañas de serie (Inicio, Casa, Sensores, Multimedia, Impresoras y Patinet
 Casa = una **Tarjeta** por zona con un **Botón** por aparato; Sensores = una Tarjeta por zona con una **Información** por sensor; Multimedia = un **Reproductor** y una **Cámara** por cada uno; Impresoras = una **Impresora** por cada una; Patinete = **Vehículo** y Tarjetas con Información, **Deslizador** y Botones; Inicio = Saludo, burbujas, Tiempo, Vehículo, Escenas y una Tarjeta de Favoritos.
 
 Las pestañas antiguas («vistas del panel») se convierten así al abrir **🗂️ Pantallas**; pulsa **Guardar** para quedártelas y cambiar lo que quieras. Hasta entonces, el panel las monta igual por su cuenta.
+
+## Mostrar solo si…
+
+Cada tarjeta colocada (en **🗂️ Pantallas**, al tocarla) puede llevar condiciones para aparecer o no:
+
+| Condición | Ejemplo |
+|---|---|
+| Estado de una entidad | `light.salon` está encendida / apagada / disponible, es igual a `home`, mayor que `25`… |
+| Entre dos horas | de 07:00 a 09:00 (o de 22:00 a 07:00) |
+| Modo noche | está activo / no está activo |
+| Código | `ha.isOn('light.salon') && !screen.night` |
+
+Con varias: «Se cumplen todas» o «Se cumple alguna». En el panel aparece y desaparece al momento; en la rejilla se marca con 👁 y se ve atenuada si ahora no saldría.
