@@ -1973,7 +1973,8 @@ function componentCard(c, title) {
       PanelComp.render(host, name, m.mod, [HA, screenFor('card'), bound.cfg], {
         press(el, p) {
           if (!isAct(p.tap) && !isAct(p.hold)) return;
-          pressable(el, () => pieceAction(p.tap, p, el), isAct(p.hold) ? () => pieceAction(p.hold, p, el) : null);
+          // Mantener pulsado nunca cuenta como pulsar: si no tiene acción al mantener, no hace nada
+          pressable(el, () => pieceAction(p.tap, p, el), isAct(p.hold) ? () => pieceAction(p.hold, p, el) : () => {});
         },
         children: () => kids,
       });
