@@ -6,6 +6,7 @@
 <title>Panel Hogar · Configuración</title>
 <!-- Iconos, para ver las burbujas como en el panel al probarlas -->
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@mdi/font@7.4.47/css/materialdesignicons.min.css">
+<link rel="stylesheet" href="/lib/piezas.css">
 <style>
   :root {
     --bg: #0e1014; --surface: #191c22; --surface-2: #232730; --surface-3: #2d323d;
@@ -131,6 +132,10 @@
   .icon-prev { font-size: 24px; width: 32px; align-self: center; color: var(--accent); }
   textarea.bad { border-color: var(--danger); }
   .btn.armed { background: var(--danger); color: #2b0d0b; }
+  .ed-prev { margin-top: 8px; pointer-events: none; }
+  .ed-prev .pz-prev { zoom: .8; }
+  .comp-prev { background: var(--bg); border-radius: 14px; padding: 12px; }
+  .bub-title .mdi { font-size: 20px; color: var(--accent); }
   @media (max-width: 640px) {
     .ed-slot.w-3-4, .ed-slot.w-2-3, .ed-slot.w-1-2, .ed-slot.w-1-3 { grid-column: span 12; }
     .ed-slot.w-1-4 { grid-column: span 6; }
@@ -231,7 +236,29 @@
       <button type="button" data-page="ajustes" class="on">⚙️ Ajustes</button>
       <button type="button" data-page="burbujas">🫧 Burbujas</button>
       <button type="button" data-page="pantallas">🗂️ Pantallas</button>
+      <button type="button" data-page="componentes">🧩 Componentes</button>
     </nav>
+
+    <div data-pg="componentes" class="hidden">
+    <div class="card">
+      <h2>🧩 Componentes</h2>
+      <div class="hint">Lo que se coloca en las pestañas (botones, tarjetas, tiempo…). Cada uno es código: declara sus campos,
+        qué vigila y qué pinta. Se guardan en la Pi y el panel los descarga solo. Se colocan en 🗂️ Pantallas.</div>
+      <div id="cscripts" class="bubs"></div>
+      <div class="sub" style="margin-top:14px;font-weight:600">Nuevo componente</div>
+      <div class="add" style="margin-top:6px">
+        <input id="cscript-title" type="text" placeholder="Nombre (p. ej. Termostato)">
+        <select id="cscript-tpl" style="width:auto"></select>
+        <button class="btn primary" id="cscript-add" type="button">Crear</button>
+      </div>
+      <div class="add" style="margin-top:8px">
+        <input id="cscript-url" type="url" placeholder="Importar de una dirección (https://…/componente.js)">
+        <button class="btn" id="cscript-import" type="button">Traer</button>
+        <label class="btn" style="display:inline-flex;align-items:center">Subir archivo<input id="cscript-file" type="file" accept=".js,text/javascript" hidden></label>
+      </div>
+      <div id="cscript-msg" class="hint" style="margin-top:6px"></div>
+    </div>
+    </div>
 
     <div data-pg="pantallas" class="hidden">
     <div class="card">
@@ -415,17 +442,6 @@ go = 'home' | 'rooms' | 'sensors' | 'media' | 'printers' | 'scooter' | 'settings
     </div>
 
     <div class="card">
-      <h2>🧩 Tarjetas con código</h2>
-      <div class="hint">Para la tarjeta «Código» de las pestañas. Se guardan al momento con su botón.</div>
-      <div id="cscripts" class="bubs"></div>
-      <div class="add" style="margin-top:10px">
-        <input id="cscript-title" type="text" placeholder="Nombre (p. ej. resumen-casa)">
-        <button class="btn" id="cscript-add" type="button">Crear</button>
-      </div>
-      <div id="cscript-msg" class="hint" style="margin-top:6px"></div>
-    </div>
-
-    <div class="card">
       <h2>⭐ Inicio y entidades</h2>
       <datalist id="entidades"></datalist>
       <div class="field">
@@ -463,6 +479,7 @@ go = 'home' | 'rooms' | 'sensors' | 'media' | 'printers' | 'scooter' | 'settings
 </div>
 
 <script src="/lib/modulos.js"></script>
+<script src="/lib/piezas.js"></script>
 <script>
 'use strict';
 const $ = (s) => document.querySelector(s);
@@ -511,15 +528,42 @@ function showPage(p) {
 document.querySelectorAll('.pages button').forEach((x) => (x.onclick = () => {
   history.replaceState(null, '', '#' + x.dataset.page); showPage(x.dataset.page); scrollTo(0, 0);
 }));
-showPage(['#burbujas', '#pantallas'].includes(location.hash) ? location.hash.slice(1) : 'ajustes');
+showPage(['#burbujas', '#pantallas', '#componentes'].includes(location.hash) ? location.hash.slice(1) : 'ajustes');
 
 /* ---------- código (archivos .js guardados en la Pi; los de serie vienen en lib/modulos.js) ---------- */
 let scripts = {}, files = {}, states = null, panelData = null;
 /** Para probar: ha con los estados reales de Home Assistant y el registro de entidades que manda el panel;
  *  screen con los datos de la pantalla que manda el panel (cada 15 s). Aquí ha.call no hace nada. */
 function testHA() {
-  const info = (panelData && panelData.info) || {};
-  return PM.makeHA(() => states, { info: (id) => info[id] });
+  const info = (panelData && panelData.info) || {}, fc = (panelData && panelData.forecasts) || {};
+  return PM.makeHA(() => states || {}, { info: (id) => info[id],
+    forecast: (id) => fc[id] || (states && states[id] && states[id].attributes.forecast) || [] });
+}
+/** Script compilado (con lo que haya sin guardar) o null */
+const compOf = (name) => { try { return name in scripts || name in drafts ? PM.compile(drafts[name] ?? scripts[name]) : null; } catch (e) { return null; } };
+const isCard = (name) => (compOf(name) || {}).type === 'card';
+const actText = (a) => (typeof a === 'function' ? 'hace algo (código)' : (PM.ACTIONS[(PM.actionOf(a) || {}).action] || ''));
+/** Piezas de un componente dibujadas como en el panel. kids: lo que va en { children: true } */
+function piecePreview(out, kids) {
+  return el('div', { class: 'pz-prev' }, ...PanelPiezas.render(out, {
+    press(node, p) {
+      const t = [p.tap && actText(p.tap) !== 'Nada' ? 'Al pulsar: ' + actText(p.tap) : '', p.hold && actText(p.hold) !== 'Nada' ? 'Al mantener: ' + actText(p.hold) : ''].filter(Boolean).join(' · ');
+      if (t) { node.title = t; node.classList.add('pz-tap'); }
+    },
+    chip: (b) => bubblePreview(PM.bubbles(b)[0] || {}, 'home'),
+    children: () => kids || el('div', { class: 'pz-kids', textContent: 'Aquí van los componentes de dentro' }),
+    tiles: (ids) => el('div', { class: 'cb-text small', textContent: 'Fichas: ' + ids.join(', ') }),
+  }));
+}
+/** Pinta un componente con unos ajustes: { node } o { err } */
+function renderComp(name, values, kids) {
+  const m = compOf(name);
+  if (!m) return { err: name in scripts ? 'tiene un error' : 'no existe ' + name };
+  if (m.type !== 'card') return { err: "no es un componente (le falta type: 'card')" };
+  try {
+    const ha = testHA(), b = m.bind(values || {}, ha);
+    return { node: piecePreview(m.render(ha, testScreen('card'), b.cfg), kids), bound: b, mod: m };
+  } catch (e) { return { err: e.message }; }
 }
 function testScreen(place) {
   return PM.makeScreen(Object.assign({}, (panelData && panelData.screen) || {}, { place }));
@@ -535,7 +579,18 @@ async function loadScripts() {
 const slug = (t) => String(t || '').normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase()
   .replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '').slice(0, 34) || 'burbuja';
 function freeName(t) { const base = slug(t); let n = base + '.js', i = 2; while (n in scripts) n = `${base}-${i++}.js`; return n; }
-const usedInTabs = (name) => tabs.some((t) => (t.cards || []).some((c) => c.type === 'script' && c.script === name));
+/** ¿Cuántas veces se usa un script en las pestañas? (componentes, también dentro de otros, y filas de burbujas) */
+function usesOf(name) {
+  let n = 0;
+  const walk = (cards) => (cards || []).forEach((c) => {
+    if ((c.type === 'component' && c.component === name) || (c.type === 'script' && c.script === name)) n++;
+    if (c.type === 'bubbles') n += (c.items || []).filter((it) => it.script === name).length;
+    walk(c.cards);
+  });
+  tabs.forEach((t) => walk(t.cards));
+  return n;
+}
+const usedInTabs = (name) => usesOf(name) > 0;
 async function saveCode(name, code) { await api('PUT', '/api/scripts', { name, code }); scripts[name] = files[name] = code; delete drafts[name]; }
 async function deleteCode(name) {
   await api('DELETE', '/api/scripts?name=' + encodeURIComponent(name));
@@ -558,10 +613,11 @@ function codeEditor(name, say, getValues = () => ({})) {
     try {
       [states, panelData] = await Promise.all([api('GET', '/api/estados'), api('GET', '/api/datos-panel').catch(() => ({}))]);
       const mod = PM.compile(ta.value), bound = mod.bind(getValues(), testHA());
-      const t0 = performance.now(), res = mod.render(testHA(), testScreen('ambient'), bound.cfg), ms = performance.now() - t0;
-      const looksBubble = res == null || !Array.isArray(res) || res.every((x) => x && (x.text != null || x.icon));
+      const card = mod.type === 'card';
+      const t0 = performance.now(), res = mod.render(testHA(), testScreen(card ? 'card' : 'ambient'), bound.cfg), ms = performance.now() - t0;
       let preview = null;
-      if (looksBubble) {
+      if (card) preview = piecePreview(res);
+      else {
         const row = (place, label) => {
           let list;
           try { list = PM.bubbles(mod.render(testHA(), testScreen(place), bound.cfg)); } catch (e) { return [el('span', { class: 'hint', textContent: label }), el('div', { class: 'err', textContent: '✗ ' + e.message })]; }
@@ -790,31 +846,83 @@ $('#bullet-file').onchange = async (e) => {
   try { await addBullet(f.name.replace(/\.js$/i, ''), await f.text()); } catch (err) { bmsg(err.message, 'err'); }
 };
 
-/* ---------- código de las tarjetas «Código» de las pestañas ---------- */
+/* ---------- componentes: scripts con type: 'card' ---------- */
 let openCard = null;
+const testVals = {};          // ajustes de prueba de cada componente (no se guardan)
 const cmsg = (t, kind = '') => { $('#cscript-msg').textContent = t; $('#cscript-msg').className = 'hint ' + kind; };
-function renderCardScripts() {
-  const names = Object.keys(scripts).filter((n) => !isDefault(n) && !bullets.some((b) => b.script === n));
-  if (!names.length) { $('#cscripts').replaceChildren(el('div', { class: 'hint', textContent: 'Aún no hay ninguna.' })); return; }
-  $('#cscripts').replaceChildren(...names.map((name) => {
-    const open = openCard === name;
-    const card = el('div', { class: 'bub' }, el('div', { class: 'bub-head' },
-      el('button', { type: 'button', class: 'bub-title', onclick: () => { openCard = open ? null : name; renderCardScripts(); } },
-        el('span', { class: 'bub-arrow', textContent: open ? '▾' : '▸' }), el('b', { textContent: name.replace(/\.js$/, '') }))));
-    if (!open) return card;
-    const del = async () => {
-      try { await deleteCode(name); openCard = null; renderAll(); cmsg('Borrada'); } catch (e) { cmsg(e.message, 'err'); }
+const EMPTY_CARD = (name) => `{
+  type: 'card', name: '${name.replace(/'/g, '')}', icon: 'mdi:star-outline', width: '1/2',
+  config: {
+    entity: { type: 'entity', auto: false, label: 'Entidad' },
+    tap: { type: 'action', label: 'Al pulsar', default: 'more-info' },
+    hold: { type: 'action', label: 'Al mantener pulsado', default: 'none' },
+  },
+  watch: (config) => [config.entity],
+  render(ha, screen, config) {
+    if (!config.entity) return { text: 'Elige una entidad', size: 'small' };
+    return {
+      stat: { icon: ha.icon(config.entity), value: ha.text(config.entity), label: ha.name(config.entity) },
+      entity: config.entity, tap: config.tap, hold: config.hold,
     };
-    card.append(el('div', { class: 'bub-body' }, codeEditor(name, cmsg),
-      el('div', { class: 'btns' }, sureBtn({ class: 'btn danger' }, 'Borrar', usedInTabs(name) ? '¿Seguro? Alguna pestaña la usa. Toca otra vez' : '¿Seguro? Toca otra vez', del))));
+  },
+}
+`;
+function renderCardScripts() {
+  const list = PM.componentList(scripts);
+  // plantillas para crear: vacío o copiar uno que ya existe
+  const tpl = $('#cscript-tpl'), cur = tpl.value;
+  tpl.replaceChildren(el('option', { value: '', textContent: 'Empezar desde cero' }), ...list.map((c) => el('option', { value: c.script, textContent: 'Copiar «' + c.name + '»' })));
+  tpl.value = [...tpl.options].some((o) => o.value === cur) ? cur : '';
+  if (!list.length) { $('#cscripts').replaceChildren(el('div', { class: 'hint', textContent: 'Aún no hay ninguno.' })); return; }
+  $('#cscripts').replaceChildren(...list.map((c) => {
+    const name = c.script, open = openCard === name, uses = usesOf(name);
+    const head = el('div', { class: 'bub-head' }, el('button', { type: 'button', class: 'bub-title', onclick: () => { openCard = open ? null : name; renderCardScripts(); } },
+      el('span', { class: 'bub-arrow', textContent: open ? '▾' : '▸' }), el('i', { class: 'mdi ' + (PM.mdi(c.icon) || 'mdi-card-outline') }), el('b', { textContent: c.name }),
+      el('span', { class: 'pill', textContent: c.builtin ? (name in files ? 'de serie · cambiado' : 'de serie') : 'tuyo' }),
+      uses ? el('span', { class: 'hint', textContent: `en ${uses} sitio${uses > 1 ? 's' : ''}` }) : null));
+    const card = el('div', { class: 'bub' }, head);
+    if (!open) return card;
+    const say = (t, kind) => cmsg(`${c.name}: ${t}`, kind);
+    const m = compOf(name);
+    const prev = el('div', { class: 'comp-prev' });
+    const paint = () => { const r = renderComp(name, testVals[name]); prev.replaceChildren(r.node || el('div', { class: 'err', textContent: '✗ ' + r.err })); };
+    const del = async () => { try { await deleteCode(name); openCard = null; renderAll(); cmsg('Borrado', 'ok'); } catch (e) { cmsg(e.message, 'err'); } };
+    card.append(el('div', { class: 'bub-body' },
+      el('div', { class: 'hint', textContent: `${name} · ancho por defecto ${c.width}${c.children ? ' · lleva componentes dentro' : ''}` }),
+      m && Object.keys(m.config).length ? el('details', { class: 'func' }, el('summary', { class: 'sub', textContent: 'Probar con estos ajustes' }),
+        el('div', { class: 'cfg' }, ...fieldsForm(m.config, () => testVals[name] || {}, (k, v) => { testVals[name] = Object.assign({}, testVals[name], { [k]: v }); paint(); }, 't-' + name))) : null,
+      el('div', { class: 'sub', textContent: 'Así se ve' }), prev,
+      el('details', { class: 'func' }, el('summary', { class: 'sub', textContent: 'Funcionamiento (código)' }), codeEditor(name, say, () => testVals[name] || {})),
+      c.builtin ? null : el('div', { class: 'btns' }, sureBtn({ class: 'btn danger' }, 'Borrar componente', uses ? `¿Seguro? Se usa en ${uses} sitio(s). Toca otra vez` : '¿Seguro? Toca otra vez', del))));
+    paint();
     return card;
   }));
 }
+/** Nuevo componente: desde cero, copiando otro, de una dirección o de un archivo */
+async function addComp(title, code, viaUrl) {
+  title = String(title || '').trim();
+  if (!title) throw new Error('Ponle un nombre');
+  let name = freeName(title);
+  if (viaUrl) { const r = await api('POST', '/api/scripts/importar', { url: viaUrl, name }); name = r.name; scripts[name] = files[name] = r.code; }
+  else await saveCode(name, code);
+  openCard = name; renderAll();
+  cmsg(isCard(name) ? `Creado «${title}». Ya lo puedes colocar en 🗂️ Pantallas.` : `Guardado «${title}», pero no es un componente (le falta type: 'card').`, isCard(name) ? 'ok' : 'err');
+}
 $('#cscript-add').onclick = async () => {
-  try {
-    const name = freeName($('#cscript-title').value || 'tarjeta');
-    await saveCode(name, PM.EXAMPLES.tarjeta); openCard = name; $('#cscript-title').value = ''; renderAll(); cmsg('Creada ✓', 'ok');
-  } catch (e) { cmsg(e.message, 'err'); }
+  const title = $('#cscript-title').value.trim(), from = $('#cscript-tpl').value;
+  const code = from ? String(scripts[from]).replace(/name:\s*'[^']*'/, `name: '${title.replace(/'/g, '')}'`) : EMPTY_CARD(title || 'Nuevo');
+  try { await addComp(title, code); $('#cscript-title').value = ''; } catch (e) { cmsg(e.message, 'err'); }
+};
+$('#cscript-import').onclick = async () => {
+  const url = $('#cscript-url').value.trim();
+  cmsg('Descargando…');
+  try { await addComp(decodeURIComponent(url.split(/[?#]/)[0].split('/').pop() || 'componente').replace(/\.js$/i, ''), null, url); $('#cscript-url').value = ''; }
+  catch (e) { cmsg(e.message, 'err'); }
+};
+$('#cscript-file').onchange = async (e) => {
+  const f = e.target.files[0]; e.target.value = '';
+  if (!f) return;
+  try { await addComp(f.name.replace(/\.js$/i, ''), await f.text()); } catch (err) { cmsg(err.message, 'err'); }
 };
 
 /* ---------- pestañas ---------- */
@@ -865,15 +973,14 @@ function liveVal(id) {
 /** Resumen de una tarjeta para la rejilla: { icon, title, sub, body } */
 function cardSummary(c) {
   if (c.type === 'component') {
-    const def = PM.COMPONENTS[c.component] || { label: c.component, icon: 'mdi-help' }, g = c.config || {};
+    const m = compOf(c.component), g = c.config || {};
+    const name = (m && m.name) || c.component.replace(/\.js$/, '');
     const one = g.entity || g.battery;
-    const title = g.title || g.name || (one ? names[one] || one : '') || def.label;
-    let sub = def.label, body = null;
-    if (c.component === 'info' || c.component === 'button') sub = one ? liveVal(one) : 'sin entidad';
-    if (c.component === 'list') sub = (g.entities || []).length + ' entidades';
-    if (c.component === 'weather') sub = g.entity ? liveVal(g.entity) : 'automática';
-    if (c.component === 'vehicle') sub = g.battery ? liveVal(g.battery) : 'patinete Xiaomi';
-    return { icon: PM.mdi(g.icon) || def.icon, title, sub, kind: def.label };
+    const title = g.title || g.name || (one ? names[one] || one : '') || name;
+    if (m && m.children) return { icon: PM.mdi(m.icon) || 'mdi-card-outline', title, sub: '', kind: name };
+    const r = renderComp(c.component, g);
+    return { icon: PM.mdi(g.icon) || PM.mdi(m && m.icon) || 'mdi-puzzle-outline', title, sub: r.err ? '✗ ' + r.err : '', kind: name,
+      body: r.node ? el('div', { class: 'ed-prev' }, r.node) : null };
   }
   if (c.type === 'bubbles') {
     const row = el('div', { class: 'bprev-row home' });
@@ -896,13 +1003,13 @@ function edGrid(list, base) {
   const grid = el('div', { class: 'ed-layout' });
   list.forEach((c, i) => {
     const path = base.concat(i), s = cardSummary(c), sel = samePath(edSel, path);
-    const box = el('div', { class: 'ed-slot w-' + String(c.width || 'full').replace('/', '-') + (sel ? ' sel' : '') + (c.component === 'card' ? ' group' : ''),
+    const box = el('div', { class: 'ed-slot w-' + String(c.width || 'full').replace('/', '-') + (sel ? ' sel' : '') + (c.type === 'component' && (compOf(c.component) || {}).children ? ' group' : ''),
       onclick: (e) => { e.stopPropagation(); edSel = path; edAdd = null; renderTabs(); } },
       el('div', { class: 'ed-head' }, el('i', { class: 'mdi ' + s.icon }), el('div', { class: 'ed-txt' },
         el('b', { textContent: s.title }), el('span', { class: 'hint', textContent: [s.kind !== s.title ? s.kind : '', s.sub].filter(Boolean).join(' · ') })),
         el('span', { class: 'ed-w', textContent: c.width && c.width !== 'full' ? c.width : '' })),
       s.body || null,
-      c.component === 'card' ? edGrid(c.cards || (c.cards = []), path) : null);
+      c.type === 'component' && (compOf(c.component) || {}).children ? edGrid(c.cards || (c.cards = []), path) : null);
     grid.append(box);
   });
   const addSel = samePath(edAdd, base) || (edAdd && !edAdd.length && !base.length);
@@ -913,11 +1020,8 @@ function edGrid(list, base) {
 /** Nueva tarjeta de un tipo */
 function newCard(kind) {
   if (kind === 'bubbles') return { type: 'bubbles', width: 'full', items: [] };
-  const def = PM.COMPONENTS[kind];
-  if (def) {
-    const width = { button: '1/4', info: '1/4', card: 'full', list: '1/2', weather: '1/2', vehicle: '1/2' }[kind] || 'full';
-    return Object.assign({ type: 'component', component: kind, width, config: {} }, kind === 'card' ? { cards: [] } : {});
-  }
+  const m = compOf(kind);
+  if (m && m.type === 'card') return Object.assign({ type: 'component', component: kind, width: m.width || 'full', config: {} }, m.children ? { cards: [] } : {});
   return kind === 'view' ? { type: 'view', view: 'home' } : kind === 'entities' ? { type: 'entities', entities: [] } : { type: kind };
 }
 /** Panel para elegir qué añadir */
@@ -925,19 +1029,19 @@ function edAddPanel() {
   const pick = (kind) => { const list = listAt(edAdd); list.push(newCard(kind)); edSel = edAdd.concat(list.length - 1); edAdd = null; renderTabs(); dirty(); };
   const opt = (kind, label, ic, hint) => el('button', { type: 'button', class: 'ed-opt', onclick: () => pick(kind) },
     el('i', { class: 'mdi ' + ic }), el('b', { textContent: label }), hint ? el('span', { class: 'hint', textContent: hint }) : null);
-  const HINTS = { button: 'Una entidad; al tocarla, encender/apagar', info: 'El valor de una entidad, en grande', list: 'Varias entidades, una por fila',
-    card: 'Agrupa otros componentes', weather: 'Ahora y previsión', vehicle: 'Batería, carga y autonomía', bubbles: 'Burbujas en fila' };
-  return el('div', { class: 'ed-panel' }, el('div', { class: 'sub', textContent: 'Añadir' }),
-    el('div', { class: 'ed-opts' }, ...Object.entries(PM.COMPONENTS).map(([k, d]) => opt(k, d.label, d.icon, HINTS[k]))),
+  return el('div', { class: 'ed-panel' }, el('div', { class: 'sub', textContent: 'Añadir un componente' }),
+    el('div', { class: 'ed-opts' }, ...PM.componentList(scripts).map((c) => opt(c.script, c.name, PM.mdi(c.icon) || 'mdi-puzzle-outline', c.builtin ? '' : 'Tuyo')),
+      opt('bubbles', 'Fila de burbujas', 'mdi-dots-horizontal-circle-outline', 'Burbujas en fila')),
+    el('div', { class: 'hint', textContent: 'Los componentes se crean y se cambian en 🧩 Componentes.' }),
     el('div', { class: 'sub', textContent: 'Otras' }),
     el('div', { class: 'ed-opts' }, opt('view', 'Vista del panel', TYPE_ICONS.view, 'Casa, Sensores…'), opt('entities', 'Dispositivos', TYPE_ICONS.entities, 'Fichas de varias entidades'),
-      opt('camera', 'Cámara', TYPE_ICONS.camera), opt('script', 'Código', TYPE_ICONS.script, 'Tarjeta hecha con código')),
+      opt('camera', 'Cámara', TYPE_ICONS.camera)),
     el('div', { class: 'btns' }, el('button', { type: 'button', class: 'btn', textContent: 'Cancelar', onclick: () => { edAdd = null; renderTabs(); } })));
 }
 /** Las burbujas de una fila, cada una con sus ajustes */
 function bubbleItems(c) {
   c.items = c.items || [];
-  const names2 = Object.keys(scripts).sort();
+  const names2 = Object.keys(scripts).filter((n) => !isCard(n)).sort();
   const label = (n) => (PM.BUILTINS.find((x) => x.script === n) || {}).label || n.replace(/\.js$/, '');
   return el('div', { class: 'bubs' }, ...c.items.map((it, i) => {
     let schema = {};
@@ -960,9 +1064,13 @@ function edCardPanel() {
     onclick: () => { c.width = k; renderTabs(); dirty(); } })));
   let body = [];
   if (c.type === 'component') {
-    const def = PM.COMPONENTS[c.component];
-    if (def) body = fieldsForm(def.config, () => c.config || {}, (k, v) => { c.config = Object.assign({}, c.config, { [k]: v }); dirty(); clearTimeout(edTimer); edTimer = setTimeout(paintGrid, 400); }, 'c');
-    if (c.component === 'card') body.push(el('div', { class: 'hint', textContent: 'Lo de dentro se edita tocándolo en la rejilla.' }));
+    const m = compOf(c.component);
+    if (!m) body = [el('div', { class: 'err', textContent: 'No se encuentra el componente ' + c.component + ' (o tiene un error).' })];
+    else {
+      body = fieldsForm(m.config, () => c.config || {}, (k, v) => { c.config = Object.assign({}, c.config, { [k]: v }); dirty(); clearTimeout(edTimer); edTimer = setTimeout(paintGrid, 400); }, 'c');
+      if (m.children) body.push(el('div', { class: 'hint', textContent: 'Lo de dentro se edita tocándolo en la rejilla.' }));
+      body.push(el('div', { class: 'hint', textContent: `Componente ${c.component}: su código está en 🧩 Componentes.` }));
+    }
   } else if (c.type === 'bubbles') body = [bubbleItems(c)];
   else body = cardFields(c);
   return el('div', { class: 'ed-panel' },
