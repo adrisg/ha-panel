@@ -6,7 +6,7 @@ Las burbujas y los componentes de las pestañas (botones, tarjetas, tiempo…) s
 - **Dónde:** en la web de configuración, pestaña **🫧 Burbujas**. Cada burbuja tiene un título; al tocarla se despliega su **funcionamiento** (el código), que puedes editar, **probar** con los datos actuales de tu casa, descargar o, en las de serie, restaurar.
 - **Nuevas:** pon un título y «Crear», tráela de una URL o sube un archivo `.js`. Después pulsa **Guardar**.
 - **Cómo funcionan:** se guardan en la Pi; el panel las descarga y las ejecuta **en el navegador**. Para pintar solo leen; a Home Assistant solo se manda algo cuando tocas la burbuja o el botón (`onTap`).
-- **Componentes:** en **🧩 Componentes** (los de serie: `boton.js`, `informacion.js`, `lista.js`, `tarjeta.js`, `tarjeta-tiempo.js`, `tarjeta-vehiculo.js` y `resumen-ejemplo.js`). Se colocan en **🗂️ Pantallas**. Ver [Componentes](#componentes).
+- **Componentes:** en **🧩 Componentes** (los de serie: `boton.js`, `informacion.js`, `lista.js`, `tarjeta.js`, `tarjeta-tiempo.js`, `tarjeta-vehiculo.js`, `saludo.js` y `resumen-ejemplo.js`). Se colocan en **🗂️ Pantallas**. Ver [Componentes](#componentes).
 
 ## Forma de un script
 
@@ -152,6 +152,7 @@ Para pintar, además de lo de siempre: `ha.text(id)` (estado traducido: «Encend
 - **Dónde:** **🧩 Componentes**. Cada uno se despliega con «Probar con estos ajustes», cómo se ve y su código. Para crear uno: desde cero, copiando otro, de una URL o subiendo un `.js`. Se guardan en la Pi y el panel los descarga solo.
 - **Colocarlos:** **🗂️ Pantallas → + Añadir**. Cada sitio donde lo pones tiene sus propios ajustes y su ancho (completo, 3/4, 2/3, 1/2, 1/3, 1/4).
 - Campos de más: `icon` (un icono `mdi:…`) y `action` (qué hacer al pulsar).
+- `refresh: 60`: se repinta solo cada esos segundos (para horas y fechas), aunque no cambie nada de su `watch`.
 
 ## Pantallas
 
