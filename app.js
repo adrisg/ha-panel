@@ -1980,6 +1980,8 @@ function componentCard(c, title) {
     } catch (e) { host.replaceChildren(codeError(m.mod.name || name, e.message)); }
   };
   paint(); VIEW_CODE.push({ matches: (id) => !!bound && bound.matches(id), paint });
+  // refresh: segundos → se repinta solo (horas, fechas…); los temporizadores se paran al cambiar de pestaña
+  if (m.mod.refresh) S.viewTimers.push(setInterval(paint, Math.max(5, m.mod.refresh) * 1000));
   return [title, host];
 }
 /** Al pulsar / mantener: una acción ('toggle', { action: 'navigate', go }…) o una función (ha, screen) */
