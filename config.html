@@ -62,6 +62,8 @@
   .fs-opt.sel { color: var(--accent); font-weight: 600; }
   .fs-opt.dis { opacity: .45; cursor: default; }
   .fs-empty { padding: 10px; color: var(--muted); font-size: 13px; }
+  .ac-pop { padding: 4px; }
+  .ac-opt small { flex: none; color: var(--muted); font-size: 12px; max-width: 45%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
   .btn { border: 0; border-radius: 12px; padding: 10px 16px; background: var(--surface-3); cursor: pointer; font-weight: 600; }
   .btn:hover { filter: brightness(1.15); }
   .btn.primary { background: var(--accent); color: #0b1d3a; }
@@ -1147,7 +1149,7 @@ function cardFields(c) {
   if (c.type === 'view') {
     const s = el('select', { onchange: (e) => { c.view = e.target.value; dirty(); } }, ...viewOpts()); s.value = c.view || 'home'; c.view = s.value; f.push(s);
   } else if (c.type === 'entities') {
-    f.push(el('input', { type: 'text', list: 'entidades', placeholder: 'light.salon, sensor.temperatura… (separadas por comas)', value: (c.entities || []).join(', '),
+    f.push(el('input', { type: 'text', list: 'entidades', 'data-csv': true, placeholder: 'light.salon, sensor.temperatura… (separadas por comas)', value: (c.entities || []).join(', '),
       oninput: (e) => { c.entities = e.target.value.split(',').map((x) => x.trim()).filter(Boolean); dirty(); } }));
   } else if (c.type === 'camera') {
     f.push(el('input', { type: 'text', list: 'entidades', placeholder: 'camera.entrada', value: c.entity || '', oninput: (e) => { c.entity = e.target.value.trim(); dirty(); } }));
@@ -1711,6 +1713,79 @@ new MutationObserver((muts) => {
   for (const m of muts) for (const n of m.addedNodes) {
     if (n.nodeType !== 1) continue;
     if (n.tagName === 'SELECT') fancySelect(n); else n.querySelectorAll && n.querySelectorAll('select').forEach(fancySelect);
+  }
+}).observe(document.body, { childList: true, subtree: true });
+
+/* ---------- sugerencias al escribir (sustituyen a las del navegador, <datalist>, que no se pueden estilizar) ----------
+ * Cada <input list="…"> pasa a tener su propia lista con el estilo de los desplegables. Con data-csv completa
+ * solo lo que va después de la última coma. Al elegir: se rellena y se lanzan input, change y Enter (para «Añadir»). */
+let acOpen = null;   // { inp, pop }
+function acClose() { if (acOpen) { acOpen.pop.remove(); acOpen = null; } }
+function placePop(pop, anchor) {
+  const r = anchor.getBoundingClientRect(), below = innerHeight - r.bottom - 12, above = r.top - 12;
+  const up = below < Math.min(260, pop.scrollHeight) && above > below;
+  pop.style.maxHeight = Math.max(120, Math.min(340, up ? above : below)) + 'px';
+  pop.style.minWidth = r.width + 'px';
+  pop.style.left = Math.max(8, Math.min(r.left, innerWidth - Math.max(r.width, pop.offsetWidth) - 8)) + 'px';
+  if (up) { pop.style.top = ''; pop.style.bottom = (innerHeight - r.top + 4) + 'px'; }
+  else { pop.style.bottom = ''; pop.style.top = (r.bottom + 4) + 'px'; }
+}
+function fancyInput(inp) {
+  const listId = inp.getAttribute('list');
+  if (!listId || inp.dataset.fancy) return;
+  inp.dataset.fancy = '1';
+  inp.removeAttribute('list');
+  inp.setAttribute('autocomplete', 'off');
+  const csv = inp.hasAttribute('data-csv');
+  const options = () => { const dl = document.getElementById(listId); return dl ? [...dl.options].map((o) => ({ value: o.value, label: o.label || o.textContent || '' })) : []; };
+  const token = () => (csv ? inp.value.split(',').pop() : inp.value).trim();
+  let shown = [], active = 0;
+  const pick = (o) => {
+    inp.value = csv ? inp.value.split(',').slice(0, -1).map((x) => x.trim()).filter(Boolean).concat(o.value).join(', ') : o.value;
+    acClose();
+    inp.dispatchEvent(new Event('input', { bubbles: true }));
+    inp.dispatchEvent(new Event('change', { bubbles: true }));
+    inp.dispatchEvent(new KeyboardEvent('keydown', { key: 'Enter', bubbles: true }));   // los campos con «Añadir» lo añaden
+  };
+  const show = () => {
+    const q = fold(token());
+    shown = options().filter((o) => !q || fold(o.value + ' ' + o.label).includes(q)).slice(0, 80);
+    if (!shown.length || (shown.length === 1 && shown[0].value === token())) { acClose(); return; }
+    active = Math.min(active, shown.length - 1);
+    let pop = acOpen && acOpen.inp === inp ? acOpen.pop : null;
+    if (!pop) { acClose(); pop = el('div', { class: 'fs-pop ac-pop' }, el('div', { class: 'fs-list' })); document.body.append(pop); acOpen = { inp, pop }; }
+    pop.firstChild.replaceChildren(...shown.map((o, i) => el('div', {
+      class: 'fs-opt ac-opt' + (i === active ? ' fs-act' : ''),
+      onmousedown: (e) => e.preventDefault(), onclick: () => pick(o), onmousemove: () => { if (active !== i) { active = i; mark(); } },
+    }, el('span', { textContent: o.label || o.value }), o.label && !o.label.includes(o.value) ? el('small', { textContent: o.value }) : null)));
+    placePop(pop, inp);
+  };
+  const mark = () => acOpen && [...acOpen.pop.firstChild.children].forEach((c, i) => c.classList.toggle('fs-act', i === active));
+  inp.addEventListener('input', () => { active = 0; show(); });
+  inp.addEventListener('focus', () => { active = 0; show(); });
+  inp.addEventListener('blur', () => setTimeout(() => { if (acOpen && acOpen.inp === inp) acClose(); }, 120));
+  // en captura: va antes que los «Enter = Añadir» del propio campo, para que añadan lo elegido
+  inp.addEventListener('keydown', (e) => {
+    if (!e.isTrusted || !acOpen || acOpen.inp !== inp) return;
+    const rows = acOpen.pop.firstChild.children;
+    if (e.key === 'ArrowDown') { active = Math.min(shown.length - 1, active + 1); mark(); rows[active] && rows[active].scrollIntoView({ block: 'nearest' }); e.preventDefault(); }
+    else if (e.key === 'ArrowUp') { active = Math.max(0, active - 1); mark(); rows[active] && rows[active].scrollIntoView({ block: 'nearest' }); e.preventDefault(); }
+    else if (e.key === 'Escape') { acClose(); e.preventDefault(); }
+    else if (e.key === 'Enter' && shown[active]) {
+      inp.value = csv ? inp.value.split(',').slice(0, -1).map((x) => x.trim()).filter(Boolean).concat(shown[active].value).join(', ') : shown[active].value;
+      acClose();
+      inp.dispatchEvent(new Event('input', { bubbles: true }));
+      inp.dispatchEvent(new Event('change', { bubbles: true }));
+    }
+  }, true);
+}
+addEventListener('resize', () => acOpen && placePop(acOpen.pop, acOpen.inp));
+document.addEventListener('scroll', (e) => { if (acOpen && !acOpen.pop.contains(e.target)) placePop(acOpen.pop, acOpen.inp); }, true);
+document.querySelectorAll('input[list]').forEach(fancyInput);
+new MutationObserver((muts) => {
+  for (const m of muts) for (const n of m.addedNodes) {
+    if (n.nodeType !== 1) continue;
+    if (n.matches && n.matches('input[list]')) fancyInput(n); else n.querySelectorAll && n.querySelectorAll('input[list]').forEach(fancyInput);
   }
 }).observe(document.body, { childList: true, subtree: true });
 </script>
