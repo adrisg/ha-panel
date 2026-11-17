@@ -37,6 +37,29 @@
   input[type=range] { width: 100%; accent-color: var(--accent); }
   .row input[type=time] { width: 130px; }
   .row select { width: auto; min-width: 140px; }
+  /* desplegables propios (ver fancySelect) */
+  .fs-native { display: none !important; }
+  .fs-btn { width: 100%; display: flex; align-items: center; gap: 8px; background: var(--surface-2); border: 1px solid var(--surface-3);
+    border-radius: 10px; padding: 10px 12px; text-align: left; cursor: pointer; min-width: 0; }
+  .fs-btn:hover { border-color: #3a4150; }
+  .fs-btn:focus-visible, .fs-btn.open { border-color: var(--accent); outline: none; }
+  .fs-btn:disabled { opacity: .5; cursor: default; }
+  .fs-label { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .fs-arrow { color: var(--muted); font-size: 18px; transition: transform .15s; }
+  .fs-btn.open .fs-arrow { transform: rotate(180deg); }
+  .row .fs-btn { width: auto; min-width: 140px; max-width: 60%; }
+  .ed-panel .fs-btn, .bub-body .fs-btn, .src-body .fs-btn { background: var(--surface); }
+  .fs-pop { position: fixed; z-index: 100; max-width: min(520px, calc(100vw - 16px)); background: #1d2129; border: 1px solid var(--surface-3);
+    border-radius: 12px; box-shadow: 0 12px 32px rgba(0,0,0,.45); padding: 6px; display: flex; flex-direction: column; gap: 6px; outline: none; }
+  .fs-search { background: var(--surface) !important; border-radius: 8px !important; padding: 8px 10px !important; }
+  .fs-list { flex: 1; min-height: 0; overflow: auto; display: flex; flex-direction: column; }
+  .fs-opt { display: flex; align-items: center; justify-content: space-between; gap: 10px; padding: 9px 10px; border-radius: 8px; cursor: pointer; font-size: 14px; }
+  .fs-opt span { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .fs-opt .mdi { flex: none; }
+  .fs-opt.fs-act { background: var(--surface-3); }
+  .fs-opt.sel { color: var(--accent); font-weight: 600; }
+  .fs-opt.dis { opacity: .45; cursor: default; }
+  .fs-empty { padding: 10px; color: var(--muted); font-size: 13px; }
   .btn { border: 0; border-radius: 12px; padding: 10px 16px; background: var(--surface-3); cursor: pointer; font-weight: 600; }
   .btn:hover { filter: brightness(1.15); }
   .btn.primary { background: var(--accent); color: #0b1d3a; }
@@ -1591,6 +1614,103 @@ window.addEventListener('beforeunload', (e) => { if (isDirty) e.preventDefault()
     else showLogin(st.password ? '' : 'Aún no hay contraseña. En la Pi ejecuta: python3 ~/ha-panel/panel-helper.py --set-password');
   } catch (e) { showLogin('No se pudo conectar con el panel'); }
 })();
+
+/* ---------- desplegables con estilo y buscador ----------
+ * Cada <select> (menos los múltiples) se cambia por un botón y una lista con buscador. El <select> sigue ahí,
+ * escondido, y manda: el resto del código lo usa igual (value, change, options…). Se aplica solo, también a los nuevos. */
+const fold = (t) => String(t || '').normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase();
+let fsOpen = null;   // { sel, pop, btn }
+function fsClose() { if (!fsOpen) return; fsOpen.pop.remove(); fsOpen.btn.classList.remove('open'); fsOpen = null; }
+function fancySelect(sel) {
+  if (sel.multiple || sel.dataset.fancy) return;
+  sel.dataset.fancy = '1';
+  const label = el('span', { class: 'fs-label' });
+  const btn = el('button', { type: 'button', class: 'fs-btn' }, label, el('i', { class: 'mdi mdi-chevron-down fs-arrow' }));
+  if (sel.getAttribute('style')) btn.setAttribute('style', sel.getAttribute('style'));
+  if (sel.id) btn.dataset.for = sel.id;
+  sel.classList.add('fs-native');
+  sel.after(btn);
+  const paint = () => {
+    const o = sel.options[sel.selectedIndex];
+    label.textContent = o ? o.textContent : '—';
+    btn.title = label.textContent;
+    btn.disabled = sel.disabled;
+  };
+  paint();
+  new MutationObserver(paint).observe(sel, { childList: true, subtree: true, characterData: true, attributes: true });
+  sel.addEventListener('change', paint);
+  // Cuando el código cambia value o selectedIndex directamente, también se repinta
+  for (const k of ['value', 'selectedIndex']) {
+    const d = Object.getOwnPropertyDescriptor(HTMLSelectElement.prototype, k);
+    Object.defineProperty(sel, k, { configurable: true, get() { return d.get.call(this); }, set(v) { d.set.call(this, v); paint(); } });
+  }
+  btn.addEventListener('click', (e) => { e.stopPropagation(); fsOpen && fsOpen.sel === sel ? fsClose() : fsShow(sel, btn); });
+}
+function fsShow(sel, btn) {
+  fsClose();
+  const opts = [...sel.options];
+  const search = opts.length > 7 ? el('input', { type: 'search', class: 'fs-search', placeholder: 'Buscar…' }) : null;
+  const list = el('div', { class: 'fs-list' });
+  const pop = el('div', { class: 'fs-pop' }, search, list);
+  let shown = [], active = 0;
+  const choose = (o) => {
+    if (o.disabled) return;
+    sel.value = o.value;
+    sel.dispatchEvent(new Event('input', { bubbles: true }));
+    sel.dispatchEvent(new Event('change', { bubbles: true }));
+    fsClose(); btn.focus();
+  };
+  const render = () => {
+    const q = fold(search ? search.value : '');
+    shown = opts.filter((o) => !q || fold(o.textContent + ' ' + o.value).includes(q));
+    active = Math.max(0, Math.min(active, shown.length - 1));
+    list.replaceChildren(...(shown.length ? shown.map((o, i) => el('div', {
+      class: 'fs-opt' + (o.selected ? ' sel' : '') + (i === active ? ' fs-act' : '') + (o.disabled ? ' dis' : ''),
+      onmousedown: (e) => e.preventDefault(), onclick: () => choose(o), onmousemove: () => { if (active !== i) { active = i; mark(); } },
+    }, el('span', { textContent: o.textContent }), o.selected ? el('i', { class: 'mdi mdi-check' }) : null))
+      : [el('div', { class: 'fs-empty', textContent: 'No hay nada con «' + (search ? search.value : '') + '»' })]));
+  };
+  const mark = () => [...list.children].forEach((c, i) => c.classList.toggle('fs-act', i === active));
+  const place = () => {
+    // Debajo del botón si cabe; si no, donde haya más sitio. La altura se ajusta al hueco (nunca se sale de la pantalla)
+    const r = btn.getBoundingClientRect(), below = innerHeight - r.bottom - 12, above = r.top - 12;
+    const up = below < Math.min(300, pop.scrollHeight) && above > below;
+    pop.style.maxHeight = Math.max(120, Math.min(380, up ? above : below)) + 'px';
+    pop.style.minWidth = r.width + 'px';
+    pop.style.left = Math.max(8, Math.min(r.left, innerWidth - Math.max(r.width, pop.offsetWidth) - 8)) + 'px';
+    if (up) { pop.style.top = ''; pop.style.bottom = (innerHeight - r.top + 4) + 'px'; }
+    else { pop.style.bottom = ''; pop.style.top = (r.bottom + 4) + 'px'; }
+  };
+  const key = (e) => {
+    if (e.key === 'ArrowDown') { active = Math.min(shown.length - 1, active + 1); mark(); list.children[active] && list.children[active].scrollIntoView({ block: 'nearest' }); e.preventDefault(); }
+    else if (e.key === 'ArrowUp') { active = Math.max(0, active - 1); mark(); list.children[active] && list.children[active].scrollIntoView({ block: 'nearest' }); e.preventDefault(); }
+    else if (e.key === 'Enter') { if (shown[active]) choose(shown[active]); e.preventDefault(); }
+    else if (e.key === 'Escape') { fsClose(); btn.focus(); e.preventDefault(); }
+  };
+  active = Math.max(0, opts.findIndex((o) => o.selected));
+  render();
+  if (search) { search.addEventListener('input', () => { active = 0; render(); place(); }); search.addEventListener('keydown', key); }
+  pop.addEventListener('keydown', key);
+  pop.tabIndex = -1;
+  document.body.append(pop);
+  btn.classList.add('open');
+  fsOpen = { sel, pop, btn, place };
+  place();
+  const cur = list.querySelector('.sel'); if (cur) cur.scrollIntoView({ block: 'center' });
+  (search || pop).focus();
+}
+document.addEventListener('click', (e) => { if (fsOpen && !fsOpen.pop.contains(e.target)) fsClose(); });
+// Al hacer scroll o cambiar el tamaño (p. ej. el teclado del móvil) la lista se recoloca junto a su botón
+const fsPlace = (e) => { if (fsOpen && !(e && e.target && fsOpen.pop.contains(e.target))) fsOpen.place(); };
+addEventListener('resize', fsPlace);
+document.addEventListener('scroll', fsPlace, true);
+document.querySelectorAll('select').forEach(fancySelect);
+new MutationObserver((muts) => {
+  for (const m of muts) for (const n of m.addedNodes) {
+    if (n.nodeType !== 1) continue;
+    if (n.tagName === 'SELECT') fancySelect(n); else n.querySelectorAll && n.querySelectorAll('select').forEach(fancySelect);
+  }
+}).observe(document.body, { childList: true, subtree: true });
 </script>
 </body>
 </html>
