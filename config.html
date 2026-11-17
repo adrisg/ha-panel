@@ -79,6 +79,62 @@
   .pages button { border: 0; border-radius: 12px; padding: 10px 16px; background: var(--surface); cursor: pointer; font-weight: 600; color: var(--muted); }
   .pages button.on { background: var(--accent); color: #0b1d3a; }
   .bubs { display: flex; flex-direction: column; gap: 8px; margin-top: 10px; }
+  body.wide .wrap { max-width: 1100px; }
+  @media (min-width: 1000px) {
+    body.wide .wrap { max-width: 1280px; }
+    .ed-main { display: grid; grid-template-columns: minmax(0, 1fr) 380px; gap: 14px; align-items: start; }
+    #ed-panel { position: sticky; top: 64px; max-height: calc(100vh - 150px); overflow: auto; }
+    #ed-panel .ed-panel { margin-top: 0; }
+  }
+  .ed-tabs { display: flex; flex-wrap: wrap; gap: 6px; margin: 12px 0; }
+  .ed-tab { border: 0; border-radius: 12px; padding: 8px 12px; background: var(--surface-2); color: var(--muted); cursor: pointer; font-weight: 600; display: inline-flex; gap: 6px; align-items: center; }
+  .ed-tab.on { background: var(--accent); color: #0b1d3a; }
+  #ed-tab .tab-head { display: grid; grid-template-columns: 1fr 1fr auto; gap: 8px; margin-bottom: 12px; }
+  .ed-layout { display: grid; grid-template-columns: repeat(12, minmax(0, 1fr)); gap: 8px; align-items: start; }
+  .ed-slot { grid-column: span 12; min-width: 0; background: var(--surface-2); border: 2px solid transparent; border-radius: 14px; padding: 10px 12px; cursor: pointer; }
+  .ed-slot:hover { border-color: var(--surface-3); }
+  .ed-slot.sel { border-color: var(--accent); }
+  .ed-slot.group { background: #1d2129; }
+  .ed-slot.group > .ed-layout { margin-top: 8px; }
+  .ed-slot.group .ed-slot { background: var(--surface-3); }
+  .ed-slot.w-3-4 { grid-column: span 9; } .ed-slot.w-2-3 { grid-column: span 8; } .ed-slot.w-1-2 { grid-column: span 6; }
+  .ed-slot.w-1-3 { grid-column: span 4; } .ed-slot.w-1-4 { grid-column: span 3; }
+  .ed-head { display: flex; align-items: center; gap: 10px; }
+  .ed-head > .mdi { font-size: 22px; color: var(--accent); }
+  .ed-txt { flex: 1; min-width: 0; display: flex; flex-direction: column; }
+  .ed-txt b, .ed-txt span { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .ed-w { font-size: 12px; color: var(--muted); }
+  .ed-slot .bprev-row { margin-top: 8px; }
+  .ed-add { background: none; border: 2px dashed var(--surface-3); color: var(--muted); font-weight: 600; text-align: center; }
+  .ed-panel { margin-top: 14px; background: var(--surface-2); border-radius: 14px; padding: 12px 14px; display: flex; flex-direction: column; gap: 6px; }
+  .ed-panel input, .ed-panel select, .ed-panel textarea, .ed-panel .checks { background: var(--surface); }
+  .ed-panel .sub { font-weight: 600; margin-top: 4px; }
+  .ed-panel .field.row { flex-direction: row; align-items: center; justify-content: space-between; gap: 12px; }
+  .ed-panel .checks { display: flex; flex-direction: column; gap: 4px; max-height: 220px; overflow: auto; padding: 8px; border-radius: 10px; }
+  .ed-panel .check { display: flex; gap: 8px; align-items: center; font-size: 14px; cursor: pointer; }
+  .ed-panel .bub { background: var(--surface); }
+  .ed-panel .bub select { width: auto; flex: 1; }
+  .ed-panel .cols { display: flex; align-items: center; gap: 6px; }
+  .ed-panel .mv { width: 34px; height: 34px; padding: 0; border-radius: 8px; }
+  .ed-panel-head { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
+  .ed-panel-head > .mdi { font-size: 22px; color: var(--accent); }
+  .ed-panel-head > b { flex: 1; }
+  .ed-panel-head .btn { padding: 8px 12px; }
+  .ed-opts { display: grid; grid-template-columns: repeat(auto-fill, minmax(170px, 1fr)); gap: 8px; }
+  .ed-opt { border: 0; border-radius: 12px; padding: 10px 12px; background: var(--surface); cursor: pointer; text-align: left; display: grid; grid-template-columns: 28px 1fr; gap: 2px 8px; color: var(--text); }
+  .ed-opt .mdi { grid-row: span 2; font-size: 22px; color: var(--accent); }
+  .ed-opt:hover { filter: brightness(1.2); }
+  .seg { display: flex; flex-wrap: wrap; gap: 4px; }
+  .seg button { border: 0; border-radius: 10px; padding: 8px 12px; background: var(--surface); color: var(--muted); cursor: pointer; font-weight: 600; }
+  .seg button.on { background: var(--accent); color: #0b1d3a; }
+  .act { display: flex; flex-direction: column; gap: 6px; }
+  .icon-prev { font-size: 24px; width: 32px; align-self: center; color: var(--accent); }
+  textarea.bad { border-color: var(--danger); }
+  @media (max-width: 640px) {
+    .ed-slot.w-3-4, .ed-slot.w-2-3, .ed-slot.w-1-2, .ed-slot.w-1-3 { grid-column: span 12; }
+    .ed-slot.w-1-4 { grid-column: span 6; }
+    #ed-tab .tab-head { grid-template-columns: 1fr; }
+  }
   .bub { background: var(--surface-2); border-radius: 14px; padding: 8px 10px; }
   .bub.off .bub-title { opacity: .55; }
   .bub-head { display: flex; align-items: center; justify-content: space-between; gap: 10px; flex-wrap: wrap; }
@@ -173,7 +229,19 @@
     <nav class="pages">
       <button type="button" data-page="ajustes" class="on">⚙️ Ajustes</button>
       <button type="button" data-page="burbujas">🫧 Burbujas</button>
+      <button type="button" data-page="pantallas">🗂️ Pantallas</button>
     </nav>
+
+    <div data-pg="pantallas" class="hidden">
+    <div class="card">
+      <h2>🗂️ Pantallas</h2>
+      <div class="hint">Cada pestaña de la barra lateral con sus tarjetas, como se colocan en el panel. Toca una para cambiarla.</div>
+      <div id="ed-tabs" class="ed-tabs"></div>
+      <div id="ed-tab"></div>
+      <div class="ed-main"><div id="ed-grid"></div><div id="ed-panel"></div></div>
+      <div class="btns" style="margin-top:14px"><button class="btn" id="tab-reset" type="button">Volver a las pestañas de siempre</button></div>
+    </div>
+    </div>
 
     <div data-pg="burbujas" class="hidden">
     <div class="card">
@@ -357,16 +425,6 @@ go = 'home' | 'rooms' | 'sensors' | 'media' | 'printers' | 'scooter' | 'settings
     </div>
 
     <div class="card">
-      <h2>🗂️ Pestañas</h2>
-      <div class="hint">Cada pestaña de la barra lateral y sus tarjetas, de arriba abajo.</div>
-      <div id="tabs" class="tabs-web"></div>
-      <div class="btns" style="margin-top:10px">
-        <button class="btn" id="tab-add" type="button">Añadir pestaña</button>
-        <button class="btn" id="tab-reset" type="button">Volver a las de siempre</button>
-      </div>
-    </div>
-
-    <div class="card">
       <h2>⭐ Inicio y entidades</h2>
       <datalist id="entidades"></datalist>
       <div class="field">
@@ -433,13 +491,14 @@ const moveBtns = (arr, i, after) => [-1, 1].map((d) => el('button', { type: 'but
 
 /* ---------- páginas de la web ---------- */
 function showPage(p) {
+  document.body.classList.toggle('wide', p === 'pantallas');
   document.querySelectorAll('[data-pg]').forEach((x) => x.classList.toggle('hidden', x.dataset.pg !== p));
   document.querySelectorAll('.pages button').forEach((x) => x.classList.toggle('on', x.dataset.page === p));
 }
 document.querySelectorAll('.pages button').forEach((x) => (x.onclick = () => {
   history.replaceState(null, '', '#' + x.dataset.page); showPage(x.dataset.page); scrollTo(0, 0);
 }));
-showPage(location.hash === '#burbujas' ? 'burbujas' : 'ajustes');
+showPage(['#burbujas', '#pantallas'].includes(location.hash) ? location.hash.slice(1) : 'ajustes');
 
 /* ---------- código (archivos .js guardados en la Pi; los de serie vienen en lib/modulos.js) ---------- */
 let scripts = {}, files = {}, states = null, panelData = null;
@@ -577,49 +636,109 @@ function deviceList(platform, f = {}) {
 function configForm(b) {
   let schema = {};
   try { schema = PM.compile(drafts[b.script] ?? scripts[b.script]).config; } catch (e) { return null; }
-  const keys = Object.keys(schema);
-  if (!keys.length) return null;
-  const set = (k, v) => { b.config = Object.assign({}, b.config, { [k]: v }); dirty(); };
-  const cur = (k) => (b.config || {})[k];
-  const field = (k) => {
-    const f = schema[k], id = `cfg-${b.id}-${k}`, label = f.label || k;
+  if (!Object.keys(schema).length) return null;
+  return el('div', { class: 'cfg' }, el('div', { class: 'sub', textContent: 'Ajustes' }),
+    ...fieldsForm(schema, () => b.config || {}, (k, v) => { b.config = Object.assign({}, b.config, { [k]: v }); dirty(); }, 'cfg-' + b.id));
+}
+let fieldSeq = 0;
+/** Opciones de un campo entity / device: [{ value, label }] */
+function fieldOptions(f) {
+  if (f.type === 'device') return deviceList(f.integration, f).map((d) => ({ value: d.id, label: d.name + (d.area ? ' · ' + d.area : '') }));
+  const ok = PM.entityMatch(f), st = states || {};
+  return Object.keys(names).filter((x) => ok(st[x] || (f.deviceClass ? null : {}), x)).sort().map((x) => ({ value: x, label: `${names[x]} (${x})` }));
+}
+/** Formulario de unos campos (config de un script o de un componente). get() → valores; set(clave, valor). */
+function fieldsForm(schema, get, set, prefix) {
+  const cur = (k) => get()[k];
+  return Object.keys(schema).map((k) => {
+    const f = schema[k], id = `${prefix || 'f'}-${k}-${++fieldSeq}`, label = f.label || k;
     let input;
     if (f.type === 'bool') {
       return el('div', { class: 'field row' }, el('label', { textContent: label }), switchEl(cur(k) ?? !!f.default, (v) => set(k, v)));
     } else if (f.type === 'entity' || f.type === 'device') {
-      // Opciones: entidades (por domain y device_class) o aparatos de una integración (los manda el panel)
-      let opts;
-      if (f.type === 'device') opts = deviceList(f.integration, f).map((d) => ({ value: d.id, label: d.name + (d.area ? ' · ' + d.area : '') }));
-      else {
-        const ok = PM.entityMatch(f), st = states || {};
-        opts = Object.keys(names).filter((x) => ok(st[x] || (f.deviceClass ? null : {}), x)).sort().map((x) => ({ value: x, label: `${names[x]} (${x})` }));
-      }
-      const v = cur(k);
-      if (!opts.length) {
-        input = el('div', { class: 'hint', textContent: f.type === 'device' ? 'No hay aparatos de ' + (f.integration || '?') + ' (o el panel no está encendido).' : 'No hay entidades que encajen.' });
-      } else if (f.multiple) {
-        const sel = new Set([].concat(v || []));
-        input = el('div', { class: 'checks', id }, ...opts.map((o) => el('label', { class: 'check' },
-          el('input', { type: 'checkbox', checked: sel.has(o.value), onchange: (e) => { e.target.checked ? sel.add(o.value) : sel.delete(o.value); set(k, [...sel]); } }),
-          el('span', { textContent: o.label }))));
-      } else {
-        input = el('select', { id, onchange: (e) => set(k, e.target.value) },
-          el('option', { value: '', textContent: 'Automática (la primera que haya)' }),
-          ...opts.map((o) => el('option', { value: o.value, textContent: o.label })),
-          v && !opts.some((o) => o.value === v) ? el('option', { value: v, textContent: `${v} (no existe)` }) : null);
-        input.value = v || '';
-      }
+      input = entityInput(f, id, cur(k), (v) => set(k, v));
     } else if (f.type === 'select') {
       const opts = (f.options || []).map((o) => (o && typeof o === 'object' ? o : { value: o, label: o }));
       input = el('select', { id, onchange: (e) => set(k, e.target.value) }, ...opts.map((o) => el('option', { value: o.value, textContent: o.label ?? o.value })));
       input.value = cur(k) ?? f.default ?? (opts[0] || {}).value ?? '';
+    } else if (f.type === 'icon') {
+      const prev = el('i', { class: 'mdi ' + (PM.mdi(cur(k)) || 'mdi-help-circle-outline') + ' icon-prev' });
+      input = el('div', { class: 'add' }, prev, el('input', { id, type: 'text', value: cur(k) || '', placeholder: 'mdi:lightbulb',
+        oninput: (e) => { const v = e.target.value.trim(); prev.className = 'mdi ' + (PM.mdi(v) || 'mdi-help-circle-outline') + ' icon-prev'; set(k, v); } }));
+    } else if (f.type === 'action') {
+      input = actionInput(f, cur(k), (v) => set(k, v));
     } else {
       input = el('input', { id, type: f.type === 'number' ? 'number' : 'text', value: cur(k) ?? '', placeholder: f.default != null ? String(f.default) : '',
         min: f.min, max: f.max, step: f.step, oninput: (e) => set(k, f.type === 'number' && e.target.value !== '' ? +e.target.value : e.target.value) });
     }
     return el('div', { class: 'field' }, el('label', { for: id, textContent: label }), input, f.hint ? el('div', { class: 'hint', textContent: f.hint }) : null);
+  });
+}
+/** Elegir entidades o aparatos. Pocas opciones: desplegable / casillas. Muchas: buscador. */
+function entityInput(f, id, v, set) {
+  const opts = fieldOptions(f);
+  const auto = f.auto === false ? '— ninguna —' : f.multiple ? null : 'Automática (la primera que haya)';
+  if (!opts.length) return el('div', { class: 'hint', textContent: f.type === 'device' ? 'No hay aparatos de ' + (f.integration || '?') + ' (o el panel no está encendido).' : 'No hay entidades que encajen.' });
+  const labelOf = (x) => (opts.find((o) => o.value === x) || { label: x }).label;
+  if (opts.length <= 30) {
+    if (f.multiple) {
+      const sel = new Set([].concat(v || []));
+      return el('div', { class: 'checks', id }, ...opts.map((o) => el('label', { class: 'check' },
+        el('input', { type: 'checkbox', checked: sel.has(o.value), onchange: (e) => { e.target.checked ? sel.add(o.value) : sel.delete(o.value); set([...sel]); } }),
+        el('span', { textContent: o.label }))));
+    }
+    const s = el('select', { id, onchange: (e) => set(e.target.value) }, el('option', { value: '', textContent: auto }),
+      ...opts.map((o) => el('option', { value: o.value, textContent: o.label })),
+      v && !opts.some((o) => o.value === v) ? el('option', { value: v, textContent: `${v} (no existe)` }) : null);
+    s.value = v || '';
+    return s;
+  }
+  // Muchas: escribe para buscar
+  const dl = el('datalist', { id: id + '-dl' }, ...opts.map((o) => el('option', { value: o.value, label: o.label })));
+  if (!f.multiple) {
+    return el('div', {}, el('input', { id, type: 'text', list: id + '-dl', value: v || '', placeholder: auto || 'Escribe para buscar…',
+      onchange: (e) => set(e.target.value.trim()) }), dl);
+  }
+  let list = [].concat(v || []);
+  const chips = el('div', { class: 'chips' });
+  const paint = () => chips.replaceChildren(...(list.length ? list.map((x, i) => el('span', { class: 'chip', title: x }, labelOf(x),
+    el('button', { type: 'button', textContent: '×', onclick: () => { list.splice(i, 1); set([...list]); paint(); } })))
+    : [el('span', { class: 'hint', textContent: 'Ninguna' })]));
+  const inp = el('input', { id, type: 'text', list: id + '-dl', placeholder: 'Escribe para buscar y pulsa Añadir' });
+  const add = () => { const x = inp.value.trim(); if (x && !list.includes(x)) { list.push(x); set([...list]); paint(); } inp.value = ''; };
+  inp.addEventListener('keydown', (e) => { if (e.key === 'Enter') { e.preventDefault(); add(); } });
+  paint();
+  return el('div', { class: 'ent-multi' }, chips, el('div', { class: 'add' }, inp, el('button', { type: 'button', class: 'btn', textContent: 'Añadir', onclick: add })), dl);
+}
+/** Qué hace al pulsar / mantener: acción y, según cuál, a dónde ir o qué servicio. */
+function actionInput(f, v, set) {
+  let a = Object.assign({}, PM.actionOf(v) || PM.actionOf(f.default) || { action: 'none' });
+  const box = el('div', { class: 'act' });
+  const paint = () => {
+    const kind = el('select', { onchange: (e) => { a = { action: e.target.value }; set(a); paint(); } },
+      ...Object.entries(PM.ACTIONS).map(([k, t]) => el('option', { value: k, textContent: t })));
+    kind.value = a.action;
+    const extra = [];
+    const upd = (k, val) => { a = Object.assign({}, a, { [k]: val }); set(a); };
+    if (a.action === 'navigate') {
+      const g = el('select', { onchange: (e) => upd('go', e.target.value) }, el('option', { value: '', textContent: '— elige pestaña —' }),
+        ...tabs.map((t) => el('option', { value: t.id, textContent: t.title || t.id })), el('option', { value: 'settings', textContent: 'Ajustes' }));
+      g.value = a.go || ''; extra.push(g);
+    }
+    if (a.action === 'call') {
+      extra.push(el('input', { type: 'text', placeholder: 'Servicio: light.turn_on', value: a.service || '', oninput: (e) => upd('service', e.target.value.trim()) }));
+      const data = el('textarea', { rows: 2, placeholder: 'Datos (JSON): { "brightness_pct": 50 }', value: a.data ? JSON.stringify(a.data) : '' });
+      data.addEventListener('change', () => { try { upd('data', data.value.trim() ? JSON.parse(data.value) : undefined); data.classList.remove('bad'); } catch (e) { data.classList.add('bad'); } });
+      extra.push(data);
+    }
+    if (['toggle', 'more-info', 'call'].includes(a.action)) {
+      extra.push(el('input', { type: 'text', list: 'entidades', placeholder: 'Sobre otra entidad (vacío: la de la tarjeta)', value: a.entity || '',
+        onchange: (e) => upd('entity', e.target.value.trim() || undefined) }));
+    }
+    box.replaceChildren(kind, ...extra);
   };
-  return el('div', { class: 'cfg' }, el('div', { class: 'sub', textContent: 'Ajustes' }), ...keys.map(field));
+  paint();
+  return box;
 }
 async function delBullet(i) {
   const b = bullets[i];
@@ -709,29 +828,166 @@ function cardFields(c) {
   }
   return f;
 }
-function renderTabs() {
-  const box = $('#tabs');
-  box.replaceChildren(...tabs.map((t, i) => {
-    t.cards = t.cards || [];
-    const cards = t.cards.map((c, j) => el('div', { class: 'tcard' },
-      el('div', { class: 'tcard-head' },
-        (() => { const s = el('select', { onchange: (e) => { t.cards[j] = { type: e.target.value }; renderTabs(); dirty(); } },
-          ...Object.entries(PM.CARD_TYPES).map(([k, v]) => new Option(v, k))); s.value = c.type; return s; })(),
-        ...moveBtns(t.cards, j, renderTabs),
-        el('button', { type: 'button', class: 'btn danger mv', textContent: '×', title: 'Quitar tarjeta', onclick: () => { t.cards.splice(j, 1); renderTabs(); dirty(); } })),
-      ...cardFields(c)));
-    return el('div', { class: 'tab' },
-      el('div', { class: 'tab-head' },
-        el('input', { type: 'text', placeholder: 'Nombre', value: t.title || '', oninput: (e) => { t.title = e.target.value; dirty(); } }),
-        el('input', { type: 'text', placeholder: 'Icono (mdi:home)', value: t.icon || '', oninput: (e) => { t.icon = e.target.value.trim(); dirty(); } }),
-        el('div', { class: 'btns' }, ...moveBtns(tabs, i, renderTabs),
-          el('button', { type: 'button', class: 'btn danger mv', textContent: '×', title: 'Quitar pestaña', onclick: () => { if (confirm(`¿Quitar la pestaña «${t.title}»?`)) { tabs.splice(i, 1); renderTabs(); dirty(); } } }))),
-      ...cards,
-      el('button', { type: 'button', class: 'btn mini', textContent: '+ Tarjeta', onclick: () => { t.cards.push({ type: 'entities', entities: [] }); renderTabs(); dirty(); } }));
-  }));
+/* ---------- editor de pantallas: pestañas → rejilla de tarjetas y componentes ---------- */
+let edTab = 0, edSel = null, edAdd = null;   // pestaña abierta; ruta de la tarjeta elegida; dónde se añade
+const TYPE_ICONS = { view: 'mdi-view-dashboard-outline', entities: 'mdi-view-grid-outline', camera: 'mdi-cctv', bullets: 'mdi-dots-horizontal-circle-outline', script: 'mdi-code-braces' };
+const samePath = (x, y) => !!x && !!y && x.length === y.length && x.every((v, i) => v === y[i]);
+/** Lista de tarjetas en una ruta ([] = la pestaña; [i] = dentro de la tarjeta i…) */
+function listAt(path) {
+  let list = (tabs[edTab] || {}).cards;
+  for (const i of path) list = list[i].cards || (list[i].cards = []);
+  return list;
 }
-$('#tab-add').onclick = () => { tabs.push({ id: 't-' + Date.now().toString(36), title: 'Nueva', icon: 'mdi:star-outline', cards: [] }); renderTabs(); dirty(); };
-$('#tab-reset').onclick = () => { if (confirm('¿Volver a las pestañas de siempre?')) { tabs = PM.tabList(null); renderTabs(); dirty(); } };
+const cardAt = (path) => listAt(path.slice(0, -1))[path[path.length - 1]];
+/** Valor actual de una entidad, para la vista previa */
+function liveVal(id) {
+  const st = states && states[id];
+  if (!st) return '';
+  const u = st.attributes && st.attributes.unit_of_measurement, n = Number(st.state);
+  const T = { on: 'Encendido', off: 'Apagado', unavailable: 'No disponible', unknown: '—', open: 'Abierto', closed: 'Cerrado',
+    locked: 'Cerrado', unlocked: 'Abierto', playing: 'Reproduciendo', paused: 'En pausa', idle: 'Inactivo',
+    'clear-night': 'Despejado', cloudy: 'Nublado', fog: 'Niebla', hail: 'Granizo', lightning: 'Tormenta', 'lightning-rainy': 'Tormenta con lluvia',
+    partlycloudy: 'Parcialmente nublado', pouring: 'Lluvia fuerte', rainy: 'Lluvia', snowy: 'Nieve', 'snowy-rainy': 'Aguanieve', sunny: 'Soleado', windy: 'Viento' };
+  const v = st.state !== '' && !isNaN(n) ? n.toLocaleString('es-ES', { maximumFractionDigits: 1 }) : T[st.state] || st.state;
+  return v + (u && !isNaN(n) ? ' ' + u : '');
+}
+/** Resumen de una tarjeta para la rejilla: { icon, title, sub, body } */
+function cardSummary(c) {
+  if (c.type === 'component') {
+    const def = PM.COMPONENTS[c.component] || { label: c.component, icon: 'mdi-help' }, g = c.config || {};
+    const one = g.entity || g.battery;
+    const title = g.title || g.name || (one ? names[one] || one : '') || def.label;
+    let sub = def.label, body = null;
+    if (c.component === 'info' || c.component === 'button') sub = one ? liveVal(one) : 'sin entidad';
+    if (c.component === 'list') sub = (g.entities || []).length + ' entidades';
+    if (c.component === 'weather') sub = g.entity ? liveVal(g.entity) : 'automática';
+    if (c.component === 'vehicle') sub = g.battery ? liveVal(g.battery) : 'patinete Xiaomi';
+    return { icon: PM.mdi(g.icon) || def.icon, title, sub, kind: def.label };
+  }
+  if (c.type === 'bubbles') {
+    const row = el('div', { class: 'bprev-row home' });
+    for (const it of c.items || []) {
+      try {
+        const m = PM.compile(scripts[it.script]), bd = m.bind(it.config, testHA());
+        PM.bubbles(m.render(testHA(), testScreen('home'), bd.cfg)).forEach((x) => row.append(bubblePreview(x, 'home')));
+      } catch (e) { row.append(el('span', { class: 'err', textContent: it.script + ': ' + e.message })); }
+    }
+    if (!row.children.length) row.append(el('span', { class: 'hint', textContent: (c.items || []).length ? 'Ahora no muestran nada' : 'Sin burbujas' }));
+    return { icon: 'mdi-dots-horizontal-circle-outline', title: c.title || 'Fila de burbujas', sub: '', body: row, kind: 'Fila de burbujas' };
+  }
+  const kind = PM.CARD_TYPES[c.type] || c.type;
+  const sub = c.type === 'view' ? (PM.VIEWS.find((v) => v.key === c.view) || {}).title || c.view
+    : c.type === 'entities' ? (c.entities || []).length + ' entidades' : c.type === 'camera' ? c.entity || '' : c.type === 'script' ? c.script || '' : '';
+  return { icon: TYPE_ICONS[c.type] || 'mdi-card-outline', title: c.title || kind, sub, kind };
+}
+/** Rejilla de una lista de tarjetas (recursiva para las Tarjetas que agrupan) */
+function edGrid(list, base) {
+  const grid = el('div', { class: 'ed-layout' });
+  list.forEach((c, i) => {
+    const path = base.concat(i), s = cardSummary(c), sel = samePath(edSel, path);
+    const box = el('div', { class: 'ed-slot w-' + String(c.width || 'full').replace('/', '-') + (sel ? ' sel' : '') + (c.component === 'card' ? ' group' : ''),
+      onclick: (e) => { e.stopPropagation(); edSel = path; edAdd = null; renderTabs(); } },
+      el('div', { class: 'ed-head' }, el('i', { class: 'mdi ' + s.icon }), el('div', { class: 'ed-txt' },
+        el('b', { textContent: s.title }), el('span', { class: 'hint', textContent: [s.kind !== s.title ? s.kind : '', s.sub].filter(Boolean).join(' · ') })),
+        el('span', { class: 'ed-w', textContent: c.width && c.width !== 'full' ? c.width : '' })),
+      s.body || null,
+      c.component === 'card' ? edGrid(c.cards || (c.cards = []), path) : null);
+    grid.append(box);
+  });
+  const addSel = samePath(edAdd, base) || (edAdd && !edAdd.length && !base.length);
+  grid.append(el('button', { type: 'button', class: 'ed-slot w-full ed-add' + (addSel ? ' sel' : ''), textContent: base.length ? '+ Añadir dentro' : '+ Añadir',
+    onclick: (e) => { e.stopPropagation(); edAdd = base; edSel = null; renderTabs(); } }));
+  return grid;
+}
+/** Nueva tarjeta de un tipo */
+function newCard(kind) {
+  if (kind === 'bubbles') return { type: 'bubbles', width: 'full', items: [] };
+  const def = PM.COMPONENTS[kind];
+  if (def) {
+    const width = { button: '1/4', info: '1/4', card: 'full', list: '1/2', weather: '1/2', vehicle: '1/2' }[kind] || 'full';
+    return Object.assign({ type: 'component', component: kind, width, config: {} }, kind === 'card' ? { cards: [] } : {});
+  }
+  return kind === 'view' ? { type: 'view', view: 'home' } : kind === 'entities' ? { type: 'entities', entities: [] } : { type: kind };
+}
+/** Panel para elegir qué añadir */
+function edAddPanel() {
+  const pick = (kind) => { const list = listAt(edAdd); list.push(newCard(kind)); edSel = edAdd.concat(list.length - 1); edAdd = null; renderTabs(); dirty(); };
+  const opt = (kind, label, ic, hint) => el('button', { type: 'button', class: 'ed-opt', onclick: () => pick(kind) },
+    el('i', { class: 'mdi ' + ic }), el('b', { textContent: label }), hint ? el('span', { class: 'hint', textContent: hint }) : null);
+  const HINTS = { button: 'Una entidad; al tocarla, encender/apagar', info: 'El valor de una entidad, en grande', list: 'Varias entidades, una por fila',
+    card: 'Agrupa otros componentes', weather: 'Ahora y previsión', vehicle: 'Batería, carga y autonomía', bubbles: 'Burbujas en fila' };
+  return el('div', { class: 'ed-panel' }, el('div', { class: 'sub', textContent: 'Añadir' }),
+    el('div', { class: 'ed-opts' }, ...Object.entries(PM.COMPONENTS).map(([k, d]) => opt(k, d.label, d.icon, HINTS[k]))),
+    el('div', { class: 'sub', textContent: 'Otras' }),
+    el('div', { class: 'ed-opts' }, opt('view', 'Vista del panel', TYPE_ICONS.view, 'Casa, Sensores…'), opt('entities', 'Dispositivos', TYPE_ICONS.entities, 'Fichas de varias entidades'),
+      opt('camera', 'Cámara', TYPE_ICONS.camera), opt('script', 'Código', TYPE_ICONS.script, 'Tarjeta hecha con código')),
+    el('div', { class: 'btns' }, el('button', { type: 'button', class: 'btn', textContent: 'Cancelar', onclick: () => { edAdd = null; renderTabs(); } })));
+}
+/** Las burbujas de una fila, cada una con sus ajustes */
+function bubbleItems(c) {
+  c.items = c.items || [];
+  const names2 = Object.keys(scripts).sort();
+  const label = (n) => (PM.BUILTINS.find((x) => x.script === n) || {}).label || n.replace(/\.js$/, '');
+  return el('div', { class: 'bubs' }, ...c.items.map((it, i) => {
+    let schema = {};
+    try { schema = PM.compile(scripts[it.script]).config; } catch (e) { /* sin ajustes */ }
+    const s = el('select', { onchange: (e) => { c.items[i] = { script: e.target.value, config: {} }; renderTabs(); dirty(); } },
+      ...names2.map((n) => el('option', { value: n, textContent: label(n) })));
+    s.value = it.script;
+    return el('div', { class: 'bub' }, el('div', { class: 'bub-head' }, s, el('div', { class: 'cols' }, ...moveBtns(c.items, i, renderTabs),
+      el('button', { type: 'button', class: 'btn danger mv', textContent: '×', onclick: () => { c.items.splice(i, 1); renderTabs(); dirty(); } }))),
+      Object.keys(schema).length ? el('div', { class: 'bub-body' }, ...fieldsForm(schema, () => it.config || {}, (k, v) => { it.config = Object.assign({}, it.config, { [k]: v }); dirty(); })) : null);
+  }), el('button', { type: 'button', class: 'btn mini', textContent: '+ Burbuja', onclick: () => { c.items.push({ script: 'tiempo.js', config: {} }); renderTabs(); dirty(); } }));
+}
+/** Panel de la tarjeta elegida: ancho, ajustes y mover / duplicar / borrar */
+function edCardPanel() {
+  const c = cardAt(edSel);
+  if (!c) { edSel = null; return null; }
+  const list = listAt(edSel.slice(0, -1)), i = edSel[edSel.length - 1], s = cardSummary(c);
+  const move = (d) => { const j = i + d; if (j < 0 || j >= list.length) return; [list[i], list[j]] = [list[j], list[i]]; edSel = edSel.slice(0, -1).concat(j); renderTabs(); dirty(); };
+  const widths = el('div', { class: 'seg' }, ...Object.entries(PM.WIDTHS).map(([k, t]) => el('button', { type: 'button', class: (c.width || 'full') === k ? 'on' : '', textContent: t,
+    onclick: () => { c.width = k; renderTabs(); dirty(); } })));
+  let body = [];
+  if (c.type === 'component') {
+    const def = PM.COMPONENTS[c.component];
+    if (def) body = fieldsForm(def.config, () => c.config || {}, (k, v) => { c.config = Object.assign({}, c.config, { [k]: v }); dirty(); clearTimeout(edTimer); edTimer = setTimeout(paintGrid, 400); }, 'c');
+    if (c.component === 'card') body.push(el('div', { class: 'hint', textContent: 'Lo de dentro se edita tocándolo en la rejilla.' }));
+  } else if (c.type === 'bubbles') body = [bubbleItems(c)];
+  else body = cardFields(c);
+  return el('div', { class: 'ed-panel' },
+    el('div', { class: 'ed-panel-head' }, el('i', { class: 'mdi ' + s.icon }), el('b', { textContent: s.kind }),
+      el('div', { class: 'btns' },
+        el('button', { type: 'button', class: 'btn mv', textContent: '←', title: 'Antes', disabled: i === 0, onclick: () => move(-1) }),
+        el('button', { type: 'button', class: 'btn mv', textContent: '→', title: 'Después', disabled: i === list.length - 1, onclick: () => move(1) }),
+        el('button', { type: 'button', class: 'btn', textContent: 'Duplicar', onclick: () => { list.splice(i + 1, 0, JSON.parse(JSON.stringify(c))); edSel = edSel.slice(0, -1).concat(i + 1); renderTabs(); dirty(); } }),
+        el('button', { type: 'button', class: 'btn danger', textContent: 'Borrar', onclick: () => { if (!confirm('¿Borrar esta tarjeta?')) return; list.splice(i, 1); edSel = null; renderTabs(); dirty(); } }),
+        el('button', { type: 'button', class: 'btn', textContent: 'Cerrar', onclick: () => { edSel = null; renderTabs(); } }))),
+    el('div', { class: 'field' }, el('label', { textContent: 'Ancho' }), widths),
+    c.type === 'component' || c.type === 'bubbles' ? null : el('div', { class: 'hint', textContent: 'Estas tarjetas ocupan el ancho que elijas, pero se ven como antes.' }),
+    ...body);
+}
+let edTimer;
+function paintGrid() { const t = tabs[edTab]; if (t) $('#ed-grid').replaceChildren(edGrid(t.cards || (t.cards = []), [])); }
+function renderTabs() {
+  if (edTab >= tabs.length) edTab = Math.max(0, tabs.length - 1);
+  const t = tabs[edTab];
+  $('#ed-tabs').replaceChildren(...tabs.map((x, i) => el('button', { type: 'button', class: 'ed-tab' + (i === edTab ? ' on' : ''),
+    onclick: () => { edTab = i; edSel = edAdd = null; renderTabs(); } }, el('i', { class: 'mdi ' + (PM.mdi(x.icon) || 'mdi-tab') }), x.title || 'Sin nombre')),
+    el('button', { type: 'button', class: 'ed-tab', textContent: '+ Pestaña', onclick: () => {
+      tabs.push({ id: 't-' + Date.now().toString(36), title: 'Nueva', icon: 'mdi:star-outline', cards: [] }); edTab = tabs.length - 1; edSel = edAdd = null; renderTabs(); dirty(); } }));
+  if (!t) { $('#ed-tab').replaceChildren(); $('#ed-grid').replaceChildren(); $('#ed-panel').replaceChildren(); return; }
+  t.cards = t.cards || [];
+  $('#ed-tab').replaceChildren(el('div', { class: 'tab-head' },
+    el('input', { type: 'text', placeholder: 'Nombre', value: t.title || '', oninput: (e) => { t.title = e.target.value; dirty(); $('#ed-tabs .on').lastChild.textContent = t.title; } }),
+    el('input', { type: 'text', placeholder: 'Icono (mdi:home)', value: t.icon || '', oninput: (e) => { t.icon = e.target.value.trim(); dirty(); } }),
+    el('div', { class: 'btns' },
+      el('button', { type: 'button', class: 'btn mv', textContent: '↑', title: 'Subir en la barra', disabled: edTab === 0, onclick: () => { [tabs[edTab - 1], tabs[edTab]] = [tabs[edTab], tabs[edTab - 1]]; edTab--; renderTabs(); dirty(); } }),
+      el('button', { type: 'button', class: 'btn mv', textContent: '↓', title: 'Bajar en la barra', disabled: edTab === tabs.length - 1, onclick: () => { [tabs[edTab + 1], tabs[edTab]] = [tabs[edTab], tabs[edTab + 1]]; edTab++; renderTabs(); dirty(); } }),
+      el('button', { type: 'button', class: 'btn danger mv', textContent: '×', title: 'Quitar pestaña', onclick: () => { if (confirm(`¿Quitar la pestaña «${t.title}»?`)) { tabs.splice(edTab, 1); edSel = edAdd = null; renderTabs(); dirty(); } } }))));
+  paintGrid();
+  $('#ed-panel').replaceChildren(...[edAdd ? edAddPanel() : edSel ? edCardPanel() : el('div', { class: 'hint', textContent: 'Toca una tarjeta para cambiarla, o «+ Añadir».' })].filter(Boolean));
+}
+$('#tab-reset').onclick = () => { if (confirm('¿Volver a las pestañas de siempre?')) { tabs = PM.tabList(null); edTab = 0; edSel = edAdd = null; renderTabs(); dirty(); } };
 let names = {};
 
 async function api(method, path, body) {
