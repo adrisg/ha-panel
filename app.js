@@ -413,7 +413,8 @@ function pressable(el, onTap, onLong) {
 }
 
 const TOGGLE = ['light', 'switch', 'fan', 'input_boolean', 'automation', 'siren', 'humidifier', 'cover'];
-const HAS_SHEET = ['light', 'fan', 'cover', 'climate', 'media_player', 'lock', 'vacuum', 'camera', 'sensor', 'binary_sensor'];
+const HAS_SHEET = ['light', 'fan', 'cover', 'climate', 'media_player', 'lock', 'vacuum', 'camera', 'sensor', 'binary_sensor',
+  'switch', 'input_boolean', 'automation', 'siren', 'humidifier', 'weather'];
 
 function tap(id, el) {
   const d = domain(id);
@@ -706,7 +707,20 @@ const SHEETS = {
   camera(id) { return [cameraImg(id, 'sheet', 2)]; },
   sensor(id) { return [historyChart(id)]; },
   binary_sensor(id) { return [historyChart(id)]; },
+  // Interruptores y parecidos: encender/apagar y su historial
+  switch(id) { return [bigToggle(id), historyChart(id)]; },
+  input_boolean(id) { return [bigToggle(id), historyChart(id)]; },
+  automation(id) { return [bigToggle(id), historyChart(id)]; },
+  siren(id) { return [bigToggle(id), historyChart(id)]; },
+  humidifier(id) { return [bigToggle(id), historyChart(id)]; },
+  weather(id) { return [weatherCard(id)]; },
 };
+/** Detalle de cualquier otra entidad: su estado y su historial */
+function genericSheet(id) {
+  const val = h('div', { class: 'sheet-state' });
+  bind('sheet', id, (st) => { val.textContent = fmtState(st); });
+  return [val, historyChart(id)];
+}
 
 function historyChart(id) {
   const box = h('div', { class: 'chart' }, h('div', { class: 'muted' }, 'Cargando últimas 24 h…'));
@@ -742,8 +756,7 @@ function openSheet(id) {
   closeSheet();
   const st = S.states[id];
   if (!st) return;
-  const builder = SHEETS[domain(id)];
-  if (!builder) return;
+  const builder = SHEETS[domain(id)] || genericSheet;
   const head = h('div', { class: 'sheet-head' }, h('div', { class: 'tile-icon' }), h('div', { class: 'sheet-title' }, nameOf(id, false)),
     h('button', { class: 'icon-btn', onclick: closeSheet }, icon('mdi-close')));
   bind('sheet', id, (s) => head.firstChild.replaceChildren(icon(iconOf(s))));
