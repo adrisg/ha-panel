@@ -379,18 +379,21 @@ const wText = (c) => (W[c] || [0, cap(c || '')])[1];
 const weatherId = () => (CFG.weatherEntity && S.states[CFG.weatherEntity]) ? CFG.weatherEntity
   : Object.keys(S.states).find((id) => domain(id) === 'weather');
 
-async function getForecast() {
-  const id = weatherId();
-  if (!id) return [];
-  if (S.forecast && Date.now() - S.forecastAt < 30 * 60e3) return S.forecast;
+const FORECASTS = {};      // previsión por entidad del tiempo: { id: { list, t } }
+async function getForecast(id = weatherId()) {
+  if (!id || !S.states[id]) return [];
+  const c = FORECASTS[id];
+  if (c && S.forecastAt && Date.now() - c.t < 30 * 60e3) return c.list;
+  let list;
   try {
     const r = await api.callService('weather', 'get_forecasts', { type: 'daily' }, id, true);
-    S.forecast = (r && r.response && r.response[id] && r.response[id].forecast) || [];
+    list = (r && r.response && r.response[id] && r.response[id].forecast) || [];
   } catch (e) {
-    S.forecast = S.states[id].attributes.forecast || [];
+    list = S.states[id].attributes.forecast || [];
   }
+  FORECASTS[id] = { list, t: Date.now() };
   S.forecastAt = Date.now();
-  return S.forecast;
+  return list;
 }
 
 /* ====================== Componentes ====================== */
@@ -1179,7 +1182,7 @@ function sceneChips(list) {
   }));
 }
 
-function weatherCard(id) {
+function weatherCard(id, days = 5) {
   const now = h('div', { class: 'w-now' }), fc = h('div', { class: 'w-fc' });
   bind('view', id, (st) => {
     if (!st) return;
@@ -1189,14 +1192,14 @@ function weatherCard(id) {
     now.replaceChildren(icon(wIcon(st.state), 'w-icon'), h('div', null,
       h('div', { class: 'w-temp' }, fmtNum(a.temperature) + '°'), h('div', { class: 'w-cond' }, wText(st.state)), h('div', { class: 'muted small' }, extra)));
   });
-  getForecast().then((f) => fc.replaceChildren(...f.slice(0, 5).map((d) => h('div', { class: 'fc-day' },
+  if (days > 0) getForecast(id).then((f) => fc.replaceChildren(...f.slice(0, days).map((d) => h('div', { class: 'fc-day' },
     h('div', { class: 'fc-name' }, new Date(d.datetime).toLocaleDateString('es-ES', { weekday: 'short' }).replace('.', '')),
     icon(wIcon(d.condition)), h('div', { class: 'fc-t' }, fmtNum(d.temperature) + '°'),
     // Probabilidad de lluvia siempre visible (también 0 %); vacía solo si la integración no la da
     d.precipitation_probability != null ? h('div', { class: 'fc-rain' }, icon('mdi-water'), d.precipitation_probability + '%')
       : h('div', { class: 'fc-rain empty' }, ' '),
     d.templow != null ? h('div', { class: 'fc-low' }, fmtNum(d.templow) + '°') : null))));
-  return h('div', { class: 'card weather-card' }, now, fc);
+  return h('div', { class: 'card weather-card' }, now, days > 0 ? fc : null);
 }
 
 function scooterCard(k) {
@@ -1875,11 +1878,14 @@ function renderRail() {
     h('button', { class: 'rail-btn', onclick: showAmbient }, icon('mdi-image-filter-hdr'), 'Ambiente'));
 }
 
-/** Contenido de una pestaña: sus tarjetas una detrás de otra. */
+/** Contenido de una pestaña: una rejilla de 12 columnas; cada tarjeta ocupa su ancho (c.width). */
 function renderTab(t) {
-  return (t.cards || []).flatMap((c) => {
-    try { return renderCard(c); } catch (e) { console.error(e); return [codeError(c.title || 'Tarjeta', e.message)]; }
-  });
+  return [h('div', { class: 'layout' }, (t.cards || []).map((c) => {
+    let kids;
+    try { kids = renderCard(c); } catch (e) { console.error(e); kids = [codeError(c.title || 'Tarjeta', e.message)]; }
+    kids = [].concat(kids || []).filter(Boolean);
+    return kids.length ? h('div', { class: 'slot w-' + String(c.width || 'full').replace('/', '-') }, kids) : null;
+  }).filter(Boolean))];
 }
 const anyTile = (id) => (['sensor', 'binary_sensor'].includes(domain(id)) ? sensorTile(id) : tile(id));
 function renderCard(c) {
@@ -1896,6 +1902,25 @@ function renderCard(c) {
     paint(); VIEW_CODE.push({ matches: () => true, paint });
     return [title, box];
   }
+  if (c.type === 'component') return componentCard(c, title);
+  if (c.type === 'bubbles') {
+    const box = h('div', { class: 'chips' });
+    const items = (c.items || []).map((it) => ({ it, m: moduleOf(it.script) }));
+    let watch = [];
+    const paint = () => {
+      watch = [];
+      box.replaceChildren(...items.flatMap(({ it, m }) => {
+        if (m.err) return [bubbleEl({ icon: 'mdi-alert-circle-outline', text: `${it.script}: ${m.err}`, color: PM.color('rojo') }, 'chip')];
+        try {
+          const bound = m.mod.bind(it.config, HA);
+          watch.push(bound.matches);
+          return PM.bubbles(m.mod.render(HA, screenFor('home'), bound.cfg)).map((b) => bubbleEl(b, 'chip'));
+        } catch (e) { return [bubbleEl({ icon: 'mdi-alert-circle-outline', text: `${it.script}: ${e.message}`, color: PM.color('rojo') }, 'chip')]; }
+      }));
+    };
+    paint(); VIEW_CODE.push({ matches: (id) => watch.some((f) => f(id)), paint });
+    return [title, box];
+  }
   if (c.type === 'script') {
     const m = moduleOf(c.script), name = c.title || c.script;
     if (m.err) return [title, codeError(name, m.err)];
@@ -1908,6 +1933,106 @@ function renderCard(c) {
   }
   return [];
 }
+/* ====================== Componentes de serie ======================
+ * Cada componente colocado es una tarjeta { type: 'component', component, width, config }.
+ * Sus campos están en PM.COMPONENTS; los valores de cada sitio van en config. */
+/** Ejecuta la acción de pulsar / mantener pulsado sobre una entidad. */
+function runAction(a, id, el) {
+  a = PM.actionOf(a);
+  if (!a || a.action === 'none') return;
+  const target = a.entity || id;
+  if (a.action === 'toggle') { if (target) tap(target, el); return; }
+  if (a.action === 'more-info') { if (target) openSheet(target); return; }
+  if (a.action === 'navigate') { if (a.go) go(a.go); return; }
+  if (a.action === 'call') {
+    const [d, sv] = String(a.service || '').split('.');
+    if (!d || !sv) { toast('Acción sin servicio', true); return; }
+    call(d, sv, a.data || {}, target);
+  }
+}
+const hasAction = (a) => { a = PM.actionOf(a); return !!a && a.action !== 'none'; };
+/** Pulsar y mantener pulsado de un componente (sin pulsación larga si no hace nada). */
+function actions(el, cfg, id) {
+  pressable(el, () => runAction(cfg.tap, id, el), hasAction(cfg.hold) ? () => runAction(cfg.hold, id, el) : null);
+  if (!hasAction(cfg.tap) && !hasAction(cfg.hold)) el.classList.add('static');
+}
+function componentCard(c, title) {
+  const def = PM.COMPONENTS[c.component];
+  if (!def) return [codeError(c.component || 'Componente', 'no existe ese componente')];
+  const cfg = PM.resolveConfig(def.config, c.config, HA);
+  const make = COMPONENT_RENDER[c.component];
+  return [title].concat(make ? make(cfg) : []);
+}
+const COMPONENT_RENDER = {
+  /** Botón: una entidad, con su icono, nombre y estado */
+  button(cfg) {
+    const id = cfg.entity;
+    if (!id) return [codeError('Botón', 'elige una entidad')];
+    const ic = h('div', { class: 'tile-icon' }), nm = h('div', { class: 'tile-name' }), stt = h('div', { class: 'tile-state' });
+    const el = h('button', { class: 'tile comp-btn' }, ic, h('div', { class: 'tile-text' }, nm, cfg.showState ? stt : null));
+    el.dataset.kind = kindOf(domain(id));
+    bind('view', id, (st) => {
+      ic.replaceChildren(icon(PM.mdi(cfg.icon) || iconOf(st)));
+      nm.textContent = cfg.name || (st ? nameOf(id) : id);
+      stt.textContent = st ? fmtState(st) : 'No existe';
+      el.classList.toggle('on', isActive(st));
+      el.classList.toggle('unavail', !st || st.state === 'unavailable');
+      el.classList.remove('pending');
+      paintLight(el, st);
+    });
+    actions(el, cfg, id);
+    return [el];
+  },
+  /** Información: valores de una o varias entidades */
+  info(cfg) {
+    const ids = cfg.entities;
+    if (!ids.length) return [codeError('Información', 'elige alguna entidad')];
+    const item = (id) => {
+      const ic = h('span'), val = h('div', { class: cfg.style === 'list' ? 'ci-val' : 'stat-value' }), lab = h('div', { class: cfg.style === 'list' ? 'ci-name' : 'stat-label' });
+      const el = cfg.style === 'list' ? h('button', { class: 'ci-row' }, ic, lab, val) : h('button', { class: 'stat' }, ic, val, lab);
+      bind('view', id, (st) => {
+        ic.replaceChildren(icon(iconOf(st)));
+        val.textContent = st ? fmtState(st) : '—';
+        lab.textContent = st ? nameOf(id) : id;
+      });
+      actions(el, cfg, id);
+      return el;
+    };
+    return [h('div', { class: 'card comp-info' }, cfg.title ? h('div', { class: 'ci-title' }, cfg.title) : null,
+      h('div', { class: cfg.style === 'list' ? 'ci-list' : 'stat-grid' }, ids.map(item)))];
+  },
+  /** Tiempo: ahora y la previsión */
+  weather(cfg) {
+    const id = cfg.entity;
+    if (!id || !S.states[id]) return [codeError('Tiempo', 'elige una entidad del tiempo')];
+    const el = weatherCard(id, cfg.forecast ? cfg.days || 5 : 0);
+    actions(el, cfg, id);
+    return [el];
+  },
+  /** Vehículo eléctrico: batería en anillo, nombre y estado */
+  vehicle(cfg) {
+    let k = { battery: cfg.battery, charging: cfg.charging, charged: cfg.charged, range: cfg.range, status: cfg.status };
+    if (!k.battery) {        // sin elegir: el patinete Xiaomi
+      const x = scooterIds();
+      k = { battery: x.battery_level, charging: x.charging_any, charged: x.charged, range: x.remaining_range, scooter: x };
+    }
+    if (!k.battery || !S.states[k.battery]) return [codeError('Vehículo', 'elige la entidad de la batería')];
+    const r = ring(), title = h('div', { class: 'sc-title' }), line = h('div', { class: 'sc-line' });
+    bindMany('view', [k.battery, k.charging, k.charged, k.range, k.status].concat(k.scooter ? Object.values(k.scooter) : []), () => {
+      const b = num(k.battery), range = num(k.range);
+      const mode = isOn(k.charged) ? 'charged' : isOn(k.charging) ? 'charging' : false;
+      r.set(b, mode, [h('div', { class: 'ring-pct' }, isNaN(b) ? '—' : Math.round(b) + '%')]);
+      const dev = deviceOf(k.battery);
+      title.replaceChildren(icon('mdi-' + cfg.kind, 'veh-ic'), cfg.name || (dev && (dev.name_by_user || dev.name)) || 'Vehículo');
+      const st = k.scooter ? scooterStatus(k.scooter) : mode === 'charged' ? 'Carga completa' : mode === 'charging' ? 'Cargando'
+        : k.status && S.states[k.status] ? fmtState(S.states[k.status]) : '';
+      line.textContent = [st, isNaN(range) ? '' : `≈ ${fmtNum(range)} km`].filter(Boolean).join(' · ');
+    });
+    const el = h('button', { class: 'card scooter-card' }, r, h('div', null, title, line));
+    actions(el, cfg, k.battery);
+    return [el];
+  },
+};
 /** Bloques que devuelve una tarjeta de script. */
 function codeBlocks(out) {
   const list = out == null ? [] : Array.isArray(out) ? out : [out];
