@@ -1899,7 +1899,16 @@ function layout(cards) {
     let kids;
     try { kids = renderCard(c); } catch (e) { console.error(e); kids = [codeError(c.title || 'Tarjeta', e.message)]; }
     kids = [].concat(kids || []).filter(Boolean);
-    return kids.length ? h('div', { class: 'slot w-' + String(c.width || 'full').replace('/', '-') }, kids) : null;
+    if (!kids.length) return null;
+    const slot = h('div', { class: 'slot w-' + String(c.width || 'full').replace('/', '-') }, kids);
+    // «Mostrar solo si…»: se revisa al cambiar sus entidades y, si hay horas, modo noche o código, cada 20 s
+    if (c.when && (c.when.rules || []).length) {
+      const deps = PM.whenDeps(c.when);
+      const check = () => slot.classList.toggle('when-off', !PM.checkWhen(c.when, HA, screenFor('card')));
+      bindMany('view', deps.entities, check);
+      if (deps.timed) S.viewTimers.push(setInterval(check, 20e3));
+    }
+    return slot;
   }).filter(Boolean));
 }
 const anyTile = (id) => (['sensor', 'binary_sensor'].includes(domain(id)) ? sensorTile(id) : tile(id));
