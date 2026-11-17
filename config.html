@@ -62,6 +62,13 @@
   .fs-opt.sel { color: var(--accent); font-weight: 600; }
   .fs-opt.dis { opacity: .45; cursor: default; }
   .fs-empty { padding: 10px; color: var(--muted); font-size: 13px; }
+  .ms { display: flex; flex-direction: column; gap: 8px; }
+  .ms-chips .chip { background: var(--surface-3); }
+  .ms-opt { justify-content: flex-start; }
+  .ms-opt .mdi { font-size: 20px; color: var(--muted); }
+  .ms-opt.sel .mdi { color: var(--accent); }
+  .ms-opt.sel { font-weight: 500; }
+  .fs-label.muted { color: var(--muted); }
   .ac-pop { padding: 4px; }
   .ac-opt small { flex: none; color: var(--muted); font-size: 12px; max-width: 45%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
   .btn { border: 0; border-radius: 12px; padding: 10px 16px; background: var(--surface-3); cursor: pointer; font-weight: 600; }
@@ -952,38 +959,72 @@ function fieldsForm(schema, get, set, prefix) {
 /** Elegir entidades o aparatos. Pocas opciones: desplegable / casillas. Muchas: buscador. */
 function entityInput(f, id, v, set) {
   const opts = fieldOptions(f);
-  const auto = f.auto === false ? '— ninguna —' : f.multiple ? null : 'Automática (la primera que haya)';
+  const auto = f.auto === false ? '— ninguna —' : 'Automática (la primera que haya)';
   if (!opts.length) return el('div', { class: 'hint', textContent: f.type === 'device' ? 'No hay aparatos de ' + (f.integration || '?') + ' (o el panel no está encendido).' : 'No hay entidades que encajen.' });
-  const labelOf = (x) => (opts.find((o) => o.value === x) || { label: x }).label;
-  if (opts.length <= 30) {
-    if (f.multiple) {
-      const sel = new Set([].concat(v || []));
-      return el('div', { class: 'checks', id }, ...opts.map((o) => el('label', { class: 'check' },
-        el('input', { type: 'checkbox', checked: sel.has(o.value), onchange: (e) => { e.target.checked ? sel.add(o.value) : sel.delete(o.value); set([...sel]); } }),
-        el('span', { textContent: o.label }))));
-    }
-    const s = el('select', { id, onchange: (e) => set(e.target.value) }, el('option', { value: '', textContent: auto }),
-      ...opts.map((o) => el('option', { value: o.value, textContent: o.label })),
-      v && !opts.some((o) => o.value === v) ? el('option', { value: v, textContent: `${v} (no existe)` }) : null);
-    s.value = v || '';
-    return s;
-  }
-  // Muchas: escribe para buscar
-  const dl = el('datalist', { id: id + '-dl' }, ...opts.map((o) => el('option', { value: o.value, label: o.label })));
-  if (!f.multiple) {
-    return el('div', {}, el('input', { id, type: 'text', list: id + '-dl', value: v || '', placeholder: auto || 'Escribe para buscar…',
-      onchange: (e) => set(e.target.value.trim()) }), dl);
-  }
-  let list = [].concat(v || []);
-  const chips = el('div', { class: 'chips' });
-  const paint = () => chips.replaceChildren(...(list.length ? list.map((x, i) => el('span', { class: 'chip', title: x }, labelOf(x),
-    el('button', { type: 'button', textContent: '×', onclick: () => { list.splice(i, 1); set([...list]); paint(); } })))
-    : [el('span', { class: 'hint', textContent: 'Ninguna' })]));
-  const inp = el('input', { id, type: 'text', list: id + '-dl', placeholder: 'Escribe para buscar y pulsa Añadir' });
-  const add = () => { const x = inp.value.trim(); if (x && !list.includes(x)) { list.push(x); set([...list]); paint(); } inp.value = ''; };
-  inp.addEventListener('keydown', (e) => { if (e.key === 'Enter') { e.preventDefault(); add(); } });
+  // Varias: desplegable de selección múltiple con buscador
+  if (f.multiple) return multiSelect(opts, [].concat(v || []), set, f.auto === false ? 'Ninguna' : f.type === 'device' ? 'Ninguno elegido: todos' : 'Ninguna elegida: todas');
+  // Una: desplegable (con buscador si hay muchas)
+  const s = el('select', { id, onchange: (e) => set(e.target.value) }, el('option', { value: '', textContent: auto }),
+    ...opts.map((o) => el('option', { value: o.value, textContent: o.label })),
+    v && !opts.some((o) => o.value === v) ? el('option', { value: v, textContent: `${v} (no existe)` }) : null);
+  s.value = v || '';
+  return s;
+}
+/** Elegir varias: etiquetas con × y un desplegable con buscador donde se marcan y desmarcan (no se cierra al marcar). */
+function multiSelect(opts, list, set, emptyText) {
+  list = list.slice();
+  const labelOf = (x) => (opts.find((o) => o.value === x) || { label: x + ' (no existe)' }).label;
+  const chips = el('div', { class: 'chips ms-chips' });
+  const label = el('span', { class: 'fs-label' });
+  const btn = el('button', { type: 'button', class: 'fs-btn' }, label, el('i', { class: 'mdi mdi-chevron-down fs-arrow' }));
+  const save = () => { set(list.slice()); paint(); };
+  const paint = () => {
+    chips.replaceChildren(...list.map((x, i) => el('span', { class: 'chip', title: x }, labelOf(x),
+      el('button', { type: 'button', textContent: '×', title: 'Quitar', onclick: () => { list.splice(i, 1); save(); if (fsOpen && fsOpen.btn === btn) fsOpen.refresh(); } }))));
+    chips.classList.toggle('hidden', !list.length);
+    label.textContent = list.length ? `${list.length} elegida${list.length > 1 ? 's' : ''} · añadir o quitar…` : emptyText;
+    label.classList.toggle('muted', !list.length);
+  };
+  const toggle = (x) => { const i = list.indexOf(x); if (i >= 0) list.splice(i, 1); else list.push(x); save(); };
+  btn.addEventListener('click', (e) => { e.stopPropagation(); fsOpen && fsOpen.btn === btn ? fsClose() : msShow(btn, opts, () => list, toggle); });
   paint();
-  return el('div', { class: 'ent-multi' }, chips, el('div', { class: 'add' }, inp, el('button', { type: 'button', class: 'btn', textContent: 'Añadir', onclick: add })), dl);
+  return el('div', { class: 'ms' }, chips, btn);
+}
+function msShow(btn, opts, getList, toggle) {
+  fsClose();
+  const search = opts.length > 7 ? el('input', { type: 'search', class: 'fs-search', placeholder: 'Buscar…' }) : null;
+  const list = el('div', { class: 'fs-list' });
+  const pop = el('div', { class: 'fs-pop' }, search, list);
+  let shown = [], active = 0;
+  const render = () => {
+    const q = fold(search ? search.value : ''), chosen = getList();
+    shown = opts.filter((o) => !q || fold(o.label + ' ' + o.value).includes(q));
+    active = Math.max(0, Math.min(active, shown.length - 1));
+    list.replaceChildren(...(shown.length ? shown.map((o, i) => {
+      const on = chosen.includes(o.value);
+      return el('div', { class: 'fs-opt ms-opt' + (on ? ' sel' : '') + (i === active ? ' fs-act' : ''),
+        onmousedown: (e) => e.preventDefault(), onclick: () => { active = i; toggle(o.value); render(); place(); },
+        onmousemove: () => { if (active !== i) { active = i; mark(); } } },
+        el('i', { class: 'mdi ' + (on ? 'mdi-checkbox-marked' : 'mdi-checkbox-blank-outline') }), el('span', { textContent: o.label }));
+    }) : [el('div', { class: 'fs-empty', textContent: 'No hay nada con «' + (search ? search.value : '') + '»' })]));
+  };
+  const mark = () => [...list.children].forEach((c, i) => c.classList.toggle('fs-act', i === active));
+  const key = (e) => {
+    if (e.key === 'ArrowDown') { active = Math.min(shown.length - 1, active + 1); mark(); list.children[active] && list.children[active].scrollIntoView({ block: 'nearest' }); e.preventDefault(); }
+    else if (e.key === 'ArrowUp') { active = Math.max(0, active - 1); mark(); list.children[active] && list.children[active].scrollIntoView({ block: 'nearest' }); e.preventDefault(); }
+    else if (e.key === 'Enter') { if (shown[active]) { toggle(shown[active].value); render(); place(); } e.preventDefault(); }
+    else if (e.key === 'Escape') { fsClose(); btn.focus(); e.preventDefault(); }
+  };
+  render();
+  if (search) { search.addEventListener('input', () => { active = 0; render(); }); search.addEventListener('keydown', key); }
+  pop.addEventListener('keydown', key);
+  pop.tabIndex = -1;
+  document.body.append(pop);
+  btn.classList.add('open');
+  const place = () => placePop(pop, btn);
+  fsOpen = { sel: null, pop, btn, place, refresh: render };
+  place();
+  (search || pop).focus();
 }
 /** Qué hace al pulsar / mantener: acción y, según cuál, a dónde ir o qué servicio. */
 function actionInput(f, v, set) {
@@ -1703,7 +1744,8 @@ function fsShow(sel, btn) {
   const cur = list.querySelector('.sel'); if (cur) cur.scrollIntoView({ block: 'center' });
   (search || pop).focus();
 }
-document.addEventListener('click', (e) => { if (fsOpen && !fsOpen.pop.contains(e.target)) fsClose(); });
+// composedPath: aunque la fila tocada ya se haya repintado, el clic cuenta como dentro de la lista
+document.addEventListener('click', (e) => { if (fsOpen && !e.composedPath().includes(fsOpen.pop)) fsClose(); });
 // Al hacer scroll o cambiar el tamaño (p. ej. el teclado del móvil) la lista se recoloca junto a su botón
 const fsPlace = (e) => { if (fsOpen && !(e && e.target && fsOpen.pop.contains(e.target))) fsOpen.place(); };
 addEventListener('resize', fsPlace);
