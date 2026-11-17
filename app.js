@@ -1879,13 +1879,15 @@ function renderRail() {
 }
 
 /** Contenido de una pestaña: una rejilla de 12 columnas; cada tarjeta ocupa su ancho (c.width). */
-function renderTab(t) {
-  return [h('div', { class: 'layout' }, (t.cards || []).map((c) => {
+function renderTab(t) { return [layout(t.cards)]; }
+/** Rejilla con tarjetas (también la de dentro de un componente Tarjeta). */
+function layout(cards) {
+  return h('div', { class: 'layout' }, (cards || []).map((c) => {
     let kids;
     try { kids = renderCard(c); } catch (e) { console.error(e); kids = [codeError(c.title || 'Tarjeta', e.message)]; }
     kids = [].concat(kids || []).filter(Boolean);
     return kids.length ? h('div', { class: 'slot w-' + String(c.width || 'full').replace('/', '-') }, kids) : null;
-  }).filter(Boolean))];
+  }).filter(Boolean));
 }
 const anyTile = (id) => (['sensor', 'binary_sensor'].includes(domain(id)) ? sensorTile(id) : tile(id));
 function renderCard(c) {
@@ -1961,7 +1963,7 @@ function componentCard(c, title) {
   if (!def) return [codeError(c.component || 'Componente', 'no existe ese componente')];
   const cfg = PM.resolveConfig(def.config, c.config, HA);
   const make = COMPONENT_RENDER[c.component];
-  return [title].concat(make ? make(cfg) : []);
+  return [title].concat(make ? make(cfg, c) : []);
 }
 const COMPONENT_RENDER = {
   /** Botón: una entidad, con su icono, nombre y estado */
@@ -1983,13 +1985,27 @@ const COMPONENT_RENDER = {
     actions(el, cfg, id);
     return [el];
   },
-  /** Información: valores de una o varias entidades */
+  /** Información: el valor de una entidad, en grande */
   info(cfg) {
+    const id = cfg.entity;
+    if (!id) return [codeError('Información', 'elige una entidad')];
+    const ic = h('span'), val = h('div', { class: 'stat-value' }), lab = h('div', { class: 'stat-label' });
+    const el = h('button', { class: 'stat comp-stat' }, ic, val, lab);
+    bind('view', id, (st) => {
+      ic.replaceChildren(icon(PM.mdi(cfg.icon) || iconOf(st)));
+      val.textContent = st ? fmtState(st) : '—';
+      lab.textContent = cfg.name || (st ? nameOf(id) : id);
+    });
+    actions(el, cfg, id);
+    return [el];
+  },
+  /** Lista: nombre y estado de varias entidades, una por fila */
+  list(cfg) {
     const ids = cfg.entities;
-    if (!ids.length) return [codeError('Información', 'elige alguna entidad')];
-    const item = (id) => {
-      const ic = h('span'), val = h('div', { class: cfg.style === 'list' ? 'ci-val' : 'stat-value' }), lab = h('div', { class: cfg.style === 'list' ? 'ci-name' : 'stat-label' });
-      const el = cfg.style === 'list' ? h('button', { class: 'ci-row' }, ic, lab, val) : h('button', { class: 'stat' }, ic, val, lab);
+    if (!ids.length) return [codeError('Lista', 'elige alguna entidad')];
+    const row = (id) => {
+      const ic = h('span'), val = h('div', { class: 'ci-val' }), lab = h('div', { class: 'ci-name' });
+      const el = h('button', { class: 'ci-row' }, ic, lab, val);
       bind('view', id, (st) => {
         ic.replaceChildren(icon(iconOf(st)));
         val.textContent = st ? fmtState(st) : '—';
@@ -1998,8 +2014,11 @@ const COMPONENT_RENDER = {
       actions(el, cfg, id);
       return el;
     };
-    return [h('div', { class: 'card comp-info' }, cfg.title ? h('div', { class: 'ci-title' }, cfg.title) : null,
-      h('div', { class: cfg.style === 'list' ? 'ci-list' : 'stat-grid' }, ids.map(item)))];
+    return [h('div', { class: 'card comp-list' }, cfg.title ? h('div', { class: 'ci-title' }, cfg.title) : null, h('div', { class: 'ci-list' }, ids.map(row)))];
+  },
+  /** Tarjeta: agrupa otros componentes (c.cards) bajo un título, con su propia rejilla */
+  card(cfg, c) {
+    return [h('div', { class: 'card comp-group' }, cfg.title ? h('div', { class: 'ci-title' }, cfg.title) : null, layout(c.cards))];
   },
   /** Tiempo: ahora y la previsión */
   weather(cfg) {

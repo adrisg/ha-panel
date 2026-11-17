@@ -605,8 +605,9 @@ main { display: flex; flex-direction: column; min-width: 0; min-height: 0; heigh
   .slot.w-1-4 { grid-column: span 6; }
 }
 .static { cursor: default; }
-.comp-info { display: flex; flex-direction: column; gap: 10px; }
-.comp-info .stat { background: var(--surface-2); text-align: left; border: 0; color: inherit; font: inherit; }
+.comp-list, .comp-group { display: flex; flex-direction: column; gap: 10px; }
+.comp-stat { text-align: left; border: 0; color: inherit; font: inherit; display: block; width: 100%; }
+.comp-group .comp-stat, .comp-group .tile, .comp-group .card { background: var(--surface-2); }
 .ci-title { font-weight: 600; font-size: 16px; }
 .ci-list { display: flex; flex-direction: column; }
 .ci-row { display: grid; grid-template-columns: 28px 1fr auto; align-items: center; gap: 8px; padding: 9px 2px; background: none; border: 0;
