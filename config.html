@@ -6,11 +6,15 @@
 <title>Panel Hogar · Configuración</title>
 <!-- Iconos, para ver las burbujas como en el panel al probarlas -->
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@mdi/font@7.4.47/css/materialdesignicons.min.css">
-<link rel="stylesheet" href="/lib/piezas.css">
 <style>
   :root {
     --bg: #0e1014; --surface: #191c22; --surface-2: #232730; --surface-3: #2d323d;
     --text: #eef0f4; --muted: #98a1ad; --accent: #8ab4f8; --ok: #81c995; --danger: #f28b82;
+    /* los mismos que el panel, para ver los componentes igual */
+    --radius: 20px;
+    --on-light: #ffe0a3; --on-light-ink: #3b2a06; --on-climate: #ffcba4; --on-climate-ink: #44210a;
+    --on-media: #d9c8ff; --on-media-ink: #261847; --on-cover: #a6e3d8; --on-cover-ink: #0b3530;
+    --on-lock: #f6b3ad; --on-lock-ink: #45120e; --on-default: #c4d9ff; --on-default-ink: #0f2547;
   }
   * { box-sizing: border-box; }
   body { margin: 0; background: var(--bg); color: var(--text); font: 15px/1.4 system-ui, "Segoe UI", Roboto, sans-serif; }
@@ -133,7 +137,9 @@
   textarea.bad { border-color: var(--danger); }
   .btn.armed { background: var(--danger); color: #2b0d0b; }
   .ed-prev { margin-top: 8px; pointer-events: none; }
-  .ed-prev .pz-prev { zoom: .8; }
+  .ed-prev .cmp-prev { zoom: .8; }
+  .cmp-prev { font-size: 15px; }
+  .cmp-tap { outline: 1px dashed rgba(138,180,248,.35); outline-offset: 2px; }
   .comp-prev { background: var(--bg); border-radius: 14px; padding: 12px; }
   .bub-title .mdi { font-size: 20px; color: var(--accent); }
   @media (max-width: 640px) {
@@ -479,7 +485,7 @@ go = 'home' | 'rooms' | 'sensors' | 'media' | 'printers' | 'scooter' | 'settings
 </div>
 
 <script src="/lib/modulos.js"></script>
-<script src="/lib/piezas.js"></script>
+<script src="/lib/componentes.js"></script>
 <script>
 'use strict';
 const $ = (s) => document.querySelector(s);
@@ -543,27 +549,23 @@ function testHA() {
 const compOf = (name) => { try { return name in scripts || name in drafts ? PM.compile(drafts[name] ?? scripts[name]) : null; } catch (e) { return null; } };
 const isCard = (name) => (compOf(name) || {}).type === 'card';
 const actText = (a) => (typeof a === 'function' ? 'hace algo (código)' : (PM.ACTIONS[(PM.actionOf(a) || {}).action] || ''));
-/** Piezas de un componente dibujadas como en el panel. kids: lo que va en { children: true } */
-function piecePreview(out, kids) {
-  return el('div', { class: 'pz-prev' }, ...PanelPiezas.render(out, {
+/** Un componente dibujado como en el panel (mismo HTML y CSS). Al pasar el ratón dice qué hace al pulsar. */
+function compPreview(name, mod, values) {
+  const ha = testHA(), b = mod.bind(values || {}, ha), host = el('div', {});
+  PanelComp.render(host, name, mod, [ha, testScreen('card'), b.cfg], {
     press(node, p) {
       const t = [p.tap && actText(p.tap) !== 'Nada' ? 'Al pulsar: ' + actText(p.tap) : '', p.hold && actText(p.hold) !== 'Nada' ? 'Al mantener: ' + actText(p.hold) : ''].filter(Boolean).join(' · ');
-      if (t) { node.title = t; node.classList.add('pz-tap'); }
+      if (t) { node.title = t; node.classList.add('cmp-tap'); }
     },
-    chip: (b) => bubblePreview(PM.bubbles(b)[0] || {}, 'home'),
-    children: () => kids || el('div', { class: 'pz-kids', textContent: 'Aquí van los componentes de dentro' }),
-    tiles: (ids) => el('div', { class: 'cb-text small', textContent: 'Fichas: ' + ids.join(', ') }),
-  }));
+  });
+  return { node: el('div', { class: 'cmp-prev' }, host), bound: b };
 }
 /** Pinta un componente con unos ajustes: { node } o { err } */
-function renderComp(name, values, kids) {
+function renderComp(name, values) {
   const m = compOf(name);
   if (!m) return { err: name in scripts ? 'tiene un error' : 'no existe ' + name };
   if (m.type !== 'card') return { err: "no es un componente (le falta type: 'card')" };
-  try {
-    const ha = testHA(), b = m.bind(values || {}, ha);
-    return { node: piecePreview(m.render(ha, testScreen('card'), b.cfg), kids), bound: b, mod: m };
-  } catch (e) { return { err: e.message }; }
+  try { return Object.assign(compPreview(name, m, values), { mod: m }); } catch (e) { return { err: e.message }; }
 }
 function testScreen(place) {
   return PM.makeScreen(Object.assign({}, (panelData && panelData.screen) || {}, { place }));
@@ -614,9 +616,9 @@ function codeEditor(name, say, getValues = () => ({})) {
       [states, panelData] = await Promise.all([api('GET', '/api/estados'), api('GET', '/api/datos-panel').catch(() => ({}))]);
       const mod = PM.compile(ta.value), bound = mod.bind(getValues(), testHA());
       const card = mod.type === 'card';
-      const t0 = performance.now(), res = mod.render(testHA(), testScreen(card ? 'card' : 'ambient'), bound.cfg), ms = performance.now() - t0;
+      const t0 = performance.now(), res = mod.render(testHA(), testScreen(card ? 'card' : 'ambient'), bound.cfg, PanelComp.makeHtml([])), ms = performance.now() - t0;
       let preview = null;
-      if (card) preview = piecePreview(res);
+      if (card) preview = compPreview(name, mod, getValues()).node;
       else {
         const row = (place, label) => {
           let list;
@@ -631,7 +633,7 @@ function codeEditor(name, say, getValues = () => ({})) {
         panelData && panelData.t ? null : el('div', { class: 'hint', textContent: 'ⓘ El panel no está encendido: screen (alarmas, brillo…) y ha.info vienen vacíos aquí.' }),
         preview,
         el('details', { style: 'margin-top:8px' }, el('summary', { class: 'hint', style: 'cursor:pointer', textContent: 'Ver lo que devuelve' }),
-          el('pre', { textContent: JSON.stringify(res, null, 2) ?? 'null' }))].filter(Boolean));
+          el('pre', { textContent: card && res && res.__html != null ? res.__html.trim() : JSON.stringify(res, null, 2) ?? 'null' }))].filter(Boolean));
     } catch (e) { out.replaceChildren(el('div', { class: 'err', textContent: '✗ ' + e.message })); }
   };
   const save = async () => {
@@ -858,12 +860,20 @@ const EMPTY_CARD = (name) => `{
     hold: { type: 'action', label: 'Al mantener pulsado', default: 'none' },
   },
   watch: (config) => [config.entity],
-  render(ha, screen, config) {
-    if (!config.entity) return { text: 'Elige una entidad', size: 'small' };
-    return {
-      stat: { icon: ha.icon(config.entity), value: ha.text(config.entity), label: ha.name(config.entity) },
-      entity: config.entity, tap: config.tap, hold: config.hold,
-    };
+  style: \`
+    .box { width: 100%; display: flex; align-items: center; gap: 12px; }
+    .mdi { font-size: 28px; color: var(--accent); }
+    .value { font-size: 22px; font-weight: 600; }
+    .name { color: var(--muted); font-size: 13px; }
+  \`,
+  render(ha, screen, config, html) {
+    const id = config.entity;
+    if (!id) return html\`<div class="hint">Elige una entidad</div>\`;
+    return html\`
+      <button class="card box" tap=\${config.tap} hold=\${config.hold} entity=\${id}>
+        <ha-icon icon=\${ha.icon(id)}></ha-icon>
+        <div><div class="value">\${ha.text(id)}</div><div class="name">\${ha.name(id)}</div></div>
+      </button>\`;
   },
 }
 `;

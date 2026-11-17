@@ -96,7 +96,7 @@ Se recalculan cuando cambia algo de su `watch` y, como mínimo, una vez por minu
 
 ## Componentes
 
-Un componente es un script con `type: 'card'`. Además de `config`, `watch` y `render`, dice cómo se llama y cómo se coloca:
+Un componente es un script con `type: 'card'`: sus **campos** (`config`), qué **vigila** (`watch`), su **CSS** (`style`) y su **HTML** (`render`).
 
 ```js
 {
@@ -107,37 +107,51 @@ Un componente es un script con `type: 'card'`. Además de `config`, `watch` y `r
     hold: { type: 'action', label: 'Al mantener pulsado', default: 'more-info' },
   },
   watch: (config) => [config.entity],
-  render(ha, screen, config) {
+  style: `
+    .btn { width: 100%; display: flex; align-items: center; gap: 12px; padding: 12px 14px;
+           border-radius: 20px; background: var(--surface); }
+    .on  { background: var(--on-light); color: var(--on-light-ink); }
+  `,
+  render(ha, screen, config, html) {
     const id = config.entity;
-    return {
-      tile: { icon: ha.icon(id), name: ha.name(id), state: ha.text(id), on: ha.active(id), kind: ha.kind(id) },
-      entity: id, tap: config.tap, hold: config.hold,
-    };
+    return html`
+      <button class="btn ${ha.active(id) ? 'on' : ''}" tap=${config.tap} hold=${config.hold} entity=${id}>
+        <ha-icon icon=${ha.icon(id)}></ha-icon>
+        <span><b>${ha.name(id)}</b> ${ha.text(id)}</span>
+      </button>`;
   },
 }
 ```
 
+**HTML (`render`)** devuelve `html\`…\``. Lo que metes con `${…}` se escapa solo; para meter HTML dentro de HTML, usa otro `html\`…\`` (también listas: `${lista.map((x) => html\`<li>${x}</li>\`)}`).
+
+| En el HTML | Qué hace |
+|---|---|
+| `<ha-icon icon="mdi:lightbulb">` | un icono (también `icon=${ha.icon(id)}`) |
+| `tap=…`, `hold=…` | al pulsar / mantener: `${config.tap}` (lo elegido en ajustes), `"toggle"`, `"more-info"`, `"none"`, `${{ action: 'navigate', go: 'media' }}`, el nombre de una función de `actions` o una función `${(ha) => ha.call(…)}` |
+| `entity=…` | sobre qué entidad actúan `tap` y `hold` |
+| `<slot></slot>` | aquí van los componentes de dentro (si el script lleva `children: true`, como **Tarjeta**) |
+
+**CSS (`style`)** solo afecta a ese componente. Clases que ya existen: `card` (fondo de tarjeta) y `hint` (texto gris). Colores del panel:
+
+| Variable | Qué es |
+|---|---|
+| `--bg`, `--surface`, `--surface-2`, `--surface-3` | fondo y fondos de tarjeta, de más oscuro a más claro |
+| `--text`, `--muted`, `--accent`, `--ok`, `--danger` | texto, texto gris, azul, verde, rojo |
+| `--on-light`, `--on-media`, `--on-climate`, `--on-cover`, `--on-lock`, `--on-default` (y `…-ink` para el texto) | colores de «encendido» |
+| `--radius` | redondeo de las tarjetas |
+
+**`actions`**: funciones con nombre para `tap="apagar"`:
+
+```js
+actions: { apagar: (ha, screen) => ha.call('light.turn_off', { entity_id: 'all' }) },
+```
+
+Para pintar, además de lo de siempre: `ha.text(id)` (estado traducido: «Encendido», «21,5 °C»), `ha.icon(id)`, `ha.active(id)`, `ha.color(id)` (`{ bg, ink }`: color real de una luz encendida), `ha.forecast(id)` (previsión diaria).
+
 - **Dónde:** **🧩 Componentes**. Cada uno se despliega con «Probar con estos ajustes», cómo se ve y su código. Para crear uno: desde cero, copiando otro, de una URL o subiendo un `.js`. Se guardan en la Pi y el panel los descarga solo.
 - **Colocarlos:** **🗂️ Pantallas → + Añadir**. Cada sitio donde lo pones tiene sus propios ajustes y su ancho (completo, 3/4, 2/3, 1/2, 1/3, 1/4).
-- `children: true`: el componente lleva otros dentro (como **Tarjeta**); van donde pongas la pieza `{ children: true }`.
-- Campos de más: `icon` (un icono `mdi:…`) y `action` (qué hacer al pulsar: `toggle`, `more-info`, `navigate` con `go`, `call` con `service` y `data`, o `none`).
-- Para pintar: `ha.text(id)` (estado traducido: «Encendido», «21,5 °C»), `ha.icon(id)`, `ha.active(id)`, `ha.kind(id)` y `ha.forecast(id)` (previsión diaria).
-
-**`render` devuelve piezas** (una o una lista):
-
-| Pieza | Qué es |
-|---|---|
-| `{ tile: { icon, name, state, on, kind } }` | ficha como las de Casa |
-| `{ stat: { icon, value, label } }`, `{ stats: [...] }` | un valor en grande, o varios |
-| `{ list: [{ icon, name, value, entity, tap, hold }] }` | filas |
-| `{ ring: { value, mode, title, sub, icon } }` | anillo de porcentaje (`mode`: `charging`, `charged`) |
-| `{ weather: { icon, temp, cond, extra, forecast } }` | tiempo con previsión |
-| `{ card: [piezas], title }` | fondo de tarjeta con piezas dentro |
-| `{ button: { text, icon } }`, `{ chips: [burbujas] }`, `{ tiles: [ids] }` | botón, burbujas, fichas |
-| `{ title }`, `{ text, size }`, `'texto'` | títulos y texto |
-| `{ children: true }` | los componentes de dentro |
-
-Cualquier pieza admite `entity`, `tap` y `hold`. `tap`/`hold` es una acción (`config.tap`, `'toggle'`, `{ action: 'navigate', go: 'media' }`…) o una función `(ha, screen) => ha.call(…)`.
+- Campos de más: `icon` (un icono `mdi:…`) y `action` (qué hacer al pulsar).
 
 ## Pantallas
 

@@ -1937,7 +1937,7 @@ function renderCard(c) {
 }
 /* ====================== Componentes ======================
  * Cada componente colocado es una tarjeta { type: 'component', component: 'boton.js', width, config, cards? }.
- * Su script (type: 'card') dice sus campos, qué vigila y qué piezas pinta; los valores de cada sitio van en config. */
+ * Su script (type: 'card') dice sus campos, qué vigila, su HTML y su CSS; los valores de cada sitio van en config. */
 /** Ejecuta la acción de pulsar / mantener pulsado sobre una entidad. */
 function runAction(a, id, el) {
   a = PM.actionOf(a);
@@ -1958,23 +1958,31 @@ function actions(el, cfg, id) {
   pressable(el, () => runAction(cfg.tap, id, el), hasAction(cfg.hold) ? () => runAction(cfg.hold, id, el) : null);
   if (!hasAction(cfg.tap) && !hasAction(cfg.hold)) el.classList.add('static');
 }
-/** Un componente colocado: ejecuta su script (type: 'card') y pinta sus piezas (lib/piezas.js). */
+/** Un componente colocado: ejecuta su script (type: 'card') y pinta su HTML con su CSS (lib/componentes.js). */
 function componentCard(c, title) {
   const name = c.component, m = moduleOf(name);
   if (m.err) return [title, codeError(name, m.err)];
   if (m.mod.type !== 'card') return [title, codeError(name, "no es un componente (le falta type: 'card')")];
-  const box = h('div', { class: 'comp' });
+  const host = h('div', { class: 'comp' });
+  // Los de dentro (<slot>) se crean una vez y se recolocan en cada repintado
+  const kids = m.mod.children ? layout(c.cards) : null;
   let bound = null;
   const paint = () => {
     try {
       bound = m.mod.bind(c.config, HA);
-      box.replaceChildren(...PanelPiezas.render(m.mod.render(HA, screenFor('card'), bound.cfg), pieceCtx(c)));
-    } catch (e) { box.replaceChildren(codeError(m.mod.name || name, e.message)); }
+      PanelComp.render(host, name, m.mod, [HA, screenFor('card'), bound.cfg], {
+        press(el, p) {
+          if (!isAct(p.tap) && !isAct(p.hold)) return;
+          pressable(el, () => pieceAction(p.tap, p, el), isAct(p.hold) ? () => pieceAction(p.hold, p, el) : null);
+        },
+        children: () => kids,
+      });
+    } catch (e) { host.replaceChildren(codeError(m.mod.name || name, e.message)); }
   };
   paint(); VIEW_CODE.push({ matches: (id) => !!bound && bound.matches(id), paint });
-  return [title, box];
+  return [title, host];
 }
-/** Lo que necesitan las piezas del panel: iconos, pulsar/mantener, color de las luces, componentes de dentro… */
+/** Al pulsar / mantener: una acción ('toggle', { action: 'navigate', go }…) o una función (ha, screen) */
 const isAct = (a) => typeof a === 'function' || hasAction(a);
 function pieceAction(a, p, el) {
   if (typeof a === 'function') {
@@ -1984,17 +1992,6 @@ function pieceAction(a, p, el) {
   }
   runAction(a, p.entity, el);
 }
-const pieceCtx = (c) => ({
-  icon: (n, cls) => icon(n, cls || ''),
-  press(el, p) {
-    if (!isAct(p.tap) && !isAct(p.hold)) { el.classList.add('static'); return; }
-    pressable(el, () => pieceAction(p.tap, p, el), isAct(p.hold) ? () => pieceAction(p.hold, p, el) : null);
-  },
-  light: (el, id) => paintLight(el, S.states[id]),
-  children: () => layout(c.cards),
-  chip: (b) => bubbleEl(PM.bubbles(b)[0], 'chip'),
-  tiles: (ids) => h('div', { class: 'grid' }, ids.filter((id) => S.states[id]).map(anyTile)),
-});
 /** Bloques que devuelve una tarjeta de script. */
 function codeBlocks(out) {
   const list = out == null ? [] : Array.isArray(out) ? out : [out];
