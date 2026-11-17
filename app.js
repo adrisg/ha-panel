@@ -1905,9 +1905,11 @@ function layout(cards) {
 const anyTile = (id) => (['sensor', 'binary_sensor'].includes(domain(id)) ? sensorTile(id) : tile(id));
 function renderCard(c) {
   const title = c.title ? h('div', { class: 'section-title' }, c.title) : null;
+  // Vista antigua (o pestaña de serie sin guardar): se monta al vuelo con los mismos componentes que pone la web
   if (c.type === 'view') {
     const v = VIEWS[c.view];
-    return v && (!v.visible || v.visible()) ? v.render() : [];
+    if (v && v.visible && !v.visible()) return [];
+    return [layout(PM.viewCards(c.view, HA, { visible: compVisible, favorites: CFG.favorites || [] }))];
   }
   if (c.type === 'entities') return [title, h('div', { class: 'grid' }, (c.entities || []).filter((id) => S.states[id]).map(anyTile))];
   if (c.type === 'camera') return S.states[c.entity] ? [title, h('div', { class: 'cams' }, cameraImg(c.entity, 'view', CFG.cameraRefreshSeconds))] : [];
@@ -2170,8 +2172,9 @@ function screenData(place) {
     }),
   };
 }
+const compVisible = (id) => !!S.states[id] && visible(id) && !isScooter(id);
 const screenFor = (place) => PM.makeScreen(screenData(place), {
-  visible: (id) => !!S.states[id] && visible(id) && !isScooter(id),
+  visible: compVisible,
   go: (v) => go(v),
 });
 const bulletList = () => PM.bulletList(SET.bullets, SET.ambientChips);
