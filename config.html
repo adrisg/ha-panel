@@ -138,6 +138,9 @@
   .btn.armed { background: var(--danger); color: #2b0d0b; }
   .ed-prev { margin-top: 8px; pointer-events: none; }
   .ed-prev .cmp-prev { zoom: .8; }
+  .monaco { height: 0; border-radius: 10px; overflow: hidden; border: 1px solid var(--surface-3); }
+  .monaco.ready { height: 460px; resize: vertical; }
+  .monaco + .btns { margin-top: 8px; }
   .cmp-prev { font-size: 15px; }
   .cmp-tap { outline: 1px dashed rgba(138,180,248,.35); outline-offset: 2px; }
   .comp-prev { background: var(--bg); border-radius: 14px; padding: 12px; }
@@ -599,6 +602,179 @@ async function deleteCode(name) {
   delete files[name]; delete drafts[name]; scripts = PM.allScripts(files);
 }
 
+/* ---------- editor de código: Monaco (el de VS Code) si se puede; si no, el cuadro de texto ---------- */
+const MONACO = 'https://cdn.jsdelivr.net/npm/monaco-editor@0.52.2/min/vs';
+// Lo que hay en un script, para que Monaco autocomplete ha., screen., html`…`, campos de config…
+const SCRIPT_TYPES = `
+/** Acceso a Home Assistant */
+interface HA {
+  /** Todos los estados: { entity_id: estado completo } */
+  readonly states: Record<string, HAState>;
+  /** Estado completo: { entity_id, state, attributes, last_changed } */
+  entity(id: string): HAState | null;
+  /** Estado como texto ('on', '21.5', 'playing'…) o null si no existe */
+  state(id: string): string | null;
+  /** Estado como número (NaN si no lo es) */
+  num(id: string): number;
+  /** Un atributo: ha.attr('light.salon', 'brightness') */
+  attr(id: string, name: string): any;
+  /** Nombre visible */
+  name(id: string): string;
+  /** ¿Encendida / abierta / reproduciendo? */
+  isOn(id: string): boolean;
+  /** ¿Existe y está disponible? */
+  ok(id: string): boolean;
+  /** Estado con su unidad: '21,5 °C' */
+  fmt(id: string, decimals?: number): string;
+  /** Estado para mostrar, traducido: 'Encendido', 'Abierta', '21,5 °C' */
+  text(id: string): string;
+  /** Icono de la entidad: 'mdi:lightbulb' */
+  icon(id: string): string;
+  /** ¿Activa? (para pintarla encendida) */
+  active(id: string): boolean;
+  /** Tipo según el dominio: 'light', 'media', 'climate', 'cover', 'lock' o '' */
+  kind(id: string): string;
+  /** Color real de una luz encendida: { bg, ink } o null */
+  color(id: string): { bg: string; ink: string } | null;
+  /** Previsión diaria de una entidad weather */
+  forecast(id: string): { datetime: string; condition: string; temperature: number; templow?: number; precipitation_probability?: number }[];
+  /** Número con coma decimal: ha.number(21.46) → '21,5' */
+  number(n: number, decimals?: number): string;
+  /** Segundos → '1 h 20 min' */
+  duration(seconds: number): string;
+  /** Entidades que coinciden: ha.find('light.*'), ha.find('sensor.*', (s, id) => …) */
+  find(pattern: string | string[], filter?: (state: HAState, id: string) => boolean): string[];
+  /** Cuántas cumplen: ha.count('light.*', 'on') */
+  count(pattern: string | string[], state?: string | ((state: HAState) => boolean)): number;
+  /** Minutos desde el último cambio */
+  minutesSince(id: string): number;
+  /** De qué es: integración, aparato, zona y clave */
+  info(id: string): { platform?: string; device?: string; deviceId?: string; area?: string; areaId?: string; key?: string };
+  /** Aparatos de una integración: [{ id, name, area, entities }] */
+  devices(platform?: string): { id: string; name: string; area: string | null; entities: string[] }[];
+  /** Mandar a Home Assistant: ha.call('light.turn_off', { entity_id: 'light.salon' }). Solo al pulsar (tap/hold/onTap) */
+  call(service: string, data?: Record<string, any>): Promise<any>;
+}
+interface HAState { entity_id: string; state: string; attributes: Record<string, any>; last_changed: string; last_updated: string }
+/** La pantalla (lo que no es de Home Assistant) */
+interface Screen {
+  /** Dónde se pinta: 'ambient' (debajo del reloj), 'home' (Inicio) o 'card' (en una pestaña) */
+  place: 'ambient' | 'home' | 'card';
+  /** Brillo actual (0–100) */
+  brightness: number | null;
+  /** ¿Pantalla encendida? */
+  on: boolean;
+  /** ¿Modo noche? */
+  night: boolean;
+  /** ¿Se ve el modo ambiente? */
+  ambient: boolean;
+  /** Luz ambiente del sensor de la pantalla (null si no hay) */
+  light: number | null;
+  /** Alarmas del panel */
+  alarms: { name: string; time: string; days: number[]; enabled: boolean; when: Date | null; text: string | null }[];
+  /** La próxima alarma o null */
+  nextAlarm(): { name: string; when: Date; text: string } | null;
+  /** ¿La entidad no está oculta en el panel? */
+  visible(id: string): boolean;
+  /** Ir a una pestaña: 'home', 'rooms', 'media'… o el id de una tuya */
+  go(tab: string): void;
+  /** Hora actual */
+  now(): Date;
+}
+interface HtmlResult { __html: string }
+/** html\\\`<div>\\\${…}</div>\\\`: lo de \\\${…} se escapa solo. Atributos: tap, hold, entity. <ha-icon icon="mdi:…">, <slot> */
+interface Html { (strings: TemplateStringsArray, ...values: any[]): HtmlResult; /** HTML sin escapar */ raw(html: string): HtmlResult }
+type ActionName = 'toggle' | 'more-info' | 'navigate' | 'call' | 'none';
+type Action = ActionName | { action: ActionName; go?: string; service?: string; data?: Record<string, any>; entity?: string } | ((ha: HA, screen: Screen) => any);
+interface Field {
+  /** entity, device, text, number, bool, select, icon o action */
+  type: 'entity' | 'device' | 'text' | 'number' | 'bool' | 'select' | 'icon' | 'action';
+  label?: string; hint?: string; default?: any;
+  /** entity: dominio ('light', 'sensor'…) */ domain?: string;
+  /** entity: device_class ('temperature', 'door'…) */ deviceClass?: string | string[];
+  /** entity/device: elegir varias */ multiple?: boolean;
+  /** entity/device: false = sin elegir no coge ninguna */ auto?: boolean;
+  /** device: integración ('bambu_lab'…) */ integration?: string;
+  /** device: que tenga esta entidad */ has?: { key?: string; suffix?: string };
+  /** select */ options?: (string | { value: string; label: string })[];
+  min?: number; max?: number; step?: number;
+}
+/** Una burbuja */
+interface Bubble { icon?: string; text?: string; color?: string; textColor?: string; iconEnd?: string; iconEndColor?: string; progress?: number; go?: string; onTap?: (ha: HA, screen: Screen) => any }
+/** Un script: burbuja (sin type) o componente (type: 'card') */
+interface PanelScript {
+  /** 'card' = componente para las pestañas; sin type = burbuja */
+  type?: 'card';
+  /** Nombre del componente */ name?: string;
+  /** Icono del componente: 'mdi:…' */ icon?: string;
+  /** Ancho al añadirlo */ width?: 'full' | '3/4' | '2/3' | '1/2' | '1/3' | '1/4';
+  /** Lleva otros componentes dentro (van en <slot>) */ children?: boolean;
+  /** Repintar solo cada estos segundos */ refresh?: number;
+  /** Campos que se rellenan en la web */ config?: Record<string, Field>;
+  /** Entidades que lo actualizan (admite *). null = cualquier cambio */
+  watch?: string[] | null | ((config: any) => string[]);
+  /** CSS del componente (solo le afecta a él) */ style?: string;
+  /** Funciones para tap="nombre" */ actions?: Record<string, (ha: HA, screen: Screen) => any>;
+  /** Lo que se pinta: componentes → html\\\`…\\\`; burbujas → { icon, text… } o null */
+  render(ha: HA, screen: Screen, config: any, html: Html): HtmlResult | Bubble | Bubble[] | string | null;
+}
+`;
+const PREFIX = '/** @type {PanelScript} */ (', SUFFIX = ')';
+let monacoP = null;
+const useMonaco = () => !(matchMedia('(pointer: coarse)').matches && innerWidth < 900);   // en el móvil, el cuadro de texto
+function loadMonaco() {
+  if (monacoP) return monacoP;
+  monacoP = new Promise((resolve, reject) => {
+    window.MonacoEnvironment = { getWorkerUrl: () => 'data:text/javascript;charset=utf-8,' +
+      encodeURIComponent(`self.MonacoEnvironment={baseUrl:'${MONACO.replace(/vs$/, '')}'};importScripts('${MONACO}/base/worker/workerMain.js');`) };
+    const sc = document.createElement('script');
+    sc.src = MONACO + '/loader.js';
+    sc.onerror = () => reject(new Error('sin conexión con el CDN'));
+    sc.onload = () => {
+      window.require.config({ paths: { vs: MONACO } });
+      window.require(['vs/editor/editor.main'], () => {
+        const m = window.monaco, js = m.languages.typescript.javascriptDefaults;
+        js.setCompilerOptions({ allowJs: true, checkJs: false, target: m.languages.typescript.ScriptTarget.ES2020, allowNonTsExtensions: true, noLib: false });
+        js.setDiagnosticsOptions({ noSemanticValidation: true, noSyntaxValidation: false });
+        js.addExtraLib(SCRIPT_TYPES, 'ts:panel.d.ts');
+        m.editor.defineTheme('panel', { base: 'vs-dark', inherit: true, rules: [], colors: { 'editor.background': '#0b0d11' } });
+        resolve(m);
+      }, reject);
+    };
+    document.head.append(sc);
+    setTimeout(() => reject(new Error('Monaco tarda demasiado')), 20000);
+  });
+  monacoP.catch(() => {});
+  return monacoP;
+}
+/** Cambia el cuadro de texto por Monaco (si carga). El cuadro sigue siendo la fuente: ta.value siempre al día.
+ *  keys: { save, test } para Ctrl+S y Ctrl+Enter */
+function upgradeEditor(ta, onChange, keys) {
+  if (!useMonaco()) return;
+  const box = el('div', { class: 'monaco' });
+  ta.after(box);
+  loadMonaco().then((m) => {
+    // El código va dentro de /** @type {PanelScript} */ ( … ) para que sepa qué es ha, screen…; esas líneas no se ven
+    const model = m.editor.createModel(PREFIX + '\n' + ta.value + '\n' + SUFFIX, 'javascript');
+    const ed = m.editor.create(box, { model, theme: 'panel', automaticLayout: true, minimap: { enabled: false }, fontSize: 13,
+      tabSize: 2, scrollBeyondLastLine: false, wordWrap: 'off', renderLineHighlight: 'line', fixedOverflowWidgets: true,
+      lineNumbers: (n) => String(n - 1) });
+    const hide = () => { const last = model.getLineCount(); ed.setHiddenAreas([new m.Range(1, 1, 1, 1), new m.Range(last, 1, last, 1)]); };
+    hide();
+    const body = () => { const n = model.getLineCount(); return model.getValueInRange(new m.Range(2, 1, n - 1, model.getLineMaxColumn(n - 1))); };
+    model.onDidChangeContent(() => {
+      // que no se puedan borrar las líneas escondidas
+      if (model.getLineContent(1) !== PREFIX || model.getLineContent(model.getLineCount()) !== SUFFIX) { model.undo(); return; }
+      ta.value = body(); onChange(ta.value); hide();
+    });
+    ed.addCommand(m.KeyMod.CtrlCmd | m.KeyCode.KeyS, () => keys.save && keys.save());
+    ed.addCommand(m.KeyMod.CtrlCmd | m.KeyCode.Enter, () => keys.test && keys.test());
+    ed.setPosition({ lineNumber: 2, column: 1 });
+    ta.classList.add('hidden');
+    box.classList.add('ready');
+  }).catch(() => box.remove());   // sin Monaco: se queda el cuadro de texto
+}
+
 /** Editor del funcionamiento: texto + Guardar, Probar, Descargar y Restaurar (las de serie). */
 function codeEditor(name, say, getValues = () => ({})) {
   const def = isDefault(name);
@@ -649,6 +825,7 @@ function codeEditor(name, say, getValues = () => ({})) {
     const a = el('a', { href: URL.createObjectURL(new Blob([ta.value], { type: 'text/javascript' })), download: name });
     a.click(); setTimeout(() => URL.revokeObjectURL(a.href), 1000);
   };
+  queueMicrotask(() => upgradeEditor(ta, (v) => (drafts[name] = v), { save, test }));
   return el('div', { 'data-nodirty': '' }, ta, el('div', { class: 'btns', style: 'margin-top:8px' },
     el('button', { type: 'button', class: 'btn primary', textContent: 'Guardar funcionamiento', onclick: save }),
     el('button', { type: 'button', class: 'btn', textContent: 'Probar', onclick: test }),
