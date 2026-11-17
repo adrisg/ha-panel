@@ -552,7 +552,7 @@ class LocalHandler(Base):
                 body = self._body()
                 PANEL_DATA.update(body if isinstance(body, dict) else {})
                 PANEL_DATA['t'] = time.time()
-                return self._json(200, {'ok': True})
+                return self._json(200, {'ok': True, 'hasInfo': bool(PANEL_DATA.get('info'))})
             if u.path == '/seed':   # el panel copia aquí su config.js y sus Ajustes la primera vez
                 body = self._body()
                 with LOCK:
@@ -615,10 +615,11 @@ class WebHandler(Base):
             self.end_headers()
             self.wfile.write(data)
             return
-        if u.path == '/lib/modulos.js':     # mismo código que usa el panel, para probar los scripts en la web
-            data = (HERE / 'lib' / 'modulos.js').read_bytes()
+        # mismo código que usa el panel, para probar burbujas y componentes en la web
+        if u.path in ('/lib/modulos.js', '/lib/piezas.js', '/lib/piezas.css'):
+            data = (HERE / 'lib' / u.path.rsplit('/', 1)[1]).read_bytes()
             self.send_response(200)
-            self.send_header('Content-Type', 'text/javascript; charset=utf-8')
+            self.send_header('Content-Type', ('text/css' if u.path.endswith('.css') else 'text/javascript') + '; charset=utf-8')
             self.send_header('Content-Length', str(len(data)))
             self.send_header('Cache-Control', 'no-store')
             self.end_headers()

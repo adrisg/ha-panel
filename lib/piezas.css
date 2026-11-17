@@ -1,0 +1,79 @@
+/* Piezas de los componentes en la web de configuración (vista previa), con el mismo aspecto que en el panel.
+ * El panel usa sus propios estilos (styles.css); aquí van dentro de .pz-prev. */
+.pz-prev {
+  --radius: 20px;
+  --on-light: #ffe0a3;   --on-light-ink: #3b2a06;
+  --on-climate: #ffcba4; --on-climate-ink: #44210a;
+  --on-media: #d9c8ff;   --on-media-ink: #261847;
+  --on-cover: #a6e3d8;   --on-cover-ink: #0b3530;
+  --on-lock: #f6b3ad;    --on-lock-ink: #45120e;
+  --on-default: #c4d9ff; --on-default-ink: #0f2547;
+  display: flex; flex-direction: column; gap: 10px; color: var(--text); font-size: 15px; min-width: 0;
+}
+.pz-prev button { font: inherit; color: inherit; border: 0; cursor: default; }
+.pz-prev .mdi { line-height: 1; }
+.pz-prev > .tile, .pz-prev > .card, .pz-prev > .stat, .pz-prev > .big-action { width: 100%; }
+.pz-prev .card { background: var(--surface); border-radius: var(--radius); padding: 16px 18px; text-align: left; }
+.pz-prev .pz-card { display: flex; flex-direction: column; gap: 10px; }
+.pz-prev .pz-card .pz-stat, .pz-prev .pz-card .tile, .pz-prev .pz-card .card, .pz-prev .pz-card .stat { background: var(--surface-2); }
+.pz-prev .section-title { font-size: 15px; font-weight: 600; color: var(--muted); margin: 4px 4px 0; }
+.pz-prev .cb-text { font-size: 17px; padding: 0 4px; }
+.pz-prev .cb-text.big { font-size: 26px; font-weight: 600; }
+.pz-prev .cb-text.small { font-size: 14px; color: var(--muted); }
+.pz-prev .muted { color: var(--muted); } .pz-prev .small { font-size: 13px; }
+.pz-prev .tile { display: flex; align-items: center; gap: 12px; text-align: left; min-height: 72px; padding: 12px 14px; border-radius: var(--radius); background: var(--surface); min-width: 0; }
+.pz-prev .tile-icon { flex: none; width: 42px; height: 42px; border-radius: 50%; display: grid; place-items: center; font-size: 24px; background: var(--surface-2); }
+.pz-prev .tile-text { min-width: 0; }
+.pz-prev .tile-name { font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.pz-prev .tile-state { font-size: 13px; color: var(--muted); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; margin-top: 2px; }
+.pz-prev .tile.on { background: var(--on-default); color: var(--on-default-ink); }
+.pz-prev .tile.on .tile-icon { background: rgba(255,255,255,.45); }
+.pz-prev .tile.on .tile-state { color: inherit; opacity: .75; }
+.pz-prev .tile.on[data-kind=light] { background: var(--on-light); color: var(--on-light-ink); }
+.pz-prev .tile.on[data-kind=climate] { background: var(--on-climate); color: var(--on-climate-ink); }
+.pz-prev .tile.on[data-kind=media] { background: var(--on-media); color: var(--on-media-ink); }
+.pz-prev .tile.on[data-kind=cover] { background: var(--on-cover); color: var(--on-cover-ink); }
+.pz-prev .tile.on[data-kind=lock] { background: var(--on-lock); color: var(--on-lock-ink); }
+.pz-prev .tile.unavail { opacity: .45; }
+.pz-prev .stat-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(130px, 1fr)); gap: 10px; }
+.pz-prev .stat { display: block; text-align: left; background: var(--surface); border-radius: 16px; padding: 12px 14px; }
+.pz-prev .stat .mdi { color: var(--accent); font-size: 18px; }
+.pz-prev .stat-value { font-size: 20px; font-weight: 600; margin-top: 4px; white-space: nowrap; }
+.pz-prev .stat-label { font-size: 12px; color: var(--muted); }
+.pz-prev .ci-title { font-weight: 600; font-size: 16px; }
+.pz-prev .ci-list { display: flex; flex-direction: column; }
+.pz-prev .ci-row { display: grid; grid-template-columns: 28px 1fr auto; align-items: center; gap: 8px; padding: 9px 2px; background: none; text-align: left; border-top: 1px solid rgba(255,255,255,.06); }
+.pz-prev .ci-row:first-child { border-top: 0; }
+.pz-prev .ci-row .mdi { font-size: 20px; color: var(--muted); }
+.pz-prev .ci-name { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.pz-prev .ci-val { font-weight: 600; }
+.pz-prev .weather-card { display: flex; flex-direction: column; gap: 14px; }
+.pz-prev .w-now { display: flex; align-items: center; gap: 16px; }
+.pz-prev .w-icon { font-size: 58px; color: #ffd27a; }
+.pz-prev .w-temp { font-size: 40px; font-weight: 600; line-height: 1; }
+.pz-prev .w-cond { font-size: 16px; margin-top: 4px; }
+.pz-prev .w-fc { display: flex; justify-content: space-between; gap: 4px; }
+.pz-prev .fc-day { display: flex; flex-direction: column; align-items: center; gap: 2px; font-size: 13px; flex: 1; }
+.pz-prev .fc-day .mdi { font-size: 24px; color: #ffd27a; }
+.pz-prev .fc-name { color: var(--muted); text-transform: capitalize; }
+.pz-prev .fc-t { font-weight: 600; }
+.pz-prev .fc-low { color: var(--muted); }
+.pz-prev .fc-rain { display: flex; align-items: center; gap: 1px; color: var(--accent); font-size: 12px; height: 17px; }
+.pz-prev .fc-rain .mdi { font-size: 13px; color: var(--accent); }
+.pz-prev .scooter-card { display: flex; align-items: center; gap: 16px; width: 100%; }
+.pz-prev .ring-wrap { position: relative; flex: none; width: 92px; height: 92px; }
+.pz-prev .ring { width: 100%; height: 100%; display: block; }
+.pz-prev .ring-bg { fill: none; stroke: var(--surface-3); stroke-width: 10; }
+.pz-prev .ring-fg { fill: none; stroke: var(--ok); stroke-width: 10; stroke-linecap: round; }
+.pz-prev .ring-fg.mid { stroke: #fdd663; } .pz-prev .ring-fg.low { stroke: var(--danger); } .pz-prev .ring-fg.charging { stroke: var(--accent); }
+.pz-prev .ring-center { position: absolute; inset: 0; display: grid; place-items: center; text-align: center; }
+.pz-prev .ring-pct { font-size: 22px; font-weight: 700; line-height: 1; }
+.pz-prev .ring-bolt { position: absolute; inset: 0; display: grid; place-items: center; font-size: 66px; color: var(--accent); opacity: .25; }
+.pz-prev .ring-bolt.charged { color: var(--ok); }
+.pz-prev .sc-title { font-size: 18px; font-weight: 600; }
+.pz-prev .sc-line { color: var(--muted); margin-top: 4px; }
+.pz-prev .veh-ic { margin-right: 6px; color: var(--muted); }
+.pz-prev .big-action { display: flex; align-items: center; justify-content: center; gap: 8px; padding: 14px 18px; border-radius: 16px; background: var(--surface-2); font-weight: 600; }
+.pz-prev .chips { display: flex; flex-wrap: wrap; gap: 8px; }
+.pz-prev .pz-kids { border: 2px dashed var(--surface-3); border-radius: 14px; padding: 14px; color: var(--muted); text-align: center; font-size: 13px; }
+.pz-prev .pz-tap { outline: 1px dashed rgba(138,180,248,.35); outline-offset: 2px; }
