@@ -1351,7 +1351,18 @@ function edCardPanel() {
 }
 let edTimer;
 function paintGrid() { const t = tabs[edTab]; if (t) $('#ed-grid').replaceChildren(edGrid(t.cards || (t.cards = []), [])); }
+/** Las vistas antiguas (y las pestañas de serie) se convierten en componentes cuando ya hay datos de Home Assistant */
+function convertViews() {
+  if (!states || !Object.keys(states).length || !tabs.some((t) => (t.cards || []).some((c) => c && c.type === 'view'))) return;
+  const info = (panelData && panelData.info) || {};
+  const opts = { favorites: lists.favorites,
+    visible: (id) => !lists.hiddenEntities.includes(id) && !lists.excludePlatforms.includes((info[id] || {}).platform) && (info[id] || {}).platform !== 'mi_scooter_ble' };
+  tabs.forEach((t) => { t.cards = PM.expandViews(t.cards, testHA(), opts); });
+  dirty();
+  msg((panelData && panelData.info ? '' : '⚠ El panel no está encendido: sin zonas. ') + 'Las pestañas se han montado con componentes. Pulsa Guardar para quedártelas.');
+}
 function renderTabs() {
+  convertViews();
   if (edTab >= tabs.length) edTab = Math.max(0, tabs.length - 1);
   const t = tabs[edTab];
   $('#ed-tabs').replaceChildren(...tabs.map((x, i) => el('button', { type: 'button', class: 'ed-tab' + (i === edTab ? ' on' : ''),
