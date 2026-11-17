@@ -130,6 +130,7 @@
   .act { display: flex; flex-direction: column; gap: 6px; }
   .icon-prev { font-size: 24px; width: 32px; align-self: center; color: var(--accent); }
   textarea.bad { border-color: var(--danger); }
+  .btn.armed { background: var(--danger); color: #2b0d0b; }
   @media (max-width: 640px) {
     .ed-slot.w-3-4, .ed-slot.w-2-3, .ed-slot.w-1-2, .ed-slot.w-1-3 { grid-column: span 12; }
     .ed-slot.w-1-4 { grid-column: span 6; }
@@ -486,6 +487,18 @@ const switchEl = (checked, onchange) => {
   const sw = el('label', { class: 'switch' }, el('input', { type: 'checkbox', checked, onchange: (e) => onchange(e.target.checked) }), el('span'));
   return sw;
 };
+/** Botón que pide confirmación en la propia página: el primer toque cambia el texto y hay que tocar otra vez.
+ *  (No usa la ventana confirm() del navegador, que algunos navegadores bloquean.) */
+function sureBtn(props, text, sure, onYes) {
+  let armed = null;
+  const b = el('button', Object.assign({ type: 'button' }, props, { textContent: text, onclick: (e) => {
+    e.stopPropagation();
+    if (armed) { clearTimeout(armed); armed = null; onYes(); return; }
+    b.textContent = sure; b.classList.add('armed');
+    armed = setTimeout(() => { armed = null; b.textContent = text; b.classList.remove('armed'); }, 4000);
+  } }));
+  return b;
+}
 const moveBtns = (arr, i, after) => [-1, 1].map((d) => el('button', { type: 'button', class: 'btn mv', textContent: d < 0 ? '↑' : '↓', disabled: !arr[i + d],
   onclick: () => { [arr[i], arr[i + d]] = [arr[i + d], arr[i]]; after(); dirty(); } }));
 
@@ -619,7 +632,7 @@ function renderBullets() {
       configForm(b),
       el('details', { class: 'func' }, el('summary', { class: 'sub', textContent: 'Funcionamiento (código)' }),
         b.script in scripts ? codeEditor(b.script, say, () => b.config || {}) : el('div', { class: 'err', textContent: 'No se encuentra su funcionamiento.' })),
-      def ? null : el('div', { class: 'btns' }, el('button', { type: 'button', class: 'btn danger', textContent: 'Borrar burbuja', onclick: () => delBullet(i) }))));
+      def ? null : el('div', { class: 'btns' }, sureBtn({ class: 'btn danger' }, 'Borrar burbuja', '¿Seguro? Toca otra vez', () => delBullet(i)))));
     return card;
   }));
 }
@@ -742,7 +755,6 @@ function actionInput(f, v, set) {
 }
 async function delBullet(i) {
   const b = bullets[i];
-  if (!confirm(`¿Borrar la burbuja «${b.name || b.script}»?`)) return;
   bullets.splice(i, 1); openBullet = null;
   try {
     if (b.script in files && !isDefault(b.script) && !bullets.some((x) => x.script === b.script) && !usedInTabs(b.script)) await deleteCode(b.script);
@@ -791,11 +803,10 @@ function renderCardScripts() {
         el('span', { class: 'bub-arrow', textContent: open ? '▾' : '▸' }), el('b', { textContent: name.replace(/\.js$/, '') }))));
     if (!open) return card;
     const del = async () => {
-      if (!confirm(`¿Borrar «${name.replace(/\.js$/, '')}»?` + (usedInTabs(name) ? ' Alguna pestaña la usa y mostrará un error.' : ''))) return;
       try { await deleteCode(name); openCard = null; renderAll(); cmsg('Borrada'); } catch (e) { cmsg(e.message, 'err'); }
     };
     card.append(el('div', { class: 'bub-body' }, codeEditor(name, cmsg),
-      el('div', { class: 'btns' }, el('button', { type: 'button', class: 'btn danger', textContent: 'Borrar', onclick: del }))));
+      el('div', { class: 'btns' }, sureBtn({ class: 'btn danger' }, 'Borrar', usedInTabs(name) ? '¿Seguro? Alguna pestaña la usa. Toca otra vez' : '¿Seguro? Toca otra vez', del))));
     return card;
   }));
 }
@@ -960,7 +971,7 @@ function edCardPanel() {
         el('button', { type: 'button', class: 'btn mv', textContent: '←', title: 'Antes', disabled: i === 0, onclick: () => move(-1) }),
         el('button', { type: 'button', class: 'btn mv', textContent: '→', title: 'Después', disabled: i === list.length - 1, onclick: () => move(1) }),
         el('button', { type: 'button', class: 'btn', textContent: 'Duplicar', onclick: () => { list.splice(i + 1, 0, JSON.parse(JSON.stringify(c))); edSel = edSel.slice(0, -1).concat(i + 1); renderTabs(); dirty(); } }),
-        el('button', { type: 'button', class: 'btn danger', textContent: 'Borrar', onclick: () => { if (!confirm('¿Borrar esta tarjeta?')) return; list.splice(i, 1); edSel = null; renderTabs(); dirty(); } }),
+        sureBtn({ class: 'btn danger' }, 'Borrar', '¿Seguro? Toca otra vez', () => { list.splice(i, 1); edSel = null; renderTabs(); dirty(); }),
         el('button', { type: 'button', class: 'btn', textContent: 'Cerrar', onclick: () => { edSel = null; renderTabs(); } }))),
     el('div', { class: 'field' }, el('label', { textContent: 'Ancho' }), widths),
     c.type === 'component' || c.type === 'bubbles' ? null : el('div', { class: 'hint', textContent: 'Estas tarjetas ocupan el ancho que elijas, pero se ven como antes.' }),
@@ -983,11 +994,12 @@ function renderTabs() {
     el('div', { class: 'btns' },
       el('button', { type: 'button', class: 'btn mv', textContent: '↑', title: 'Subir en la barra', disabled: edTab === 0, onclick: () => { [tabs[edTab - 1], tabs[edTab]] = [tabs[edTab], tabs[edTab - 1]]; edTab--; renderTabs(); dirty(); } }),
       el('button', { type: 'button', class: 'btn mv', textContent: '↓', title: 'Bajar en la barra', disabled: edTab === tabs.length - 1, onclick: () => { [tabs[edTab + 1], tabs[edTab]] = [tabs[edTab], tabs[edTab + 1]]; edTab++; renderTabs(); dirty(); } }),
-      el('button', { type: 'button', class: 'btn danger mv', textContent: '×', title: 'Quitar pestaña', onclick: () => { if (confirm(`¿Quitar la pestaña «${t.title}»?`)) { tabs.splice(edTab, 1); edSel = edAdd = null; renderTabs(); dirty(); } } }))));
+      sureBtn({ class: 'btn danger mv', title: 'Quitar pestaña' }, '×', '¿Quitar?', () => { tabs.splice(edTab, 1); edSel = edAdd = null; renderTabs(); dirty(); }))));
   paintGrid();
   $('#ed-panel').replaceChildren(...[edAdd ? edAddPanel() : edSel ? edCardPanel() : el('div', { class: 'hint', textContent: 'Toca una tarjeta para cambiarla, o «+ Añadir».' })].filter(Boolean));
 }
-$('#tab-reset').onclick = () => { if (confirm('¿Volver a las pestañas de siempre?')) { tabs = PM.tabList(null); edTab = 0; edSel = edAdd = null; renderTabs(); dirty(); } };
+{ const r = $('#tab-reset'), yes = sureBtn({ class: 'btn', id: 'tab-reset' }, r.textContent, '¿Seguro? Se pierden las tuyas. Toca otra vez',
+  () => { tabs = PM.tabList(null); edTab = 0; edSel = edAdd = null; renderTabs(); dirty(); }); r.replaceWith(yes); }
 let names = {};
 
 async function api(method, path, body) {
