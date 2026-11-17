@@ -317,8 +317,8 @@
     <div data-pg="burbujas" class="hidden">
     <div class="card">
       <h2>🫧 Burbujas</h2>
-      <div class="hint">Salen debajo del reloj (Ambiente) y en el resumen de Inicio, en este orden, solo cuando tienen algo que contar.
-        Toca una para cambiar su título y su funcionamiento.</div>
+      <div class="hint">Las marcadas con «Ambiente» salen debajo del reloj, en este orden, solo cuando tienen algo que contar.
+        En las pestañas se ponen con una «Fila de burbujas» (🗂️ Pantallas). Toca una para cambiar su título y su funcionamiento.</div>
       <div id="bullets" class="bubs amb-web"></div>
       <div class="add" style="margin-top:12px">
         <input id="bullet-title" type="text" placeholder="Título de la nueva burbuja (p. ej. Temperatura del salón)">
@@ -686,6 +686,10 @@ interface HA {
   info(id: string): { platform?: string; device?: string; deviceId?: string; area?: string; areaId?: string; key?: string };
   /** Aparatos de una integración: [{ id, name, area, entities }] */
   devices(platform?: string): { id: string; name: string; area: string | null; entities: string[] }[];
+  /** Reproductores sin repetidos y con lo que suena primero (sin lista: todos) */
+  mediaOrder(ids?: string[]): string[];
+  /** Impresoras 3D: para <ha-printer device=…> */
+  printers(): { device: string; name: string; active: boolean }[];
   /** Mandar a Home Assistant: ha.call('light.turn_off', { entity_id: 'light.salon' }). Solo al pulsar (tap/hold/onTap) */
   call(service: string, data?: Record<string, any>): Promise<any>;
 }
@@ -714,9 +718,13 @@ interface Screen {
   go(tab: string): void;
   /** Hora actual */
   now(): Date;
+  /** Favoritos elegidos en los Ajustes del panel */
+  favorites: string[];
 }
 interface HtmlResult { __html: string }
-/** html\\\`<div>\\\${…}</div>\\\`: lo de \\\${…} se escapa solo. Atributos: tap, hold, entity. <ha-icon icon="mdi:…">, <slot> */
+/** html\\\`<div>\\\${…}</div>\\\`: lo de \\\${…} se escapa solo. Atributos: tap, hold, entity. <ha-icon icon="mdi:…">, <slot>.
+ *  Fichas y tarjetas del panel: <ha-tile entity>, <ha-sensor entity>, <ha-media entity>, <ha-camera entity>, <ha-weather entity days>,
+ *  <ha-printer device mini>, <ha-scooter> */
 interface Html { (strings: TemplateStringsArray, ...values: any[]): HtmlResult; /** HTML sin escapar */ raw(html: string): HtmlResult }
 type ActionName = 'toggle' | 'more-info' | 'navigate' | 'call' | 'none';
 type Action = ActionName | { action: ActionName; go?: string; service?: string; data?: Record<string, any>; entity?: string } | ((ha: HA, screen: Screen) => any);
@@ -885,14 +893,14 @@ const bmsg = (t, kind = '') => { $('#bullet-msg').textContent = t; $('#bullet-ms
 function renderBullets() {
   $('#bullets').replaceChildren(...bullets.map((b, i) => {
     const open = openBullet === b.id, def = PM.BUILTINS.some((x) => x.script === b.script);
-    const flag = (k, t) => el('span', { class: 'col' }, t, switchEl(!!b[k], (v) => { b[k] = v; dirty(); card.classList.toggle('off', !b.ambient && !b.home); }));
+    const flag = (k, t) => el('span', { class: 'col' }, t, switchEl(!!b[k], (v) => { b[k] = v; dirty(); card.classList.toggle('off', !b.ambient); }));
     const title = el('b', { textContent: b.name || b.script });
     const head = el('div', { class: 'bub-head' },
       el('button', { type: 'button', class: 'bub-title', onclick: () => { openBullet = open ? null : b.id; renderBullets(); } },
         el('span', { class: 'bub-arrow', textContent: open ? '▾' : '▸' }), title,
         def ? el('span', { class: 'pill', textContent: isDefault(b.script) && b.script in files ? 'de serie · cambiada' : 'de serie' }) : null),
-      el('div', { class: 'cols' }, ...moveBtns(bullets, i, renderBullets), flag('ambient', 'Ambiente'), flag('home', 'Inicio')));
-    const card = el('div', { class: 'bub' + (b.ambient || b.home ? '' : ' off') }, head);
+      el('div', { class: 'cols' }, ...moveBtns(bullets, i, renderBullets), flag('ambient', 'Ambiente')));
+    const card = el('div', { class: 'bub' + (b.ambient ? '' : ' off') }, head);
     if (!open) return card;
     const say = (t, kind) => bmsg(`${b.name || b.script}: ${t}`, kind);
     card.append(el('div', { class: 'bub-body' },
@@ -1289,7 +1297,7 @@ function edAddPanel() {
       opt('bubbles', 'Fila de burbujas', 'mdi-dots-horizontal-circle-outline', 'Burbujas en fila')),
     el('div', { class: 'hint', textContent: 'Los componentes se crean y se cambian en 🧩 Componentes.' }),
     el('div', { class: 'sub', textContent: 'Otras' }),
-    el('div', { class: 'ed-opts' }, opt('view', 'Vista del panel', TYPE_ICONS.view, 'Casa, Sensores…'), opt('entities', 'Dispositivos', TYPE_ICONS.entities, 'Fichas de varias entidades'),
+    el('div', { class: 'ed-opts' }, opt('entities', 'Dispositivos', TYPE_ICONS.entities, 'Fichas de varias entidades'),
       opt('camera', 'Cámara', TYPE_ICONS.camera)),
     el('div', { class: 'btns' }, el('button', { type: 'button', class: 'btn', textContent: 'Cancelar', onclick: () => { edAdd = null; renderTabs(); } })));
 }

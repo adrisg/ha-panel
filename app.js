@@ -1990,6 +1990,7 @@ function componentCard(c, title) {
           pressable(el, () => pieceAction(p.tap, p, el), isAct(p.hold) ? () => pieceAction(p.hold, p, el) : () => {});
         },
         children: () => kids,
+        widget: componentWidget,
       });
     } catch (e) { host.replaceChildren(codeError(m.mod.name || name, e.message)); }
   };
@@ -1997,6 +1998,27 @@ function componentCard(c, title) {
   // refresh: segundos → se repinta solo (horas, fechas…); los temporizadores se paran al cambiar de pestaña
   if (m.mod.refresh) S.viewTimers.push(setInterval(paint, Math.max(5, m.mod.refresh) * 1000));
   return [title, host];
+}
+/** Las fichas y tarjetas del panel que un componente pone con <ha-tile entity>, <ha-media>, <ha-printer device>… */
+function componentWidget(e) {
+  const t = e.tagName.toLowerCase(), id = e.getAttribute('entity'), has = id && S.states[id];
+  const none = () => document.createTextNode('');
+  if (t === 'ha-tile') return has ? tile(id) : none();
+  if (t === 'ha-sensor') return has ? sensorTile(id) : none();
+  if (t === 'ha-media') return has ? mediaCard(id, 'view') : none();
+  if (t === 'ha-weather') return has ? weatherCard(id, +(e.getAttribute('days') || 5)) : none();
+  if (t === 'ha-camera') {
+    if (!has) return none();
+    const c = cameraImg(id, 'view', CFG.cameraRefreshSeconds);
+    pressable(c, () => openSheet(id));
+    return c;
+  }
+  if (t === 'ha-printer') {
+    const p = printers().find((x) => x.dev === e.getAttribute('device'));
+    return p ? (e.getAttribute('mini') ? printerMini(p) : printerPanel(p)) : none();
+  }
+  if (t === 'ha-scooter') return scooterIds().battery_level ? h('div', { class: 'scooter-view' }, VIEWS.scooter.render()) : none();
+  return none();
 }
 /** Al pulsar / mantener: una acción ('toggle', { action: 'navigate', go }…) o una función (ha, screen) */
 const isAct = (a) => typeof a === 'function' || hasAction(a);
@@ -2109,6 +2131,9 @@ const FC_LOADING = new Set();
 const HA_OPTS = {
   name: (id) => (S.states[id] ? nameOf(id) : id), info: entInfo,
   format: (id) => (S.states[id] ? fmtState(S.states[id]) : '—'),
+  mediaOrder: (list) => dedupeMedia((list || Object.keys(S.states).filter((id) => domain(id) === 'media_player')).filter((id) => S.states[id]))
+    .sort((a, b) => (mediaRank(S.states[a]) - mediaRank(S.states[b])) || nameOf(a).localeCompare(nameOf(b), 'es')),
+  printers: () => [...printers()].sort((a, b) => pActive(b) - pActive(a)).map((p) => ({ device: p.dev, name: p.name, active: pActive(p) })),
   icon: (id) => iconOf(S.states[id]),
   /** Previsión: la guardada; si no hay o es vieja, se pide y se repinta lo que vigile esa entidad */
   forecast(id) {
@@ -2131,7 +2156,7 @@ const HA_TAP = PM.makeHA(() => S.states, Object.assign({}, HA_OPTS, {
 /** Datos de la pantalla (también se mandan a la web para probar). */
 function screenData(place) {
   return {
-    place, brightness: SCREEN.level, on: !SCREEN.off, night: isNight(), ambient: !!S.ambient, light: null,
+    place, brightness: SCREEN.level, on: !SCREEN.off, night: isNight(), ambient: !!S.ambient, light: null, favorites: CFG.favorites || [],
     alarms: (SET.alarms || []).map((a) => {
       const sn = RING.snooze[a.id];
       const when = sn && sn > Date.now() ? new Date(sn) : a.enabled ? nextOccurrence(a) : null;

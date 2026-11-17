@@ -6,7 +6,7 @@ Las burbujas y los componentes de las pestañas (botones, tarjetas, tiempo…) s
 - **Dónde:** en la web de configuración, pestaña **🫧 Burbujas**. Cada burbuja tiene un título; al tocarla se despliega su **funcionamiento** (el código), que puedes editar, **probar** con los datos actuales de tu casa, descargar o, en las de serie, restaurar.
 - **Nuevas:** pon un título y «Crear», tráela de una URL o sube un archivo `.js`. Después pulsa **Guardar**.
 - **Cómo funcionan:** se guardan en la Pi; el panel las descarga y las ejecuta **en el navegador**. Para pintar solo leen; a Home Assistant solo se manda algo cuando tocas la burbuja o el botón (`onTap`).
-- **Componentes:** en **🧩 Componentes** (los de serie: `boton.js`, `informacion.js`, `lista.js`, `tarjeta.js`, `tarjeta-tiempo.js`, `tarjeta-vehiculo.js`, `saludo.js` y `resumen-ejemplo.js`). Se colocan en **🗂️ Pantallas**. Ver [Componentes](#componentes).
+- **Componentes:** en **🧩 Componentes** (los de serie: `boton.js`, `informacion.js`, `lista.js`, `tarjeta.js`, `tarjeta-tiempo.js`, `tarjeta-vehiculo.js`, `saludo.js`, `zonas.js`, `sensores.js`, `reproductores.js`, `impresoras.js`, `patinete.js`, `fichas.js`, `escenas.js` y `resumen-ejemplo.js`). Se colocan en **🗂️ Pantallas**. Ver [Componentes](#componentes).
 
 ## Forma de un script
 
@@ -131,6 +131,13 @@ Un componente es un script con `type: 'card'`: sus **campos** (`config`), qué *
 | `tap=…`, `hold=…` | al pulsar / mantener: `${config.tap}` (lo elegido en ajustes), `"toggle"`, `"more-info"`, `"none"`, `${{ action: 'navigate', go: 'media' }}`, el nombre de una función de `actions` o una función `${(ha) => ha.call(…)}` |
 | `entity=…` | sobre qué entidad actúan `tap` y `hold` |
 | `<slot></slot>` | aquí van los componentes de dentro (si el script lleva `children: true`, como **Tarjeta**) |
+| `<ha-tile entity=…>` | ficha del panel (pulsar = encender/apagar, mantener = detalle) |
+| `<ha-sensor entity=…>` | ficha de sensor con su valor (mantener = historial) |
+| `<ha-media entity=…>` | reproductor con carátula y controles |
+| `<ha-camera entity=…>` | imagen de una cámara |
+| `<ha-weather entity=… days="5">` | tiempo con previsión |
+| `<ha-printer device=… mini="1">` | impresora 3D (de `ha.printers()`): cámara, progreso, temperaturas y botones; `mini` = la pequeña |
+| `<ha-scooter>` | todo el patinete de `mi_scooter_ble` |
 
 **CSS (`style`)** solo afecta a ese componente. Clases que ya existen: `card` (fondo de tarjeta) y `hint` (texto gris). Colores del panel:
 
@@ -147,7 +154,7 @@ Un componente es un script con `type: 'card'`: sus **campos** (`config`), qué *
 actions: { apagar: (ha, screen) => ha.call('light.turn_off', { entity_id: 'all' }) },
 ```
 
-Para pintar, además de lo de siempre: `ha.text(id)` (estado traducido: «Encendido», «21,5 °C»), `ha.icon(id)`, `ha.active(id)`, `ha.color(id)` (`{ bg, ink }`: color real de una luz encendida), `ha.forecast(id)` (previsión diaria).
+Para pintar, además de lo de siempre: `ha.mediaOrder(ids)` (reproductores sin repetidos, lo que suena primero), `ha.printers()`, `screen.favorites` (Favoritos de los Ajustes), `ha.text(id)` (estado traducido: «Encendido», «21,5 °C»), `ha.icon(id)`, `ha.active(id)`, `ha.color(id)` (`{ bg, ink }`: color real de una luz encendida), `ha.forecast(id)` (previsión diaria).
 
 - **Dónde:** **🧩 Componentes**. Cada uno se despliega con «Probar con estos ajustes», cómo se ve y su código. Para crear uno: desde cero, copiando otro, de una URL o subiendo un `.js`. Se guardan en la Pi y el panel los descarga solo.
 - **Colocarlos:** **🗂️ Pantallas → + Añadir**. Cada sitio donde lo pones tiene sus propios ajustes y su ancho (completo, 3/4, 2/3, 1/2, 1/3, 1/4).
@@ -156,4 +163,6 @@ Para pintar, además de lo de siempre: `ha.text(id)` (estado traducido: «Encend
 
 ## Pantallas
 
-En **🗂️ Pantallas** eliges las pestañas de la barra lateral y, en cada una, una rejilla con lo que lleva: componentes, filas de burbujas y las vistas del panel (Inicio, Casa, Sensores…), dispositivos o una cámara. Toca una tarjeta para cambiar su ancho, sus ajustes, moverla, duplicarla o borrarla.
+En **🗂️ Pantallas** eliges las pestañas de la barra lateral y, en cada una, una rejilla con lo que lleva: componentes, filas de burbujas, dispositivos o una cámara. Toca una tarjeta para cambiar su ancho, sus ajustes, moverla, duplicarla o borrarla.
+
+Las pestañas de serie (Inicio, Casa, Sensores, Multimedia, Impresoras y Patinete) están hechas con componentes; las antiguas «vistas del panel» se convierten solas.
