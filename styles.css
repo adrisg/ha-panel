@@ -618,3 +618,5 @@ main { display: flex; flex-direction: column; min-width: 0; min-height: 0; heigh
 .ci-name { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .ci-val { font-weight: 600; }
 .veh-ic { margin-right: 6px; color: var(--muted); }
+
+.sheet-state { font-size: 28px; font-weight: 600; padding: 4px 2px 10px; }
