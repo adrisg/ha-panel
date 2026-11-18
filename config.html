@@ -1090,10 +1090,19 @@ function actionInput(f, v, set) {
 async function delBullet(i) {
   const b = bullets[i];
   bullets.splice(i, 1); openBullet = null;
+  // También fuera de las Filas de burbujas de las pestañas (también las de dentro de una Tarjeta)
+  let rows = 0;
+  if (!bullets.some((x) => x.script === b.script)) {
+    const walk = (cards) => (cards || []).forEach((c) => {
+      if (c.type === 'bubbles') { const n = (c.items || []).length; c.items = (c.items || []).filter((it) => it.script !== b.script); rows += n - c.items.length; }
+      walk(c.cards);
+    });
+    tabs.forEach((t) => walk(t.cards));
+  }
   try {
     if (b.script in files && !isDefault(b.script) && !bullets.some((x) => x.script === b.script) && !usedInTabs(b.script)) await deleteCode(b.script);
   } catch (e) { bmsg(e.message, 'err'); }
-  renderAll(); dirty(); bmsg('Borrada. Pulsa Guardar para que desaparezca del panel.');
+  renderAll(); dirty(); bmsg(`Borrada${rows ? ` (y quitada de ${rows} fila${rows > 1 ? 's' : ''} de burbujas de las pestañas)` : ''}. Pulsa Guardar para que desaparezca del panel.`);
 }
 /** Nueva burbuja con su funcionamiento (código nuevo, de una URL o de un archivo). */
 async function addBullet(title, code, viaUrl) {

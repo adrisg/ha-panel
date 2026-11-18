@@ -1591,7 +1591,7 @@ function renderCard(c) {
   if (c.type === 'component') return componentCard(c, title);
   if (c.type === 'bubbles') {
     const box = h('div', { class: 'chips' });
-    const items = (c.items || []).map((it) => ({ it, m: moduleOf(it.script) }));
+    const items = (c.items || []).filter((it) => it.script in MODULES).map((it) => ({ it, m: moduleOf(it.script) }));   // sin script (borrado): no sale
     let watch = [];
     const paint = () => {
       watch = [];
@@ -1869,6 +1869,7 @@ function bulletOutputs() {
   const list = bulletList().filter((b) => b.ambient), place = 'ambient';
   const out = [];
   for (const b of list) {
+    if (!(b.script in MODULES)) continue;            // su script se borró: no sale
     const m = moduleOf(b.script), name = b.name || b.script;
     // Se recalcula si cambia algo de su watch o si lleva más de un minuto (horas, alarmas…)
     // Cada burbuja con sus ajustes (b.config); la misma caché se separa por burbuja y sitio
