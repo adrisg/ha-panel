@@ -46,7 +46,7 @@ Recibe dos variables:
 
 | | |
 |---|---|
-| `screen.place` | dónde se pinta: `'ambient'` (debajo del reloj), `'home'` (Inicio) o `'card'` |
+| `screen.place` | dónde se pinta: `'ambient'` (debajo del reloj), `'home'` (en una Fila de burbujas de una pestaña) o `'card'` (un componente) |
 | `screen.brightness`, `screen.on`, `screen.night`, `screen.ambient` | brillo, encendida, modo noche, modo ambiente |
 | `screen.alarms`, `screen.nextAlarm()` | alarmas del panel: `{ name, time, days, enabled, when, text }` |
 | `screen.light` | luz ambiente del sensor de la pantalla (de momento `null`) |
