@@ -512,28 +512,6 @@ function slider({ min = 0, max = 100, step = 1, label, fmt = (v) => v, onchange,
   return wrap;
 }
 
-function ring(sizeClass = '') {
-  const C = 2 * Math.PI * 52;
-  const wrap = h('div', { class: 'ring-wrap ' + sizeClass, html:
-    `<svg class="ring" viewBox="0 0 120 120"><circle class="ring-bg" cx="60" cy="60" r="52"/>` +
-    `<circle class="ring-fg" cx="60" cy="60" r="52" stroke-dasharray="${C}" stroke-dashoffset="${C}" transform="rotate(-90 60 60)"/></svg>` });
-  const center = h('div', { class: 'ring-center' });
-  wrap.append(center);
-  const fg = wrap.querySelector('.ring-fg');
-  // bolt: rayo grande y semitransparente encima del porcentaje mientras carga
-  // (las impresoras usan el color azul sin rayo)
-  // charging: true | 'charging' (azul) | 'charged' (verde, carga completa)
-  wrap.set = (pct, charging, centerNodes, bolt = !!charging) => {
-    const p = Math.max(0, Math.min(100, Number(pct) || 0));
-    const mode = charging === true ? 'charging' : charging;
-    fg.setAttribute('stroke-dashoffset', C * (1 - p / 100));
-    fg.setAttribute('class', 'ring-fg ' + (mode || (p < 20 ? 'low' : p < 45 ? 'mid' : '')));
-    center.replaceChildren(...[h('div', null, ...centerNodes),
-      bolt ? icon('mdi-lightning-bolt', 'ring-bolt' + (mode === 'charged' ? ' charged' : '')) : null].filter(Boolean));
-  };
-  return wrap;
-}
-
 function cameraImg(id, scope, seconds) {
   const img = h('img', { alt: '' });
   const load = () => {
@@ -782,22 +760,8 @@ function closeSheet() {
   $('#sheet-card').replaceChildren();
 }
 
-/* ====================== Vistas ====================== */
-const CONTROL = ['light', 'switch', 'fan', 'cover', 'climate', 'lock', 'vacuum', 'media_player', 'humidifier'];
-const ORDER = ['climate', 'light', 'switch', 'fan', 'cover', 'lock', 'media_player', 'vacuum', 'input_boolean', 'humidifier', 'sensor', 'binary_sensor'];
+/* ====================== Utilidades de entidades ====================== */
 const ids = (filter) => Object.keys(S.states).filter((id) => visible(id) && !isScooter(id) && filter(id));
-function byArea(list) {
-  const groups = new Map();
-  for (const id of list) {
-    const a = areaOf(id);
-    if (!groups.has(a)) groups.set(a, []);
-    groups.get(a).push(id);
-  }
-  const sortIds = (arr) => arr.sort((x, y) => (ORDER.indexOf(domain(x)) - ORDER.indexOf(domain(y))) || nameOf(x).localeCompare(nameOf(y), 'es'));
-  return [...groups.entries()]
-    .map(([a, arr]) => ({ name: a ? (S.areaById[a] || {}).name || a : 'Otros', last: !a, ids: sortIds(arr) }))
-    .sort((x, y) => (x.last - y.last) || x.name.localeCompare(y.name, 'es'));
-}
 const empty = (ic, msg) => h('div', { class: 'empty-state' }, icon(ic), msg);
 
 function scooterIds() {
@@ -807,160 +771,16 @@ function scooterIds() {
 }
 const num = (id) => (id && S.states[id] ? parseFloat(S.states[id].state) : NaN);
 const isOn = (id) => !!id && S.states[id] && S.states[id].state === 'on';
-
 /** 'charged' (llegó al límite: verde) | 'charging' (azul) | false */
 const chargeMode = (k) => isOn(k.charged) ? 'charged' : isOn(k.charging_any) ? 'charging' : false;
 
-function scooterStatus(k) {
-  if (isOn(k.charging_any)) {
-    const p = num(k.power);
-    return 'Cargando' + (!isNaN(p) && p > 0 ? ` · ${fmtNum(p)} W` : '');
-  }
-  if (isOn(k.charged)) return 'Carga completa';
-  if (isOn(k.riding)) return 'En marcha';
-  if (isOn(k.powered_on)) return 'Encendido';
-  if (k.in_range && !isOn(k.in_range)) return 'Fuera de alcance';
-  return 'Aparcado';
-}
-
-const VIEWS = {
-  home: {
-    title: 'Inicio', icon: 'mdi-home-variant',
-    render() {
-      const hr = new Date().getHours();
-      const hello = hr < 6 ? 'Buenas noches' : hr < 13 ? 'Buenos días' : hr < 21 ? 'Buenas tardes' : 'Buenas noches';
-      const out = [h('div', { class: 'greeting' }, hello),
-        h('div', { class: 'greeting-sub' }, cap(new Date().toLocaleDateString('es-ES', { weekday: 'long', day: 'numeric', month: 'long' })))];
-
-      // Resumen rápido: las burbujas marcadas para Inicio
-      const summary = h('div', { class: 'chips', id: 'home-bullets' });
-      paintHomeBullets(summary);
-      out.push(summary, h('div', { style: 'height:10px' }));
-
-      // Tarjetas: tiempo + patinete
-      const cards = h('div', { class: 'cards' });
-      const wid = weatherId();
-      if (wid) cards.append(weatherCard(wid));
-      const k = scooterIds();
-      if (k.battery_level) cards.append(scooterCard(k));
-      printers().filter(pActive).reverse().forEach((p) => cards.prepend(printerMini(p)));
-      if (cards.children.length) out.push(cards);
-
-      // Favoritos
-      let fav = CFG.favorites.filter((id) => S.states[id]);
-      if (!fav.length) {
-        const pick = (d, n) => ids((id) => domain(id) === d).slice(0, n);
-        fav = [...pick('climate', 2), ...pick('light', 6), ...pick('media_player', 2)];
-      }
-      const scenes = ids((id) => ['scene', 'script'].includes(domain(id)));
-      if (scenes.length) out.push(h('div', { class: 'section-title' }, 'Escenas'), sceneChips(scenes));
-      if (fav.length) out.push(h('div', { class: 'section-title' }, 'Favoritos'), h('div', { class: 'grid' }, fav.map((id) => tile(id))));
-      return out;
-    },
-  },
-  rooms: {
-    title: 'Casa', icon: 'mdi-sofa-outline',
-    render() {
-      const groups = byArea(dedupeMedia(ids((id) => CONTROL.includes(domain(id)))));
-      if (!groups.length) return [empty('mdi-lightbulb-question-outline', 'No hay dispositivos controlables')];
-      return groups.flatMap((g) => [h('div', { class: 'section-title' }, g.name), h('div', { class: 'grid' }, g.ids.map((id) => tile(id)))]);
-    },
-  },
-  sensors: {
-    title: 'Sensores', icon: 'mdi-thermometer',
-    render() {
-      const groups = byArea(ids((id) => {
-        const d = domain(id), a = S.states[id].attributes;
-        return (d === 'binary_sensor' || d === 'sensor') && (CFG.sensorClasses.includes(a.device_class) || CFG.favorites.includes(id));
-      }));
-      if (!groups.length) return [empty('mdi-thermometer-off', 'No hay sensores')];
-      return groups.flatMap((g) => [h('div', { class: 'section-title' }, g.name), h('div', { class: 'grid' }, g.ids.map((id) => sensorTile(id)))]);
-    },
-  },
-  media: {
-    title: 'Multimedia', icon: 'mdi-play-circle-outline',
-    visible: () => ids((id) => ['media_player', 'camera'].includes(domain(id))).length > 0,
-    render() {
-      // Primero los que tienen algo puesto (sonando, en pausa con contenido…), luego los parados
-      const players = dedupeMedia(ids((id) => domain(id) === 'media_player'))
-        .sort((a, b) => (mediaRank(S.states[a]) - mediaRank(S.states[b])) || nameOf(a).localeCompare(nameOf(b), 'es'));
-      const cams = ids((id) => domain(id) === 'camera');
-      const out = [];
-      if (players.length) out.push(h('div', { class: 'section-title' }, 'Reproductores'), h('div', { class: 'cards' }, players.map((id) => mediaCard(id, 'view'))));
-      if (cams.length) out.push(h('div', { class: 'section-title' }, 'Cámaras'), h('div', { class: 'cards' }, cams.map((id) => {
-        const c = cameraImg(id, 'view', CFG.cameraRefreshSeconds);
-        pressable(c, () => openSheet(id));
-        return c;
-      })));
-      return out;
-    },
-  },
-  printers: {
-    title: 'Impresoras', icon: 'mdi-printer-3d',
-    visible: () => printers().length > 0,
-    render() {
-      // Primero las que están trabajando
-      const list = [...printers()].sort((a, b) => pActive(b) - pActive(a));
-      return [h('div', { class: 'printers' }, list.map(printerPanel))];
-    },
-  },
-  settings: { title: 'Ajustes', icon: 'mdi-cog', rail: 'bottom', render: () => renderSettings() },
-  scooter: {
-    title: 'Patinete', icon: 'mdi-scooter',
-    visible: () => !!scooterIds().battery_level,
-    render() {
-      const k = scooterIds();
-      const r = ring();
-      const status = h('div', { class: 'sc-status' }), flags = h('div', { class: 'sc-flags' }), seen = h('div', { class: 'muted small' });
-      bindMany('view', Object.values(k), () => {
-        const charging = chargeMode(k);
-        const range = num(k.remaining_range);
-        r.set(num(k.battery_level), charging, [
-          h('div', { class: 'ring-pct' }, isNaN(num(k.battery_level)) ? '—' : Math.round(num(k.battery_level)) + '%'),
-          h('div', { class: 'ring-sub' }, isNaN(range) ? '' : `≈ ${fmtNum(range)} km`)]);
-        status.textContent = scooterStatus(k);
-        const flag = (key, ic, txt) => k[key] ? h('span', { class: 'flag' + (isOn(k[key]) ? ' on' : '') }, icon(ic), txt) : null;
-        flags.replaceChildren(...[flag('connected', 'mdi-bluetooth', 'Conectado'), flag('in_range', 'mdi-map-marker-radius', 'Cerca'),
-          flag('locked', 'mdi-lock', 'Bloqueado'), flag('charge_control', 'mdi-power-plug-battery', 'Corte auto')].filter(Boolean));
-        seen.textContent = k.last_seen && S.states[k.last_seen] ? 'Visto ' + relTime(S.states[k.last_seen].state) : '';
-      });
-      const main = h('div', { class: 'card scooter-main' }, r, status, flags, seen);
-
-      const STATS = [['remaining_range', 'mdi-map-marker-distance', 'Autonomía'], ['voltage', 'mdi-sine-wave', 'Voltaje'],
-        ['power', 'mdi-flash', 'Potencia'], ['battery_temperature', 'mdi-thermometer', 'Temp. batería'],
-        ['scooter_temperature', 'mdi-thermometer-lines', 'Temp. patinete'], ['total_distance', 'mdi-counter', 'Cuentakilómetros'],
-        ['trip_distance', 'mdi-map-marker-path', 'Último viaje'], ['average_speed', 'mdi-speedometer-medium', 'Vel. media'],
-        ['charge_cycles', 'mdi-battery-sync', 'Ciclos de carga'], ['battery_health', 'mdi-battery-heart-variant', 'Salud batería']];
-      const stats = h('div', { class: 'stat-grid' }, STATS.filter(([key]) => k[key]).map(([key, ic, label]) => {
-        const v = h('div', { class: 'stat-value' });
-        bind('view', k[key], (st) => (v.textContent = fmtState(st)));
-        return h('div', { class: 'stat' }, icon(ic), v, h('div', { class: 'stat-label' }, label));
-      }));
-
-      const SWITCHES = [['tail_light', 'Luz trasera'], ['auto_light', 'Luz automática'], ['ambient_light', 'Luz ambiente'],
-        ['cruise_control', 'Control crucero'], ['tcs', 'Control tracción'], ['intelligent_downhill', 'Descenso inteligente'],
-        ['hill_parking', 'Freno en cuesta'], ['charge_control', 'Cortar carga al límite']];
-      const controls = h('div', { class: 'grid' }, SWITCHES.filter(([key]) => k[key]).map(([key, label]) => {
-        const t = tile(k[key]);
-        bind('view', k[key], () => (t.querySelector('.tile-name').textContent = label));
-        return t;
-      }));
-
-      const out = [h('div', { class: 'scooter-hero' }, main, stats), h('div', { class: 'section-title' }, 'Carga')];
-      const charge = h('div', { class: 'card', style: 'display:flex;flex-direction:column;gap:14px' });
-      if (k.charge_limit) {
-        const a = S.states[k.charge_limit].attributes;
-        const s = slider({ min: a.min || 50, max: a.max || 100, step: a.step || 5, label: 'Límite de carga', fmt: (v) => v + ' %',
-          onchange: (v) => call('number', 'set_value', { value: v }, k.charge_limit) });
-        bind('view', k.charge_limit, (st) => s.set(parseFloat(st.state)));
-        charge.append(s);
-      }
-      if (k.refresh) charge.append(h('button', { class: 'big-action', onclick: () => call('button', 'press', {}, k.refresh).then((r) => r !== null && toast('Leyendo el patinete…')) }, icon('mdi-refresh'), 'Actualizar datos ahora'));
-      if (charge.children.length) out.push(charge);
-      if (controls.children.length) out.push(h('div', { class: 'section-title' }, 'Ajustes'), controls);
-      return out;
-    },
-  },
+/** La pantalla de Ajustes del panel (la ruedecita) */
+const VIEWS = { settings: { title: 'Ajustes', icon: 'mdi-cog', render: () => renderSettings() } };
+/** Pestañas de serie que no salen si no hay de qué (p. ej. Patinete sin patinete) */
+const VIEW_VISIBLE = {
+  media: () => ids((id) => ['media_player', 'camera'].includes(domain(id))).length > 0,
+  printers: () => printers().length > 0,
+  scooter: () => !!scooterIds().battery_level,
 };
 
 /* ====================== Impresoras 3D ====================== */
@@ -986,8 +806,6 @@ const PSTATUS = {
   init: 'preparing', finish: 'finished', complete: 'finished', failed: 'error', error: 'error', cancelled: 'cancelled',
   idle: 'idle', standby: 'idle', offline: 'offline', unavailable: 'offline', unknown: 'idle',
 };
-const PLABEL = { printing: 'Imprimiendo', paused: 'En pausa', preparing: 'Preparando', finished: 'Terminada',
-  error: 'Error', cancelled: 'Cancelada', idle: 'Lista', offline: 'Desconectada', off: 'Apagada' };
 const ACTIVE_P = ['printing', 'paused', 'preparing'];
 
 let printersCache = null;
@@ -1044,57 +862,6 @@ function printers() {
 const pState = (p) => (p.e.plug && S.states[p.e.plug] && S.states[p.e.plug].state === 'off') ? 'off'
   : PSTATUS[(S.states[p.e.status] || { state: 'unavailable' }).state] || 'idle';
 const pActive = (p) => ACTIVE_P.includes(pState(p));
-const pIds = (p) => [...Object.values(p.e), ...p.nozzles.flatMap((n) => [n.cur, n.tgt, n.fil])].filter(Boolean);
-function pRemaining(p) {
-  const st = S.states[p.e.remaining];
-  if (!st) return NaN;
-  const u = st.attributes.unit_of_measurement;
-  return parseFloat(st.state) * (u === 'h' ? 3600 : u === 'min' ? 60 : u === 'd' ? 86400 : 1);
-}
-function pJob(p) {
-  for (const k of ['job', 'file']) {
-    const st = S.states[p.e[k]];
-    if (st && st.state && !['unknown', 'unavailable'].includes(st.state)) return st.state.replace(/(\.gcode)?(\.3mf)?$/i, '');
-  }
-  return '';
-}
-function pTimeLine(p) {
-  const r = pRemaining(p);
-  if (!pActive(p) || isNaN(r) || r <= 0) return '';
-  return `Quedan ${fmtDuration(r)} · termina a las ${hhmm(new Date(Date.now() + r * 1000))}`;
-}
-
-/** Cámara de la impresora (siempre) con la miniatura del trabajo en pequeño en una esquina. */
-function printerImage(p, scope) {
-  const img = h('img', { alt: '' }), thumb = h('img', { class: 'pr-thumb', alt: '' });
-  const box = h('div', { class: 'pr-img' }, icon('mdi-printer-3d'), img, thumb);
-  thumb.onerror = () => thumb.removeAttribute('src');
-  img.onerror = () => img.removeAttribute('src');
-  const pic = (id, width) => {
-    const a = S.states[id] && S.states[id].attributes.entity_picture;
-    if (!a) return null;
-    const url = absUrl(a);
-    if (url.startsWith('data:')) return url;
-    // camera_proxy acepta width: imágenes más pequeñas = menos trabajo para la Pi 2
-    return url + (url.includes('?') ? '&' : '?') + (width && domain(id) === 'camera' ? `width=${width}&` : '') + '_t=' + Date.now();
-  };
-  const load = () => {
-    const off = pState(p) === 'off' || pState(p) === 'offline';
-    const cam = !off && pic(p.e.camera, 640);
-    const cover = pic(p.e.cover, 160);
-    if (cam) {
-      const next = new Image();
-      next.onload = () => { img.src = next.src; };
-      next.onerror = () => { if (cover && !img.getAttribute('src')) img.src = cover; };   // cámara caída: la miniatura en grande
-      next.src = cam;
-    } else if (cover) img.src = cover; else img.removeAttribute('src');
-    if (cover && cam) thumb.src = cover; else thumb.removeAttribute('src');
-  };
-  load();
-  (scope === 'sheet' ? S.sheetTimers : S.viewTimers).push(setInterval(load, (pActive(p) ? 5 : 30) * 1000));
-  return box;
-}
-
 function confirmBtn(ic, label, fn, ask = '¿Seguro? Toca otra vez') {
   let armed = null;
   const b = h('button', { class: 'big-action' }, icon(ic), label);
@@ -1107,76 +874,6 @@ function confirmBtn(ic, label, fn, ask = '¿Seguro? Toca otra vez') {
   return b;
 }
 
-function printerPanel(p) {
-  const status = h('span', { class: 'pr-status' }), job = h('div', { class: 'pr-job' }), pct = h('div', { class: 'pr-pct' });
-  const bar = h('div', { class: 'pbar' }, h('div')), time = h('div', { class: 'muted' }), layer = h('div', { class: 'muted small' });
-  const temps = h('div', { class: 'pr-temps' }), ctrls = h('div', { class: 'btn-row' });
-  let ctrlSig = null;
-  bindMany('view', pIds(p), () => {
-    const s = pState(p), active = pActive(p);
-    status.textContent = PLABEL[s];
-    status.className = 'pr-status ' + s;
-    job.textContent = pJob(p) || (active ? 'Trabajo sin nombre' : 'Sin trabajos en curso');
-    const prog = num(p.e.progress), showProg = active || (s === 'finished' && prog > 0);
-    pct.textContent = showProg && !isNaN(prog) ? Math.round(prog) + ' %' : '';
-    bar.style.display = showProg ? '' : 'none';
-    bar.firstChild.style.width = (isNaN(prog) ? 0 : prog) + '%';
-    time.textContent = pTimeLine(p);
-    const L = num(p.e.layer), LL = num(p.e.layers);
-    layer.textContent = active && LL > 0 ? `Capa ${L} de ${LL}` : '';
-    const t = (ic, label, cur, tgt) => {
-      const c = num(cur), tg = num(tgt);
-      if (isNaN(c)) return null;
-      return h('div', { class: 'pr-temp' + (tg > 0 ? ' heating' : '') }, icon(ic),
-        h('div', null, h('b', null, fmtNum(c) + '°' + (tg > 0 ? ` / ${fmtNum(tg)}°` : '')), h('small', null, label)));
-    };
-    const nozzles = p.nozzles.map((n) => {
-      const el = t('mdi-printer-3d-nozzle', n.label, n.cur, n.tgt);
-      if (el && n.fil) el.append(h('span', { class: 'fil' + (isOn(n.fil) ? ' on' : ''), title: isOn(n.fil) ? 'Con filamento' : 'Sin filamento' }));
-      return el;
-    });
-    const pw = num(p.e.plugPower);
-    temps.replaceChildren(...[...nozzles, t('mdi-radiator', 'Cama', p.e.bed, p.e.bedTarget), t('mdi-thermometer', 'Cámara', p.e.chamber),
-      isNaN(pw) ? null : h('div', { class: 'pr-temp' }, icon('mdi-flash'), h('div', null, h('b', null, fmtNum(pw) + ' W'), h('small', null, 'Consumo')))].filter(Boolean));
-    // Botones: solo se rehacen si cambia el estado (para no perder el "¿Seguro?")
-    const lightOn = isOn(p.e.light), plugOn = isOn(p.e.plug), sig = s + lightOn + plugOn;
-    if (sig === ctrlSig) return;
-    ctrlSig = sig;
-    const btns = [];
-    const press = (id) => () => call('button', 'press', {}, id);
-    if (s === 'printing' && p.e.pause) btns.push(h('button', { class: 'big-action', onclick: press(p.e.pause) }, icon('mdi-pause'), 'Pausar'));
-    if (s === 'paused' && p.e.resume) btns.push(h('button', { class: 'big-action', onclick: press(p.e.resume) }, icon('mdi-play'), 'Continuar'));
-    if (active && p.e.stop) btns.push(confirmBtn('mdi-stop', 'Cancelar', press(p.e.stop)));
-    if (p.e.light && s !== 'off') btns.push(h('button', { class: 'big-action' + (lightOn ? ' active' : ''), onclick: () => call('light', 'toggle', {}, p.e.light) },
-      icon(lightOn ? 'mdi-lightbulb-on' : 'mdi-lightbulb-outline'), 'Luz'));
-    if (p.e.plug) {
-      if (plugOn) btns.push(confirmBtn('mdi-power-plug-off', 'Apagar', () => call('switch', 'turn_off', {}, p.e.plug), active ? '¡Imprimiendo! ¿Apagar?' : '¿Seguro? Toca otra vez'));
-      else btns.push(h('button', { class: 'big-action power-on', onclick: () => call('switch', 'turn_on', {}, p.e.plug) }, icon('mdi-power-plug'), 'Encender'));
-    }
-    ctrls.replaceChildren(...btns);
-  });
-  const img = printerImage(p, 'view');
-  if (p.e.camera) pressable(img, () => openSheet(p.e.camera));
-  return h('div', { class: 'card printer' }, img, h('div', { class: 'pr-info' },
-    h('div', { class: 'pr-head' }, h('div', { class: 'pr-name' }, p.name), status),
-    job, h('div', { class: 'pr-progress' }, bar, pct), time, layer, temps, ctrls));
-}
-
-/** Tarjeta pequeña para Inicio mientras una impresora trabaja. */
-function printerMini(p) {
-  const r = ring(), title = h('div', { class: 'sc-title' }), line = h('div', { class: 'sc-line' }), line2 = h('div', { class: 'sc-line' });
-  bindMany('view', pIds(p), () => {
-    const prog = num(p.e.progress);
-    r.set(prog, true, [h('div', { class: 'ring-pct' }, isNaN(prog) ? '—' : Math.round(prog) + '%')], false);
-    title.textContent = p.name;
-    line.textContent = PLABEL[pState(p)] + (pJob(p) ? ' · ' + pJob(p) : '');
-    line2.textContent = pTimeLine(p).replace(' · ', ' · ');
-  });
-  const el = h('button', { class: 'card scooter-card printer-mini' }, r, h('div', { style: 'min-width:0' }, title, line, line2));
-  pressable(el, () => go('printers'));
-  return el;
-}
-
 /** Si cambia el estado de una impresora: avisa al terminar y repinta (aparece/desaparece en Inicio). */
 function onPrinterStatus(id, old, st) {
   const p = printers().find((x) => x.e.status === id);
@@ -1187,13 +884,6 @@ function onPrinterStatus(id, old, st) {
   if (ACTIVE_P.includes(was) && now === 'error') toast(`${p.name}: error en la impresión`, true);
   clearTimeout(structTimer);
   structTimer = setTimeout(() => !S.sheetId && render(), 300);
-}
-
-function sceneChips(list) {
-  return h('div', { class: 'chips' }, list.map((id) => {
-    const st = S.states[id];
-    return h('button', { class: 'chip', onclick: () => tap(id) }, icon(iconOf(st)), nameOf(id));
-  }));
 }
 
 function weatherCard(id, days = 5) {
@@ -1214,20 +904,6 @@ function weatherCard(id, days = 5) {
       : h('div', { class: 'fc-rain empty' }, ' '),
     d.templow != null ? h('div', { class: 'fc-low' }, fmtNum(d.templow) + '°') : null))));
   return h('div', { class: 'card weather-card' }, now, days > 0 ? fc : null);
-}
-
-function scooterCard(k) {
-  const r = ring(), title = h('div', { class: 'sc-title' }), line = h('div', { class: 'sc-line' });
-  bindMany('view', Object.values(k), () => {
-    const b = num(k.battery_level), range = num(k.remaining_range);
-    r.set(b, chargeMode(k), [h('div', { class: 'ring-pct' }, isNaN(b) ? '—' : Math.round(b) + '%')]);
-    const dev = deviceOf(k.battery_level);
-    title.textContent = (dev && (dev.name_by_user || dev.name)) || 'Patinete';
-    line.textContent = scooterStatus(k) + (isNaN(range) ? '' : ` · ≈ ${fmtNum(range)} km`);
-  });
-  const el = h('button', { class: 'card scooter-card' }, r, h('div', null, title, line));
-  pressable(el, () => go('scooter'));
-  return el;
 }
 
 /* ====================== Avisos lanzados desde Home Assistant ======================
@@ -1692,16 +1368,6 @@ function nextOccurrence(al, from = new Date()) {
   }
   return null;
 }
-/** Próximas alarmas del panel, de la más cercana a la más lejana. */
-function upcomingAlarms() {
-  const out = [];
-  for (const a of SET.alarms || []) {
-    const snoozed = RING.snooze[a.id];
-    const when = snoozed && snoozed > Date.now() ? new Date(snoozed) : a.enabled ? nextOccurrence(a) : null;
-    if (when) out.push({ src: 'panel', when, alarm: a });
-  }
-  return out.sort((x, y) => x.when - y.when);
-}
 function whenText(d) {
   const now = new Date(), tom = new Date(now.getFullYear(), now.getMonth(), now.getDate() + 1);
   const day = d.toDateString() === now.toDateString() ? 'Hoy' : d.toDateString() === tom.toDateString() ? 'Mañana'
@@ -1863,7 +1529,7 @@ const tabViews = (t) => (t.cards || []).filter((c) => c.type === 'view').map((c)
 /** Una pestaña que solo tiene vistas que no aplican (p. ej. Patinete sin patinete) no sale. */
 const tabVisible = (t) => {
   const v = tabViews(t);
-  return !v.length || v.length < (t.cards || []).length || v.some((k) => VIEWS[k] && (!VIEWS[k].visible || VIEWS[k].visible()));
+  return !v.length || v.length < (t.cards || []).length || v.some((k) => !VIEW_VISIBLE[k] || VIEW_VISIBLE[k]());
 };
 const visibleTabs = () => tabs().filter(tabVisible);
 /** Pestaña para un destino: su id o la primera que contenga esa vista. */
@@ -1877,7 +1543,7 @@ function renderRail() {
   const rail = $('#rail');
   rail.replaceChildren(...visibleTabs().map((t) => {
     const btn = h('button', { class: 'rail-btn' + (S.view === t.id ? ' active' : ''), onclick: () => go(t.id) }, icon(PM.mdi(t.icon) || 'mdi-tab'), t.title);
-    if (tabViews(t).includes('scooter')) {          // mini rayo sobre el icono mientras el patinete carga
+    if (t.id === 'scooter' || tabViews(t).includes('scooter')) {          // mini rayo sobre el icono mientras el patinete carga
       const k = scooterIds(), badge = h('span', { class: 'rail-badge hidden' }, icon('mdi-lightning-bolt'));
       btn.append(badge);
       bindMany('view', [k.charging_any, k.charged], () => {
@@ -1917,18 +1583,11 @@ function renderCard(c) {
   const title = c.title ? h('div', { class: 'section-title' }, c.title) : null;
   // Vista antigua (o pestaña de serie sin guardar): se monta al vuelo con los mismos componentes que pone la web
   if (c.type === 'view') {
-    const v = VIEWS[c.view];
-    if (v && v.visible && !v.visible()) return [];
+    if (VIEW_VISIBLE[c.view] && !VIEW_VISIBLE[c.view]()) return [];
     return [layout(PM.viewCards(c.view, HA, { visible: compVisible, favorites: CFG.favorites || [] }))];
   }
   if (c.type === 'entities') return [title, h('div', { class: 'grid' }, (c.entities || []).filter((id) => S.states[id]).map(anyTile))];
   if (c.type === 'camera') return S.states[c.entity] ? [title, h('div', { class: 'cams' }, cameraImg(c.entity, 'view', CFG.cameraRefreshSeconds))] : [];
-  if (c.type === 'bullets') {
-    const box = h('div', { class: 'chips' });
-    const paint = () => box.replaceChildren(...bulletOutputs(c.bullets && c.bullets.length ? c.bullets : 'home').map((b) => bubbleEl(b, 'chip')));
-    paint(); VIEW_CODE.push({ matches: () => true, paint });
-    return [title, box];
-  }
   if (c.type === 'component') return componentCard(c, title);
   if (c.type === 'bubbles') {
     const box = h('div', { class: 'chips' });
@@ -1946,16 +1605,6 @@ function renderCard(c) {
       }));
     };
     paint(); VIEW_CODE.push({ matches: (id) => watch.some((f) => f(id)), paint });
-    return [title, box];
-  }
-  if (c.type === 'script') {
-    const m = moduleOf(c.script), name = c.title || c.script;
-    if (m.err) return [title, codeError(name, m.err)];
-    const box = h('div', { class: 'code-card' });
-    const paint = () => {
-      try { box.replaceChildren(...codeBlocks(m.mod.render(HA, screenFor('card'), m.mod.bind({}, HA).cfg))); } catch (e) { box.replaceChildren(codeError(name, e.message)); }
-    };
-    paint(); VIEW_CODE.push({ matches: (id) => m.mod.bind({}, HA).matches(id), paint });
     return [title, box];
   }
   return [];
@@ -1978,11 +1627,6 @@ function runAction(a, id, el) {
   }
 }
 const hasAction = (a) => { a = PM.actionOf(a); return !!a && a.action !== 'none'; };
-/** Pulsar y mantener pulsado de un componente (sin pulsación larga si no hace nada). */
-function actions(el, cfg, id) {
-  pressable(el, () => runAction(cfg.tap, id, el), hasAction(cfg.hold) ? () => runAction(cfg.hold, id, el) : null);
-  if (!hasAction(cfg.tap) && !hasAction(cfg.hold)) el.classList.add('static');
-}
 /** Un componente colocado: ejecuta su script (type: 'card') y pinta su HTML con su CSS (lib/componentes.js). */
 function componentCard(c, title) {
   const name = c.component, m = moduleOf(name);
@@ -2050,24 +1694,6 @@ function pieceAction(a, p, el) {
     return;
   }
   runAction(a, p.entity, el);
-}
-/** Bloques que devuelve una tarjeta de script. */
-function codeBlocks(out) {
-  const list = out == null ? [] : Array.isArray(out) ? out : [out];
-  return list.filter(Boolean).map((b) => {
-    if (typeof b === 'string') return h('div', { class: 'cb-text' }, b);
-    if (b.title) return h('div', { class: 'section-title' }, b.title);
-    if (b.text != null) return h('div', { class: 'cb-text ' + (b.size || '') }, String(b.text));
-    if (b.tiles) return h('div', { class: 'grid' }, [].concat(b.tiles).filter((id) => S.states[id]).map(anyTile));
-    if (b.stats) return h('div', { class: 'stat-grid' }, [].concat(b.stats).map((x) => h('div', { class: 'stat' }, icon(PM.mdi(x.icon) || 'mdi-information-outline'),
-      h('div', { class: 'stat-value' }, x.value == null ? '—' : String(x.value)), h('div', { class: 'stat-label' }, x.label || ''))));
-    if (b.chips) return h('div', { class: 'chips' }, PM.bubbles(b.chips).map((x) => bubbleEl(x, 'chip')));
-    if (b.button) {
-      const x = b.button;
-      return h('button', { class: 'big-action', onclick: () => runBubble({ action: x.action, go: x.go, onTap: typeof x.onTap === 'function' ? x.onTap : null }) }, icon(PM.mdi(x.icon) || 'mdi-gesture-tap'), x.text || 'Ejecutar');
-    }
-    return null;
-  });
 }
 const codeError = (name, msg) => h('div', { class: 'code-error' }, icon('mdi-alert-circle-outline'), h('b', null, name + ': '), msg);
 /** Tarjetas y burbujas de la pestaña actual que se repintan al cambiar sus entidades. */
@@ -2238,11 +1864,9 @@ function markCode(id) {
     viewCodeTimer = setTimeout(() => { if (!S.sheetId) VIEW_DIRTY.forEach((i) => VIEW_CODE[i] && VIEW_CODE[i].paint()); VIEW_DIRTY.clear(); }, 500);
   }
 }
-/** Lo que pintan las burbujas de un sitio ('ambient' | 'home') o de una lista concreta de ids. */
-function bulletOutputs(where) {
-  const all = bulletList();
-  const list = Array.isArray(where) ? where.map((id) => all.find((b) => b.id === id)).filter(Boolean) : all.filter((b) => b[where]);
-  const place = Array.isArray(where) ? 'home' : where;
+/** Lo que pintan las burbujas marcadas para el modo ambiente. */
+function bulletOutputs() {
+  const list = bulletList().filter((b) => b.ambient), place = 'ambient';
   const out = [];
   for (const b of list) {
     const m = moduleOf(b.script), name = b.name || b.script;
@@ -2288,18 +1912,12 @@ function runBubble(b) {
   }
   if (b.go) go(b.go);
 }
-function paintHomeBullets(box = document.getElementById('home-bullets')) {
-  if (box) box.replaceChildren(...bulletOutputs('home').map((b) => bubbleEl(b, 'chip')));
-}
 function renderAmbientChips() {
   if (!S.ambient) return;
-  $('#amb-chips').replaceChildren(...bulletOutputs('ambient').map((b) => bubbleEl(b, 'amb-chip')));
+  $('#amb-chips').replaceChildren(...bulletOutputs().map((b) => bubbleEl(b, 'amb-chip')));
   renderAmbientPlayer();
 }
-function paintBullets() {
-  renderAmbientChips();
-  if (!S.ambient && !S.sheetId) paintHomeBullets();
-}
+const paintBullets = renderAmbientChips;
 
 /* ---------- Mini reproductor del altavoz por defecto (modo ambiente, abajo a la derecha) ---------- */
 function renderAmbientPlayer() {
@@ -2359,21 +1977,21 @@ function bulletsCard() {
   const save = (arr) => { SET.bullets = arr; saveSettings(); paint(); };
   const paint = () => {
     const items = bulletList();
-    list.replaceChildren(h('div', { class: 'amb-item amb-head' }, h('span', { class: 'amb-item-label' }), h('span', { class: 'amb-col' }, 'Ambiente'), h('span', { class: 'amb-col' }, 'Inicio')),
+    list.replaceChildren(h('div', { class: 'amb-item amb-head' }, h('span', { class: 'amb-item-label' }), h('span', { class: 'amb-col' }, 'Ambiente')),
       ...items.map((b, i) => {
         const x = PM.BUILTINS.find((y) => y.script === b.script);
         const meta = { label: b.name || b.script, icon: x ? x.icon : 'mdi-script-text-outline' };
         const move = (d) => { const arr = bulletList(), j = i + d; if (j < 0 || j >= arr.length) return; [arr[i], arr[j]] = [arr[j], arr[i]]; save(arr); };
         const flag = (k) => h('span', { class: 'amb-col' }, switchBtn(!!b[k], (v) => { const arr = bulletList(); arr[i][k] = v; save(arr); }));
-        return h('div', { class: 'amb-item' + (b.ambient || b.home ? '' : ' off') }, icon(meta.icon), h('span', { class: 'amb-item-label' }, meta.label),
+        return h('div', { class: 'amb-item' + (b.ambient ? '' : ' off') }, icon(meta.icon), h('span', { class: 'amb-item-label' }, meta.label),
           h('button', { class: 'round-btn small', disabled: i === 0, onclick: () => move(-1), title: 'Subir' }, icon('mdi-chevron-up')),
           h('button', { class: 'round-btn small', disabled: i === items.length - 1, onclick: () => move(1), title: 'Bajar' }, icon('mdi-chevron-down')),
-          flag('ambient'), flag('home'));
+          flag('ambient'));
       }));
   };
   paint();
   return h('div', { class: 'card set-card' }, h('div', { class: 'set-title' }, icon('mdi-format-list-bulleted'), 'Burbujas'),
-    h('div', { class: 'muted small' }, 'Elige cuáles salen debajo del reloj (Ambiente) y en el resumen de Inicio. Solo aparecen cuando tienen algo que contar. Todas son scripts: se editan y se crean nuevas en la web de configuración.'),
+    h('div', { class: 'muted small' }, 'Elige cuáles salen debajo del reloj (modo ambiente). Solo aparecen cuando tienen algo que contar. En las pestañas se ponen con una «Fila de burbujas». Se editan y se crean nuevas en la web de configuración.'),
     list,
     h('div', { class: 'btn-row' }, h('button', { class: 'big-action', onclick: () => showAmbient() }, icon('mdi-image-filter-hdr'), 'Ver el modo ambiente')));
 }
