@@ -1633,17 +1633,17 @@ function componentCard(c, title) {
   if (m.err) return [title, codeError(name, m.err)];
   if (m.mod.type !== 'card') return [title, codeError(name, "no es un componente (le falta type: 'card')")];
   const host = h('div', { class: 'comp' });
-  // Los de dentro (<slot>) se crean una vez y se recolocan en cada repintado
+  // Los de dentro (<slot>) se crean una vez y se quedan en su sitio en cada repintado
   const kids = m.mod.children ? layout(c.cards) : null;
   let bound = null;
   const paint = () => {
     try {
       bound = m.mod.bind(c.config, HA);
       PanelComp.render(host, name, m.mod, [HA, screenFor('card'), bound.cfg], {
+        // Se engancha una vez; p.tap / p.hold se leen al pulsar (al repintar pueden cambiar).
+        // Mantener pulsado nunca cuenta como pulsar: si no tiene acción al mantener, no hace nada
         press(el, p) {
-          if (!isAct(p.tap) && !isAct(p.hold)) return;
-          // Mantener pulsado nunca cuenta como pulsar: si no tiene acción al mantener, no hace nada
-          pressable(el, () => pieceAction(p.tap, p, el), isAct(p.hold) ? () => pieceAction(p.hold, p, el) : () => {});
+          pressable(el, () => { if (isAct(p.tap)) pieceAction(p.tap, p, el); }, () => { if (isAct(p.hold)) pieceAction(p.hold, p, el); });
         },
         children: () => kids,
         widget: componentWidget,

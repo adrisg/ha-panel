@@ -83,7 +83,7 @@ exec "\$BROWSER" --kiosk --incognito --noerrdialogs --disable-infobars --no-firs
   --ozone-platform=wayland \
   --lang=es-ES --accept-lang=es-ES,es \
   --disable-features=Translate,TranslateUI,TouchpadOverscrollHistoryNavigation,MediaRouter,CastMediaRouteProvider,GlobalMediaControls \
-  --disable-blink-features=RemotePlayback \
+  --disable-blink-features=RemotePlayback,MediaCastOverlayButton \
   --overscroll-history-navigation=0 --disable-pinch --password-store=basic \
   --autoplay-policy=no-user-gesture-required \
   --check-for-update-interval=31536000 --disable-session-crashed-bubble \
