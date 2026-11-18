@@ -62,6 +62,9 @@ Se cambian en el botón ⚙ de la pantalla o desde la web del móvil:
 | **Avisos y alarmas** | sonido, volumen, alarmas con hora y días |
 | **Qué se ve** | favoritos, ocultar dispositivos, enchufes de las impresoras |
 | **Red** | WiFi, IP y nombre del panel |
+| **Altavoz** | la Pi suena como altavoz de Music Assistant (Sendspin): nombre y salida (jack, HDMI, USB) |
+
+**Altavoz (opcional):** instálalo una vez con `bash ~/ha-panel/setup-sendspin.sh` y actívalo en la web → Ajustes → Altavoz. Sale en Music Assistant como un reproductor más.
 
 ## Probarlo en el ordenador
 
