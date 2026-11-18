@@ -696,7 +696,7 @@ interface HA {
   devices(platform?: string): { id: string; name: string; area: string | null; entities: string[] }[];
   /** Reproductores sin repetidos y con lo que suena primero (sin lista: todos) */
   mediaOrder(ids?: string[]): string[];
-  /** Impresoras 3D con su estado y sus entidades (e.status, e.progress, e.remaining, e.camera, e.cover, e.pause, e.resume, e.stop, e.light, e.plug, e.plugPower, e.bed…) */
+  /** Impresoras 3D con su estado y sus entidades (e.status, e.progress, e.remaining, e.camera, e.screen, e.cover, e.pause, e.resume, e.stop, e.light, e.plug, e.plugPower, e.bed…) */
   printers(): { device: string; name: string; platform: string; state: 'printing' | 'paused' | 'preparing' | 'finished' | 'error' | 'cancelled' | 'idle' | 'offline' | 'off'; active: boolean; e: Record<string, string>; nozzles: { label: string; cur: string; tgt?: string; fil?: string }[] }[];
   /** Dirección de la imagen de una entidad (carátula, cámara, miniatura) o '' */
   picture(id: string, width?: number): string;

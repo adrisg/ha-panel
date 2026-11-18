@@ -1013,7 +1013,8 @@ function printers() {
     let nozzles = [{ label: 'Boquilla', cur: e.nozzle, tgt: e.nozzleTarget }];
     if (platform === 'moonraker') {
       const cams = ids.filter((id) => domain(id) === 'camera');
-      e.camera = cams.find((id) => !/thumbnail|gui/.test(id)) || cams[0];
+      e.camera = cams.find((id) => !/thumbnail|gui|screen/.test(id)) || cams[0];
+      e.screen = cams.find((id) => /gui|screen|pantalla/.test(id));     // la pantalla de la impresora
       e.light = ids.find((id) => domain(id) === 'light');
       // Miniatura: una entidad image.<impresora>_thumb… (aunque no esté en el dispositivo) o la cámara "thumbnail"
       const prefix = e.status.split('.')[1].replace(/_current_print_state$/, '');
