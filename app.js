@@ -161,7 +161,7 @@ const S = {
   viewTimers: [], sheetTimers: [], forecast: null, forecastAt: 0,
 };
 // Enlaces entidad → funciones que repintan una parte de la pantalla (por "ámbito")
-const B = { view: new Map(), sheet: new Map() };
+const B = { view: new Map(), sheet: new Map(), np: new Map() };
 function bind(scope, id, fn) {
   if (!id) return;
   const m = B[scope];
@@ -735,7 +735,6 @@ function historyChart(id) {
  * Si la Pi es altavoz de Music Assistant (web → Ajustes → Altavoz) y empieza a sonar algo en ella,
  * sale del modo ambiente y abre su reproductor; al parar, se cierra solo. */
 const SPK = (window.PANEL_HELPER && window.PANEL_HELPER.altavoz) || null;
-let spkOpened = false;
 function speakerEntity() {
   if (!SPK || !SPK.enabled) return null;
   if (SPK.entity) return SPK.entity;
@@ -750,14 +749,82 @@ function onSpeaker(id, old, st) {
   const was = old && old.state, now = st && st.state;
   if (now === 'playing' && was && was !== 'playing' && was !== 'paused') {
     if (alertOpen()) return;                 // una alarma o un aviso importante mandan
-    if (S.ambient) { S.ambient = false; $('#ambient').classList.remove('show'); }
-    if (S.sheetId !== id) openSheet(id);
-    spkOpened = true;
-    wakeScreen(); resetIdle();
-  } else if (spkOpened && now !== 'playing' && now !== 'paused') {
-    spkOpened = false;
-    if (S.sheetId === id) { closeSheet(); resetIdle(); }
+    showNowPlaying(id);
+  } else if (NP.id === id && now !== 'playing' && now !== 'paused') {
+    hideNowPlaying();
   }
+}
+
+/* Pantalla «Sonando»: carátula grande con el fondo difuminado, título, progreso, controles y volumen */
+const NP = { id: null, timer: null };
+const npPlaying = () => !!NP.id && (S.states[NP.id] || {}).state === 'playing';
+function fmtTime(s) {
+  s = Math.max(0, Math.floor(s || 0));
+  const h = Math.floor(s / 3600), m = Math.floor((s % 3600) / 60), ss = String(s % 60).padStart(2, '0');
+  return h ? `${h}:${String(m).padStart(2, '0')}:${ss}` : `${m}:${ss}`;
+}
+function showNowPlaying(id) {
+  if (NP.id === id && $('#np').classList.contains('show')) return;
+  hideNowPlaying(true);
+  closeSheet();
+  if (S.ambient) { S.ambient = false; $('#ambient').classList.remove('show'); }
+  NP.id = id;
+  const bg = h('div', { class: 'np-bg' }), art = h('div', { class: 'np-art' }, icon('mdi-music'));
+  const title = h('div', { class: 'np-title' }), sub = h('div', { class: 'np-sub' });
+  const bar = h('i'), cur = h('span'), dur = h('span');
+  const clock = h('span', { class: 'np-clock' });
+  const svc = (s) => () => call('media_player', s, {}, id);
+  const play = h('button', { class: 'np-play', onclick: svc('media_play_pause') });
+  const vol = slider({ label: 'Volumen', fmt: (v) => v + ' %', onchange: (v) => call('media_player', 'volume_set', { volume_level: v / 100 }, id) });
+  const root = $('#np');
+  root.replaceChildren(bg,
+    h('div', { class: 'np-top' }, icon('mdi-speaker'), h('span', { class: 'np-spk' }, nameOf(id, false)), clock,
+      h('button', { class: 'np-close', onclick: () => hideNowPlaying() }, icon('mdi-close'))),
+    h('div', { class: 'np-main' }, art, h('div', { class: 'np-info' }, title, sub,
+      h('div', { class: 'np-prog' }, h('div', { class: 'np-bar' }, bar), h('div', { class: 'np-times' }, cur, dur)),
+      h('div', { class: 'np-ctrls' }, h('button', { onclick: svc('media_previous_track') }, icon('mdi-skip-previous')), play,
+        h('button', { onclick: svc('media_next_track') }, icon('mdi-skip-next'))),
+      vol)));
+  let pic = null;
+  bind('np', id, (st) => {
+    if (!st) return;
+    const a = st.attributes;
+    title.textContent = a.media_title || T[st.state] || st.state;
+    sub.textContent = [a.media_artist, a.media_album_name].filter(Boolean).join(' · ');
+    play.replaceChildren(icon(st.state === 'playing' ? 'mdi-pause' : 'mdi-play'));
+    vol.set(Math.round((a.volume_level || 0) * 100));
+    if (a.entity_picture !== pic) {
+      pic = a.entity_picture;
+      const url = pic ? `url("${absUrl(pic)}")` : '';
+      art.style.backgroundImage = url; bg.style.backgroundImage = url;
+      art.classList.toggle('has', !!pic);
+    }
+  });
+  // Progreso y reloj, cada segundo
+  const tick = () => {
+    clock.textContent = new Date().toLocaleTimeString('es-ES', { hour: '2-digit', minute: '2-digit' });
+    const st = S.states[id], a = (st && st.attributes) || {};
+    const total = +a.media_duration || 0;
+    root.classList.toggle('no-prog', !total);
+    if (!total) return;
+    let pos = +a.media_position || 0;
+    if (st.state === 'playing' && a.media_position_updated_at) pos += (Date.now() - Date.parse(a.media_position_updated_at)) / 1000;
+    pos = Math.min(pos, total);
+    bar.style.width = (pos / total) * 100 + '%';
+    cur.textContent = fmtTime(pos); dur.textContent = fmtTime(total);
+  };
+  tick();
+  NP.timer = setInterval(tick, 1000);
+  root.classList.add('show');
+  wakeScreen(); resetIdle();
+}
+function hideNowPlaying(quiet) {
+  clearInterval(NP.timer); NP.timer = null;
+  B.np.clear();
+  const was = NP.id;
+  NP.id = null;
+  $('#np').classList.remove('show');
+  if (was && !quiet) resetIdle();
 }
 
 function openSheet(id) {
@@ -1218,7 +1285,7 @@ function screenTick() {
   const night = isNight(), alert = alertOpen();
   const idle = (Date.now() - SCREEN.lastTouch) / 1000;
   let off = false;
-  if (!alert) {
+  if (!alert && !npPlaying()) {
     if (SET.screenOffMinutes > 0 && idle >= Math.max(0, SET.idleSeconds) + SET.screenOffMinutes * 60) off = true;
     if (night && SET.night.screenOff && idle >= Math.max(60, SET.idleSeconds)) off = true;
   }
@@ -1436,6 +1503,7 @@ function ringAlarm(al) {
   RING.started = Date.now();
   if (S.ambient) { S.ambient = false; $('#ambient').classList.remove('show'); }
   closeSheet();
+  hideNowPlaying(true);
   SCREEN.lastTouch = Date.now();
   screenTick();
   const time = h('div', { class: 'ring-time' }, hhmm(new Date()));
@@ -1780,7 +1848,7 @@ function go(view) {
 let idleTimer;
 function resetIdle() {
   clearTimeout(idleTimer);
-  if (SET.idleSeconds > 0) idleTimer = setTimeout(() => !S.sheetId && !alertOpen() && showAmbient(), SET.idleSeconds * 1000);
+  if (SET.idleSeconds > 0) idleTimer = setTimeout(() => !S.sheetId && !NP.id && !alertOpen() && showAmbient(), SET.idleSeconds * 1000);
 }
 function showAmbient() {
   closeSheet();
