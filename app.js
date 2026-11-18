@@ -1203,7 +1203,7 @@ const DEFAULTS = () => ({
   photos: { enabled: true, seconds: CFG.photoSeconds || 30, fit: 'blur' },   // fit: cover | blur | contain
   alarms: [],
   ambientChips: null,   // null = orden y selección por defecto
-  defaultSpeaker: '',   // media_player que se controla desde el modo ambiente
+  defaultSpeaker: '',   // media_player que se controla desde el modo ambiente ('@panel' = el altavoz de este panel)
   bullets: null,        // burbujas (integradas y de script); null = las de siempre
   tabs: null,           // pestañas con sus tarjetas; null = una por cada vista
 });
@@ -2031,7 +2031,7 @@ const paintBullets = renderAmbientChips;
 function ambientSpeaker() {
   const own = speakerEntity(), st = own && S.states[own];
   if (st && (st.state === 'playing' || st.state === 'paused')) return own;
-  return SET.defaultSpeaker;
+  return SET.defaultSpeaker === '@panel' ? own : SET.defaultSpeaker;
 }
 function renderAmbientPlayer() {
   const box = $('#amb-player'), id = ambientSpeaker(), st = id && S.states[id];
@@ -2073,12 +2073,15 @@ function speakerCard() {
   const players = dedupeMedia(ids((id) => domain(id) === 'media_player'))
     .sort((x, y) => (S.states[x].state === 'unavailable') - (S.states[y].state === 'unavailable') || nameOf(x).localeCompare(nameOf(y), 'es'));
   const list = h('div', { class: 'speaker-list' });
+  // «Este panel» sale siempre que el altavoz esté activado (web → Ajustes → Altavoz), aunque Music Assistant
+  // aún no haya creado su reproductor en Home Assistant. Se guarda como '@panel'.
   const own = speakerEntity();
-  if (own && S.states[own] && !players.includes(own)) players.unshift(own);
-  else if (own && players.includes(own)) { players.splice(players.indexOf(own), 1); players.unshift(own); }
-  const paint = () => list.replaceChildren(...[['', 'Ninguno', 'mdi-volume-off', '']].concat(players.map((id) => [id,
-    id === own ? 'Este panel' : nameOf(id), id === own ? 'mdi-tablet' : iconOf(S.states[id]),
-    S.states[id].state === 'unavailable' ? 'No disponible' : id === own ? 'El altavoz de esta pantalla (' + nameOf(id) + ')' : (S.areaById[areaOf(id)] || {}).name || '']))
+  if (own && players.includes(own)) players.splice(players.indexOf(own), 1);
+  if (SET.defaultSpeaker === own && own) SET.defaultSpeaker = '@panel';
+  const ownSub = !own ? 'Aún no está en Music Assistant' : S.states[own].state === 'unavailable' ? 'No disponible' : 'El altavoz de esta pantalla';
+  const ownRow = SPK && SPK.enabled ? [['@panel', 'Este panel', 'mdi-tablet', ownSub]] : [];
+  const paint = () => list.replaceChildren(...[['', 'Ninguno', 'mdi-volume-off', '']].concat(ownRow, players.map((id) => [id,
+    nameOf(id), iconOf(S.states[id]), S.states[id].state === 'unavailable' ? 'No disponible' : (S.areaById[areaOf(id)] || {}).name || '']))
     .map(([id, name, ic, sub]) => {
       const b = h('button', { class: 'speaker-opt' + (SET.defaultSpeaker === id ? ' on' : '') }, icon(ic),
         h('div', { class: 'speaker-text' }, h('div', null, name), sub ? h('div', { class: 'muted small' }, sub) : null),
