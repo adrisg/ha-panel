@@ -378,6 +378,7 @@ main { display: flex; flex-direction: column; min-width: 0; min-height: 0; heigh
 .speaker-text { flex: 1; min-width: 0; }
 .speaker-check { margin-left: auto; }
 /* Mini reproductor del modo ambiente (abajo a la derecha) */
+.amb-player.own .amb-pinfo { cursor: pointer; }
 .amb-player { position: absolute; right: 4%; bottom: 7%; width: 290px; padding: 12px 14px; border-radius: 20px;
   background: rgba(0,0,0,.42); display: flex; flex-direction: column; gap: 10px; }
 .amb-pinfo { display: flex; align-items: center; gap: 12px; min-width: 0; }

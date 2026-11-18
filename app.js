@@ -2025,17 +2025,26 @@ function renderAmbientChips() {
 }
 const paintBullets = renderAmbientChips;
 
-/* ---------- Mini reproductor del altavoz por defecto (modo ambiente, abajo a la derecha) ---------- */
+/* ---------- Mini reproductor del altavoz por defecto (modo ambiente, abajo a la derecha) ----------
+ * Si está sonando algo en el altavoz de este panel, sale ese (aunque no sea el de por defecto);
+ * tocar su carátula o el título vuelve a la pantalla «Sonando». */
+function ambientSpeaker() {
+  const own = speakerEntity(), st = own && S.states[own];
+  if (st && (st.state === 'playing' || st.state === 'paused')) return own;
+  return SET.defaultSpeaker;
+}
 function renderAmbientPlayer() {
-  const box = $('#amb-player'), id = SET.defaultSpeaker, st = id && S.states[id];
+  const box = $('#amb-player'), id = ambientSpeaker(), st = id && S.states[id];
   const show = !!st && st.state !== 'unavailable';
   box.classList.toggle('hidden', !show);
   $('#ambient').classList.toggle('has-player', show);
   if (!show) return;
   const a = st.attributes, playing = st.state === 'playing';
   const pic = a.entity_picture ? absUrl(a.entity_picture) : '';
-  const title = a.media_title || nameOf(id);
+  const own = id === speakerEntity();
+  const title = a.media_title || (own ? 'Este panel' : nameOf(id));
   const sub = a.media_title ? (a.media_artist || a.app_name || nameOf(id)) : (T[st.state] || cap(st.state));
+  box.classList.toggle('own', own);
   const vol = a.volume_level != null ? Math.round(a.volume_level * 100) + ' %' : '';
   const btn = (act, ic, cls = '') => h('button', { class: 'amb-pbtn ' + cls, 'data-act': act }, icon(ic));
   box.replaceChildren(
@@ -2049,7 +2058,7 @@ function renderAmbientPlayer() {
     vol ? h('div', { class: 'amb-pvol' }, vol) : null);
 }
 function ambientPlayerAction(act) {
-  const id = SET.defaultSpeaker, st = id && S.states[id];
+  const id = ambientSpeaker(), st = id && S.states[id];
   if (!st) return;
   const v = st.attributes.volume_level ?? 0.3;
   if (act === 'play') call('media_player', st.state === 'off' ? 'turn_on' : 'media_play_pause', {}, id);
@@ -2064,8 +2073,12 @@ function speakerCard() {
   const players = dedupeMedia(ids((id) => domain(id) === 'media_player'))
     .sort((x, y) => (S.states[x].state === 'unavailable') - (S.states[y].state === 'unavailable') || nameOf(x).localeCompare(nameOf(y), 'es'));
   const list = h('div', { class: 'speaker-list' });
-  const paint = () => list.replaceChildren(...[['', 'Ninguno', 'mdi-volume-off', '']].concat(players.map((id) => [id, nameOf(id), iconOf(S.states[id]),
-    S.states[id].state === 'unavailable' ? 'No disponible' : (S.areaById[areaOf(id)] || {}).name || '']))
+  const own = speakerEntity();
+  if (own && S.states[own] && !players.includes(own)) players.unshift(own);
+  else if (own && players.includes(own)) { players.splice(players.indexOf(own), 1); players.unshift(own); }
+  const paint = () => list.replaceChildren(...[['', 'Ninguno', 'mdi-volume-off', '']].concat(players.map((id) => [id,
+    id === own ? 'Este panel' : nameOf(id), id === own ? 'mdi-tablet' : iconOf(S.states[id]),
+    S.states[id].state === 'unavailable' ? 'No disponible' : id === own ? 'El altavoz de esta pantalla (' + nameOf(id) + ')' : (S.areaById[areaOf(id)] || {}).name || '']))
     .map(([id, name, ic, sub]) => {
       const b = h('button', { class: 'speaker-opt' + (SET.defaultSpeaker === id ? ' on' : '') }, icon(ic),
         h('div', { class: 'speaker-text' }, h('div', null, name), sub ? h('div', { class: 'muted small' }, sub) : null),
@@ -2422,6 +2435,7 @@ function start() {
     if (e.target.closest('#amb-next')) { e.stopPropagation(); nextBackground(); resetIdle(); return; }
     const act = e.target.closest('[data-act]');
     if (act) { e.stopPropagation(); ambientPlayerAction(act.dataset.act); resetIdle(); return; }
+    if (e.target.closest('#amb-player.own .amb-pinfo')) { e.stopPropagation(); showNowPlaying(speakerEntity()); return; }
     if (e.target.closest('#amb-player')) { resetIdle(); return; }
     const chip = e.target.closest('.amb-chip');
     if (chip && chip.bubble && (chip.bubble.action || chip.bubble.onTap)) { e.stopPropagation(); runBubble(chip.bubble); resetIdle(); return; }
