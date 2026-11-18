@@ -183,17 +183,14 @@
   .ed-handle:hover { background: var(--surface-3); color: var(--text); }
   .ed-handle .mdi { font-size: 20px; color: inherit !important; }
   body.ed-is-dragging, body.ed-is-dragging * { cursor: grabbing !important; user-select: none; }
-  .ed-slot.ed-dragging { display: none; }
-  .ed-ph { background: rgba(138,180,248,.07) !important; border: 2px dashed var(--accent) !important; border-radius: 14px; animation: ph-in .18s ease; }
-  .ed-ph > * { visibility: hidden; }
-  @keyframes ph-in { from { opacity: 0; transform: scale(.96); } }
-  .ed-ghost.lift { transform-origin: center; box-shadow: 0 22px 48px rgba(0,0,0,.55); }
-  .ed-ghost.lift > * { transform: rotate(-1.2deg) scale(1.02); transition: transform .15s; }
-  .ed-ghost.drop { transition: transform .2s cubic-bezier(.2,.8,.2,1), width .2s, box-shadow .2s; box-shadow: none; }
-  .ed-slot.ed-landed { animation: landed .6s ease; }
-  @keyframes landed { 0% { box-shadow: 0 0 0 0 rgba(138,180,248,.6); } 100% { box-shadow: 0 0 0 12px rgba(138,180,248,0); } }
-  .ed-ghost { position: fixed; left: 0; top: 0; z-index: 200; pointer-events: none; opacity: .95; border-color: var(--accent) !important;
-    max-height: 240px; overflow: hidden; will-change: transform; }
+  .ed-slot.ed-dragging { opacity: .35; }
+  .ed-slot.drop-before { box-shadow: inset 5px 0 0 var(--accent); }
+  .ed-slot.drop-after { box-shadow: inset -5px 0 0 var(--accent); }
+  .ed-slot.drop-v.drop-before { box-shadow: inset 0 5px 0 var(--accent); }
+  .ed-slot.drop-v.drop-after { box-shadow: inset 0 -5px 0 var(--accent); }
+  .ed-add.drop-in { border-color: var(--accent); color: var(--accent); background: rgba(138,180,248,.08); }
+  .ed-ghost { position: fixed; left: 0; top: 0; z-index: 200; pointer-events: none; opacity: .85; border-color: var(--accent) !important;
+    max-height: 200px; overflow: hidden; box-shadow: 0 12px 30px rgba(0,0,0,.45); }
 
   .ed-prev { margin-top: 8px; pointer-events: none; }
   .ed-prev .cmp-prev { zoom: .8; }
@@ -1313,53 +1310,34 @@ function edGrid(list, base) {
   return grid;
 }
 /* ---------- arrastrar y soltar tarjetas en la rejilla (ratón y dedo) ----------
- * Se cogen por su asa (⠿). Mientras se arrastra, un hueco punteado enseña dónde caerá y las demás se apartan con
- * animación; al soltar, la tarjeta vuela a su hueco. Soltar en un «+ Añadir (dentro)» = al final de esa lista
- * (así se mete o se saca de una Tarjeta). */
+ * Se cogen por su asa (⠿). Mientras se arrastra no se mueve nada: una barra azul marca si cae antes o después de la
+ * tarjeta de debajo, o se resalta el «+ Añadir (dentro)» (= al final de esa lista: así se mete o se saca de una Tarjeta). */
 let drag = null, dragEndAt = 0;
 const dragJustEnded = () => Date.now() - dragEndAt < 250;
 /** ¿Esa lista es la de dentro de la tarjeta (o de alguna de las suyas)? No se puede soltar una Tarjeta dentro de sí misma */
 const isInside = (card, list) => !!card.cards && (card.cards === list || card.cards.some((c) => isInside(c, list)));
-/** Mueve cosas en la rejilla con animación (FLIP): las tarjetas se deslizan a su sitio nuevo */
-function flip(mutate) {
-  const els = [...document.querySelectorAll('#ed-grid .ed-slot')].filter((e) => !e.classList.contains('ed-ph'));
-  const first = new Map(els.map((e) => [e, e.getBoundingClientRect()]));
-  mutate();
-  for (const e of els) {
-    if (!e.isConnected || e.offsetParent === null) continue;
-    const a = first.get(e), b = e.getBoundingClientRect(), dx = a.left - b.left, dy = a.top - b.top;
-    if (!dx && !dy) continue;
-    e.style.transition = 'none';
-    e.style.transform = `translate(${dx}px, ${dy}px)`;
-    requestAnimationFrame(() => requestAnimationFrame(() => { e.style.transition = 'transform .2s cubic-bezier(.2,.8,.2,1)'; e.style.transform = ''; }));
-  }
-}
-/** Dónde pondría el hueco según el puntero: { grid, before (nodo antes del que va) } */
-function dropSpot(x, y) {
-  drag.ghost.style.visibility = 'hidden';
+function dragClear() { document.querySelectorAll('.drop-before, .drop-after, .drop-in').forEach((x) => x.classList.remove('drop-before', 'drop-after', 'drop-in')); }
+/** Dónde caería: { list, ref, after, el, kind } */
+function dropTarget(x, y) {
+  drag.ghost.style.display = 'none';
   const under = document.elementFromPoint(x, y);
-  drag.ghost.style.visibility = '';
+  drag.ghost.style.display = '';
   if (!under) return null;
-  if (under.closest('.ed-ph')) return 'same';
   const add = under.closest('#ed-grid .ed-add');
-  if (add) return { grid: add.parentElement, before: add };
+  if (add) return { list: listAt(JSON.parse(add.dataset.list)), ref: null, el: add, kind: 'in' };
   const slot = under.closest('#ed-grid .ed-slot[data-path]');
-  if (slot && slot !== drag.el && !drag.el.contains(slot)) {
-    const r = slot.getBoundingClientRect(), grid = slot.parentElement;
-    // tarjetas anchas: arriba / abajo; estrechas: izquierda / derecha
-    const wide = r.width > grid.getBoundingClientRect().width * 0.6;
-    const after = wide ? y > r.top + r.height / 2 : x > r.left + r.width / 2;
-    return { grid, before: after ? slot.nextElementSibling : slot };
-  }
-  const grid = under.closest('#ed-grid .ed-layout');
-  if (grid && !drag.el.contains(grid)) return { grid, before: grid.lastElementChild };   // hueco libre de una rejilla: al final
-  return null;
+  if (!slot || slot === drag.el || drag.el.contains(slot)) return null;
+  const path = JSON.parse(slot.dataset.path), list = listAt(path.slice(0, -1)), r = slot.getBoundingClientRect();
+  // tarjetas anchas: arriba / abajo; estrechas: izquierda / derecha
+  const wide = r.width > slot.parentElement.getBoundingClientRect().width * 0.6;
+  const after = wide ? y > r.top + r.height / 2 : x > r.left + r.width / 2;
+  return { list, ref: list[path[path.length - 1]], after, el: slot, kind: (wide ? (after ? 'below' : 'above') : (after ? 'after' : 'before')) };
 }
 document.getElementById('ed-grid').addEventListener('pointerdown', (e) => {
   const handle = e.target.closest('.ed-handle');
   if (!handle || (e.pointerType === 'mouse' && e.button !== 0)) return;
-  const slot = handle.closest('.ed-slot[data-path]');
   e.preventDefault(); e.stopPropagation();
+  const slot = handle.closest('.ed-slot[data-path]');
   drag = { el: slot, path: JSON.parse(slot.dataset.path), x: e.clientX, y: e.clientY, on: false, id: e.pointerId };
   try { handle.setPointerCapture(e.pointerId); } catch (x) { /* nada */ }
 });
@@ -1367,7 +1345,6 @@ addEventListener('pointermove', (e) => {
   if (!drag || e.pointerId !== drag.id) return;
   if (!drag.on) {
     if (Math.hypot(e.clientX - drag.x, e.clientY - drag.y) < 4) return;
-    // empieza: la tarjeta «se levanta» y en su sitio queda el hueco
     drag.on = true;
     drag.card = cardAt(drag.path);
     const r = drag.el.getBoundingClientRect();
@@ -1375,22 +1352,17 @@ addEventListener('pointermove', (e) => {
     drag.ghost = drag.el.cloneNode(true);
     drag.ghost.classList.add('ed-ghost');
     drag.ghost.style.width = r.width + 'px';
-    drag.ghost.style.transform = `translate(${r.left}px, ${r.top}px)`;
     document.body.append(drag.ghost);
-    requestAnimationFrame(() => drag && drag.ghost.classList.add('lift'));
-    drag.ph = el('div', { class: drag.el.className.replace(/\b(sel|group|when-off)\b/g, '') + ' ed-ph' });
-    drag.ph.style.height = r.height + 'px';
-    drag.el.after(drag.ph);
     drag.el.classList.add('ed-dragging');
     document.body.classList.add('ed-is-dragging');
   }
   e.preventDefault();
   drag.ghost.style.transform = `translate(${e.clientX - drag.dx}px, ${e.clientY - drag.dy}px)`;
-  const spot = dropSpot(e.clientX, e.clientY);
-  if (spot && spot !== 'same' && !(spot.before === drag.ph || spot.before === drag.ph.nextElementSibling && spot.grid === drag.ph.parentElement)) {
-    const list = listAt(JSON.parse(spot.grid.dataset.list));
-    if (!isInside(drag.card, list)) flip(() => spot.grid.insertBefore(drag.ph, spot.before));
-  }
+  dragClear();
+  const t = dropTarget(e.clientX, e.clientY);
+  drag.target = t && !isInside(drag.card, t.list) ? t : null;
+  if (drag.target) t.el.classList.add(t.kind === 'in' ? 'drop-in' : t.kind === 'above' || t.kind === 'before' ? 'drop-before' : 'drop-after');
+  if (drag.target && (t.kind === 'above' || t.kind === 'below')) t.el.classList.add('drop-v');
   // la página se desplaza sola cerca de los bordes
   const edge = 70;
   if (e.clientY < edge) scrollBy(0, -14); else if (e.clientY > innerHeight - edge) scrollBy(0, 14);
@@ -1402,33 +1374,15 @@ function dragEnd(e) {
   document.body.classList.remove('ed-is-dragging');
   if (!d.on) return;
   dragEndAt = Date.now();
-  // dónde ha quedado el hueco: su rejilla y la tarjeta que va después
-  const grid = d.ph.parentElement, list = listAt(JSON.parse(grid.dataset.list));
-  let next = d.ph.nextElementSibling;
-  while (next && (next === d.el || !next.dataset.path)) next = next === d.el ? next.nextElementSibling : null;
-  const ref = next ? cardAt(JSON.parse(next.dataset.path)) : null;
-  // la tarjeta vuela a su hueco y luego se guarda el orden
-  const r = d.ph.getBoundingClientRect();
-  d.ghost.classList.remove('lift');
-  d.ghost.classList.add('drop');
-  d.ghost.style.transform = `translate(${r.left}px, ${r.top}px)`;
-  d.ghost.style.width = r.width + 'px';
-  setTimeout(() => {
-    d.ghost.remove();
-    if (isInside(d.card, list)) { renderTabs(); return; }
-    const from = listAt(d.path.slice(0, -1));
-    const moved = !(from === list && (ref ? from.indexOf(ref) === from.indexOf(d.card) + 1 : from.indexOf(d.card) === from.length - 1));
-    if (moved) {
-      from.splice(from.indexOf(d.card), 1);
-      if (ref) list.splice(list.indexOf(ref), 0, d.card); else list.push(d.card);
-      dirty();
-    }
-    edSel = null; edAdd = null;
-    renderTabs();
-    // un destello en la tarjeta recién colocada
-    const path = [...document.querySelectorAll('#ed-grid .ed-slot[data-path]')].find((x) => cardAt(JSON.parse(x.dataset.path)) === d.card);
-    if (path) { path.classList.add('ed-landed'); setTimeout(() => path.classList.remove('ed-landed'), 600); }
-  }, 200);
+  d.ghost.remove(); d.el.classList.remove('ed-dragging'); dragClear();
+  document.querySelectorAll('.drop-v').forEach((x) => x.classList.remove('drop-v'));
+  const t = d.target;
+  if (!t || t.ref === d.card) return;
+  const from = listAt(d.path.slice(0, -1));
+  from.splice(from.indexOf(d.card), 1);
+  if (t.ref) t.list.splice(t.list.indexOf(t.ref) + (t.after ? 1 : 0), 0, d.card); else t.list.push(d.card);
+  edSel = null; edAdd = null;
+  renderTabs(); dirty();
 }
 addEventListener('pointerup', dragEnd);
 addEventListener('pointercancel', dragEnd);
