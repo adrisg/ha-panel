@@ -192,6 +192,7 @@ function setState(id, st) {
     clearTimeout(structTimer);
     structTimer = setTimeout(() => !S.sheetId && render(), 1500);
   }
+  onSpeaker(id, old, st);
   markCode(id);
   clearTimeout(ambTimer);
   ambTimer = setTimeout(paintBullets, 500);
@@ -728,6 +729,35 @@ function historyChart(id) {
     }
   }).catch(() => box.replaceChildren(h('div', { class: 'muted' }, 'Historial no disponible')));
   return box;
+}
+
+/* ====================== Altavoz Sendspin del panel ======================
+ * Si la Pi es altavoz de Music Assistant (web → Ajustes → Altavoz) y empieza a sonar algo en ella,
+ * sale del modo ambiente y abre su reproductor; al parar, se cierra solo. */
+const SPK = (window.PANEL_HELPER && window.PANEL_HELPER.altavoz) || null;
+let spkOpened = false;
+function speakerEntity() {
+  if (!SPK || !SPK.enabled) return null;
+  if (SPK.entity) return SPK.entity;
+  // Automático: el reproductor de Music Assistant con el mismo nombre que el altavoz
+  const want = String(SPK.name || '').trim().toLowerCase();
+  const found = Object.keys(S.states).filter((id) => domain(id) === 'media_player' &&
+    String(S.states[id].attributes.friendly_name || '').trim().toLowerCase() === want);
+  return found.find((id) => reg(id).platform === 'music_assistant') || found[0] || null;
+}
+function onSpeaker(id, old, st) {
+  if (!SPK || !SPK.enabled || !SPK.open || domain(id) !== 'media_player' || id !== speakerEntity()) return;
+  const was = old && old.state, now = st && st.state;
+  if (now === 'playing' && was && was !== 'playing' && was !== 'paused') {
+    if (alertOpen()) return;                 // una alarma o un aviso importante mandan
+    if (S.ambient) { S.ambient = false; $('#ambient').classList.remove('show'); }
+    if (S.sheetId !== id) openSheet(id);
+    spkOpened = true;
+    wakeScreen(); resetIdle();
+  } else if (spkOpened && now !== 'playing' && now !== 'paused') {
+    spkOpened = false;
+    if (S.sheetId === id) { closeSheet(); resetIdle(); }
+  }
 }
 
 function openSheet(id) {
