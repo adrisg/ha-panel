@@ -2023,6 +2023,16 @@ function componentWidget(e) {
   if (t === 'ha-tile') return has ? tile(id) : none();
   if (t === 'ha-sensor') return has ? sensorTile(id) : none();
   if (t === 'ha-camera') {
+    // Por dirección (src): una imagen que se recarga cada pocos segundos
+    const src = e.getAttribute('src');
+    if (src) {
+      const img = h('img', { alt: '' });
+      const load = () => { const next = new Image(); next.onload = () => { img.src = next.src; };
+        next.src = src.startsWith('data:') ? src : absUrl(src) + (src.includes('?') ? '&' : '?') + '_t=' + Date.now(); };
+      load();
+      S.viewTimers.push(setInterval(load, (CFG.cameraRefreshSeconds || 5) * 1000));
+      return h('div', { class: 'cam' }, img);
+    }
     if (!has) return none();
     const c = cameraImg(id, 'view', CFG.cameraRefreshSeconds);
     pressable(c, () => openSheet(id));
