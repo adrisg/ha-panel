@@ -13,6 +13,7 @@ Dos servidores en un mismo programa, sin dependencias (solo Python 3):
    El token de Home Assistant se puede cambiar, pero nunca se envía a la web.
    También permite ver y cambiar la red de la Pi (WiFi, IP fija o automática, nombre)
    con NetworkManager (nmcli); setup-kiosk.sh da permiso solo a nmcli y hostnamectl.
+   Y el altavoz Sendspin (Music Assistant): activarlo, nombre y salida de audio (ver setup-sendspin.sh).
 
 Fuera de la Pi (Windows, macOS) o con PANEL_SIMULATE=1 funciona en MODO SIMULACIÓN: la pantalla
 y la red se simulan, para probar todo en el ordenador sin tocar nada de verdad (ver dev.py).
@@ -278,6 +279,120 @@ def ha_request(method, path, body=None, ha_url=None, token=None):
         return e.code, {'error': 'token no válido' if e.code == 401 else f'HTTP {e.code}'}
     except (urllib.error.URLError, OSError, ValueError) as e:
         return 0, {'error': f'no se pudo conectar: {getattr(e, "reason", e)}'}
+
+
+# ---------------------------------------------------------------- altavoz (Sendspin)
+# La Pi como altavoz de Music Assistant. setup-sendspin.sh instala «sendspin» y el servicio de usuario
+# panel-sendspin, que arranca «panel-helper.py --sendspin» (lee sendspin.json y lanza sendspin).
+SENDSPIN_FILE = DATA / 'sendspin.json'
+SENDSPIN_BIN = Path.home() / '.local' / 'share' / 'panel-hogar' / 'sendspin' / 'bin' / 'sendspin'
+SENDSPIN_UNIT = 'panel-sendspin.service'
+SIM_SPEAKER = {'active': False}
+CARD_NAMES = {'Headphones': 'Jack 3,5 mm', 'vc4hdmi0': 'HDMI 1', 'vc4hdmi1': 'HDMI 2', 'vc4hdmi': 'HDMI'}
+
+
+def speaker_settings():
+    try:
+        s = json.loads(SENDSPIN_FILE.read_text(encoding='utf-8'))
+    except (OSError, ValueError):
+        s = {}
+    try:
+        delay = max(0, min(5000, int(s.get('delay') or 0)))
+    except (TypeError, ValueError):
+        delay = 0
+    return {'enabled': bool(s.get('enabled')), 'name': str(s.get('name') or '').strip()[:60],
+            'device': str(s.get('device') or '').strip()[:120], 'delay': delay}
+
+
+def speaker_default_name():
+    return 'Panel ' + socket.gethostname().split('.')[0]
+
+
+def audio_outputs():
+    """Salidas de audio: una por tarjeta (plughw convierte el formato si hace falta)."""
+    outs = [{'id': '', 'name': 'La de por defecto del sistema'}]
+    if SIMULATE:
+        return outs + [{'id': 'plughw:CARD=Headphones,DEV=0', 'name': 'Jack 3,5 mm'},
+                       {'id': 'plughw:CARD=vc4hdmi0,DEV=0', 'name': 'HDMI 1'},
+                       {'id': 'plughw:CARD=vc4hdmi1,DEV=0', 'name': 'HDMI 2'}]
+    code, out, _ = _run(['aplay', '-L'], timeout=5)
+    lines = out.splitlines() if code == 0 else []
+    for i, line in enumerate(lines):
+        if not line.startswith('plughw:CARD='):
+            continue
+        card = line.split('=', 1)[1].split(',')[0]
+        desc = lines[i + 1].strip().split(',')[0] if i + 1 < len(lines) else card
+        outs.append({'id': line.strip(), 'name': CARD_NAMES.get(card, desc or card)})
+    return outs
+
+
+def _user_ctl(*args):
+    env = dict(os.environ, XDG_RUNTIME_DIR=os.environ.get('XDG_RUNTIME_DIR') or f'/run/user/{os.getuid()}')
+    try:
+        r = subprocess.run(['systemctl', '--user', *args], capture_output=True, text=True, timeout=20, env=env)
+        return r.returncode, (r.stdout or '').strip(), (r.stderr or '').strip()
+    except (OSError, subprocess.SubprocessError) as e:
+        return 1, '', str(e)
+
+
+def speaker_info():
+    s = speaker_settings()
+    info = {'settings': s, 'defaultName': speaker_default_name(), 'outputs': audio_outputs(), 'log': ''}
+    if SIMULATE:
+        return dict(info, installed=True, active=SIM_SPEAKER['active'])
+    info['installed'] = SENDSPIN_BIN.exists()
+    info['active'] = info['installed'] and _user_ctl('is-active', SENDSPIN_UNIT)[1] == 'active'
+    if info['installed'] and s['enabled']:
+        env = dict(os.environ, XDG_RUNTIME_DIR=os.environ.get('XDG_RUNTIME_DIR') or f'/run/user/{os.getuid()}')
+        try:
+            r = subprocess.run(['journalctl', '--user', '-u', SENDSPIN_UNIT, '-n', '12', '-o', 'cat', '--no-pager'],
+                               capture_output=True, text=True, timeout=10, env=env)
+            info['log'] = (r.stdout or '').strip()[-3000:]
+        except (OSError, subprocess.SubprocessError):
+            pass
+    return info
+
+
+def set_speaker(body):
+    cur = speaker_settings()
+    new = {'enabled': bool(body.get('enabled', cur['enabled'])),
+           'name': str(body.get('name', cur['name']) or '').strip()[:60],
+           'device': str(body.get('device', cur['device']) or '').strip()[:120],
+           'delay': body.get('delay', cur['delay'])}
+    if new['device'] and new['device'] not in {o['id'] for o in audio_outputs()}:
+        raise ValueError('esa salida de audio no existe')
+    DATA.mkdir(parents=True, exist_ok=True)
+    SENDSPIN_FILE.write_text(json.dumps(new, ensure_ascii=False, indent=2), encoding='utf-8')
+    new = speaker_settings()
+    if SIMULATE:
+        SIM_SPEAKER['active'] = new['enabled']
+        return '[Simulación] Guardado (no suena nada en el PC).'
+    if not SENDSPIN_BIN.exists():
+        return 'Guardado. Falta instalarlo en la Pi: bash ~/ha-panel/setup-sendspin.sh'
+    if new['enabled']:
+        _user_ctl('enable', SENDSPIN_UNIT)
+        code, _, err = _user_ctl('restart', SENDSPIN_UNIT)
+        if code != 0:
+            raise RuntimeError(f'no arrancó: {err or "mira el registro"}')
+        return 'Altavoz activado. Aparecerá en Music Assistant en unos segundos.'
+    _user_ctl('disable', '--now', SENDSPIN_UNIT)
+    return 'Altavoz desactivado.'
+
+
+def run_speaker():
+    """Lo arranca el servicio panel-sendspin: lanza sendspin con los ajustes de la web."""
+    s = speaker_settings()
+    if not s['enabled']:
+        print('Altavoz desactivado en la web (Ajustes → Altavoz).', flush=True)
+        return
+    args = [str(SENDSPIN_BIN), 'daemon', '--name', s['name'] or speaker_default_name(),
+            '--settings-dir', str(DATA / 'sendspin'), '--hardware-volume', 'false', '--disable-mpris',
+            '--product-name', 'Panel Hogar']
+    if s['device']:
+        args += ['--audio-device', s['device']]
+    if s['delay']:
+        args += ['--output-delay-ms', str(s['delay'])]
+    os.execv(args[0], args)
 
 
 # ---------------------------------------------------------------- red (NetworkManager)
@@ -657,6 +772,10 @@ class WebHandler(Base):
             if not self._guard():
                 return
             return self._json(200, net_info())
+        if u.path == '/api/altavoz':
+            if not self._guard():
+                return
+            return self._json(200, speaker_info())
         if u.path == '/api/entidades':
             if not self._guard():
                 return
@@ -727,6 +846,11 @@ class WebHandler(Base):
             except (ValueError, RuntimeError) as e:
                 return self._json(400, {'error': str(e)})
             return self._json(404)
+        if u.path == '/api/altavoz':       # activar / desactivar, nombre y salida del altavoz Sendspin
+            try:
+                return self._json(200, {'ok': True, 'mensaje': set_speaker(body), 'info': speaker_info()})
+            except (ValueError, RuntimeError) as e:
+                return self._json(400, {'error': str(e)})
         if u.path == '/api/orden':         # recargar, apagar/encender pantalla, modo ambiente, inicio
             tipo = body.get('tipo')
             if tipo not in ('recargar', 'pantalla_off', 'pantalla_on', 'ambiente', 'inicio'):
@@ -789,7 +913,10 @@ def serve(port, handler, host):
 def main():
     ap = argparse.ArgumentParser(description='Ayudante del Panel Hogar')
     ap.add_argument('--set-password', action='store_true', help='poner o cambiar la contraseña de la web')
+    ap.add_argument('--sendspin', action='store_true', help='arrancar el altavoz Sendspin (lo usa el servicio panel-sendspin)')
     args = ap.parse_args()
+    if args.sendspin:
+        return run_speaker()
     if args.set_password:
         if sys.stdin.isatty():
             pw = getpass.getpass('Nueva contraseña para la web del panel: ')
