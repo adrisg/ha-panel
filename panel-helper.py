@@ -300,8 +300,16 @@ def speaker_settings():
         delay = max(0, min(5000, int(s.get('delay') or 0)))
     except (TypeError, ValueError):
         delay = 0
+    entity = str(s.get('entity') or '').strip()[:120]
     return {'enabled': bool(s.get('enabled')), 'name': str(s.get('name') or '').strip()[:60],
-            'device': str(s.get('device') or '').strip()[:120], 'delay': delay}
+            'device': str(s.get('device') or '').strip()[:120], 'delay': delay,
+            'entity': entity if entity.startswith('media_player.') else '', 'open': s.get('open', True) is not False}
+
+
+def speaker_panel():
+    """Lo que necesita el panel: con qué nombre sale en Music Assistant y si abre el reproductor al sonar."""
+    s = speaker_settings()
+    return {'enabled': s['enabled'], 'name': s['name'] or speaker_default_name(), 'entity': s['entity'], 'open': s['open']}
 
 
 def speaker_default_name():
@@ -358,12 +366,15 @@ def set_speaker(body):
     new = {'enabled': bool(body.get('enabled', cur['enabled'])),
            'name': str(body.get('name', cur['name']) or '').strip()[:60],
            'device': str(body.get('device', cur['device']) or '').strip()[:120],
-           'delay': body.get('delay', cur['delay'])}
+           'delay': body.get('delay', cur['delay']),
+           'entity': str(body.get('entity', cur['entity']) or '').strip()[:120],
+           'open': bool(body.get('open', cur['open']))}
     if new['device'] and new['device'] not in {o['id'] for o in audio_outputs()}:
         raise ValueError('esa salida de audio no existe')
     DATA.mkdir(parents=True, exist_ok=True)
     SENDSPIN_FILE.write_text(json.dumps(new, ensure_ascii=False, indent=2), encoding='utf-8')
     new = speaker_settings()
+    bump_version()      # el panel se recarga con los ajustes nuevos (reproductor, abrir al sonar)
     if SIMULATE:
         SIM_SPEAKER['active'] = new['enabled']
         return '[Simulación] Guardado (no suena nada en el PC).'
@@ -639,7 +650,7 @@ class LocalHandler(Base):
             return self._json(200, {'backlight': bool(BACKLIGHT), 'power': bool(BACKLIGHT or outs), 'outputs': outs,
                                     'web': WEB_PORT, 'password': PASS_FILE.exists()})
         if u.path == '/config':
-            return self._json(200, dict(load_config(), modulos=list_scripts()))
+            return self._json(200, dict(load_config(), modulos=list_scripts(), altavoz=speaker_panel()))
         if u.path == '/red':
             return self._json(200, net_info())
         if u.path == '/poll':
