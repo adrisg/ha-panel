@@ -178,6 +178,14 @@
   input.mono { font-family: ui-monospace, Consolas, monospace; font-size: 13px; }
   .ed-when { color: var(--accent); font-size: 18px; }
   .ed-slot.when-off { opacity: .45; }
+  .ed-slot[data-path] { touch-action: pan-y; user-select: none; }
+  .ed-slot.ed-dragging { opacity: .3; }
+  .ed-slot.ed-armed { border-color: var(--accent); transform: scale(.98); transition: transform .15s; }
+  .ed-ghost { position: fixed; left: 0; top: 0; z-index: 200; pointer-events: none; opacity: .9; box-shadow: 0 16px 40px rgba(0,0,0,.5);
+    border-color: var(--accent) !important; max-height: 220px; overflow: hidden; }
+  .ed-slot.drop-before { box-shadow: inset 5px 0 0 var(--accent); }
+  .ed-slot.drop-after { box-shadow: inset -5px 0 0 var(--accent); }
+  .ed-add.drop-in { border-color: var(--accent); color: var(--accent); background: rgba(138,180,248,.08); }
   .ed-prev { margin-top: 8px; pointer-events: none; }
   .ed-prev .cmp-prev { zoom: .8; }
   .monaco { height: 0; border-radius: 10px; overflow: hidden; border: 1px solid var(--surface-3); }
@@ -1279,20 +1287,99 @@ function edGrid(list, base) {
     let whenNow = true;
     if (hasWhen && states) try { whenNow = PM.checkWhen(c.when, testHA(), testScreen('card')); } catch (e) { /* sin datos */ }
     const box = el('div', { class: 'ed-slot w-' + String(c.width || 'full').replace('/', '-') + (sel ? ' sel' : '') + (c.type === 'component' && (compOf(c.component) || {}).children ? ' group' : '') + (whenNow ? '' : ' when-off'),
-      onclick: (e) => { e.stopPropagation(); edSel = path; edAdd = null; renderTabs(); } },
+      onclick: (e) => { e.stopPropagation(); if (dragJustEnded()) return; edSel = path; edAdd = null; renderTabs(); } },
       el('div', { class: 'ed-head' }, el('i', { class: 'mdi ' + s.icon }), el('div', { class: 'ed-txt' },
         el('b', { textContent: s.title }), el('span', { class: 'hint', textContent: [s.kind !== s.title ? s.kind : '', s.sub].filter(Boolean).join(' · ') })),
         hasWhen ? el('i', { class: 'mdi mdi-eye-off-outline ed-when', title: whenNow ? 'Con condiciones (ahora se ve)' : 'Con condiciones: ahora no se vería' }) : null,
         el('span', { class: 'ed-w', textContent: c.width && c.width !== 'full' ? c.width : '' })),
       s.body || null,
       c.type === 'component' && (compOf(c.component) || {}).children ? edGrid(c.cards || (c.cards = []), path) : null);
+    box.dataset.path = JSON.stringify(path);
     grid.append(box);
   });
   const addSel = samePath(edAdd, base) || (edAdd && !edAdd.length && !base.length);
   grid.append(el('button', { type: 'button', class: 'ed-slot w-full ed-add' + (addSel ? ' sel' : ''), textContent: base.length ? '+ Añadir dentro' : '+ Añadir',
-    onclick: (e) => { e.stopPropagation(); edAdd = base; edSel = null; renderTabs(); } }));
+    onclick: (e) => { e.stopPropagation(); if (dragJustEnded()) return; edAdd = base; edSel = null; renderTabs(); }, 'data-list': JSON.stringify(base) }));
   return grid;
 }
+/* ---------- arrastrar y soltar tarjetas en la rejilla (ratón y dedo) ----------
+ * Se coge una tarjeta y se suelta antes / después de otra (barra azul) o en un «+ Añadir (dentro)» para ponerla al final
+ * de esa lista (así se mete o se saca de una Tarjeta). Un toque sin moverse sigue abriendo su editor. */
+let drag = null, dragEndAt = 0;
+const dragJustEnded = () => Date.now() - dragEndAt < 250;
+/** ¿Esa lista es la de dentro de la tarjeta (o de alguna de las suyas)? No se puede soltar una Tarjeta dentro de sí misma */
+const isInside = (card, list) => !!card.cards && (card.cards === list || card.cards.some((c) => isInside(c, list)));
+function dragClear() { document.querySelectorAll('.drop-before, .drop-after, .drop-in').forEach((x) => x.classList.remove('drop-before', 'drop-after', 'drop-in')); }
+/** Dónde caería: { list, ref, after, el } */
+function dropTarget(x, y) {
+  drag.ghost.style.display = 'none';
+  const under = document.elementFromPoint(x, y);
+  drag.ghost.style.display = '';
+  if (!under) return null;
+  const add = under.closest('#ed-grid .ed-add');
+  if (add) return { list: listAt(JSON.parse(add.dataset.list)), ref: null, el: add, kind: 'in' };
+  const slot = under.closest('#ed-grid .ed-slot[data-path]');
+  if (!slot || slot === drag.el || drag.el.contains(slot)) return null;
+  const path = JSON.parse(slot.dataset.path), list = listAt(path.slice(0, -1)), r = slot.getBoundingClientRect();
+  // en la cabecera de una Tarjeta que agrupa: antes / después de ella; dentro de su rejilla ya lo cogen sus hijas
+  const after = x > r.left + r.width / 2;
+  return { list, ref: list[path[path.length - 1]], after, el: slot, kind: after ? 'after' : 'before' };
+}
+document.getElementById('ed-grid').addEventListener('pointerdown', (e) => {
+  if (e.button !== 0) return;
+  const slot = e.target.closest('.ed-slot[data-path]');
+  if (!slot || e.target.closest('input, select, textarea, button:not(.ed-slot)')) return;
+  drag = { el: slot, path: JSON.parse(slot.dataset.path), x: e.clientX, y: e.clientY, on: false, id: e.pointerId, touch: e.pointerType !== 'mouse' };
+  // con el dedo: mantener pulsado medio segundo para cogerla (si no, se desplaza la página)
+  if (drag.touch) { const d = drag; d.timer = setTimeout(() => { if (drag === d) { d.armed = true; slot.classList.add('ed-armed'); if (navigator.vibrate) navigator.vibrate(15); } }, 450); }
+});
+addEventListener('pointermove', (e) => {
+  if (!drag || e.pointerId !== drag.id) return;
+  if (!drag.on) {
+    if (Math.hypot(e.clientX - drag.x, e.clientY - drag.y) < 8) return;
+    if (drag.touch && !drag.armed) { clearTimeout(drag.timer); drag = null; return; }   // deslizar sin esperar: scroll normal
+    // empieza el arrastre
+    drag.on = true;
+    drag.card = cardAt(drag.path);
+    const r = drag.el.getBoundingClientRect();
+    drag.dx = drag.x - r.left; drag.dy = drag.y - r.top;
+    drag.ghost = drag.el.cloneNode(true);
+    drag.ghost.classList.add('ed-ghost');
+    drag.ghost.style.width = r.width + 'px';
+    document.body.append(drag.ghost);
+    drag.el.classList.add('ed-dragging');
+    try { drag.el.setPointerCapture(e.pointerId); } catch (x) { /* nada */ }
+  }
+  e.preventDefault();
+  drag.ghost.style.transform = `translate(${e.clientX - drag.dx}px, ${e.clientY - drag.dy}px)`;
+  dragClear();
+  const t = dropTarget(e.clientX, e.clientY);
+  if (t && !isInside(drag.card, t.list)) t.el.classList.add('drop-' + t.kind);
+  drag.target = t && !isInside(drag.card, t.list) ? t : null;
+  // la página se desplaza sola cerca de los bordes
+  const edge = 60;
+  if (e.clientY < edge) scrollBy(0, -12); else if (e.clientY > innerHeight - edge) scrollBy(0, 12);
+}, { passive: false });
+function dragEnd(e) {
+  if (!drag || (e && e.pointerId !== drag.id)) return;
+  const d = drag;
+  drag = null;
+  clearTimeout(d.timer); d.el.classList.remove('ed-armed');
+  if (!d.on) { if (d.armed) dragEndAt = Date.now(); return; }
+  dragEndAt = Date.now();
+  d.ghost.remove(); d.el.classList.remove('ed-dragging'); dragClear();
+  const t = d.target;
+  if (!t || t.ref === d.card) return;
+  const from = listAt(d.path.slice(0, -1));
+  from.splice(from.indexOf(d.card), 1);
+  if (t.ref) t.list.splice(t.list.indexOf(t.ref) + (t.after ? 1 : 0), 0, d.card); else t.list.push(d.card);
+  edSel = null; edAdd = null;
+  renderTabs(); dirty();
+}
+addEventListener('pointerup', dragEnd);
+addEventListener('pointercancel', dragEnd);
+// en el dedo: que no se desplace la página mientras se arrastra
+document.getElementById('ed-grid').addEventListener('touchmove', (e) => { if (drag && (drag.on || drag.armed)) e.preventDefault(); }, { passive: false });
 /** Nueva tarjeta de un tipo */
 function newCard(kind) {
   if (kind === 'bubbles') return { type: 'bubbles', width: 'full', items: [] };
