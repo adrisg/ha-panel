@@ -926,7 +926,7 @@ function renderBullets() {
 function deviceList(platform, f = {}) {
   const info = (panelData && panelData.info) || {}, out = {};
   for (const [id, i] of Object.entries(info))
-    if (i.deviceId && (!platform || i.platform === platform))
+    if (i.deviceId && (!platform || [].concat(platform).includes(i.platform)))
       (out[i.deviceId] || (out[i.deviceId] = { id: i.deviceId, name: i.device || i.deviceId, area: i.area, entities: [] })).entities.push(id);
   return Object.values(out).filter((d) => PM.deviceHas(f, d.entities, (id) => info[id]))
     .sort((a, b) => String(a.name).localeCompare(b.name));
@@ -977,7 +977,7 @@ function fieldsForm(schema, get, set, prefix) {
 function entityInput(f, id, v, set) {
   const opts = fieldOptions(f);
   const auto = f.auto === false ? '— ninguna —' : 'Automática (la primera que haya)';
-  if (!opts.length) return el('div', { class: 'hint', textContent: f.type === 'device' ? 'No hay aparatos de ' + (f.integration || '?') + ' (o el panel no está encendido).' : 'No hay entidades que encajen.' });
+  if (!opts.length) return el('div', { class: 'hint', textContent: f.type === 'device' ? 'No hay aparatos de ' + ([].concat(f.integration || '?').join(' / ')) + ' (o el panel no está encendido).' : 'No hay entidades que encajen.' });
   // Varias: desplegable de selección múltiple con buscador
   if (f.multiple) return multiSelect(opts, [].concat(v || []), set, f.auto === false ? 'Ninguna' : f.type === 'device' ? 'Ninguno elegido: todos' : 'Ninguna elegida: todas');
   // Una: desplegable (con buscador si hay muchas)
