@@ -353,7 +353,7 @@ def speaker_info():
     if info['installed'] and s['enabled']:
         env = dict(os.environ, XDG_RUNTIME_DIR=os.environ.get('XDG_RUNTIME_DIR') or f'/run/user/{os.getuid()}')
         try:
-            r = subprocess.run(['journalctl', '--user', '-u', SENDSPIN_UNIT, '-n', '12', '-o', 'cat', '--no-pager'],
+            r = subprocess.run(['journalctl', '--user-unit', SENDSPIN_UNIT, '-n', '12', '-o', 'cat', '--no-pager'],
                                capture_output=True, text=True, timeout=10, env=env)
             info['log'] = (r.stdout or '').strip()[-3000:]
         except (OSError, subprocess.SubprocessError):
