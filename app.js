@@ -1668,15 +1668,22 @@ function componentWidget(e) {
   if (t === 'ha-tile') return has ? tile(id) : none();
   if (t === 'ha-sensor') return has ? sensorTile(id) : none();
   if (t === 'ha-camera') {
-    // Por dirección (src): una imagen que se recarga cada pocos segundos
+    // Por dirección (src): una imagen que se recarga cada pocos segundos. Si no es una imagen (p. ej. la página
+    // del reproductor de la cámara), se mete la página tal cual, como la tarjeta «página web» de Home Assistant
     const src = e.getAttribute('src');
     if (src) {
-      const img = h('img', { alt: '' });
-      const load = () => { const next = new Image(); next.onload = () => { img.src = next.src; };
-        next.src = src.startsWith('data:') ? src : absUrl(src) + (src.includes('?') ? '&' : '?') + '_t=' + Date.now(); };
+      const img = h('img', { alt: '' }), box = h('div', { class: 'cam' }, img);
+      let page = false;
+      const load = () => {
+        if (page) return;
+        const next = new Image();
+        next.onload = () => { img.src = next.src; };
+        next.onerror = () => { if (!img.getAttribute('src')) { page = true; box.replaceChildren(h('iframe', { class: 'cam-frame', src: absUrl(src), allow: 'autoplay; fullscreen', scrolling: 'no' })); } };
+        next.src = src.startsWith('data:') ? src : absUrl(src) + (src.includes('?') ? '&' : '?') + '_t=' + Date.now();
+      };
       load();
       S.viewTimers.push(setInterval(load, (CFG.cameraRefreshSeconds || 5) * 1000));
-      return h('div', { class: 'cam' }, img);
+      return box;
     }
     if (!has) return none();
     const c = cameraImg(id, 'view', CFG.cameraRefreshSeconds);
