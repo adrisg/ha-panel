@@ -1669,7 +1669,7 @@ async function loadEntities() {
       ...ents.filter((e) => e.id.startsWith('weather.')).map((e) => new Option(`${e.name} (${e.id})`, e.id)));
     sel.value = cur;
     const sp = $('#defaultSpeaker'), curSp = sp.dataset.value || '';
-    sp.replaceChildren(new Option('Ninguno', ''), ...ents.filter((e) => e.id.startsWith('media_player.')).map((e) => new Option(`${e.name} (${e.id})`, e.id)));
+    sp.replaceChildren(new Option('Ninguno', ''), new Option('Este panel (su altavoz de Music Assistant)', '@panel'), ...ents.filter((e) => e.id.startsWith('media_player.')).map((e) => new Option(`${e.name} (${e.id})`, e.id)));
     sp.value = curSp;
     spkEntities();
     Object.keys(lists).forEach(renderChips);
