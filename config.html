@@ -433,6 +433,29 @@ go = 'home' | 'rooms' | 'sensors' | 'media' | 'printers' | 'scooter' | 'settings
       <div id="red-msg" class="hint"></div>
     </div>
 
+    <div class="card" data-nodirty>
+      <h2>🔊 Altavoz (Music Assistant)</h2>
+      <dl class="info" id="spk-info"><dt>Estado</dt><dd>Cargando…</dd></dl>
+      <div id="spk-install" class="hint hidden">Falta instalarlo una vez en la Pi: <code>bash ~/ha-panel/setup-sendspin.sh</code></div>
+      <div class="row"><label for="spk-enabled">Usar la Pi como altavoz</label><label class="switch"><input id="spk-enabled" type="checkbox"><span></span></label></div>
+      <div class="field">
+        <label for="spk-name">Nombre en Music Assistant</label>
+        <input id="spk-name" type="text" maxlength="60">
+      </div>
+      <div class="field">
+        <label for="spk-device">Salida de audio</label>
+        <select id="spk-device"></select>
+      </div>
+      <div class="field">
+        <label for="spk-delay">Retraso extra (ms)</label>
+        <input id="spk-delay" type="number" min="0" max="5000" step="10" value="0">
+        <span class="hint">Solo si suena adelantado respecto a otros altavoces del mismo grupo.</span>
+      </div>
+      <div class="btns"><button class="btn primary" id="spk-ok">Aplicar</button></div>
+      <div id="spk-msg" class="hint"></div>
+      <details id="spk-log-box" class="hidden"><summary>Registro</summary><pre id="spk-log"></pre></details>
+    </div>
+
     <div class="card">
       <h2>🏠 Home Assistant</h2>
       <div class="field">
@@ -1652,6 +1675,7 @@ async function load() {
   $('#login').classList.add('hidden'); $('#app').classList.remove('hidden');
   loadEntities();
   loadRed();
+  loadSpk();
   loadScripts().catch((e) => bmsg('No se pudo leer el funcionamiento de las burbujas: ' + e.message, 'err'));
 }
 
@@ -1787,6 +1811,38 @@ $('#host-ok').onclick = async () => {
   const name = $('#hostname').value.trim();
   if (!confirm(`¿Cambiar el nombre de la Pi a «${name}»?`)) return;
   try { const r = await api('POST', '/api/red/nombre', { hostname: name }); redMsg(r.mensaje, true); } catch (e) { redMsg(e.message, false); }
+};
+
+/* ---------- altavoz (Sendspin) ---------- */
+function spkMsg(t, ok) { const m = $('#spk-msg'); m.textContent = t; m.style.color = ok === false ? 'var(--danger)' : ok ? 'var(--ok)' : ''; }
+function spkFill(r) {
+  const s = r.settings;
+  const estado = !r.installed ? 'Sin instalar' : r.active ? 'Funcionando' : s.enabled ? 'Activado, pero no está funcionando (mira el registro)' : 'Desactivado';
+  const rows = [['Estado', estado], ['Nombre', s.name || r.defaultName]];
+  $('#spk-info').replaceChildren(...rows.flatMap(([k, v]) => { const dt = document.createElement('dt'), dd = document.createElement('dd'); dt.textContent = k; dd.textContent = v; return [dt, dd]; }));
+  $('#spk-install').classList.toggle('hidden', r.installed);
+  $('#spk-enabled').checked = s.enabled;
+  $('#spk-name').value = s.name; $('#spk-name').placeholder = r.defaultName;
+  const sel = $('#spk-device');
+  const outs = r.outputs.slice();
+  if (s.device && !outs.some((o) => o.id === s.device)) outs.push({ id: s.device, name: s.device + ' (no está conectada)' });
+  sel.replaceChildren(...outs.map((o) => { const op = document.createElement('option'); op.value = o.id; op.textContent = o.name; return op; }));
+  sel.value = s.device; sel.dispatchEvent(new Event('change'));
+  $('#spk-delay').value = s.delay || 0;
+  $('#spk-log').textContent = r.log || '';
+  $('#spk-log-box').classList.toggle('hidden', !r.log);
+}
+async function loadSpk() {
+  try { spkFill(await api('GET', '/api/altavoz')); } catch (e) { spkMsg('No se pudo leer el altavoz: ' + e.message, false); }
+}
+$('#spk-ok').onclick = async () => {
+  spkMsg('Aplicando…');
+  try {
+    const r = await api('POST', '/api/altavoz', { enabled: $('#spk-enabled').checked, name: $('#spk-name').value.trim(), device: $('#spk-device').value, delay: +$('#spk-delay').value || 0 });
+    spkFill(r.info); spkMsg(r.mensaje, true);
+    // tarda unos segundos en arrancar: vuelve a mirar el estado
+    setTimeout(loadSpk, 4000);
+  } catch (e) { spkMsg(e.message, false); }
 };
 
 /* ---------- eventos ---------- */
