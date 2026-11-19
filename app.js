@@ -762,7 +762,7 @@ function onSpeaker(id, old, st) {
     const secs = SPK.closeAfter == null ? 60 : SPK.closeAfter;
     clearTimeout(NP.closeTimer);
     // al cerrarse sola vuelve al modo ambiente (con la ✕ se queda donde estaba)
-    const autoClose = () => { hideNowPlaying(true); if (!alertOpen() && !S.sheetId) showAmbient(); else resetIdle(); };
+    const autoClose = () => { if (!alertOpen() && !S.sheetId) npToAmbient(true); else { hideNowPlaying(true); resetIdle(); } };
     if (secs === 0) autoClose();
     else if (secs > 0) NP.closeTimer = setTimeout(() => { if ((S.states[id] || {}).state !== 'playing') autoClose(); }, secs * 1000);
   }
@@ -881,7 +881,7 @@ function showNowPlaying(id) {
   const root = $('#np');
   root.replaceChildren(bg,
     h('div', { class: 'np-top' }, icon('mdi-speaker'), h('span', { class: 'np-spk' }, nameOf(id, false)), clock,
-      h('button', { class: 'np-close', onclick: () => { const back = NP.fromAmbient; hideNowPlaying(); if (back && !alertOpen()) showAmbient(); } }, icon('mdi-close'))),
+      h('button', { class: 'np-close', onclick: () => { if (NP.fromAmbient && !alertOpen()) npToAmbient(); else hideNowPlaying(); } }, icon('mdi-close'))),
     h('div', { class: 'np-main' }, art, h('div', { class: 'np-info' }, title, sub,
       h('div', { class: 'np-ctrls' }, h('button', { onclick: svc('media_previous_track') }, icon('mdi-skip-previous')), play,
         h('button', { onclick: svc('media_next_track') }, icon('mdi-skip-next'))))),
@@ -935,6 +935,15 @@ function showNowPlaying(id) {
   NP.timer = setInterval(tick, 1000);
   root.classList.add('show');
   wakeScreen(); resetIdle();
+}
+/** De «Sonando» al modo ambiente sin que se vea el panel en medio: el ambiente sale ya debajo y «Sonando» se desvanece encima. */
+function npToAmbient(quiet) {
+  const a = $('#ambient');
+  a.style.transition = 'none';
+  showAmbient();
+  void a.offsetWidth;
+  a.style.transition = '';
+  hideNowPlaying(quiet);
 }
 function hideNowPlaying(quiet) {
   clearInterval(NP.timer); NP.timer = null;
@@ -1422,8 +1431,7 @@ function enterScreen() {
     showAmbient();             // así la ✕ de «Sonando» vuelve al modo ambiente
     showNowPlaying(playing);
   } else {
-    hideNowPlaying(true);
-    showAmbient();
+    npToAmbient(true);
   }
 }
 
