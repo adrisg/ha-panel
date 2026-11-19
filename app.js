@@ -781,8 +781,8 @@ function fmtTime(s) {
 function dragOn(el, { start, move, end }) {
   let on = false;
   const t0 = (e) => e.touches[0] || e.changedTouches[0];
-  el.addEventListener('touchstart', (e) => { const t = t0(e); if (start(t.clientX, t.clientY) !== false) { on = true; e.preventDefault(); } }, { passive: false });
-  el.addEventListener('touchmove', (e) => { if (on) { e.preventDefault(); const t = t0(e); move(t.clientX, t.clientY); } }, { passive: false });
+  el.addEventListener('touchstart', (e) => { const t = t0(e); if (start(t.clientX, t.clientY) !== false) { on = true; if (e.cancelable) e.preventDefault(); } }, { passive: false });
+  el.addEventListener('touchmove', (e) => { if (on) { if (e.cancelable) e.preventDefault(); const t = t0(e); move(t.clientX, t.clientY); } }, { passive: false });
   const tEnd = () => { if (on) { on = false; end(); } };
   el.addEventListener('touchend', tEnd);
   el.addEventListener('touchcancel', tEnd);
