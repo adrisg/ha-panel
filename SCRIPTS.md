@@ -52,6 +52,7 @@ Recibe dos variables:
 | `screen.light` | luz ambiente del sensor de la pantalla (de momento `null`) |
 | `screen.visible(id)` | ¿la entidad no está oculta en el panel? |
 | `screen.go('media')`, `screen.now()` | ir a una pestaña; hora actual |
+| `screen.nowPlaying(id)` | abrir la pantalla «Sonando» de un reproductor (p. ej. `tap=${(ha, screen) => screen.nowPlaying(id)}`) |
 
 ## Ajustes (`config`)
 

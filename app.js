@@ -1968,6 +1968,7 @@ const compVisible = (id) => !!S.states[id] && visible(id) && !isScooter(id);
 const screenFor = (place) => PM.makeScreen(screenData(place), {
   visible: compVisible,
   go: (v) => go(v),
+  nowPlaying: (id) => S.states[id] && showNowPlaying(id),
 });
 const bulletList = () => PM.bulletList(SET.bullets, SET.ambientChips);
 /* La web de configuración prueba las burbujas con lo mismo que ve el panel: le pasamos al ayudante
@@ -2086,7 +2087,7 @@ function renderAmbientPlayer() {
   const own = id === speakerEntity();
   const title = a.media_title || (own ? 'Este panel' : nameOf(id));
   const sub = a.media_title ? (a.media_artist || a.app_name || nameOf(id)) : (T[st.state] || cap(st.state));
-  box.classList.toggle('own', own || watchedSpeakers().includes(id));   // tocarlo abre «Sonando»
+  box.classList.add('own');   // tocar la carátula o el título abre «Sonando»
   const vol = a.volume_level != null ? Math.round(a.volume_level * 100) + ' %' : '';
   const btn = (act, ic, cls = '') => h('button', { class: 'amb-pbtn ' + cls, 'data-act': act }, icon(ic));
   box.replaceChildren(
