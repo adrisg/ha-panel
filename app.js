@@ -775,24 +775,33 @@ function showNowPlaying(id) {
   const clock = h('span', { class: 'np-clock' });
   const svc = (s) => () => call('media_player', s, {}, id);
   const play = h('button', { class: 'np-play', onclick: svc('media_play_pause') });
-  // Volumen: − y + de 5 en 5 (se suma al momento, aunque Home Assistant aún no haya contestado)
+  // Volumen: el botón 🔊 despliega una barra fina; se esconde sola a los 4 s sin tocarla
   const volTxt = h('span', { class: 'np-vval' });
-  let volNow = 0;
-  const volStep = (d) => {
-    volNow = Math.max(0, Math.min(100, Math.round(volNow / 5) * 5 + d));
+  const volIn = h('input', { type: 'range', min: 0, max: 100, step: 1, class: 'np-vslider' });
+  const volBtn = h('button', { class: 'np-volbtn' });
+  const vol = h('div', { class: 'np-vol' }, volIn, volTxt);
+  let volNow = 0, volDrag = false, volTimer = null;
+  const volIcon = (v) => icon(v <= 0 ? 'mdi-volume-off' : v < 34 ? 'mdi-volume-low' : v < 67 ? 'mdi-volume-medium' : 'mdi-volume-high');
+  const volPaint = () => {
     volTxt.textContent = volNow + ' %';
-    call('media_player', 'volume_set', { volume_level: volNow / 100 }, id);
+    volIn.style.setProperty('--p', volNow + '%');
+    if (!volDrag) volIn.value = volNow;
+    volBtn.replaceChildren(volIcon(volNow));
   };
-  const vol = h('div', { class: 'np-vol' }, icon('mdi-volume-low'),
-    h('button', { class: 'np-vbtn', onclick: () => volStep(-5) }, icon('mdi-minus')), volTxt,
-    h('button', { class: 'np-vbtn', onclick: () => volStep(5) }, icon('mdi-plus')), icon('mdi-volume-high'));
+  const volHideLater = () => { clearTimeout(volTimer); volTimer = setTimeout(() => !volDrag && vol.classList.remove('open'), 4000); };
+  volBtn.onclick = () => { vol.classList.toggle('open'); volHideLater(); };
+  volIn.addEventListener('input', () => { volDrag = true; volNow = +volIn.value; volPaint(); volHideLater(); });
+  volIn.addEventListener('change', () => {
+    volDrag = false; volHideLater();
+    call('media_player', 'volume_set', { volume_level: volNow / 100 }, id);
+  });
   const root = $('#np');
   root.replaceChildren(bg,
     h('div', { class: 'np-top' }, icon('mdi-speaker'), h('span', { class: 'np-spk' }, nameOf(id, false)), clock,
       h('button', { class: 'np-close', onclick: () => hideNowPlaying() }, icon('mdi-close'))),
     h('div', { class: 'np-main' }, art, h('div', { class: 'np-info' }, title, sub,
       h('div', { class: 'np-ctrls' }, h('button', { onclick: svc('media_previous_track') }, icon('mdi-skip-previous')), play,
-        h('button', { onclick: svc('media_next_track') }, icon('mdi-skip-next'))),
+        h('button', { onclick: svc('media_next_track') }, icon('mdi-skip-next')), volBtn),
       vol)),
     // progreso: abajo del todo, de lado a lado
     h('div', { class: 'np-prog' }, h('div', { class: 'np-times' }, cur, dur), h('div', { class: 'np-bar' }, bar)));
@@ -803,8 +812,7 @@ function showNowPlaying(id) {
     title.textContent = a.media_title || T[st.state] || st.state;
     sub.textContent = [a.media_artist, a.media_album_name].filter(Boolean).join(' · ');
     play.replaceChildren(icon(st.state === 'playing' ? 'mdi-pause' : 'mdi-play'));
-    volNow = Math.round((a.volume_level || 0) * 100);
-    volTxt.textContent = volNow + ' %';
+    if (!volDrag) { volNow = Math.round((a.volume_level || 0) * 100); volPaint(); }
     if (a.entity_picture !== pic) {
       pic = a.entity_picture;
       const url = pic ? `url("${absUrl(pic)}")` : '';
