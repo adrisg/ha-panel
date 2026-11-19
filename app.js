@@ -888,11 +888,19 @@ function showNowPlaying(id) {
     vol,
     // progreso: abajo del todo, de lado a lado
     h('div', { class: 'np-prog' }, h('div', { class: 'np-times' }, cur, dur), seek));
+  // Si una palabra no cabe, la letra se hace más pequeña (hasta un 60 %); si aun así no cabe, se parte
+  const fitTitle = () => {
+    title.style.fontSize = ''; title.style.overflowWrap = 'normal';
+    const base = parseFloat(getComputedStyle(title).fontSize);
+    for (let f = base; title.scrollWidth > title.clientWidth + 1 && f > base * 0.6; f -= 2) title.style.fontSize = f - 2 + 'px';
+    title.style.overflowWrap = '';
+  };
   let pic = null;
   bind('np', id, (st) => {
     if (!st) return;
     const a = st.attributes;
-    title.textContent = a.media_title || T[st.state] || st.state;
+    const ttl = a.media_title || T[st.state] || st.state;
+    if (title.textContent !== ttl) { title.textContent = ttl; requestAnimationFrame(fitTitle); }
     sub.textContent = [a.media_artist, a.media_album_name].filter(Boolean).join(' · ');
     play.replaceChildren(icon(st.state === 'playing' ? 'mdi-pause' : 'mdi-play'));
     const v = Math.round((a.volume_level || 0) * 100);
