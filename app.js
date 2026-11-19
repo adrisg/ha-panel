@@ -775,34 +775,39 @@ function showNowPlaying(id) {
   const clock = h('span', { class: 'np-clock' });
   const svc = (s) => () => call('media_player', s, {}, id);
   const play = h('button', { class: 'np-play', onclick: svc('media_play_pause') });
-  // Volumen: el botón 🔊 despliega una barra fina; se esconde sola a los 4 s sin tocarla
-  const volTxt = h('span', { class: 'np-vval' });
-  const volIn = h('input', { type: 'range', min: 0, max: 100, step: 1, class: 'np-vslider' });
-  const volBtn = h('button', { class: 'np-volbtn' });
-  const vol = h('div', { class: 'np-vol' }, volIn, volTxt);
-  let volNow = 0, volDrag = false, volTimer = null;
+  // Volumen: barra vertical a la derecha; se toca o se arrastra arriba/abajo y se aplica al soltar
+  const volTxt = h('span', { class: 'np-vval' }), volFill = h('i'), volIc = h('span', { class: 'np-vicon' });
+  const volTrack = h('div', { class: 'np-vtrack' }, volFill);
+  const vol = h('div', { class: 'np-vol' }, volTxt, volTrack, volIc);
+  let volNow = 0, volDrag = false;
   const volIcon = (v) => icon(v <= 0 ? 'mdi-volume-off' : v < 34 ? 'mdi-volume-low' : v < 67 ? 'mdi-volume-medium' : 'mdi-volume-high');
   const volPaint = () => {
     volTxt.textContent = volNow + ' %';
-    volIn.style.setProperty('--p', volNow + '%');
-    if (!volDrag) volIn.value = volNow;
-    volBtn.replaceChildren(volIcon(volNow));
+    volFill.style.height = volNow + '%';
+    volIc.replaceChildren(volIcon(volNow));
   };
-  const volHideLater = () => { clearTimeout(volTimer); volTimer = setTimeout(() => !volDrag && vol.classList.remove('open'), 4000); };
-  volBtn.onclick = () => { vol.classList.toggle('open'); volHideLater(); };
-  volIn.addEventListener('input', () => { volDrag = true; volNow = +volIn.value; volPaint(); volHideLater(); });
-  volIn.addEventListener('change', () => {
-    volDrag = false; volHideLater();
+  const volAt = (e) => {
+    const r = volTrack.getBoundingClientRect();
+    volNow = Math.round(Math.max(0, Math.min(1, (r.bottom - e.clientY) / r.height)) * 100);
+    volPaint();
+  };
+  volTrack.addEventListener('pointerdown', (e) => { volDrag = true; volTrack.setPointerCapture(e.pointerId); volAt(e); });
+  volTrack.addEventListener('pointermove', (e) => { if (volDrag) volAt(e); });
+  const volEnd = () => {
+    if (!volDrag) return;
+    volDrag = false;
     call('media_player', 'volume_set', { volume_level: volNow / 100 }, id);
-  });
+  };
+  volTrack.addEventListener('pointerup', volEnd);
+  volTrack.addEventListener('pointercancel', volEnd);
   const root = $('#np');
   root.replaceChildren(bg,
     h('div', { class: 'np-top' }, icon('mdi-speaker'), h('span', { class: 'np-spk' }, nameOf(id, false)), clock,
       h('button', { class: 'np-close', onclick: () => hideNowPlaying() }, icon('mdi-close'))),
     h('div', { class: 'np-main' }, art, h('div', { class: 'np-info' }, title, sub,
       h('div', { class: 'np-ctrls' }, h('button', { onclick: svc('media_previous_track') }, icon('mdi-skip-previous')), play,
-        h('button', { onclick: svc('media_next_track') }, icon('mdi-skip-next')), volBtn),
-      vol)),
+        h('button', { onclick: svc('media_next_track') }, icon('mdi-skip-next'))))),
+    vol,
     // progreso: abajo del todo, de lado a lado
     h('div', { class: 'np-prog' }, h('div', { class: 'np-times' }, cur, dur), h('div', { class: 'np-bar' }, bar)));
   let pic = null;
