@@ -2,7 +2,7 @@
 
 ### Crea tu propio Google Nest Hub o Amazon Echo Show
 
-Una pantalla bonita para el escritorio que decora con tus fotos y desde la que ves y manejas toda tu casa. Sin suscripciones ni nubes de nadie: tú la montas con una Raspberry Pi y funciona con **Home Assistant**.
+Una pantalla bonita para el escritorio que decora con tus fotos y desde la que ves y manejas toda tu casa. **100 % local**: habla directamente con tu **Home Assistant**, sin cuentas, sin suscripciones y sin nubes de nadie. Tú la montas con una Raspberry Pi.
 
 <p align="center">
   <img src="docs/ambient.jpg" width="49%"> <img src="docs/sonando.jpg" width="49%">
