@@ -1,7 +1,7 @@
 # Panel Hogar
 
 **Convierte una Raspberry Pi y una pantalla táctil en el centro de control de tu casa.**
-Se conecta a **Home Assistant**, se ve como un Google Nest Hub y, cuando nadie la toca, se transforma en un reloj con tus fotos. Además, puede sonar como un altavoz más de Music Assistant.
+Se conecta a **Home Assistant**, al estilo Google Nest Hub. Cuando no la usas, es un reloj con tus fotos, y también puede ser un altavoz de Music Assistant.
 
 <p align="center">
   <img src="docs/ambient.jpg" width="49%"> <img src="docs/sonando.jpg" width="49%">
@@ -9,16 +9,16 @@ Se conecta a **Home Assistant**, se ve como un Google Nest Hub y, cuando nadie l
 
 ## ✨ Lo que la hace especial
 
-- 🖼️ **Modo ambiente**: un reloj grande con fotos de tus álbumes (Immich, Google Fotos…), el tiempo, burbujas con lo importante y un mini reproductor. Entra solo cuando dejas de tocarla.
-- 🔊 **Es un altavoz**: la Pi aparece en Music Assistant como un reproductor más (Sendspin), sincronizado con el resto de la casa. Por el jack, HDMI o USB.
-- 🎵 **Pantalla «Sonando»**: cuando empieza a sonar algo, se abre la carátula a pantalla completa con el fondo difuminado. Tiene controles, una barra que arrastras para saltar (y te enseña el tiempo mientras la mueves) y el volumen deslizable. También funciona con otros altavoces de la casa, como el de la habitación donde está el panel.
-- 🔔 **Avisos con botones**: «llaman al telefonillo → Abrir puerta», «la lavadora ha terminado»… Los lanzas desde una automatización de Home Assistant y salen en grande, con sonido ([cómo](AVISOS.md)).
-- ⏰ **Despertador**: alarmas con hora y días, que suenan en la propia pantalla.
-- 🧩 **Hecha a tu medida**: cada pestaña es una rejilla de componentes que colocas arrastrando desde la web. Componentes y burbujas son pequeños scripts con HTML y CSS que puedes cambiar, crear o importar ([cómo](SCRIPTS.md)).
-- 📱 **Se configura desde el móvil**: escaneas el QR de la pantalla y cambias todo desde una web con contraseña (Home Assistant, fotos, WiFi, IP, altavoz…).
-- ⬆️ **Se actualiza sola**: busca versiones nuevas en GitHub y te avisa o se actualiza de madrugada. Sin reiniciar la pantalla si no hace falta.
-- 🌙 **Cuida la pantalla**: modo noche, brillo real y apagado cuando no la usas. Se enciende al tocarla, cuando llega un aviso o cuando empieza a sonar música.
-- 🔒 **No toca tu Home Assistant**: no hay que instalar integraciones ni complementos. Todo va en el navegador de la Pi, con un token de acceso.
+- 🖼️ **Modo ambiente**: reloj con tus fotos (Immich, Google Fotos…), el tiempo y un mini reproductor.
+- 🔊 **Es un altavoz** de Music Assistant, sincronizado con el resto de la casa.
+- 🎵 **Pantalla «Sonando»**: carátula a pantalla completa, controles, barra para saltar y volumen.
+- 🔔 **Avisos con botones** desde Home Assistant: «llaman al telefonillo → Abrir puerta» ([cómo](AVISOS.md)).
+- ⏰ **Despertador** con alarmas por días.
+- 🧩 **Pestañas a tu gusto**, con componentes que puedes crear tú ([cómo](SCRIPTS.md)).
+- 📱 **Se configura desde el móvil** escaneando un QR.
+- ⬆️ **Se actualiza sola.**
+- 🌙 **Modo noche** y apagado de pantalla.
+- 🔒 **No instala nada en Home Assistant**: solo necesita un token.
 
 ## Qué puedes controlar
 
@@ -45,10 +45,14 @@ Se conecta a **Home Assistant**, se ve como un Google Nest Hub y, cuando nadie l
 
 ## Qué necesitas
 
-- Una Raspberry Pi 3, 4 o 5 (recomendada la Pi 4) con Raspberry Pi OS Lite (sin escritorio).
-- Una pantalla táctil (HDMI o de las que van en los pines).
-- Home Assistant y un **token de acceso**: en HA, tu perfil → Seguridad → Tokens de larga duración.
-- Opcional: Music Assistant, para usar la Pi como altavoz.
+| | |
+|---|---|
+| **Raspberry Pi 4** (2 GB o más) | también vale una Pi 3 o 5 |
+| **Pantalla táctil HDMI de 7″, 1024×600, con táctil por USB** | se conecta con un cable HDMI (la Pi 4 tiene micro-HDMI) y un USB para el táctil |
+| **Fuente oficial de la Pi 4** (5,1 V, 3 A, USB-C) | con un cargador de móvil se queda corta y se cuelga |
+| **Tarjeta microSD** de 16 GB o más | con Raspberry Pi OS Lite (sin escritorio) |
+| **Home Assistant** | y un token: tu perfil → Seguridad → Tokens de larga duración |
+| Opcional: **Music Assistant** | para usar la Pi como altavoz (por el jack, HDMI o USB) |
 
 ## Montarlo
 
@@ -73,16 +77,16 @@ Se cambian en el botón ⚙ de la pantalla o desde la web del móvil:
 |---|---|
 | **Pantalla** | brillo, cuándo pasa a modo ambiente, cuándo se apaga |
 | **Modo noche** | horario, brillo bajo o pantalla apagada |
-| **Fotos** | álbumes, cada cuánto cambian, cómo se ven (rellenar / entera con fondo difuminado / entera) |
+| **Fotos** | álbumes, cada cuánto cambian y cómo se ven |
 | **Modo ambiente** | qué burbujas salen y en qué orden, altavoz por defecto |
 | **Avisos y alarmas** | sonido, volumen, alarmas con hora y días |
 | **Qué se ve** | favoritos, ocultar dispositivos, enchufes de las impresoras |
 | **Red** | WiFi, IP y nombre del panel |
-| **Altavoz** | nombre y salida (jack, HDMI, USB), qué altavoces abren «Sonando» y cuándo se cierra al pausar |
-| **Actualizaciones** | te avisa (botón «Actualizar») o se actualiza sola cada día a la hora que elijas |
+| **Altavoz** | nombre, salida de audio y qué altavoces abren «Sonando» |
+| **Actualizaciones** | avisar o actualizar sola a una hora |
 
-**Altavoz (opcional):** si no lo instalaste con `install.sh`, hazlo con `bash ~/ha-panel/setup-sendspin.sh` y actívalo en la web → Ajustes → Altavoz. El desfase con otros altavoces se ajusta en Music Assistant (ajustes del reproductor).
+**Altavoz:** si no lo instalaste con `install.sh`, lanza `bash ~/ha-panel/setup-sendspin.sh` y actívalo en la web → Ajustes → Altavoz.
 
 ## Probarlo en el ordenador
 
-Con Python instalado: `python dev.py`. Se abre el panel en el navegador; la web de configuración está en `http://127.0.0.1:8080` (contraseña `panel`). La pantalla y la red se simulan, así que no se cambia nada del ordenador.
+Con Python instalado: `python dev.py`. El panel se abre en el navegador y la web de configuración está en `http://127.0.0.1:8080` (contraseña `panel`).
