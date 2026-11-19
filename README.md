@@ -42,10 +42,10 @@ Pantalla táctil para casa, al estilo Google Nest Hub, que se conecta a **Home A
 2. Entra por SSH y ejecuta:
    ```bash
    git clone https://github.com/adrisg/ha-panel ~/ha-panel
-   bash ~/ha-panel/setup-kiosk.sh
-   sudo reboot
+   bash ~/ha-panel/install.sh
    ```
-   Durante la instalación te pide una contraseña para la web de configuración.
+   Te pide una contraseña para la web de configuración, si quieres el **altavoz** de Music Assistant y si reiniciar al acabar.
+   (Por partes: `setup-kiosk.sh` instala el panel y `setup-sendspin.sh` el altavoz.)
 3. Al arrancar, la pantalla muestra un **QR**. Escanéalo con el móvil, entra con la contraseña y pon la dirección de tu Home Assistant y el token.
 4. ¡Listo! El panel se recarga solo cada vez que guardas cambios.
 
@@ -64,7 +64,7 @@ Se cambian en el botón ⚙ de la pantalla o desde la web del móvil:
 | **Red** | WiFi, IP y nombre del panel |
 | **Altavoz** | la Pi suena como altavoz de Music Assistant (Sendspin): nombre y salida (jack, HDMI, USB) |
 
-**Altavoz (opcional):** instálalo una vez con `bash ~/ha-panel/setup-sendspin.sh` y actívalo en la web → Ajustes → Altavoz. Sale en Music Assistant como un reproductor más.
+**Altavoz (opcional):** si no lo instalaste con `install.sh`, hazlo con `bash ~/ha-panel/setup-sendspin.sh` y actívalo en la web → Ajustes → Altavoz. Sale en Music Assistant como un reproductor más.
 
 ## Probarlo en el ordenador
 
