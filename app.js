@@ -761,8 +761,10 @@ function onSpeaker(id, old, st) {
     // En pausa o parada: se queda un rato (web → Ajustes → Altavoz) por si vuelve a sonar
     const secs = SPK.closeAfter == null ? 60 : SPK.closeAfter;
     clearTimeout(NP.closeTimer);
-    if (secs === 0) hideNowPlaying();
-    else if (secs > 0) NP.closeTimer = setTimeout(() => { if ((S.states[id] || {}).state !== 'playing') hideNowPlaying(); }, secs * 1000);
+    // al cerrarse sola vuelve al modo ambiente (con la ✕ se queda donde estaba)
+    const autoClose = () => { hideNowPlaying(true); if (!alertOpen() && !S.sheetId) showAmbient(); else resetIdle(); };
+    if (secs === 0) autoClose();
+    else if (secs > 0) NP.closeTimer = setTimeout(() => { if ((S.states[id] || {}).state !== 'playing') autoClose(); }, secs * 1000);
   }
 }
 
