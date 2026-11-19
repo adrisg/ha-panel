@@ -451,7 +451,12 @@ go = 'home' | 'rooms' | 'sensors' | 'media' | 'printers' | 'scooter' | 'settings
         <select id="spk-entity"></select>
         <span class="hint">El de Music Assistant que se crea con el altavoz. En automático se busca por el nombre.</span>
       </div>
-      <div class="row"><label for="spk-open">Al sonar algo, mostrar la pantalla «Sonando»</label><label class="switch"><input id="spk-open" type="checkbox"><span></span></label></div>
+      <div class="field">
+        <label>Otros altavoces que también abren «Sonando»</label>
+        <div id="spk-watch"></div>
+        <span class="hint">Por ejemplo el de la habitación donde está el panel: al empezar a sonar, sale su pantalla «Sonando».</span>
+      </div>
+      <div class="row"><label for="spk-open">Al sonar algo en la Pi, mostrar la pantalla «Sonando»</label><label class="switch"><input id="spk-open" type="checkbox"><span></span></label></div>
       <div class="field">
         <label for="spk-close">Al pausar o parar, cerrar «Sonando»</label>
         <select id="spk-close">
@@ -1843,7 +1848,7 @@ function spkFill(r) {
   if (s.device && !outs.some((o) => o.id === s.device)) outs.push({ id: s.device, name: s.device + ' (no está conectada)' });
   sel.replaceChildren(...outs.map((o) => { const op = document.createElement('option'); op.value = o.id; op.textContent = o.name; return op; }));
   sel.value = s.device; sel.dispatchEvent(new Event('change'));
-  spkEntity = s.entity; spkEntities();
+  spkEntity = s.entity; spkWatch = (s.watch || []).slice(); spkEntities();
   $('#spk-open').checked = s.open;
   const cl = $('#spk-close');
   if (![...cl.options].some((o) => +o.value === s.closeAfter)) cl.append(new Option(s.closeAfter + ' s', s.closeAfter));
@@ -1852,8 +1857,13 @@ function spkFill(r) {
   $('#spk-log').textContent = r.log || '';
   $('#spk-log-box').classList.toggle('hidden', !r.log);
 }
-let spkEntity = '';
+let spkEntity = '', spkWatch = [];
+function spkWatchPaint() {
+  const opts = Object.keys(names).filter((id) => id.startsWith('media_player.')).map((id) => ({ value: id, label: `${names[id] || id} (${id})` }));
+  $('#spk-watch').replaceChildren(multiSelect(opts, spkWatch, (v) => { spkWatch = v; }, 'Ninguno'));
+}
 function spkEntities() {
+  spkWatchPaint();
   const sel = $('#spk-entity');
   const mp = Object.keys(names).filter((id) => id.startsWith('media_player.'));
   if (spkEntity && !mp.includes(spkEntity)) mp.push(spkEntity);
@@ -1866,7 +1876,7 @@ async function loadSpk() {
 $('#spk-ok').onclick = async () => {
   spkMsg('Aplicando…');
   try {
-    const r = await api('POST', '/api/altavoz', { enabled: $('#spk-enabled').checked, name: $('#spk-name').value.trim(), device: $('#spk-device').value, entity: $('#spk-entity').value, open: $('#spk-open').checked, closeAfter: +$('#spk-close').value, delay: +$('#spk-delay').value || 0 });
+    const r = await api('POST', '/api/altavoz', { enabled: $('#spk-enabled').checked, name: $('#spk-name').value.trim(), device: $('#spk-device').value, entity: $('#spk-entity').value, open: $('#spk-open').checked, closeAfter: +$('#spk-close').value, watch: spkWatch, delay: +$('#spk-delay').value || 0 });
     spkFill(r.info); spkMsg(r.mensaje, true);
     // tarda unos segundos en arrancar: vuelve a mirar el estado
     setTimeout(loadSpk, 4000);

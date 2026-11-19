@@ -744,8 +744,14 @@ function speakerEntity() {
     String(S.states[id].attributes.friendly_name || '').trim().toLowerCase() === want);
   return found.find((id) => reg(id).platform === 'music_assistant') || found[0] || null;
 }
+/** Altavoces que abren «Sonando»: el del panel (si está activado) y los elegidos en la web (p. ej. el de la habitación). */
+function watchedSpeakers() {
+  if (!SPK) return [];
+  const own = SPK.enabled && SPK.open ? speakerEntity() : null;
+  return [...new Set([own, ...(SPK.watch || [])])].filter((x) => x && S.states[x]);
+}
 function onSpeaker(id, old, st) {
-  if (!SPK || !SPK.enabled || !SPK.open || domain(id) !== 'media_player' || id !== speakerEntity()) return;
+  if (!SPK || domain(id) !== 'media_player' || !watchedSpeakers().includes(id)) return;
   const was = old && old.state, now = st && st.state;
   if (now === 'playing') clearTimeout(NP.closeTimer);   // vuelve a sonar: ya no se cierra
   if (now === 'playing' && was && was !== 'playing' && was !== 'paused') {
@@ -2064,9 +2070,10 @@ const paintBullets = renderAmbientChips;
  * Si está sonando algo en el altavoz de este panel, sale ese (aunque no sea el de por defecto);
  * tocar su carátula o el título vuelve a la pantalla «Sonando». */
 function ambientSpeaker() {
-  const own = speakerEntity(), st = own && S.states[own];
-  if (st && (st.state === 'playing' || st.state === 'paused')) return own;
-  return SET.defaultSpeaker === '@panel' ? own : SET.defaultSpeaker;
+  // primero uno que esté sonando de los que abren «Sonando», luego uno en pausa, y si no el de por defecto
+  const w = watchedSpeakers(), st = (x) => (S.states[x] || {}).state;
+  return w.find((x) => st(x) === 'playing') || w.find((x) => st(x) === 'paused') ||
+    (SET.defaultSpeaker === '@panel' ? speakerEntity() : SET.defaultSpeaker);
 }
 function renderAmbientPlayer() {
   const box = $('#amb-player'), id = ambientSpeaker(), st = id && S.states[id];
@@ -2079,7 +2086,7 @@ function renderAmbientPlayer() {
   const own = id === speakerEntity();
   const title = a.media_title || (own ? 'Este panel' : nameOf(id));
   const sub = a.media_title ? (a.media_artist || a.app_name || nameOf(id)) : (T[st.state] || cap(st.state));
-  box.classList.toggle('own', own);
+  box.classList.toggle('own', own || watchedSpeakers().includes(id));   // tocarlo abre «Sonando»
   const vol = a.volume_level != null ? Math.round(a.volume_level * 100) + ' %' : '';
   const btn = (act, ic, cls = '') => h('button', { class: 'amb-pbtn ' + cls, 'data-act': act }, icon(ic));
   box.replaceChildren(
@@ -2495,7 +2502,7 @@ function start() {
     if (e.target.closest('#amb-next')) { e.stopPropagation(); nextBackground(); resetIdle(); return; }
     const act = e.target.closest('[data-act]');
     if (act) { e.stopPropagation(); ambientPlayerAction(act.dataset.act); resetIdle(); return; }
-    if (e.target.closest('#amb-player.own .amb-pinfo')) { e.stopPropagation(); showNowPlaying(speakerEntity()); return; }
+    if (e.target.closest('#amb-player.own .amb-pinfo')) { e.stopPropagation(); showNowPlaying(ambientSpeaker()); return; }
     if (e.target.closest('#amb-player')) { resetIdle(); return; }
     const chip = e.target.closest('.amb-chip');
     if (chip && chip.bubble && (chip.bubble.action || chip.bubble.onTap)) { e.stopPropagation(); runBubble(chip.bubble); resetIdle(); return; }

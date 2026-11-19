@@ -309,7 +309,9 @@ def speaker_settings():
     return {'enabled': bool(s.get('enabled')), 'name': str(s.get('name') or '').strip()[:60],
             'device': str(s.get('device') or '').strip()[:120], 'delay': delay,
             'entity': entity if entity.startswith('media_player.') else '', 'open': s.get('open', True) is not False,
-            'closeAfter': close_after}
+            'closeAfter': close_after,
+            # otros altavoces que también abren «Sonando» al empezar a sonar (p. ej. el de la habitación)
+            'watch': [str(x)[:120] for x in (s.get('watch') or []) if str(x).startswith('media_player.')][:20]}
 
 
 def speaker_pin():
@@ -329,7 +331,7 @@ def speaker_panel():
     """Lo que necesita el panel: con qué nombre sale en Music Assistant y si abre el reproductor al sonar."""
     s = speaker_settings()
     return {'enabled': s['enabled'], 'name': s['name'] or speaker_default_name(), 'entity': s['entity'], 'open': s['open'],
-            'closeAfter': s['closeAfter']}
+            'closeAfter': s['closeAfter'], 'watch': s['watch']}
 
 
 def speaker_default_name():
@@ -389,7 +391,8 @@ def set_speaker(body):
            'delay': body.get('delay', cur['delay']),
            'entity': str(body.get('entity', cur['entity']) or '').strip()[:120],
            'open': bool(body.get('open', cur['open'])),
-           'closeAfter': body.get('closeAfter', cur['closeAfter'])}
+           'closeAfter': body.get('closeAfter', cur['closeAfter']),
+           'watch': body.get('watch', cur['watch']) if isinstance(body.get('watch', cur['watch']), list) else cur['watch']}
     if new['device'] and new['device'] not in {o['id'] for o in audio_outputs()}:
         raise ValueError('esa salida de audio no existe')
     DATA.mkdir(parents=True, exist_ok=True)
