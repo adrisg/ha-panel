@@ -54,6 +54,10 @@ Se conecta a **Home Assistant**, al estilo Google Nest Hub. Cuando no la usas, e
 | **Home Assistant** | y un token: tu perfil → Seguridad → Tokens de larga duración |
 | Opcional: **Music Assistant** | para usar la Pi como altavoz (por el jack, HDMI o USB) |
 
+**Otras pantallas:**
+- ✅ **Por cinta DSI** (el conector plano «DISPLAY» de la Pi), como la **Raspberry Pi Touch Display** oficial de 7″ o la **Touch Display 2**: deberían ir bien y con brillo real, pero no están probadas. La Touch Display 2 es vertical: gírala con `ROTATE` en `~/kiosk-browser.sh`.
+- ❌ **Por los pines GPIO (SPI)**, como las Waveshare de 3,5″ (480×320): no valen. Son muy lentas para el panel y necesitan controladores especiales.
+
 ## Montarlo
 
 1. Instala Raspberry Pi OS Lite en la tarjeta, con WiFi y SSH activados.
