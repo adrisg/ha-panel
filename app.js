@@ -776,6 +776,25 @@ function fmtTime(s) {
   const h = Math.floor(s / 3600), m = Math.floor((s % 3600) / 60), ss = String(s % 60).padStart(2, '0');
   return h ? `${h}:${String(m).padStart(2, '0')}:${ss}` : `${m}:${ss}`;
 }
+/* Arrastrar con el dedo o el ratón. En la pantalla táctil de la Pi los eventos de puntero no siempre llegan,
+ * así que se escuchan los táctiles (y los de puntero solo para ratón). start(x, y) devuelve false para ignorar. */
+function dragOn(el, { start, move, end }) {
+  let on = false;
+  const t0 = (e) => e.touches[0] || e.changedTouches[0];
+  el.addEventListener('touchstart', (e) => { const t = t0(e); if (start(t.clientX, t.clientY) !== false) { on = true; e.preventDefault(); } }, { passive: false });
+  el.addEventListener('touchmove', (e) => { if (on) { e.preventDefault(); const t = t0(e); move(t.clientX, t.clientY); } }, { passive: false });
+  const tEnd = () => { if (on) { on = false; end(); } };
+  el.addEventListener('touchend', tEnd);
+  el.addEventListener('touchcancel', tEnd);
+  el.addEventListener('pointerdown', (e) => {
+    if (e.pointerType === 'touch' || start(e.clientX, e.clientY) === false) return;
+    on = true; el.setPointerCapture(e.pointerId);
+  });
+  el.addEventListener('pointermove', (e) => { if (on && e.pointerType !== 'touch') move(e.clientX, e.clientY); });
+  const pEnd = (e) => { if (e.pointerType !== 'touch') tEnd(); };
+  el.addEventListener('pointerup', pEnd);
+  el.addEventListener('pointercancel', pEnd);
+}
 function showNowPlaying(id) {
   if (NP.id === id && $('#np').classList.contains('show')) return;
   // ¿Se abrió desde el modo ambiente? Al cerrarla con la ✕ se vuelve a él
@@ -792,9 +811,14 @@ function showNowPlaying(id) {
   // Con eventos táctiles y de ratón: en la pantalla táctil de la Pi los de puntero no siempre llegan.
   const knob = h('b', { class: 'np-knob' });
   const seek = h('div', { class: 'np-seek' }, h('div', { class: 'np-bar' }, bar), knob);
-  let seekDrag = false, seekMoved = false, seekPos = 0, seekX = 0, frac = 0;
+  let seekDrag = false, seekMoved = false, seekPos = 0, seekX = 0, frac = 0, lastPos = null;
+  let seekHold = null;   // tras soltar: se queda donde lo dejaste hasta que llegue la posición nueva
   const canSeek = () => { const a = (S.states[id] || {}).attributes || {}; return !!((a.supported_features || 0) & 2) && +a.media_duration > 0; };
-  const paintProg = (f) => { bar.style.width = f * 100 + '%'; knob.style.left = f * 100 + '%'; };
+  const paintProg = (f, instant) => {
+    if (instant) seek.classList.add('instant');
+    bar.style.width = f * 100 + '%'; knob.style.left = f * 100 + '%';
+    if (instant) { void seek.offsetWidth; seek.classList.remove('instant'); }
+  };
   const seekAt = (x) => {
     const r = seek.getBoundingClientRect(), total = +S.states[id].attributes.media_duration;
     const f = Math.max(0, Math.min(1, (x - r.left) / r.width));
@@ -814,25 +838,21 @@ function showNowPlaying(id) {
   const seekEnd = () => {
     if (!seekDrag) return;
     seekDrag = false; seek.classList.remove('drag');
-    if (seekMoved) call('media_player', 'media_seek', { seek_position: Math.round(seekPos) }, id);
+    if (!seekMoved) return;
+    seekHold = { pos: seekPos, t: Date.now(), upd: ((S.states[id] || {}).attributes || {}).media_position_updated_at };
+    lastPos = seekPos;
+    call('media_player', 'media_seek', { seek_position: Math.round(seekPos) }, id);
   };
-  seek.addEventListener('touchstart', (e) => { if (seekStart(e.touches[0].clientX)) e.preventDefault(); }, { passive: false });
-  seek.addEventListener('touchmove', (e) => { if (seekDrag) { e.preventDefault(); seekMove(e.touches[0].clientX); } }, { passive: false });
-  seek.addEventListener('touchend', seekEnd);
-  seek.addEventListener('touchcancel', seekEnd);
-  seek.addEventListener('pointerdown', (e) => { if (e.pointerType !== 'touch' && seekStart(e.clientX)) seek.setPointerCapture(e.pointerId); });
-  seek.addEventListener('pointermove', (e) => { if (e.pointerType !== 'touch') seekMove(e.clientX); });
-  seek.addEventListener('pointerup', (e) => { if (e.pointerType !== 'touch') seekEnd(); });
-  seek.addEventListener('pointercancel', (e) => { if (e.pointerType !== 'touch') seekEnd(); });
+  dragOn(seek, { start: (x) => seekStart(x), move: (x) => seekMove(x), end: seekEnd });
   const clock = h('span', { class: 'np-clock' });
   const svc = (s) => () => call('media_player', s, {}, id);
   const play = h('button', { class: 'np-play', onclick: svc('media_play_pause') });
-  // Volumen: botón 🔊 abajo a la derecha; al tocarlo sube una barra vertical (tocar o arrastrar, se aplica al soltar).
-  // Se esconde sola a los 4 s sin tocarla, o al volver a tocar el botón.
+  // Volumen: botón 🔊 abajo a la derecha; al tocarlo sube una barra vertical (tocar o arrastrar: cambia mientras arrastras).
+  // Se esconde sola a los 4 s sin tocarla, o al volver a tocar el botón. Si el volumen cambia desde otro sitio, se abre sola.
   const volTxt = h('span', { class: 'np-vval' }), volFill = h('i'), volIc = h('button', { class: 'np-vbtn' });
   const volTrack = h('div', { class: 'np-vtrack' }, volFill);
   const vol = h('div', { class: 'np-vol' }, h('div', { class: 'np-vpanel' }, volTxt, volTrack), volIc);
-  let volNow = 0, volDrag = false, volTimer = null;
+  let volNow = 0, volDrag = false, volTimer = null, volSent = -1, volSentAt = 0, volKnown = null, volLive = null;
   const volIcon = (v) => icon(v <= 0 ? 'mdi-volume-off' : v < 34 ? 'mdi-volume-low' : v < 67 ? 'mdi-volume-medium' : 'mdi-volume-high');
   const volPaint = () => {
     volTxt.textContent = volNow + ' %';
@@ -841,21 +861,21 @@ function showNowPlaying(id) {
   };
   const volHideLater = () => { clearTimeout(volTimer); volTimer = setTimeout(() => !volDrag && vol.classList.remove('open'), 4000); };
   volIc.onclick = () => { vol.classList.toggle('open'); volHideLater(); };
-  const volAt = (e) => {
-    const r = volTrack.getBoundingClientRect();
-    volNow = Math.round(Math.max(0, Math.min(1, (r.bottom - e.clientY) / r.height)) * 100);
-    volPaint();
-  };
-  volTrack.addEventListener('pointerdown', (e) => { volDrag = true; clearTimeout(volTimer); volTrack.setPointerCapture(e.pointerId); volAt(e); });
-  volTrack.addEventListener('pointermove', (e) => { if (volDrag) volAt(e); });
-  const volEnd = () => {
-    if (!volDrag) return;
-    volDrag = false;
-    volHideLater();
+  const volSend = () => {
+    if (volNow === volSent) return;
+    volSent = volNow; volSentAt = Date.now();
     call('media_player', 'volume_set', { volume_level: volNow / 100 }, id);
   };
-  volTrack.addEventListener('pointerup', volEnd);
-  volTrack.addEventListener('pointercancel', volEnd);
+  const volAt = (y) => {
+    const r = volTrack.getBoundingClientRect();
+    volNow = Math.round(Math.max(0, Math.min(1, (r.bottom - y) / r.height)) * 100);
+    volPaint();
+  };
+  dragOn(volTrack, {
+    start: (x, y) => { volDrag = true; clearTimeout(volTimer); volAt(y); volSend(); clearInterval(volLive); volLive = setInterval(volSend, 200); },
+    move: (x, y) => volAt(y),
+    end: () => { volDrag = false; clearInterval(volLive); volSend(); volHideLater(); },
+  });
   const root = $('#np');
   root.replaceChildren(bg,
     h('div', { class: 'np-top' }, icon('mdi-speaker'), h('span', { class: 'np-spk' }, nameOf(id, false)), clock,
@@ -873,7 +893,13 @@ function showNowPlaying(id) {
     title.textContent = a.media_title || T[st.state] || st.state;
     sub.textContent = [a.media_artist, a.media_album_name].filter(Boolean).join(' · ');
     play.replaceChildren(icon(st.state === 'playing' ? 'mdi-pause' : 'mdi-play'));
-    if (!volDrag) { volNow = Math.round((a.volume_level || 0) * 100); volPaint(); }
+    const v = Math.round((a.volume_level || 0) * 100);
+    // mientras arrastras, o justo después, manda lo tuyo (los estados llegan con retraso)
+    if (!volDrag && Date.now() - volSentAt > 1500) {
+      if (volKnown != null && v !== volKnown) { vol.classList.add('open'); volHideLater(); }   // cambiado desde otro sitio
+      volNow = v; volPaint();
+    }
+    volKnown = v;
     if (a.entity_picture !== pic) {
       pic = a.entity_picture;
       const url = pic ? `url("${absUrl(pic)}")` : '';
@@ -891,8 +917,15 @@ function showNowPlaying(id) {
     if (!total || seekDrag) return;
     let pos = +a.media_position || 0;
     if (st.state === 'playing' && a.media_position_updated_at) pos += (Date.now() - Date.parse(a.media_position_updated_at)) / 1000;
+    if (seekHold) {
+      if (a.media_position_updated_at === seekHold.upd && Date.now() - seekHold.t < 6000)
+        pos = seekHold.pos + (st.state === 'playing' ? (Date.now() - seekHold.t) / 1000 : 0);
+      else seekHold = null;
+    }
     pos = Math.min(pos, total);
-    frac = pos / total; paintProg(frac);
+    const jump = lastPos == null || Math.abs(pos - lastPos - 1) > 1.5;   // saltos (canción nueva, posición nueva): sin animación
+    lastPos = pos;
+    frac = pos / total; paintProg(frac, jump);
     cur.textContent = fmtTime(pos); dur.textContent = fmtTime(total);
   };
   tick();
