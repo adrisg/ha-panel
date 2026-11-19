@@ -426,8 +426,8 @@ def run_speaker():
             '--product-name', 'Panel Hogar']
     if s['device']:
         args += ['--audio-device', s['device']]
-    if s['delay']:
-        args += ['--output-delay-ms', str(s['delay'])]
+    # El desfase NO se pasa: se ajusta en Music Assistant y sendspin lo guarda; si se pasara aquí,
+    # al arrancar pisaría el de Music Assistant.
     os.environ['PANEL_SENDSPIN_PIN'] = str(SENDSPIN_PIN)
     os.execv(args[0], args)
 
@@ -511,11 +511,20 @@ def check_updates():
         UPD['checking'] = False
 
 
-def _restart_all():
-    if not SIMULATE:
-        if SENDSPIN_BIN.exists() and _user_ctl('is-active', SENDSPIN_UNIT)[1] == 'active':
-            _user_ctl('restart', SENDSPIN_UNIT)
-        subprocess.run(['pkill', '-x', 'cage'])   # kiosk.sh vuelve a abrir el panel (y este ayudante) con la versión nueva
+def _restart_after_update(before):
+    """Sin reiniciar todo el kiosko: el panel se recarga solo (cambia la versión) y este ayudante se relanza a sí mismo.
+    El altavoz solo se reinicia si ha cambiado lo suyo (para no cortar la música sin necesidad)."""
+    changed = _git('diff', '--name-only', before, 'HEAD')[1].splitlines()
+    hunks = _git('diff', '-U0', before, 'HEAD', '--', 'panel-helper.py')[1]
+    speaker = 'sendspin-run.py' in changed or 'def run_speaker' in hunks or 'SENDSPIN' in hunks
+    bump_version()                 # el panel ve la versión nueva en /poll y recarga la página
+    if SIMULATE:
+        return
+    if speaker and SENDSPIN_BIN.exists() and _user_ctl('is-active', SENDSPIN_UNIT)[1] == 'active':
+        _user_ctl('restart', SENDSPIN_UNIT)
+    if 'panel-helper.py' in changed:
+        sys.stdout.flush()
+        os.execv(sys.executable, [sys.executable, str(HERE / 'panel-helper.py')])   # mismo proceso, código nuevo
 
 
 def apply_update():
@@ -556,7 +565,7 @@ def apply_update():
                 log.append(f'update-hook.sh falló: {e}')
         UPD['log'] = '\n'.join(x for x in log if x)[-4000:]
         UPD['available'] = []
-        _later(_restart_all, 3)
+        _later(lambda: _restart_after_update(before), 3)
     finally:
         UPD['applying'] = False
 
