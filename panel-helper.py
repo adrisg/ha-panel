@@ -563,7 +563,9 @@ def apply_update():
 
 def update_info():
     # ¿puede instalar paquetes sin contraseña? (permiso que da setup-kiosk.sh)
-    can_sudo = True if SIMULATE else _run(['-l', '/usr/bin/apt-get'], sudo=True)[0] == 0
+    # («sudo -l apt-get» no vale: también dice que sí cuando se puede con contraseña)
+    can_sudo = True if SIMULATE else any('NOPASSWD' in line and '/usr/bin/apt-get' in line
+                                         for line in _run(['-l'], sudo=True)[1].splitlines())
     return {'settings': update_settings(), 'branch': git_branch(), 'current': current_version(),
             'available': UPD['available'], 'lastCheck': UPD['lastCheck'], 'checking': UPD['checking'],
             'applying': UPD['applying'], 'error': UPD['error'], 'log': UPD['log'], 'sudo': can_sudo, 'simulated': SIMULATE}
