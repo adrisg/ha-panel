@@ -823,7 +823,7 @@ function showNowPlaying(id) {
   const seekAt = (x) => {
     const r = seek.getBoundingClientRect(), total = +S.states[id].attributes.media_duration;
     const f = Math.max(0, Math.min(1, (x - r.left) / r.width));
-    seekPos = f * total; paintProg(f); cur.textContent = tip.textContent = fmtTime(seekPos);
+    seekPos = f * total; paintProg(f); tip.textContent = fmtTime(seekPos);
   };
   const seekStart = (x) => {
     const r = seek.getBoundingClientRect();
@@ -916,7 +916,7 @@ function showNowPlaying(id) {
     const total = +a.media_duration || 0;
     root.classList.toggle('no-prog', !total);
     seek.classList.toggle('can', canSeek());
-    if (!total || seekDrag) return;
+    if (!total) return;
     let pos = +a.media_position || 0;
     if (st.state === 'playing' && a.media_position_updated_at) pos += (Date.now() - Date.parse(a.media_position_updated_at)) / 1000;
     if (seekHold) {
@@ -925,10 +925,11 @@ function showNowPlaying(id) {
       else seekHold = null;
     }
     pos = Math.min(pos, total);
+    cur.textContent = fmtTime(pos); dur.textContent = fmtTime(total);   // por dónde va la música (también mientras arrastras)
+    if (seekDrag) return;
     const jump = lastPos == null || Math.abs(pos - lastPos - 1) > 1.5;   // saltos (canción nueva, posición nueva): sin animación
     lastPos = pos;
     frac = pos / total; paintProg(frac, jump);
-    cur.textContent = fmtTime(pos); dur.textContent = fmtTime(total);
   };
   tick();
   NP.timer = setInterval(tick, 1000);
