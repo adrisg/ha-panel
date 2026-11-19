@@ -1,7 +1,7 @@
 # Panel Hogar
 
-**Convierte una Raspberry Pi y una pantalla táctil en el centro de control de tu casa.**
-Se conecta a **Home Assistant**, al estilo Google Nest Hub. Cuando no la usas, es un reloj con tus fotos, y también puede ser un altavoz de Music Assistant.
+**Una pantalla bonita con tus fotos para el escritorio, que además te deja ver y manejar toda tu casa.**
+Funciona con Home Assistant y una Raspberry Pi.
 
 <p align="center">
   <img src="docs/ambient.jpg" width="49%"> <img src="docs/sonando.jpg" width="49%">
@@ -9,16 +9,10 @@ Se conecta a **Home Assistant**, al estilo Google Nest Hub. Cuando no la usas, e
 
 ## ✨ Lo que la hace especial
 
-- 🖼️ **Modo ambiente**: reloj con tus fotos (Immich, Google Fotos…), el tiempo y un mini reproductor.
-- 🔊 **Es un altavoz** de Music Assistant, sincronizado con el resto de la casa.
-- 🎵 **Pantalla «Sonando»**: carátula a pantalla completa, controles, barra para saltar y volumen.
-- 🔔 **Avisos con botones** desde Home Assistant: «llaman al telefonillo → Abrir puerta» ([cómo](AVISOS.md)).
-- ⏰ **Despertador** con alarmas por días.
+- 🖼️ **Tus fotos y la hora** cuando no la usas, con el tiempo y la música que suena.
+- 🔊 **También es un altavoz** de Music Assistant, con la carátula a pantalla completa.
+- 🔔 **Avisos con botones**: «llaman al telefonillo → Abrir puerta» ([cómo](AVISOS.md)).
 - 🧩 **Pestañas a tu gusto**, con componentes que puedes crear tú ([cómo](SCRIPTS.md)).
-- 📱 **Se configura desde el móvil** escaneando un QR.
-- ⬆️ **Se actualiza sola.**
-- 🌙 **Modo noche** y apagado de pantalla.
-- 🔒 **No instala nada en Home Assistant**: solo necesita un token.
 
 ## Qué puedes controlar
 
