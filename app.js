@@ -1998,6 +1998,25 @@ function showAmbient() {
   if (photosOn()) nextBackground();
   $('#ambient').classList.add('show');
 }
+/** Tras salir del modo ambiente (o encender la pantalla) con un toque: hasta que se levanta el dedo no se hace nada,
+ * ni pulsar lo que haya debajo (una luz…) ni desplazar la vista. */
+function swallowTouch() {
+  const stop = (e) => { if (e.cancelable) e.preventDefault(); e.stopPropagation(); };
+  const evs = ['click', 'touchmove', 'pointermove', 'pointerup', 'mousedown', 'mouseup', 'contextmenu', 'wheel'];
+  const opts = { capture: true, passive: false };
+  evs.forEach((t) => window.addEventListener(t, stop, opts));
+  let done = false;
+  const ends = ['pointerup', 'pointercancel', 'touchend', 'touchcancel'];
+  const finish = () => {
+    if (done) return;
+    done = true;
+    ends.forEach((t) => window.removeEventListener(t, finish, true));
+    // un poco más: el «click» del toque llega justo después de levantar el dedo
+    setTimeout(() => evs.forEach((t) => window.removeEventListener(t, stop, opts)), 400);
+  };
+  ends.forEach((t) => window.addEventListener(t, finish, true));
+  setTimeout(finish, 8000);   // por si no llega el final del toque
+}
 /** Sale del modo ambiente a Inicio, o a la vista de la burbuja que se haya tocado. */
 function hideAmbient(view = 'home') {
   S.ambient = false;
@@ -2604,14 +2623,15 @@ function start() {
     if (e.target.closest('#amb-next')) { e.stopPropagation(); nextBackground(); resetIdle(); return; }
     const act = e.target.closest('[data-act]');
     if (act) { e.stopPropagation(); ambientPlayerAction(act.dataset.act); resetIdle(); return; }
-    if (e.target.closest('#amb-player.own .amb-pinfo')) { e.stopPropagation(); showNowPlaying(ambientSpeaker()); return; }
+    if (e.target.closest('#amb-player.own .amb-pinfo')) { e.stopPropagation(); swallowTouch(); showNowPlaying(ambientSpeaker()); return; }
     if (e.target.closest('#amb-player')) { resetIdle(); return; }
     const chip = e.target.closest('.amb-chip');
     if (chip && chip.bubble && (chip.bubble.action || chip.bubble.onTap)) { e.stopPropagation(); runBubble(chip.bubble); resetIdle(); return; }
+    swallowTouch();
     hideAmbient(chip && chip.bubble && chip.bubble.go ? chip.bubble.go : 'home');
   });
   document.addEventListener('pointerdown', () => { SCREEN.lastTouch = Date.now(); resetIdle(); }, true);
-  $('#blackout').addEventListener('pointerdown', (e) => { e.preventDefault(); e.stopPropagation(); wakeScreen(); });
+  $('#blackout').addEventListener('pointerdown', (e) => { e.preventDefault(); e.stopPropagation(); swallowTouch(); wakeScreen(); });
   helperInit();
   setInterval(pollHelper, 5000);
 
