@@ -1833,6 +1833,7 @@ function spkFill(r) {
   const s = r.settings;
   const estado = !r.installed ? 'Sin instalar' : r.active ? 'Funcionando' : s.enabled ? 'Activado, pero no está funcionando (mira el registro)' : 'Desactivado';
   const rows = [['Estado', estado], ['Nombre', s.name || r.defaultName]];
+  if (r.pin) rows.push(['Código para Music Assistant', r.pin]);
   $('#spk-info').replaceChildren(...rows.flatMap(([k, v]) => { const dt = document.createElement('dt'), dd = document.createElement('dd'); dt.textContent = k; dd.textContent = v; return [dt, dd]; }));
   $('#spk-install').classList.toggle('hidden', r.installed);
   $('#spk-enabled').checked = s.enabled;

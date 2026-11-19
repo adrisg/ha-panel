@@ -287,6 +287,7 @@ def ha_request(method, path, body=None, ha_url=None, token=None):
 SENDSPIN_FILE = DATA / 'sendspin.json'
 SENDSPIN_BIN = Path.home() / '.local' / 'share' / 'panel-hogar' / 'sendspin' / 'bin' / 'sendspin'
 SENDSPIN_UNIT = 'panel-sendspin.service'
+SENDSPIN_PIN = DATA / 'sendspin-pin.json'      # código para emparejar con Music Assistant (lo escribe sendspin-run.py)
 SIM_SPEAKER = {'active': False}
 CARD_NAMES = {'Headphones': 'Jack 3,5 mm', 'vc4hdmi0': 'HDMI 1', 'vc4hdmi1': 'HDMI 2', 'vc4hdmi': 'HDMI'}
 
@@ -309,6 +310,19 @@ def speaker_settings():
             'device': str(s.get('device') or '').strip()[:120], 'delay': delay,
             'entity': entity if entity.startswith('media_player.') else '', 'open': s.get('open', True) is not False,
             'closeAfter': close_after}
+
+
+def speaker_pin():
+    """Código que pide Music Assistant para emparejar el altavoz, mientras se está emparejando (si no, None)."""
+    if SIMULATE and SIM_SPEAKER.get('pin'):
+        return SIM_SPEAKER['pin']
+    try:
+        p = json.loads(SENDSPIN_PIN.read_text(encoding='utf-8'))
+    except (OSError, ValueError):
+        return None
+    if not isinstance(p, dict) or time.time() - float(p.get('at') or 0) > 600:   # uno viejo no vale
+        return None
+    return str(p.get('code') or '')[:20] or None
 
 
 def speaker_panel():
@@ -351,7 +365,7 @@ def _user_ctl(*args):
 
 def speaker_info():
     s = speaker_settings()
-    info = {'settings': s, 'defaultName': speaker_default_name(), 'outputs': audio_outputs(), 'log': ''}
+    info = {'settings': s, 'defaultName': speaker_default_name(), 'outputs': audio_outputs(), 'log': '', 'pin': speaker_pin()}
     if SIMULATE:
         return dict(info, installed=True, active=SIM_SPEAKER['active'])
     info['installed'] = SENDSPIN_BIN.exists()
@@ -403,13 +417,15 @@ def run_speaker():
     if not s['enabled']:
         print('Altavoz desactivado en la web (Ajustes → Altavoz).', flush=True)
         return
-    args = [str(SENDSPIN_BIN), 'daemon', '--name', s['name'] or speaker_default_name(),
+    # sendspin-run.py = sendspin daemon + guarda el código de emparejamiento para enseñarlo en el panel
+    args = [str(SENDSPIN_BIN.parent / 'python3'), str(HERE / 'sendspin-run.py'), 'daemon', '--name', s['name'] or speaker_default_name(),
             '--settings-dir', str(DATA / 'sendspin'), '--hardware-volume', 'false', '--disable-mpris',
             '--product-name', 'Panel Hogar']
     if s['device']:
         args += ['--audio-device', s['device']]
     if s['delay']:
         args += ['--output-delay-ms', str(s['delay'])]
+    os.environ['PANEL_SENDSPIN_PIN'] = str(SENDSPIN_PIN)
     os.execv(args[0], args)
 
 
@@ -661,7 +677,7 @@ class LocalHandler(Base):
         if u.path == '/red':
             return self._json(200, net_info())
         if u.path == '/poll':
-            return self._json(200, {'version': load_config()['version'], 'command': COMMAND})
+            return self._json(200, {'version': load_config()['version'], 'command': COMMAND, 'pin': speaker_pin()})
         if u.path == '/proxy':
             return self._proxy(parse_qs(u.query).get('url', [''])[0])
         if u.path == '/gphotos':
