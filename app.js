@@ -769,7 +769,7 @@ function onSpeaker(id, old, st) {
 }
 
 /* Pantalla «Sonando»: carátula grande con el fondo difuminado, título, progreso, controles y volumen */
-const NP = { id: null, timer: null, closeTimer: null };
+const NP = { id: null, timer: null, closeTimer: null, fromAmbient: false };
 const npPlaying = () => !!NP.id && (S.states[NP.id] || {}).state === 'playing';
 function fmtTime(s) {
   s = Math.max(0, Math.floor(s || 0));
@@ -778,10 +778,13 @@ function fmtTime(s) {
 }
 function showNowPlaying(id) {
   if (NP.id === id && $('#np').classList.contains('show')) return;
+  // ¿Se abrió desde el modo ambiente? Al cerrarla con la ✕ se vuelve a él
+  const fromAmbient = S.ambient || (!!NP.id && NP.fromAmbient);
   hideNowPlaying(true);
   closeSheet();
   if (S.ambient) { S.ambient = false; $('#ambient').classList.remove('show'); }
   NP.id = id;
+  NP.fromAmbient = fromAmbient;
   const bg = h('div', { class: 'np-bg' }), art = h('div', { class: 'np-art' }, icon('mdi-music'));
   const title = h('div', { class: 'np-title' }), sub = h('div', { class: 'np-sub' });
   const bar = h('i'), cur = h('span'), dur = h('span');
@@ -820,7 +823,7 @@ function showNowPlaying(id) {
   const root = $('#np');
   root.replaceChildren(bg,
     h('div', { class: 'np-top' }, icon('mdi-speaker'), h('span', { class: 'np-spk' }, nameOf(id, false)), clock,
-      h('button', { class: 'np-close', onclick: () => hideNowPlaying() }, icon('mdi-close'))),
+      h('button', { class: 'np-close', onclick: () => { const back = NP.fromAmbient; hideNowPlaying(); if (back && !alertOpen()) showAmbient(); } }, icon('mdi-close'))),
     h('div', { class: 'np-main' }, art, h('div', { class: 'np-info' }, title, sub,
       h('div', { class: 'np-ctrls' }, h('button', { onclick: svc('media_previous_track') }, icon('mdi-skip-previous')), play,
         h('button', { onclick: svc('media_next_track') }, icon('mdi-skip-next'))))),
