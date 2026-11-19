@@ -809,7 +809,8 @@ function showNowPlaying(id) {
   const bar = h('i'), cur = h('span'), dur = h('span');
   // Progreso: un puntito marca por dónde va. Solo arrastrando el puntito se cambia (al soltar).
   // Con eventos táctiles y de ratón: en la pantalla táctil de la Pi los de puntero no siempre llegan.
-  const knob = h('b', { class: 'np-knob' });
+  const tip = h('span', { class: 'np-tip' });   // mientras lo mantienes: el tiempo donde lo vas a dejar
+  const knob = h('b', { class: 'np-knob' }, tip);
   const seek = h('div', { class: 'np-seek' }, h('div', { class: 'np-bar' }, bar), knob);
   let seekDrag = false, seekMoved = false, seekPos = 0, seekX = 0, frac = 0, lastPos = null;
   let seekHold = null;   // tras soltar: se queda donde lo dejaste hasta que llegue la posición nueva
@@ -822,12 +823,13 @@ function showNowPlaying(id) {
   const seekAt = (x) => {
     const r = seek.getBoundingClientRect(), total = +S.states[id].attributes.media_duration;
     const f = Math.max(0, Math.min(1, (x - r.left) / r.width));
-    seekPos = f * total; paintProg(f); cur.textContent = fmtTime(seekPos);
+    seekPos = f * total; paintProg(f); cur.textContent = tip.textContent = fmtTime(seekPos);
   };
   const seekStart = (x) => {
     const r = seek.getBoundingClientRect();
     if (!canSeek() || Math.abs(x - (r.left + r.width * frac)) > 44) return false;   // solo cerca del puntito
     seekDrag = true; seekMoved = false; seekX = x; seek.classList.add('drag');
+    tip.textContent = fmtTime(frac * +S.states[id].attributes.media_duration);
     return true;
   };
   const seekMove = (x) => {
