@@ -13,7 +13,7 @@ Una pantalla bonita para el escritorio que decora con tus fotos y desde la que v
 - 🖼️ **Decora con tus fotos** mientras ves lo importante: la hora, el tiempo, la música… Fotos de **Immich**, **Google Fotos**, una carpeta de **Home Assistant** o enlaces.
 - 🔊 **También es un altavoz** de Music Assistant, con la carátula a pantalla completa.
 - 🔔 **Avisos con botones**: «llaman al telefonillo → Abrir puerta» ([cómo](AVISOS.md)).
-- 🫧 **Burbujas**: lo importante de un vistazo (luces encendidas, el patinete cargando, la impresora…). Puedes crear las tuyas ([cómo](SCRIPTS.md)).
+- 🫧 **Toda la información de un solo golpe**: burbujas en la pantalla de inicio y en el modo ambiente con el tiempo, las luces encendidas, el coche cargando, la impresora… Eliges cuáles salen y en qué orden, y puedes crear las tuyas ([cómo configurarlas](SCRIPTS.md)).
 - 🧩 **Pestañas a tu gusto**, con componentes que puedes crear tú ([cómo](SCRIPTS.md#componentes)).
 
 ## Qué puedes controlar
@@ -22,12 +22,12 @@ Una pantalla bonita para el escritorio que decora con tus fotos y desde la que v
   <img src="docs/home.png" width="49%"> <img src="docs/rooms.png" width="49%">
 </p>
 
-- **Inicio**: el tiempo, un resumen (luces encendidas, puertas abiertas), escenas, favoritos y lo que esté pasando (patinete cargando, impresora imprimiendo…).
+- **Inicio**: el tiempo, un resumen (luces encendidas, puertas abiertas), escenas, favoritos y lo que esté pasando (vehículo cargando, impresora imprimiendo…).
 - **Casa**: luces (con su color), enchufes, persianas, clima, cerraduras, el aspirador (eligiendo habitaciones), la TV y los altavoces.
 - **Sensores**: temperatura, humedad y demás por habitación, con gráfica de las últimas 24 h.
 - **Multimedia**: la música de todos los altavoces y las cámaras.
 - **Impresoras 3D**: progreso, cámara, temperaturas y su enchufe.
-- **Patinete**: batería, autonomía, carga y ajustes.
+- **Vehículos**: coche, moto o patinete eléctrico: batería, autonomía, carga y ajustes.
 
 <p align="center">
   <img src="docs/media.png" width="32%"> <img src="docs/printers.png" width="32%"> <img src="docs/scooter.png" width="32%">
