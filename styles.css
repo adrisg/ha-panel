@@ -240,7 +240,8 @@ main { display: flex; flex-direction: column; min-width: 0; min-height: 0; heigh
 .np-art { flex: none; width: min(64vh, 42vw); aspect-ratio: 1; border-radius: 18px; background: rgba(255,255,255,.08) center/cover no-repeat;
   box-shadow: 0 24px 70px rgba(0,0,0,.55); display: grid; place-items: center; font-size: min(22vh, 14vw); color: rgba(255,255,255,.3); }
 .np-art.has .mdi { display: none; }
-.np-info { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 10px; }
+.np-info { flex: 1; min-width: 0; display: flex; flex-direction: column; align-items: center; text-align: center; gap: 10px; }
+.np-info > * { max-width: 100%; }
 .np-title { font-size: min(7vh, 4.6vw); font-weight: 600; line-height: 1.12; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
 .np-sub { font-size: min(4vh, 2.8vw); opacity: .78; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .np-prog { position: absolute; left: 5%; right: 5%; bottom: 28px; }
@@ -248,21 +249,25 @@ main { display: flex; flex-direction: column; min-width: 0; min-height: 0; heigh
 .np-bar { height: 6px; border-radius: 3px; background: rgba(255,255,255,.18); overflow: hidden; }
 .np-bar i { display: block; height: 100%; width: 0; background: #fff; transition: width 1s linear; }
 .np.no-prog .np-prog { display: none; }
-.np-ctrls { display: flex; align-items: center; gap: 22px; margin: 6px 0 4px; }
+.np-ctrls { display: flex; align-items: center; justify-content: center; gap: 22px; margin: 10px 0 4px; }
+/* hueco a la izquierda del mismo ancho que el botón de volumen: el play queda en el centro */
+.np-ctrls::before { content: ""; width: 64px; }
 .np-ctrls button { width: 72px; height: 72px; border-radius: 50%; border: 0; background: none; color: inherit; font-size: 44px; display: grid; place-items: center; }
 .np-ctrls .np-play { width: 90px; height: 90px; background: #fff; color: #000; font-size: 50px; }
-.np-vol { display: flex; align-items: center; gap: 14px; margin-top: 10px; font-size: 26px; }
-.np-vol > .mdi { opacity: .6; }
-.np-vbtn { width: 60px; height: 60px; border-radius: 50%; border: 0; background: rgba(255,255,255,.14); color: inherit; font-size: 30px; display: grid; place-items: center; }
-.np-vbtn:active { background: rgba(255,255,255,.3); }
-.np-vval { min-width: 76px; text-align: center; font-size: 22px; font-weight: 600; font-variant-numeric: tabular-nums; }
+.np-ctrls .np-volbtn { width: 64px; height: 64px; font-size: 30px; background: rgba(255,255,255,.14); }
+/* barra de volumen: se despliega al tocar 🔊 (guarda su sitio para que nada salte) */
+.np-vol { display: flex; align-items: center; gap: 14px; width: min(420px, 100%); margin-top: 6px;
+  opacity: 0; visibility: hidden; transform: translateY(-6px); transition: opacity .2s, transform .2s, visibility .2s; }
+.np-vol.open { opacity: 1; visibility: visible; transform: none; }
+.np-vslider { -webkit-appearance: none; appearance: none; flex: 1; height: 8px; border-radius: 4px; margin: 0; outline: none;
+  background: linear-gradient(#fff, #fff) no-repeat, rgba(255,255,255,.2); background-size: var(--p, 0%) 100%, auto; }
+.np-vslider::-webkit-slider-thumb { -webkit-appearance: none; width: 26px; height: 26px; border-radius: 50%; background: #fff; box-shadow: 0 2px 8px rgba(0,0,0,.4); }
+.np-vval { min-width: 64px; text-align: right; font-size: 20px; font-weight: 600; font-variant-numeric: tabular-nums; }
 @media (max-aspect-ratio: 1/1) {
   .np-main { flex-direction: column; justify-content: center; text-align: center; gap: 4vh; }
   .np-art { width: min(72vw, 42vh); }
   .np-title { font-size: min(5vh, 7vw); }
   .np-sub { font-size: min(3vh, 4.4vw); }
-  .np-ctrls { justify-content: center; }
-  .np-vol { justify-content: center; }
 }
 
 #dim { position: fixed; inset: 0; background: #000; opacity: 0; pointer-events: none; z-index: 40; transition: opacity 3s; }
