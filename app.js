@@ -788,6 +788,28 @@ function showNowPlaying(id) {
   const bg = h('div', { class: 'np-bg' }), art = h('div', { class: 'np-art' }, icon('mdi-music'));
   const title = h('div', { class: 'np-title' }), sub = h('div', { class: 'np-sub' });
   const bar = h('i'), cur = h('span'), dur = h('span');
+  // Progreso: tocar o arrastrar la barra salta a ese punto (al soltar)
+  const seek = h('div', { class: 'np-seek' }, h('div', { class: 'np-bar' }, bar));
+  let seekDrag = false, seekPos = 0;
+  const canSeek = () => { const a = (S.states[id] || {}).attributes || {}; return !!((a.supported_features || 0) & 2) && +a.media_duration > 0; };
+  const seekAt = (e) => {
+    const r = seek.getBoundingClientRect(), total = +S.states[id].attributes.media_duration;
+    const f = Math.max(0, Math.min(1, (e.clientX - r.left) / r.width));
+    seekPos = f * total;
+    bar.style.width = f * 100 + '%'; cur.textContent = fmtTime(seekPos);
+  };
+  seek.addEventListener('pointerdown', (e) => {
+    if (!canSeek()) return;
+    seekDrag = true; seek.classList.add('drag'); seek.setPointerCapture(e.pointerId); seekAt(e);
+  });
+  seek.addEventListener('pointermove', (e) => { if (seekDrag) seekAt(e); });
+  const seekEnd = () => {
+    if (!seekDrag) return;
+    seekDrag = false; seek.classList.remove('drag');
+    call('media_player', 'media_seek', { seek_position: Math.round(seekPos) }, id);
+  };
+  seek.addEventListener('pointerup', seekEnd);
+  seek.addEventListener('pointercancel', seekEnd);
   const clock = h('span', { class: 'np-clock' });
   const svc = (s) => () => call('media_player', s, {}, id);
   const play = h('button', { class: 'np-play', onclick: svc('media_play_pause') });
@@ -829,7 +851,7 @@ function showNowPlaying(id) {
         h('button', { onclick: svc('media_next_track') }, icon('mdi-skip-next'))))),
     vol,
     // progreso: abajo del todo, de lado a lado
-    h('div', { class: 'np-prog' }, h('div', { class: 'np-times' }, cur, dur), h('div', { class: 'np-bar' }, bar)));
+    h('div', { class: 'np-prog' }, h('div', { class: 'np-times' }, cur, dur), seek));
   let pic = null;
   bind('np', id, (st) => {
     if (!st) return;
@@ -851,7 +873,8 @@ function showNowPlaying(id) {
     const st = S.states[id], a = (st && st.attributes) || {};
     const total = +a.media_duration || 0;
     root.classList.toggle('no-prog', !total);
-    if (!total) return;
+    seek.classList.toggle('can', canSeek());
+    if (!total || seekDrag) return;
     let pos = +a.media_position || 0;
     if (st.state === 'playing' && a.media_position_updated_at) pos += (Date.now() - Date.parse(a.media_position_updated_at)) / 1000;
     pos = Math.min(pos, total);
