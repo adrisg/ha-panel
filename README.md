@@ -1,7 +1,8 @@
 # Panel Hogar
 
-**Una pantalla bonita con tus fotos para el escritorio, que además te deja ver y manejar toda tu casa.**
-Funciona con Home Assistant y una Raspberry Pi.
+### Crea tu propio Google Nest Hub o Amazon Echo Show
+
+Una pantalla bonita para el escritorio que decora con tus fotos y desde la que ves y manejas toda tu casa. Sin suscripciones ni nubes de nadie: tú la montas con una Raspberry Pi y funciona con **Home Assistant**.
 
 <p align="center">
   <img src="docs/ambient.jpg" width="49%"> <img src="docs/sonando.jpg" width="49%">
