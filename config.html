@@ -493,9 +493,8 @@ go = 'home' | 'rooms' | 'sensors' | 'media' | 'printers' | 'scooter' | 'settings
         </select>
       </div>
       <div class="field">
-        <label for="spk-delay">Retraso extra (ms)</label>
-        <input id="spk-delay" type="number" min="0" max="5000" step="10" value="0">
-        <span class="hint">Solo si suena adelantado respecto a otros altavoces del mismo grupo.</span>
+        <label>Desfase con otros altavoces</label>
+        <span class="hint">Se ajusta en Music Assistant: ajustes del reproductor de este altavoz → retraso. Se aplica al momento y se guarda en la Pi.</span>
       </div>
       <div class="btns"><button class="btn primary" id="spk-ok">Aplicar</button></div>
       <div id="spk-msg" class="hint"></div>
@@ -1884,7 +1883,6 @@ function spkFill(r) {
   const cl = $('#spk-close');
   if (![...cl.options].some((o) => +o.value === s.closeAfter)) cl.append(new Option(s.closeAfter + ' s', s.closeAfter));
   cl.value = String(s.closeAfter); cl.dispatchEvent(new Event('change'));
-  $('#spk-delay').value = s.delay || 0;
   $('#spk-log').textContent = r.log || '';
   $('#spk-log-box').classList.toggle('hidden', !r.log);
 }
@@ -1907,7 +1905,7 @@ async function loadSpk() {
 $('#spk-ok').onclick = async () => {
   spkMsg('Aplicando…');
   try {
-    const r = await api('POST', '/api/altavoz', { enabled: $('#spk-enabled').checked, name: $('#spk-name').value.trim(), device: $('#spk-device').value, entity: $('#spk-entity').value, open: $('#spk-open').checked, closeAfter: +$('#spk-close').value, watch: spkWatch, delay: +$('#spk-delay').value || 0 });
+    const r = await api('POST', '/api/altavoz', { enabled: $('#spk-enabled').checked, name: $('#spk-name').value.trim(), device: $('#spk-device').value, entity: $('#spk-entity').value, open: $('#spk-open').checked, closeAfter: +$('#spk-close').value, watch: spkWatch });
     spkFill(r.info); spkMsg(r.mensaje, true);
     // tarda unos segundos en arrancar: vuelve a mirar el estado
     setTimeout(loadSpk, 4000);
