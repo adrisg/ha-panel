@@ -1398,6 +1398,7 @@ function setScreenOff(off) {
   $('#blackout').classList.toggle('hidden', !off);
   if (SCREEN.helper && SCREEN.helper.power) helperPost('/power?on=' + (off ? 0 : 1));
   if (off) stopSound();
+  else if (S.entered) enterScreen();   // se enciende la pantalla
 }
 /** Decide brillo y apagado: se llama cada 5 s, al tocar, al cambiar ajustes y al llegar un aviso. */
 function screenTick() {
@@ -1412,6 +1413,19 @@ function screenTick() {
   setBrightness(alert ? 100 : night ? SET.night.brightness : SET.brightness);
 }
 function wakeScreen() { SCREEN.lastTouch = Date.now(); screenTick(); }
+/** Al arrancar o al encenderse la pantalla: si suena algo, «Sonando»; si no, el modo ambiente. */
+function enterScreen() {
+  if (alertOpen()) return;
+  const playing = watchedSpeakers().find((x) => (S.states[x] || {}).state === 'playing');
+  if (playing) {
+    if (NP.id === playing) return;
+    showAmbient();             // así la ✕ de «Sonando» vuelve al modo ambiente
+    showNowPlaying(playing);
+  } else {
+    hideNowPlaying(true);
+    showAmbient();
+  }
+}
 
 /* ---------- Controles de la vista Ajustes ---------- */
 function segmented(options, value, onpick) {
@@ -2558,6 +2572,7 @@ async function loadAll() {
   seedHelper();
   if (!S.sheetId) render();
   tick();
+  if (!S.entered) { S.entered = true; if (!PARAMS.has('ambient')) enterScreen(); }   // primera carga
 }
 
 function start() {
