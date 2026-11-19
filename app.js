@@ -788,28 +788,42 @@ function showNowPlaying(id) {
   const bg = h('div', { class: 'np-bg' }), art = h('div', { class: 'np-art' }, icon('mdi-music'));
   const title = h('div', { class: 'np-title' }), sub = h('div', { class: 'np-sub' });
   const bar = h('i'), cur = h('span'), dur = h('span');
-  // Progreso: tocar o arrastrar la barra salta a ese punto (al soltar)
-  const seek = h('div', { class: 'np-seek' }, h('div', { class: 'np-bar' }, bar));
-  let seekDrag = false, seekPos = 0;
+  // Progreso: un puntito marca por dónde va. Solo arrastrando el puntito se cambia (al soltar).
+  // Con eventos táctiles y de ratón: en la pantalla táctil de la Pi los de puntero no siempre llegan.
+  const knob = h('b', { class: 'np-knob' });
+  const seek = h('div', { class: 'np-seek' }, h('div', { class: 'np-bar' }, bar), knob);
+  let seekDrag = false, seekMoved = false, seekPos = 0, seekX = 0, frac = 0;
   const canSeek = () => { const a = (S.states[id] || {}).attributes || {}; return !!((a.supported_features || 0) & 2) && +a.media_duration > 0; };
-  const seekAt = (e) => {
+  const paintProg = (f) => { bar.style.width = f * 100 + '%'; knob.style.left = f * 100 + '%'; };
+  const seekAt = (x) => {
     const r = seek.getBoundingClientRect(), total = +S.states[id].attributes.media_duration;
-    const f = Math.max(0, Math.min(1, (e.clientX - r.left) / r.width));
-    seekPos = f * total;
-    bar.style.width = f * 100 + '%'; cur.textContent = fmtTime(seekPos);
+    const f = Math.max(0, Math.min(1, (x - r.left) / r.width));
+    seekPos = f * total; paintProg(f); cur.textContent = fmtTime(seekPos);
   };
-  seek.addEventListener('pointerdown', (e) => {
-    if (!canSeek()) return;
-    seekDrag = true; seek.classList.add('drag'); seek.setPointerCapture(e.pointerId); seekAt(e);
-  });
-  seek.addEventListener('pointermove', (e) => { if (seekDrag) seekAt(e); });
+  const seekStart = (x) => {
+    const r = seek.getBoundingClientRect();
+    if (!canSeek() || Math.abs(x - (r.left + r.width * frac)) > 44) return false;   // solo cerca del puntito
+    seekDrag = true; seekMoved = false; seekX = x; seek.classList.add('drag');
+    return true;
+  };
+  const seekMove = (x) => {
+    if (!seekDrag) return;
+    if (Math.abs(x - seekX) > 4) seekMoved = true;
+    if (seekMoved) seekAt(x);
+  };
   const seekEnd = () => {
     if (!seekDrag) return;
     seekDrag = false; seek.classList.remove('drag');
-    call('media_player', 'media_seek', { seek_position: Math.round(seekPos) }, id);
+    if (seekMoved) call('media_player', 'media_seek', { seek_position: Math.round(seekPos) }, id);
   };
-  seek.addEventListener('pointerup', seekEnd);
-  seek.addEventListener('pointercancel', seekEnd);
+  seek.addEventListener('touchstart', (e) => { if (seekStart(e.touches[0].clientX)) e.preventDefault(); }, { passive: false });
+  seek.addEventListener('touchmove', (e) => { if (seekDrag) { e.preventDefault(); seekMove(e.touches[0].clientX); } }, { passive: false });
+  seek.addEventListener('touchend', seekEnd);
+  seek.addEventListener('touchcancel', seekEnd);
+  seek.addEventListener('pointerdown', (e) => { if (e.pointerType !== 'touch' && seekStart(e.clientX)) seek.setPointerCapture(e.pointerId); });
+  seek.addEventListener('pointermove', (e) => { if (e.pointerType !== 'touch') seekMove(e.clientX); });
+  seek.addEventListener('pointerup', (e) => { if (e.pointerType !== 'touch') seekEnd(); });
+  seek.addEventListener('pointercancel', (e) => { if (e.pointerType !== 'touch') seekEnd(); });
   const clock = h('span', { class: 'np-clock' });
   const svc = (s) => () => call('media_player', s, {}, id);
   const play = h('button', { class: 'np-play', onclick: svc('media_play_pause') });
@@ -878,7 +892,7 @@ function showNowPlaying(id) {
     let pos = +a.media_position || 0;
     if (st.state === 'playing' && a.media_position_updated_at) pos += (Date.now() - Date.parse(a.media_position_updated_at)) / 1000;
     pos = Math.min(pos, total);
-    bar.style.width = (pos / total) * 100 + '%';
+    frac = pos / total; paintProg(frac);
     cur.textContent = fmtTime(pos); dur.textContent = fmtTime(total);
   };
   tick();
