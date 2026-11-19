@@ -747,16 +747,21 @@ function speakerEntity() {
 function onSpeaker(id, old, st) {
   if (!SPK || !SPK.enabled || !SPK.open || domain(id) !== 'media_player' || id !== speakerEntity()) return;
   const was = old && old.state, now = st && st.state;
+  if (now === 'playing') clearTimeout(NP.closeTimer);   // vuelve a sonar: ya no se cierra
   if (now === 'playing' && was && was !== 'playing' && was !== 'paused') {
     if (alertOpen()) return;                 // una alarma o un aviso importante mandan
     showNowPlaying(id);
-  } else if (NP.id === id && now !== 'playing' && now !== 'paused') {
-    hideNowPlaying();
+  } else if (NP.id === id && now !== 'playing' && was === 'playing') {
+    // En pausa o parada: se queda un rato (web → Ajustes → Altavoz) por si vuelve a sonar
+    const secs = SPK.closeAfter == null ? 60 : SPK.closeAfter;
+    clearTimeout(NP.closeTimer);
+    if (secs === 0) hideNowPlaying();
+    else if (secs > 0) NP.closeTimer = setTimeout(() => { if ((S.states[id] || {}).state !== 'playing') hideNowPlaying(); }, secs * 1000);
   }
 }
 
 /* Pantalla «Sonando»: carátula grande con el fondo difuminado, título, progreso, controles y volumen */
-const NP = { id: null, timer: null };
+const NP = { id: null, timer: null, closeTimer: null };
 const npPlaying = () => !!NP.id && (S.states[NP.id] || {}).state === 'playing';
 function fmtTime(s) {
   s = Math.max(0, Math.floor(s || 0));
@@ -849,6 +854,7 @@ function showNowPlaying(id) {
 }
 function hideNowPlaying(quiet) {
   clearInterval(NP.timer); NP.timer = null;
+  clearTimeout(NP.closeTimer);
   B.np.clear();
   const was = NP.id;
   NP.id = null;

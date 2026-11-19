@@ -301,15 +301,21 @@ def speaker_settings():
     except (TypeError, ValueError):
         delay = 0
     entity = str(s.get('entity') or '').strip()[:120]
+    try:   # segundos que «Sonando» sigue abierta tras pausar/parar (-1 = nunca se cierra sola)
+        close_after = max(-1, min(3600, int(s.get('closeAfter', 60))))
+    except (TypeError, ValueError):
+        close_after = 60
     return {'enabled': bool(s.get('enabled')), 'name': str(s.get('name') or '').strip()[:60],
             'device': str(s.get('device') or '').strip()[:120], 'delay': delay,
-            'entity': entity if entity.startswith('media_player.') else '', 'open': s.get('open', True) is not False}
+            'entity': entity if entity.startswith('media_player.') else '', 'open': s.get('open', True) is not False,
+            'closeAfter': close_after}
 
 
 def speaker_panel():
     """Lo que necesita el panel: con qué nombre sale en Music Assistant y si abre el reproductor al sonar."""
     s = speaker_settings()
-    return {'enabled': s['enabled'], 'name': s['name'] or speaker_default_name(), 'entity': s['entity'], 'open': s['open']}
+    return {'enabled': s['enabled'], 'name': s['name'] or speaker_default_name(), 'entity': s['entity'], 'open': s['open'],
+            'closeAfter': s['closeAfter']}
 
 
 def speaker_default_name():
@@ -368,7 +374,8 @@ def set_speaker(body):
            'device': str(body.get('device', cur['device']) or '').strip()[:120],
            'delay': body.get('delay', cur['delay']),
            'entity': str(body.get('entity', cur['entity']) or '').strip()[:120],
-           'open': bool(body.get('open', cur['open']))}
+           'open': bool(body.get('open', cur['open'])),
+           'closeAfter': body.get('closeAfter', cur['closeAfter'])}
     if new['device'] and new['device'] not in {o['id'] for o in audio_outputs()}:
         raise ValueError('esa salida de audio no existe')
     DATA.mkdir(parents=True, exist_ok=True)
