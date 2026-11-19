@@ -775,16 +775,27 @@ function showNowPlaying(id) {
   const clock = h('span', { class: 'np-clock' });
   const svc = (s) => () => call('media_player', s, {}, id);
   const play = h('button', { class: 'np-play', onclick: svc('media_play_pause') });
-  const vol = slider({ label: 'Volumen', fmt: (v) => v + ' %', onchange: (v) => call('media_player', 'volume_set', { volume_level: v / 100 }, id) });
+  // Volumen: − y + de 5 en 5 (se suma al momento, aunque Home Assistant aún no haya contestado)
+  const volTxt = h('span', { class: 'np-vval' });
+  let volNow = 0;
+  const volStep = (d) => {
+    volNow = Math.max(0, Math.min(100, Math.round(volNow / 5) * 5 + d));
+    volTxt.textContent = volNow + ' %';
+    call('media_player', 'volume_set', { volume_level: volNow / 100 }, id);
+  };
+  const vol = h('div', { class: 'np-vol' }, icon('mdi-volume-low'),
+    h('button', { class: 'np-vbtn', onclick: () => volStep(-5) }, icon('mdi-minus')), volTxt,
+    h('button', { class: 'np-vbtn', onclick: () => volStep(5) }, icon('mdi-plus')), icon('mdi-volume-high'));
   const root = $('#np');
   root.replaceChildren(bg,
     h('div', { class: 'np-top' }, icon('mdi-speaker'), h('span', { class: 'np-spk' }, nameOf(id, false)), clock,
       h('button', { class: 'np-close', onclick: () => hideNowPlaying() }, icon('mdi-close'))),
     h('div', { class: 'np-main' }, art, h('div', { class: 'np-info' }, title, sub,
-      h('div', { class: 'np-prog' }, h('div', { class: 'np-bar' }, bar), h('div', { class: 'np-times' }, cur, dur)),
       h('div', { class: 'np-ctrls' }, h('button', { onclick: svc('media_previous_track') }, icon('mdi-skip-previous')), play,
         h('button', { onclick: svc('media_next_track') }, icon('mdi-skip-next'))),
-      vol)));
+      vol)),
+    // progreso: abajo del todo, de lado a lado
+    h('div', { class: 'np-prog' }, h('div', { class: 'np-times' }, cur, dur), h('div', { class: 'np-bar' }, bar)));
   let pic = null;
   bind('np', id, (st) => {
     if (!st) return;
@@ -792,7 +803,8 @@ function showNowPlaying(id) {
     title.textContent = a.media_title || T[st.state] || st.state;
     sub.textContent = [a.media_artist, a.media_album_name].filter(Boolean).join(' · ');
     play.replaceChildren(icon(st.state === 'playing' ? 'mdi-pause' : 'mdi-play'));
-    vol.set(Math.round((a.volume_level || 0) * 100));
+    volNow = Math.round((a.volume_level || 0) * 100);
+    volTxt.textContent = volNow + ' %';
     if (a.entity_picture !== pic) {
       pic = a.entity_picture;
       const url = pic ? `url("${absUrl(pic)}")` : '';
