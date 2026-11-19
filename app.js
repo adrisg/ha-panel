@@ -795,17 +795,6 @@ function dragOn(el, { start, move, end }) {
   el.addEventListener('pointerup', pEnd);
   el.addEventListener('pointercancel', pEnd);
 }
-/* Me gusta: Music Assistant crea por cada altavoz un botón «Canción actual favorita» (mismo dispositivo).
- * No dice si ya lo es, así que el corazón lleno se recuerda aquí (hasta recargar). */
-const LIKED = new Set();
-function favoriteButton(id) {
-  const dev = reg(id).device_id;
-  if (!dev) return null;
-  for (const [b, e] of Object.entries(S.ents))
-    if (e.device_id === dev && b.startsWith('button.') && e.platform === 'music_assistant' && S.states[b] &&
-        /favou?rite|favorit/i.test((e.translation_key || '') + b)) return b;
-  return null;
-}
 function showNowPlaying(id) {
   if (NP.id === id && $('#np').classList.contains('show')) return;
   // ¿Se abrió desde el modo ambiente? Al cerrarla con la ✕ se vuelve a él
@@ -860,20 +849,6 @@ function showNowPlaying(id) {
   const clock = h('span', { class: 'np-clock' });
   const svc = (s) => () => call('media_player', s, {}, id);
   const play = h('button', { class: 'np-play', onclick: svc('media_play_pause') });
-  const songKey = () => { const a = (S.states[id] || {}).attributes || {}; return `${id}|${a.media_title || ''}|${a.media_artist || ''}`; };
-  const like = h('button', { class: 'np-like', onclick: () => {
-    const b = favoriteButton(id);
-    if (!b || LIKED.has(songKey())) return;
-    call('button', 'press', {}, b);
-    LIKED.add(songKey()); likePaint();
-    like.classList.remove('pop'); void like.offsetWidth; like.classList.add('pop');
-  } });
-  const likePaint = () => {
-    const on = LIKED.has(songKey());
-    like.classList.toggle('on', on);
-    like.style.visibility = favoriteButton(id) ? '' : 'hidden';
-    like.replaceChildren(icon(on ? 'mdi-heart' : 'mdi-heart-outline'));
-  };
   // Volumen: botón 🔊 abajo a la derecha; al tocarlo sube una barra vertical (tocar o arrastrar: cambia mientras arrastras).
   // Se esconde sola a los 4 s sin tocarla, o al volver a tocar el botón. Si el volumen cambia desde otro sitio, se abre sola.
   const volTxt = h('span', { class: 'np-vval' }), volFill = h('i'), volIc = h('button', { class: 'np-vbtn' });
@@ -908,8 +883,8 @@ function showNowPlaying(id) {
     h('div', { class: 'np-top' }, icon('mdi-speaker'), h('span', { class: 'np-spk' }, nameOf(id, false)), clock,
       h('button', { class: 'np-close', onclick: () => { const back = NP.fromAmbient; hideNowPlaying(); if (back && !alertOpen()) showAmbient(); } }, icon('mdi-close'))),
     h('div', { class: 'np-main' }, art, h('div', { class: 'np-info' }, title, sub,
-      h('div', { class: 'np-ctrls' }, like, h('button', { onclick: svc('media_previous_track') }, icon('mdi-skip-previous')), play,
-        h('button', { onclick: svc('media_next_track') }, icon('mdi-skip-next')), h('span', { class: 'np-like-pad' })))),
+      h('div', { class: 'np-ctrls' }, h('button', { onclick: svc('media_previous_track') }, icon('mdi-skip-previous')), play,
+        h('button', { onclick: svc('media_next_track') }, icon('mdi-skip-next'))))),
     vol,
     // progreso: abajo del todo, de lado a lado
     h('div', { class: 'np-prog' }, h('div', { class: 'np-times' }, cur, dur), seek));
@@ -920,7 +895,6 @@ function showNowPlaying(id) {
     title.textContent = a.media_title || T[st.state] || st.state;
     sub.textContent = [a.media_artist, a.media_album_name].filter(Boolean).join(' · ');
     play.replaceChildren(icon(st.state === 'playing' ? 'mdi-pause' : 'mdi-play'));
-    likePaint();
     const v = Math.round((a.volume_level || 0) * 100);
     // mientras arrastras, o justo después, manda lo tuyo (los estados llegan con retraso)
     if (!volDrag && Date.now() - volSentAt > 1500) {
