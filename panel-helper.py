@@ -432,6 +432,160 @@ def run_speaker():
     os.execv(args[0], args)
 
 
+# ---------------------------------------------------------------- actualizaciones (git)
+# Se comprueba cada 3 h si hay versión nueva en GitHub (misma rama). Según la web (Ajustes → Actualizaciones):
+# solo avisar (botón «Actualizar») o actualizar sola cada día a una hora. Tras actualizar se lanza update-hook.sh
+# (paquetes nuevos del sistema, etc.) y se reinician el kiosko (panel + este ayudante) y el altavoz.
+UPDATES_FILE = DATA / 'actualizaciones.json'
+UPDATE_HOOK = HERE / 'update-hook.sh'
+UPDATE_EVERY = 3 * 3600
+UPD = {'checking': False, 'applying': False, 'lastCheck': 0, 'available': [], 'error': '', 'log': '', 'lastAuto': ''}
+UPD_LOCK = threading.Lock()
+
+
+def update_settings():
+    try:
+        s = json.loads(UPDATES_FILE.read_text(encoding='utf-8'))
+    except (OSError, ValueError):
+        s = {}
+    if not isinstance(s, dict):
+        s = {}
+    try:
+        hour = max(0, min(23, int(s.get('hour', 4))))
+    except (TypeError, ValueError):
+        hour = 4
+    return {'mode': s.get('mode') if s.get('mode') in ('avisar', 'auto') else 'avisar', 'hour': hour}
+
+
+def set_update_settings(body):
+    cur = update_settings()
+    new = {'mode': body.get('mode', cur['mode']), 'hour': body.get('hour', cur['hour'])}
+    if new['mode'] not in ('avisar', 'auto'):
+        raise ValueError('modo desconocido')
+    DATA.mkdir(parents=True, exist_ok=True)
+    UPDATES_FILE.write_text(json.dumps(new), encoding='utf-8')
+    return update_settings()
+
+
+def _git(*args, timeout=60):
+    try:
+        r = subprocess.run(['git', '-C', str(HERE), *args], capture_output=True, text=True, timeout=timeout)
+        return r.returncode, (r.stdout or '').strip(), (r.stderr or '').strip()
+    except (OSError, subprocess.SubprocessError) as e:
+        return 1, '', str(e)
+
+
+def git_branch():
+    code, out, _ = _git('rev-parse', '--abbrev-ref', 'HEAD')
+    return out if code == 0 and out != 'HEAD' else ''
+
+
+def current_version():
+    code, out, _ = _git('log', '-1', '--format=%h%x1f%cI%x1f%s')
+    if code != 0 or not out:
+        return None
+    h, date, subject = (out.split('\x1f') + ['', ''])[:3]
+    return {'hash': h, 'date': date, 'subject': subject}
+
+
+def check_updates():
+    """Mira en GitHub si hay versión nueva de la rama actual (solo descarga la información, no cambia nada)."""
+    with UPD_LOCK:
+        if UPD['checking']:
+            return
+        UPD['checking'] = True
+    try:
+        branch = git_branch()
+        if not branch:
+            UPD['error'] = 'No es una copia de git con rama (¿se instaló sin git clone?).'
+            return
+        code, _, err = _git('fetch', '-q', 'origin', branch, timeout=90)
+        if code != 0:
+            UPD['error'] = 'No se pudo comprobar: ' + (err.splitlines() or ['sin conexión'])[-1][:200]
+            return
+        code, out, err = _git('log', '--format=%h%x1f%s', f'HEAD..origin/{branch}')
+        UPD['available'] = [dict(zip(('hash', 'subject'), line.split('\x1f', 1))) for line in out.splitlines() if line][:50]
+        UPD['error'] = '' if code == 0 else err[:200]
+    finally:
+        UPD['lastCheck'] = time.time()
+        UPD['checking'] = False
+
+
+def _restart_all():
+    if not SIMULATE:
+        if SENDSPIN_BIN.exists() and _user_ctl('is-active', SENDSPIN_UNIT)[1] == 'active':
+            _user_ctl('restart', SENDSPIN_UNIT)
+        subprocess.run(['pkill', '-x', 'cage'])   # kiosk.sh vuelve a abrir el panel (y este ayudante) con la versión nueva
+
+
+def apply_update():
+    """Actualiza a la última versión de GitHub. Se ejecuta en segundo plano; el resultado queda en UPD."""
+    with UPD_LOCK:
+        if UPD['applying']:
+            return
+        UPD['applying'] = True
+    UPD['log'] = ''
+    try:
+        check_updates()
+        if UPD['error']:
+            return
+        if not UPD['available']:
+            UPD['log'] = 'Ya estaba al día.'
+            return
+        if SIMULATE:
+            time.sleep(2)
+            UPD['available'] = []
+            UPD['log'] = '[Simulación] Actualizado (en el ordenador no se cambia nada).'
+            return
+        code, out, _ = _git('status', '--porcelain', '--untracked-files=no')
+        if out:
+            UPD['error'] = 'Hay archivos cambiados a mano en la Pi; no se actualiza para no perderlos: ' + ', '.join(
+                line[3:] for line in out.splitlines()[:5])
+            return
+        before = _git('rev-parse', 'HEAD')[1]
+        code, _, err = _git('merge', '--ff-only', f'origin/{git_branch()}')
+        if code != 0:
+            UPD['error'] = 'No se pudo actualizar: ' + err[-200:]
+            return
+        log = [f'Actualizado: {before[:7]} → {_git("rev-parse", "--short", "HEAD")[1]}']
+        if UPDATE_HOOK.exists():   # pasos de la versión nueva (paquetes del sistema…)
+            try:
+                r = subprocess.run(['bash', str(UPDATE_HOOK), before], capture_output=True, text=True, timeout=1200)
+                log.append(((r.stdout or '') + (r.stderr or '')).strip())
+            except (OSError, subprocess.SubprocessError) as e:
+                log.append(f'update-hook.sh falló: {e}')
+        UPD['log'] = '\n'.join(x for x in log if x)[-4000:]
+        UPD['available'] = []
+        _later(_restart_all, 3)
+    finally:
+        UPD['applying'] = False
+
+
+def update_info():
+    # ¿puede instalar paquetes sin contraseña? (permiso que da setup-kiosk.sh)
+    can_sudo = True if SIMULATE else _run(['-l', '/usr/bin/apt-get'], sudo=True)[0] == 0
+    return {'settings': update_settings(), 'branch': git_branch(), 'current': current_version(),
+            'available': UPD['available'], 'lastCheck': UPD['lastCheck'], 'checking': UPD['checking'],
+            'applying': UPD['applying'], 'error': UPD['error'], 'log': UPD['log'], 'sudo': can_sudo, 'simulated': SIMULATE}
+
+
+def update_loop():
+    """Comprueba cada 3 h; en modo automático actualiza una vez al día a la hora elegida."""
+    time.sleep(60)
+    while True:
+        try:
+            s = update_settings()
+            if time.time() - UPD['lastCheck'] > UPDATE_EVERY:
+                check_updates()
+            today = time.strftime('%Y-%m-%d')
+            if s['mode'] == 'auto' and time.localtime().tm_hour == s['hour'] and UPD['lastAuto'] != today:
+                UPD['lastAuto'] = today
+                apply_update()
+        except Exception as e:   # que un fallo no pare las comprobaciones
+            UPD['error'] = str(e)[:200]
+        time.sleep(300)
+
+
 # ---------------------------------------------------------------- red (NetworkManager)
 def _run(cmd, sudo=False, timeout=20):
     """Ejecuta un comando; con sudo usa «sudo -n» (sin pedir contraseña: permiso de setup-kiosk.sh)."""
@@ -680,7 +834,8 @@ class LocalHandler(Base):
         if u.path == '/red':
             return self._json(200, net_info())
         if u.path == '/poll':
-            return self._json(200, {'version': load_config()['version'], 'command': COMMAND, 'pin': speaker_pin()})
+            return self._json(200, {'version': load_config()['version'], 'command': COMMAND, 'pin': speaker_pin(),
+                                    'update': len(UPD['available']) if update_settings()['mode'] == 'avisar' else 0})
         if u.path == '/proxy':
             return self._proxy(parse_qs(u.query).get('url', [''])[0])
         if u.path == '/gphotos':
@@ -813,6 +968,10 @@ class WebHandler(Base):
             if not self._guard():
                 return
             return self._json(200, speaker_info())
+        if u.path == '/api/actualizaciones':
+            if not self._guard():
+                return
+            return self._json(200, update_info())
         if u.path == '/api/entidades':
             if not self._guard():
                 return
@@ -888,6 +1047,22 @@ class WebHandler(Base):
                 return self._json(200, {'ok': True, 'mensaje': set_speaker(body), 'info': speaker_info()})
             except (ValueError, RuntimeError) as e:
                 return self._json(400, {'error': str(e)})
+        if u.path == '/api/actualizaciones':   # comprobar, actualizar ya, o modo (avisar / automático) y hora
+            accion = body.get('accion')
+            try:
+                if accion == 'ajustes':
+                    set_update_settings(body)
+                    return self._json(200, {'ok': True, 'mensaje': 'Guardado.', 'info': update_info()})
+                if accion == 'comprobar':
+                    check_updates()
+                    return self._json(200, {'ok': not UPD['error'], 'info': update_info()})
+                if accion == 'actualizar':
+                    threading.Thread(target=apply_update, daemon=True).start()
+                    time.sleep(0.2)
+                    return self._json(200, {'ok': True, 'mensaje': 'Actualizando… el panel se reiniciará solo.', 'info': update_info()})
+            except ValueError as e:
+                return self._json(400, {'error': str(e)})
+            return self._json(400, {'error': 'acción desconocida'})
         if u.path == '/api/orden':         # recargar, apagar/encender pantalla, modo ambiente, inicio
             tipo = body.get('tipo')
             if tipo not in ('recargar', 'pantalla_off', 'pantalla_on', 'ambiente', 'inicio'):
@@ -969,6 +1144,7 @@ def main():
     if SIMULATE:
         print('Panel Hogar · ayudante en MODO SIMULACIÓN (pantalla y red simuladas; no se cambia nada del equipo)', flush=True)
     threading.Thread(target=serve, args=(WEB_PORT, WebHandler, '0.0.0.0'), daemon=True).start()
+    threading.Thread(target=update_loop, daemon=True).start()
     serve(LOCAL_PORT, LocalHandler, '127.0.0.1')
 
 

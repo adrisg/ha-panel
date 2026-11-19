@@ -36,8 +36,8 @@ echo 'SUBSYSTEM=="backlight", RUN+="/bin/chmod 666 /sys/class/backlight/%k/brigh
   | sudo tee /etc/udev/rules.d/99-panel-backlight.rules >/dev/null
 sudo udevadm control --reload-rules && sudo udevadm trigger --subsystem-match=backlight || true
 
-echo "==> Permiso para cambiar la red desde la web de configuración (solo nmcli y hostnamectl)..."
-echo "$USER ALL=(root) NOPASSWD: /usr/bin/nmcli, /usr/bin/hostnamectl" | sudo tee /etc/sudoers.d/panel-hogar >/dev/null
+echo "==> Permisos sin contraseña: red desde la web (nmcli, hostnamectl) y paquetes en las actualizaciones (apt-get)..."
+echo "$USER ALL=(root) NOPASSWD: /usr/bin/nmcli, /usr/bin/hostnamectl, /usr/bin/apt-get" | sudo tee /etc/sudoers.d/panel-hogar >/dev/null
 sudo chmod 440 /etc/sudoers.d/panel-hogar
 sudo visudo -c -f /etc/sudoers.d/panel-hogar >/dev/null || sudo rm -f /etc/sudoers.d/panel-hogar
 

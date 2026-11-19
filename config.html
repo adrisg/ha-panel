@@ -434,6 +434,34 @@ go = 'home' | 'rooms' | 'sensors' | 'media' | 'printers' | 'scooter' | 'settings
     </div>
 
     <div class="card" data-nodirty>
+      <h2>⬆️ Actualizaciones</h2>
+      <dl class="info" id="upd-info"><dt>Versión</dt><dd>Cargando…</dd></dl>
+      <div id="upd-new" class="hidden">
+        <p class="hint" id="upd-new-title"></p>
+        <ul id="upd-list" class="hint"></ul>
+      </div>
+      <div class="field">
+        <label for="upd-mode">Cuando haya una versión nueva</label>
+        <select id="upd-mode">
+          <option value="avisar">Avisarme (actualizo yo con el botón)</option>
+          <option value="auto">Actualizar sola cada día a una hora</option>
+        </select>
+      </div>
+      <div class="field" id="upd-hour-box">
+        <label for="upd-hour">Hora</label>
+        <select id="upd-hour"></select>
+        <span class="hint">Mejor de madrugada: el panel se reinicia unos segundos al actualizar.</span>
+      </div>
+      <div id="upd-sudo" class="hint hidden">Para que pueda instalar paquetes del sistema que necesite una versión nueva, vuelve a lanzar una vez <code>bash ~/ha-panel/setup-kiosk.sh</code> en la Pi.</div>
+      <div class="btns">
+        <button class="btn" id="upd-check">Comprobar ahora</button>
+        <button class="btn primary hidden" id="upd-apply">Actualizar</button>
+      </div>
+      <div id="upd-msg" class="hint"></div>
+      <details id="upd-log-box" class="hidden"><summary>Última actualización</summary><pre id="upd-log"></pre></details>
+    </div>
+
+    <div class="card" data-nodirty>
       <h2>🔊 Altavoz (Music Assistant)</h2>
       <dl class="info" id="spk-info"><dt>Estado</dt><dd>Cargando…</dd></dl>
       <div id="spk-install" class="hint hidden">Falta instalarlo una vez en la Pi: <code>bash ~/ha-panel/setup-sendspin.sh</code></div>
@@ -1697,6 +1725,7 @@ async function load() {
   loadEntities();
   loadRed();
   loadSpk();
+  loadUpd();
   loadScripts().catch((e) => bmsg('No se pudo leer el funcionamiento de las burbujas: ' + e.message, 'err'));
 }
 
@@ -1883,6 +1912,64 @@ $('#spk-ok').onclick = async () => {
     // tarda unos segundos en arrancar: vuelve a mirar el estado
     setTimeout(loadSpk, 4000);
   } catch (e) { spkMsg(e.message, false); }
+};
+
+/* ---------- actualizaciones ---------- */
+function updMsg(t, ok) { const m = $('#upd-msg'); m.textContent = t; m.style.color = ok === false ? 'var(--danger)' : ok ? 'var(--ok)' : ''; }
+let updFilling = false, updTimer = null;
+function updFill(r) {
+  updFilling = true;
+  const ago = (t) => { if (!t) return 'aún no'; const m = Math.round((Date.now() / 1000 - t) / 60); return m < 1 ? 'hace un momento' : m < 60 ? `hace ${m} min` : `hace ${Math.round(m / 60)} h`; };
+  const cur = r.current;
+  const rows = [['Versión', cur ? `${cur.subject} (${cur.hash}, ${new Date(cur.date).toLocaleDateString('es-ES')})` : '¿?'],
+    ['Rama', r.branch || '—'],
+    ['Estado', r.applying ? 'Actualizando…' : r.checking ? 'Comprobando…' : r.available.length ? `${r.available.length} cambio${r.available.length > 1 ? 's' : ''} nuevo${r.available.length > 1 ? 's' : ''}` : 'Al día'],
+    ['Última comprobación', ago(r.lastCheck)]];
+  $('#upd-info').replaceChildren(...rows.flatMap(([k, v]) => { const dt = document.createElement('dt'), dd = document.createElement('dd'); dt.textContent = k; dd.textContent = v; return [dt, dd]; }));
+  $('#upd-new').classList.toggle('hidden', !r.available.length);
+  $('#upd-new-title').textContent = 'Novedades:';
+  $('#upd-list').replaceChildren(...r.available.slice(0, 15).map((c) => { const li = document.createElement('li'); li.textContent = c.subject; return li; }));
+  $('#upd-apply').classList.toggle('hidden', !r.available.length || r.applying);
+  $('#upd-mode').value = r.settings.mode; $('#upd-mode').dispatchEvent(new Event('change'));
+  const hs = $('#upd-hour');
+  if (!hs.options.length) for (let h = 0; h < 24; h++) hs.append(new Option(String(h).padStart(2, '0') + ':00', h));
+  hs.value = String(r.settings.hour); hs.dispatchEvent(new Event('change'));
+  $('#upd-hour-box').classList.toggle('hidden', r.settings.mode !== 'auto');
+  $('#upd-sudo').classList.toggle('hidden', r.sudo);
+  $('#upd-log').textContent = r.log || '';
+  $('#upd-log-box').classList.toggle('hidden', !r.log);
+  if (r.error) updMsg(r.error, false);
+  updFilling = false;
+  clearTimeout(updTimer);
+  if (r.applying || r.checking) updTimer = setTimeout(loadUpd, 2000);   // mientras trabaja, se va mirando
+}
+async function loadUpd() {
+  try { const r = await api('GET', '/api/actualizaciones'); if (r_applying && r.error) r_applying = false; updFill(r); }
+  catch (e) {
+    if (r_applying && e.message === 'Inicia sesión') { r_applying = false; showLogin('Panel actualizado ✓ Vuelve a entrar.'); }   // tras reiniciar hay que entrar otra vez
+    else if (r_applying) { updMsg('Reiniciando el panel con la versión nueva…'); clearTimeout(updTimer); updTimer = setTimeout(loadUpd, 3000); }   // el ayudante se reinicia
+    else updMsg('No se pudieron leer las actualizaciones: ' + e.message, false);
+  }
+}
+let r_applying = false;
+async function updSave() {
+  if (updFilling) return;
+  $('#upd-hour-box').classList.toggle('hidden', $('#upd-mode').value !== 'auto');
+  try { const r = await api('POST', '/api/actualizaciones', { accion: 'ajustes', mode: $('#upd-mode').value, hour: +$('#upd-hour').value }); updFill(r.info); updMsg('Guardado ✓', true); }
+  catch (e) { updMsg(e.message, false); }
+}
+$('#upd-mode').addEventListener('change', updSave);
+$('#upd-hour').addEventListener('change', updSave);
+$('#upd-check').onclick = async () => {
+  updMsg('Comprobando…');
+  try { const r = await api('POST', '/api/actualizaciones', { accion: 'comprobar' }); updFill(r.info); if (!r.info.error) updMsg(r.info.available.length ? 'Hay versión nueva.' : 'Ya está al día ✓', true); }
+  catch (e) { updMsg(e.message, false); }
+};
+$('#upd-apply').onclick = async () => {
+  if (!confirm('¿Actualizar ahora? El panel se reiniciará unos segundos.')) return;
+  updMsg('Actualizando…'); r_applying = true;
+  try { const r = await api('POST', '/api/actualizaciones', { accion: 'actualizar' }); updMsg(r.mensaje, true); updFill(r.info); updTimer = setTimeout(loadUpd, 2000); }
+  catch (e) { updMsg(e.message, false); r_applying = false; }
 };
 
 /* ---------- eventos ---------- */

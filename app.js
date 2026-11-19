@@ -2561,8 +2561,11 @@ async function pollHelper() {
     if (REMOTE.version !== null && r.version !== REMOTE.version) location.reload();   // cambiaron la config desde la web
     REMOTE.version = r.version;
     showPin(r.pin || null);
+    if (r.update && r.update !== UPDATE_SEEN) toast(`Hay una actualización del panel: web de configuración → Actualizaciones`);
+    UPDATE_SEEN = r.update || 0;
   } catch (e) { /* ayudante reiniciándose */ }
 }
+let UPDATE_SEEN = 0;
 
 /* Código para emparejar el altavoz: Music Assistant lo pide al añadirlo; sale en grande hasta que se empareja.
  * Con la ✕ se esconde (vuelve a salir si cambia el código). */
