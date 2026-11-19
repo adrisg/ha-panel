@@ -13,7 +13,8 @@ Una pantalla bonita para el escritorio que decora con tus fotos y desde la que v
 - 🖼️ **Decora con tus fotos** mientras ves lo importante: la hora, el tiempo, la música… Fotos de **Immich**, **Google Fotos**, una carpeta de **Home Assistant** o enlaces.
 - 🔊 **También es un altavoz** de Music Assistant, con la carátula a pantalla completa.
 - 🔔 **Avisos con botones**: «llaman al telefonillo → Abrir puerta» ([cómo](AVISOS.md)).
-- 🧩 **Pestañas a tu gusto**, con componentes que puedes crear tú ([cómo](SCRIPTS.md)).
+- 🫧 **Burbujas**: lo importante de un vistazo (luces encendidas, el patinete cargando, la impresora…). Puedes crear las tuyas ([cómo](SCRIPTS.md)).
+- 🧩 **Pestañas a tu gusto**, con componentes que puedes crear tú ([cómo](SCRIPTS.md#componentes)).
 
 ## Qué puedes controlar
 
@@ -89,3 +90,8 @@ Se cambian en el botón ⚙ de la pantalla o desde la web del móvil:
 ## Probarlo en el ordenador
 
 Con Python instalado: `python dev.py`. El panel se abre en el navegador y la web de configuración está en `http://127.0.0.1:8080` (contraseña `panel`).
+
+## Documentación
+
+- [Burbujas y componentes](SCRIPTS.md): cómo funcionan, cómo crear los tuyos y ejemplos.
+- [Avisos](AVISOS.md): cómo lanzarlos desde Home Assistant, con botones.
