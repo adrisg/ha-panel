@@ -2423,7 +2423,29 @@ async function pollHelper() {
     else if (r.command.id !== REMOTE.command) { REMOTE.command = r.command.id; runRemote(r.command.type); }
     if (REMOTE.version !== null && r.version !== REMOTE.version) location.reload();   // cambiaron la config desde la web
     REMOTE.version = r.version;
+    showPin(r.pin || null);
   } catch (e) { /* ayudante reiniciándose */ }
+}
+
+/* Código para emparejar el altavoz: Music Assistant lo pide al añadirlo; sale en grande hasta que se empareja.
+ * Con la ✕ se esconde (vuelve a salir si cambia el código). */
+const PIN = { code: null, hidden: null };
+function showPin(code) {
+  const box = $('#pin');
+  if (!code) { PIN.code = null; box.classList.remove('show'); return; }
+  if (code === PIN.hidden) return;
+  if (code !== PIN.code) {
+    PIN.code = code;
+    box.replaceChildren(h('div', { class: 'pin-card' },
+      h('button', { class: 'icon-btn', onclick: () => { PIN.hidden = code; box.classList.remove('show'); } }, icon('mdi-close')),
+      icon('mdi-link-variant'),
+      h('div', { class: 'pin-title' }, 'Emparejar con Music Assistant'),
+      h('div', { class: 'pin-hint' }, 'Escribe este código en Music Assistant para añadir el altavoz'),
+      h('div', { class: 'pin-code' }, code),
+      h('div', { class: 'pin-name' }, SPK && SPK.name ? SPK.name : '')));
+  }
+  box.classList.add('show');
+  wakeScreen(); resetIdle();
 }
 
 /* ====================== Arranque ====================== */

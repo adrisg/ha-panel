@@ -270,6 +270,18 @@ main { display: flex; flex-direction: column; min-width: 0; min-height: 0; heigh
   .np-sub { font-size: min(3vh, 4.4vw); }
 }
 
+/* ---------- Código para emparejar el altavoz con Music Assistant ---------- */
+.pin-ov { position: fixed; inset: 0; z-index: 35; display: grid; place-items: center; background: rgba(0,0,0,.72); backdrop-filter: blur(8px);
+  opacity: 0; pointer-events: none; transition: opacity .3s; }
+.pin-ov.show { opacity: 1; pointer-events: auto; }
+.pin-card { position: relative; width: min(560px, 90vw); padding: 34px 30px 30px; border-radius: 26px; background: var(--surface); text-align: center; box-shadow: 0 30px 80px rgba(0,0,0,.5); }
+.pin-card > .mdi { font-size: 46px; color: var(--accent); }
+.pin-title { font-size: 24px; font-weight: 600; margin-top: 6px; }
+.pin-hint { color: var(--muted); margin-top: 8px; font-size: 17px; }
+.pin-code { font-size: min(15vh, 13vw); font-weight: 700; letter-spacing: .08em; margin: 18px 0 6px; font-variant-numeric: tabular-nums; }
+.pin-name { color: var(--muted); font-size: 15px; }
+.pin-card .icon-btn { position: absolute; top: 14px; right: 14px; }
+
 #dim { position: fixed; inset: 0; background: #000; opacity: 0; pointer-events: none; z-index: 40; transition: opacity 3s; }
 
 .toast {
