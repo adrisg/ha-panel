@@ -246,8 +246,12 @@ main { display: flex; flex-direction: column; min-width: 0; min-height: 0; heigh
 .np-sub { font-size: min(4vh, 2.8vw); opacity: .78; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .np-prog { position: absolute; left: 5%; right: 5%; bottom: 28px; }
 .np-times { display: flex; justify-content: space-between; padding: 0 2px 8px; font-size: 15px; opacity: .75; font-variant-numeric: tabular-nums; }
-.np-bar { height: 6px; border-radius: 3px; background: rgba(255,255,255,.18); overflow: hidden; }
+.np-seek { padding: 10px 0; margin: -10px 0; touch-action: none; }   /* más alto que la barra: fácil de tocar */
+.np-seek.can { cursor: pointer; }
+.np-bar { height: 10px; border-radius: 5px; background: rgba(255,255,255,.18); overflow: hidden; transition: height .15s; }
+.np-seek.drag .np-bar { height: 14px; border-radius: 7px; }
 .np-bar i { display: block; height: 100%; width: 0; background: #fff; transition: width 1s linear; }
+.np-seek.drag .np-bar i { transition: none; }
 .np.no-prog .np-prog { display: none; }
 .np-ctrls { display: flex; align-items: center; justify-content: center; gap: 22px; margin: 10px 0 4px; }
 .np-ctrls button { width: 72px; height: 72px; border-radius: 50%; border: 0; background: none; color: inherit; font-size: 44px; display: grid; place-items: center; }
