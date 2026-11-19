@@ -10,7 +10,7 @@ Una pantalla bonita para el escritorio que decora con tus fotos y desde la que v
 
 ## ✨ Lo que la hace especial
 
-- 🖼️ **Decora con tus fotos** mientras ves lo importante: la hora, el tiempo, la música… Fotos de **Immich**, **Google Fotos**, una carpeta de **Home Assistant** o enlaces.
+- 🖼️ **Decora con tus fotos** mientras ves lo importante: la hora, el tiempo, la música… Fotos de **Immich**, **Google Fotos** (necesita internet), una carpeta de **Home Assistant** o enlaces.
 - 🔊 **También es un altavoz** de Music Assistant, con la carátula a pantalla completa.
 - 🔔 **Avisos con botones**: «llaman al telefonillo → Abrir puerta» ([cómo](AVISOS.md)).
 - 🧩 **Pestañas a tu gusto**, con componentes que puedes crear tú ([cómo](SCRIPTS.md)).
