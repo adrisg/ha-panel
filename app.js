@@ -775,27 +775,31 @@ function showNowPlaying(id) {
   const clock = h('span', { class: 'np-clock' });
   const svc = (s) => () => call('media_player', s, {}, id);
   const play = h('button', { class: 'np-play', onclick: svc('media_play_pause') });
-  // Volumen: barra vertical a la derecha; se toca o se arrastra arriba/abajo y se aplica al soltar
-  const volTxt = h('span', { class: 'np-vval' }), volFill = h('i'), volIc = h('span', { class: 'np-vicon' });
+  // Volumen: botón 🔊 abajo a la derecha; al tocarlo sube una barra vertical (tocar o arrastrar, se aplica al soltar).
+  // Se esconde sola a los 4 s sin tocarla, o al volver a tocar el botón.
+  const volTxt = h('span', { class: 'np-vval' }), volFill = h('i'), volIc = h('button', { class: 'np-vbtn' });
   const volTrack = h('div', { class: 'np-vtrack' }, volFill);
-  const vol = h('div', { class: 'np-vol' }, volTxt, volTrack, volIc);
-  let volNow = 0, volDrag = false;
+  const vol = h('div', { class: 'np-vol' }, h('div', { class: 'np-vpanel' }, volTxt, volTrack), volIc);
+  let volNow = 0, volDrag = false, volTimer = null;
   const volIcon = (v) => icon(v <= 0 ? 'mdi-volume-off' : v < 34 ? 'mdi-volume-low' : v < 67 ? 'mdi-volume-medium' : 'mdi-volume-high');
   const volPaint = () => {
     volTxt.textContent = volNow + ' %';
     volFill.style.height = volNow + '%';
     volIc.replaceChildren(volIcon(volNow));
   };
+  const volHideLater = () => { clearTimeout(volTimer); volTimer = setTimeout(() => !volDrag && vol.classList.remove('open'), 4000); };
+  volIc.onclick = () => { vol.classList.toggle('open'); volHideLater(); };
   const volAt = (e) => {
     const r = volTrack.getBoundingClientRect();
     volNow = Math.round(Math.max(0, Math.min(1, (r.bottom - e.clientY) / r.height)) * 100);
     volPaint();
   };
-  volTrack.addEventListener('pointerdown', (e) => { volDrag = true; volTrack.setPointerCapture(e.pointerId); volAt(e); });
+  volTrack.addEventListener('pointerdown', (e) => { volDrag = true; clearTimeout(volTimer); volTrack.setPointerCapture(e.pointerId); volAt(e); });
   volTrack.addEventListener('pointermove', (e) => { if (volDrag) volAt(e); });
   const volEnd = () => {
     if (!volDrag) return;
     volDrag = false;
+    volHideLater();
     call('media_player', 'volume_set', { volume_level: volNow / 100 }, id);
   };
   volTrack.addEventListener('pointerup', volEnd);
