@@ -571,6 +571,25 @@ def update_info():
             'applying': UPD['applying'], 'error': UPD['error'], 'log': UPD['log'], 'sudo': can_sudo, 'simulated': SIMULATE}
 
 
+def update_action(body):
+    """Web y panel: comprobar, actualizar ya, o modo (avisar / automático) y hora. Devuelve (código, respuesta)."""
+    accion = body.get('accion')
+    try:
+        if accion == 'ajustes':
+            set_update_settings(body)
+            return 200, {'ok': True, 'mensaje': 'Guardado.', 'info': update_info()}
+        if accion == 'comprobar':
+            check_updates()
+            return 200, {'ok': not UPD['error'], 'info': update_info()}
+        if accion == 'actualizar':
+            threading.Thread(target=apply_update, daemon=True).start()
+            time.sleep(0.2)
+            return 200, {'ok': True, 'mensaje': 'Actualizando… el panel se reiniciará solo.', 'info': update_info()}
+    except ValueError as e:
+        return 400, {'error': str(e)}
+    return 400, {'error': 'acción desconocida'}
+
+
 def update_loop():
     """Comprueba cada 3 h; en modo automático actualiza una vez al día a la hora elegida."""
     time.sleep(60)
@@ -835,6 +854,8 @@ class LocalHandler(Base):
             return self._json(200, dict(load_config(), modulos=list_scripts(), altavoz=speaker_panel()))
         if u.path == '/red':
             return self._json(200, net_info())
+        if u.path == '/actualizaciones':
+            return self._json(200, update_info())
         if u.path == '/poll':
             return self._json(200, {'version': load_config()['version'], 'command': COMMAND, 'pin': speaker_pin(),
                                     'update': len(UPD['available']) if update_settings()['mode'] == 'avisar' else 0})
@@ -857,6 +878,8 @@ class LocalHandler(Base):
                 return self._json(200, {'ok': set_brightness(int(q.get('value', ['100'])[0]))})
             if u.path == '/power':
                 return self._json(200, {'ok': set_power(q.get('on', ['1'])[0] == '1')})
+            if u.path == '/actualizaciones':
+                return self._json(*update_action(self._body()))
             if u.path == '/datos':  # el panel manda screen e info de entidades para probar burbujas en la web
                 body = self._body()
                 PANEL_DATA.update(body if isinstance(body, dict) else {})
@@ -1050,21 +1073,7 @@ class WebHandler(Base):
             except (ValueError, RuntimeError) as e:
                 return self._json(400, {'error': str(e)})
         if u.path == '/api/actualizaciones':   # comprobar, actualizar ya, o modo (avisar / automático) y hora
-            accion = body.get('accion')
-            try:
-                if accion == 'ajustes':
-                    set_update_settings(body)
-                    return self._json(200, {'ok': True, 'mensaje': 'Guardado.', 'info': update_info()})
-                if accion == 'comprobar':
-                    check_updates()
-                    return self._json(200, {'ok': not UPD['error'], 'info': update_info()})
-                if accion == 'actualizar':
-                    threading.Thread(target=apply_update, daemon=True).start()
-                    time.sleep(0.2)
-                    return self._json(200, {'ok': True, 'mensaje': 'Actualizando… el panel se reiniciará solo.', 'info': update_info()})
-            except ValueError as e:
-                return self._json(400, {'error': str(e)})
-            return self._json(400, {'error': 'acción desconocida'})
+            return self._json(*update_action(body))
         if u.path == '/api/orden':         # recargar, apagar/encender pantalla, modo ambiente, inicio
             tipo = body.get('tipo')
             if tipo not in ('recargar', 'pantalla_off', 'pantalla_on', 'ambiente', 'inicio'):

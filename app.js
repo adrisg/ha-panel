@@ -1525,6 +1525,51 @@ function netCard() {
     h('div', { class: 'muted small' }, 'La WiFi, la IP y el nombre de la Pi se cambian desde esa web, en el apartado «Red de la Pi».'));
 }
 
+/* ---------- Actualizaciones (las hace el ayudante con git; también desde la web) ---------- */
+async function updApi(body) {
+  const r = await fetch(HELPER + '/actualizaciones', body ? { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) } : { cache: 'no-store' });
+  const d = await r.json();
+  if (!r.ok) throw new Error(d.error || 'Error ' + r.status);
+  return body ? d.info : d;
+}
+function updatesCard() {
+  const body = h('div', { class: 'set-net' }, h('div', { class: 'muted small' }, 'Leyendo…'));
+  let timer = null;
+  const fill = (u) => {
+    clearTimeout(timer);
+    if (!u) { body.replaceChildren(h('div', { class: 'muted small' }, 'Disponible en la Raspberry Pi (con el ayudante panel-helper.py).')); return; }
+    const n = u.available.length;
+    const estado = u.applying ? 'Actualizando…' : u.checking ? 'Comprobando…' : n ? `${n} novedad${n > 1 ? 'es' : ''}` : 'Al día';
+    const val = (t) => h('span', { class: 'net-val' }, t);
+    let hour = u.settings.hour;
+    const hourLab = h('span', { class: 'time-val' }, String(hour).padStart(2, '0') + ':00');
+    const stepHour = (d) => {
+      hour = (hour + d + 24) % 24; hourLab.textContent = String(hour).padStart(2, '0') + ':00';
+      updApi({ accion: 'ajustes', hour }).catch((e) => toast(e.message, true));
+    };
+    body.replaceChildren(...[
+      setRow('Versión', u.current ? u.current.subject : null, val(u.current ? u.current.hash : '¿?')),
+      setRow('Estado', u.error || null, h('span', { class: 'pill' + (n || u.error ? '' : ' ok') }, estado)),
+      n ? h('div', { class: 'upd-list muted small' }, ...u.available.slice(0, 6).map((c) => h('div', null, '• ' + c.subject))) : null,
+      setBlock('Cuando haya una versión nueva', u.settings.mode === 'auto' ? 'Se actualiza sola cada día a esa hora (el panel se reinicia unos segundos)' : 'Te avisa y actualizas con el botón',
+        segmented([['avisar', 'Avisarme'], ['auto', 'Automático']], u.settings.mode,
+          (v) => updApi({ accion: 'ajustes', mode: v }).then(fill).catch((e) => toast(e.message, true)))),
+      u.settings.mode === 'auto' ? setRow('Hora', null, h('div', { class: 'stepper' },
+        h('button', { class: 'round-btn', onclick: () => stepHour(-1) }, icon('mdi-minus')), hourLab,
+        h('button', { class: 'round-btn', onclick: () => stepHour(1) }, icon('mdi-plus')))) : null,
+      !u.sudo ? h('div', { class: 'muted small' }, 'Para instalar paquetes nuevos sin pedir contraseña, lanza una vez setup-kiosk.sh en la Pi.') : null,
+      h('div', { class: 'btn-row' },
+        h('button', { class: 'big-action', onclick: () => { toast('Comprobando…'); updApi({ accion: 'comprobar' }).then((i) => { fill(i); toast(i.error ? i.error : i.available.length ? 'Hay una versión nueva' : 'Ya está al día ✓', !!i.error); }).catch((e) => toast(e.message, true)); } },
+          icon('mdi-cloud-search'), 'Comprobar'),
+        n && !u.applying ? h('button', { class: 'big-action primary', onclick: () => { toast('Actualizando… el panel se reiniciará solo'); updApi({ accion: 'actualizar' }).then(fill).catch((e) => toast(e.message, true)); } },
+          icon('mdi-download'), 'Actualizar ahora') : null),
+      u.simulated ? h('div', { class: 'muted small' }, '🧪 En el ordenador no se actualiza de verdad') : null].filter(Boolean));
+    if (u.applying || u.checking) timer = setTimeout(() => updApi().then(fill).catch(() => {}), 2000);
+  };
+  updApi().then(fill).catch(() => fill(null));
+  return h('div', { class: 'card set-card' }, h('div', { class: 'set-title' }, icon('mdi-update'), 'Actualizaciones'), body);
+}
+
 function renderSettings() {
   const pct = (v) => v + ' %';
   const bright = slider({ min: 5, max: 100, step: 5, label: 'Brillo', fmt: pct, onchange: (v) => { SET.brightness = v; saveSettings(); } });
@@ -1590,6 +1635,8 @@ function renderSettings() {
     speakerCard(),
 
     netCard(),
+
+    updatesCard(),
 
     h('div', { class: 'card set-card' }, h('div', { class: 'set-title' }, icon('mdi-information-outline'), 'Panel'),
       setRow('Home Assistant', CFG.haUrl,
