@@ -874,7 +874,7 @@ function showNowPlaying(id) {
     volPaint();
   };
   dragOn(volTrack, {
-    start: (x, y) => { volDrag = true; clearTimeout(volTimer); volAt(y); volSend(); clearInterval(volLive); volLive = setInterval(volSend, 200); },
+    start: (x, y) => { volDrag = true; clearTimeout(volTimer); volAt(y); volSend(); clearInterval(volLive); volLive = setInterval(volSend, 250); },
     move: (x, y) => volAt(y),
     end: () => { volDrag = false; clearInterval(volLive); volSend(); volHideLater(); },
   });
@@ -896,9 +896,11 @@ function showNowPlaying(id) {
     sub.textContent = [a.media_artist, a.media_album_name].filter(Boolean).join(' · ');
     play.replaceChildren(icon(st.state === 'playing' ? 'mdi-pause' : 'mdi-play'));
     const v = Math.round((a.volume_level || 0) * 100);
-    // mientras arrastras, o justo después, manda lo tuyo (los estados llegan con retraso)
-    if (!volDrag && Date.now() - volSentAt > 1500) {
-      if (volKnown != null && v !== volKnown) { vol.classList.add('open'); volHideLater(); }   // cambiado desde otro sitio
+    // Mientras arrastras manda lo tuyo. Después llegan con retraso los valores intermedios que se enviaron:
+    // se ignoran hasta que llega el último (o pasan 4 s), para que la barra no dé saltos atrás.
+    const recent = Date.now() - volSentAt < 4000;
+    if (!volDrag && !(recent && v !== volSent)) {
+      if (!recent && volKnown != null && v !== volKnown) { vol.classList.add('open'); volHideLater(); }   // cambiado desde otro sitio
       volNow = v; volPaint();
     }
     volKnown = v;
