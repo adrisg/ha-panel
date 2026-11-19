@@ -469,7 +469,7 @@ def set_update_settings(body):
 
 def _git(*args, timeout=60):
     try:
-        r = subprocess.run(['git', '-C', str(HERE), *args], capture_output=True, text=True, timeout=timeout)
+        r = subprocess.run(['git', '-C', str(HERE), *args], capture_output=True, text=True, encoding='utf-8', errors='replace', timeout=timeout)
         return r.returncode, (r.stdout or '').strip(), (r.stderr or '').strip()
     except (OSError, subprocess.SubprocessError) as e:
         return 1, '', str(e)
@@ -540,7 +540,7 @@ def apply_update():
         code, out, _ = _git('status', '--porcelain', '--untracked-files=no')
         if out:
             UPD['error'] = 'Hay archivos cambiados a mano en la Pi; no se actualiza para no perderlos: ' + ', '.join(
-                line[3:] for line in out.splitlines()[:5])
+                line.split(maxsplit=1)[-1] for line in out.splitlines()[:5])
             return
         before = _git('rev-parse', 'HEAD')[1]
         code, _, err = _git('merge', '--ff-only', f'origin/{git_branch()}')
