@@ -1533,14 +1533,14 @@ async function updApi(body) {
   return body ? d.info : d;
 }
 function updatesCard() {
-  const body = h('div', { class: 'set-net' }, h('div', { class: 'muted small' }, 'Leyendo…'));
+  const body = h('div', { class: 'set-body' }, h('div', { class: 'muted small' }, 'Leyendo…'));   // sus filas van como las del resto de tarjetas
   let timer = null;
   const fill = (u) => {
     clearTimeout(timer);
     if (!u) { body.replaceChildren(h('div', { class: 'muted small' }, 'Disponible en la Raspberry Pi (con el ayudante panel-helper.py).')); return; }
     const n = u.available.length;
     const estado = u.applying ? 'Actualizando…' : u.checking ? 'Comprobando…' : n ? `${n} novedad${n > 1 ? 'es' : ''}` : 'Al día';
-    const val = (t) => h('span', { class: 'net-val' }, t);
+    const val = (t) => h('span', { class: 'net-val', style: 'white-space: nowrap' }, t);
     let hour = u.settings.hour;
     const hourLab = h('span', { class: 'time-val' }, String(hour).padStart(2, '0') + ':00');
     const stepHour = (d) => {
