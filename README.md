@@ -9,7 +9,7 @@ Funciona con Home Assistant y una Raspberry Pi.
 
 ## ✨ Lo que la hace especial
 
-- 🖼️ **Tus fotos y la hora** cuando no la usas, con el tiempo y la música que suena.
+- 🖼️ **Decora con tus fotos** mientras ves lo importante: la hora, el tiempo, la música… Fotos de **Immich**, **Google Fotos**, una carpeta de **Home Assistant** o enlaces.
 - 🔊 **También es un altavoz** de Music Assistant, con la carátula a pantalla completa.
 - 🔔 **Avisos con botones**: «llaman al telefonillo → Abrir puerta» ([cómo](AVISOS.md)).
 - 🧩 **Pestañas a tu gusto**, con componentes que puedes crear tú ([cómo](SCRIPTS.md)).
