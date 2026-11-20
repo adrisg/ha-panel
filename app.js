@@ -2070,7 +2070,7 @@ function panelVoice(stage, data = {}) {
   VOICE.stage = stage;
   box.className = 'voice show ' + stage;
   box.replaceChildren(
-    h('div', { class: 'voice-orb' }, h('i'), h('i'), h('i'), h('i')),
+    h('div', { class: 'voice-orb' }, h('i')),
     h('div', { class: 'voice-text' },
       VOICE.heard ? h('div', { class: 'voice-heard' }, '«' + VOICE.heard + '»') : null,
       h('div', { class: 'voice-main' + (VOICE.reply ? '' : ' hint') }, VOICE.reply || VOICE_TEXT[stage] || '')));
