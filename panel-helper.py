@@ -527,6 +527,12 @@ def run_voice():
     if not mic:
         sys.exit('No hay ningún micro conectado.')
     out = s['output'] or 'default'
+    # Muchos micros USB vienen muy bajos y no se oye la palabra: se sube la ganancia (al 100 % satura)
+    card = mic.split('CARD=', 1)[1].split(',')[0] if 'CARD=' in mic else ''
+    if card:
+        for ctl in ('Mic', 'Capture'):
+            if _run(['amixer', '-q', '-c', card, 'sset', ctl, 'capture', '80%', 'cap'], timeout=5)[0] == 0:
+                break
     args = [str(VOICE_PY), '-m', 'wyoming_satellite', '--name', s['name'] or speaker_default_name(),
             '--uri', f'tcp://0.0.0.0:{VOICE_PORT}',
             '--mic-command', f'arecord -q -D {mic} -r 16000 -c 1 -f S16_LE -t raw',
