@@ -501,6 +501,33 @@ go = 'home' | 'rooms' | 'sensors' | 'media' | 'printers' | 'scooter' | 'settings
       <details id="spk-log-box" class="hidden"><summary>Registro</summary><pre id="spk-log"></pre></details>
     </div>
 
+    <div class="card" data-nodirty>
+      <h2>🎙️ Asistente de voz (micro de la Pi)</h2>
+      <dl class="info" id="voz-info"><dt>Estado</dt><dd>Cargando…</dd></dl>
+      <div id="voz-install" class="hint hidden">Falta instalarlo una vez en la Pi: <code>bash ~/ha-panel/setup-voz.sh</code></div>
+      <div class="row"><label for="voz-enabled">Escuchar con el micro de la Pi</label><label class="switch"><input id="voz-enabled" type="checkbox"><span></span></label></div>
+      <div class="field">
+        <label for="voz-name">Nombre en Home Assistant</label>
+        <input id="voz-name" type="text" maxlength="60">
+      </div>
+      <div class="field">
+        <label for="voz-mic">Micrófono</label>
+        <select id="voz-mic"></select>
+      </div>
+      <div class="field">
+        <label for="voz-out">Por dónde contesta</label>
+        <select id="voz-out"></select>
+      </div>
+      <div class="field">
+        <label for="voz-wake">Palabra para despertarlo</label>
+        <select id="voz-wake"></select>
+      </div>
+      <span class="hint">En Home Assistant se añade con la integración <b>Wyoming</b> (suele aparecer sola en «Descubiertos»).</span>
+      <div class="btns"><button class="btn primary" id="voz-ok">Aplicar</button></div>
+      <div id="voz-msg" class="hint"></div>
+      <details id="voz-log-box" class="hidden"><summary>Registro</summary><pre id="voz-log"></pre></details>
+    </div>
+
     <div class="card">
       <h2>🏠 Home Assistant</h2>
       <div class="field">
@@ -1740,7 +1767,7 @@ async function load() {
   $('#login').classList.add('hidden'); $('#app').classList.remove('hidden');
   loadEntities();
   loadRed();
-  loadSpk();
+  loadSpk(); loadVoz();
   loadUpd();
   loadScripts().catch((e) => bmsg('No se pudo leer el funcionamiento de las burbujas: ' + e.message, 'err'));
 }
@@ -1927,6 +1954,40 @@ $('#spk-ok').onclick = async () => {
     // tarda unos segundos en arrancar: vuelve a mirar el estado
     setTimeout(loadSpk, 4000);
   } catch (e) { spkMsg(e.message, false); }
+};
+
+/* ---------- asistente de voz (micro de la Pi) ---------- */
+function vozMsg(t, ok) { const m = $('#voz-msg'); m.textContent = t; m.style.color = ok === false ? 'var(--danger)' : ok ? 'var(--ok)' : ''; }
+function vozSelect(sel, list, value, missing) {
+  const opts = list.slice();
+  if (value && !opts.some((o) => o.id === value)) opts.push({ id: value, name: value + ' ' + missing });
+  sel.replaceChildren(...opts.map((o) => new Option(o.name, o.id)));
+  sel.value = value; sel.dispatchEvent(new Event('change'));
+}
+function vozFill(r) {
+  const s = r.settings;
+  const estado = !r.installed ? 'Sin instalar' : r.active ? 'Escuchando' : s.enabled ? 'Activado, pero no está funcionando (mira el registro)' : 'Desactivado';
+  const rows = [['Estado', estado], ['Nombre', s.name || r.defaultName], ['Puerto (Wyoming)', String(r.port)]];
+  $('#voz-info').replaceChildren(...rows.flatMap(([k, v]) => { const dt = document.createElement('dt'), dd = document.createElement('dd'); dt.textContent = k; dd.textContent = v; return [dt, dd]; }));
+  $('#voz-install').classList.toggle('hidden', r.installed);
+  $('#voz-enabled').checked = s.enabled;
+  $('#voz-name').value = s.name; $('#voz-name').placeholder = r.defaultName;
+  vozSelect($('#voz-mic'), r.inputs, s.mic, '(no está conectado)');
+  vozSelect($('#voz-out'), r.outputs, s.output, '(no está conectada)');
+  vozSelect($('#voz-wake'), r.wakeWords, s.wake, '');
+  $('#voz-log').textContent = r.log || '';
+  $('#voz-log-box').classList.toggle('hidden', !r.log);
+}
+async function loadVoz() {
+  try { vozFill(await api('GET', '/api/voz')); } catch (e) { vozMsg('No se pudo leer el asistente de voz: ' + e.message, false); }
+}
+$('#voz-ok').onclick = async () => {
+  vozMsg('Aplicando…');
+  try {
+    const r = await api('POST', '/api/voz', { enabled: $('#voz-enabled').checked, name: $('#voz-name').value.trim(), mic: $('#voz-mic').value, output: $('#voz-out').value, wake: $('#voz-wake').value });
+    vozFill(r.info); vozMsg(r.mensaje, true);
+    setTimeout(loadVoz, 4000);
+  } catch (e) { vozMsg(e.message, false); }
 };
 
 /* ---------- actualizaciones ---------- */
