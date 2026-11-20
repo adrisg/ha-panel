@@ -1449,6 +1449,27 @@ function enterScreen() {
 }
 
 /* ---------- Controles de la vista Ajustes ---------- */
+/** Desplegable táctil: enseña la opción elegida y, al tocarla, abre la lista. options: [[valor, nombre, icono, subtítulo]] */
+function pickList(options, value, onpick) {
+  const wrap = h('div', { class: 'pick' });
+  let open = false;
+  const row = ([, name, ic, sub], cls) => h('button', { class: 'speaker-opt ' + cls }, icon(ic),
+    h('div', { class: 'speaker-text' }, h('div', null, name), sub ? h('div', { class: 'muted small' }, sub) : null));
+  const paint = () => {
+    const cur = options.find((o) => o[0] === value) || options[0];
+    const head = row(cur, 'pick-head' + (open ? ' open' : ''));
+    head.append(icon('mdi-chevron-down', 'pick-chevron'));
+    head.addEventListener('click', () => { open = !open; paint(); });
+    const list = h('div', { class: 'pick-list' + (open ? ' open' : '') }, options.filter((o) => o !== cur).map((o) => {
+      const b = row(o, '');
+      b.addEventListener('click', () => { value = o[0]; open = false; onpick(o[0]); paint(); });
+      return b;
+    }));
+    wrap.replaceChildren(head, list);
+  };
+  paint();
+  return wrap;
+}
 function segmented(options, value, onpick) {
   const wrap = h('div', { class: 'seg' });
   const paint = (v) => wrap.querySelectorAll('button').forEach((b) => b.classList.toggle('active', b.dataset.v === String(v)));
@@ -2171,18 +2192,10 @@ async function voiceText() {
 function voiceCard() {
   const sats = Object.keys(S.states).filter((id) => domain(id) === 'assist_satellite')
     .sort((x, y) => nameOf(x, false).localeCompare(nameOf(y, false), 'es'));
-  const list = h('div', { class: 'speaker-list' });
-  const paint = () => list.replaceChildren(...[['', 'Ninguno', 'mdi-microphone-off', '']].concat(sats.map((id) => [id,
+  const list = pickList([['', 'Ninguno', 'mdi-microphone-off', '']].concat(sats.map((id) => [id,
     (deviceOf(id) || {}).name_by_user || (deviceOf(id) || {}).name || nameOf(id, false), 'mdi-microphone-message',
-    S.states[id].state === 'unavailable' ? 'No disponible' : (S.areaById[areaOf(id)] || {}).name || '']))
-    .map(([id, name, ic, sub]) => {
-      const b = h('button', { class: 'speaker-opt' + (SET.voiceSatellite === id ? ' on' : '') }, icon(ic),
-        h('div', { class: 'speaker-text' }, h('div', null, name), sub ? h('div', { class: 'muted small' }, sub) : null),
-        SET.voiceSatellite === id ? icon('mdi-check-circle', 'speaker-check') : null);
-      b.addEventListener('click', () => { SET.voiceSatellite = id; saveSettings(); panelVoice('idle'); paint(); });
-      return b;
-    }));
-  paint();
+    S.states[id].state === 'unavailable' ? 'No disponible' : (S.areaById[areaOf(id)] || {}).name || ''])),
+    SET.voiceSatellite, (id) => { SET.voiceSatellite = id; saveSettings(); panelVoice('idle'); });
   return h('div', { class: 'card set-card' }, h('div', { class: 'set-title' }, icon('mdi-microphone'), 'Asistente de voz'),
     h('div', { class: 'muted small' }, sats.length
       ? 'Cuando le hables a este satélite de Assist, lo que dices y su respuesta salen abajo, encima de cualquier pantalla.'
@@ -2453,7 +2466,6 @@ function ambientPlayerAction(act) {
 function speakerCard() {
   const players = dedupeMedia(ids((id) => domain(id) === 'media_player'))
     .sort((x, y) => (S.states[x].state === 'unavailable') - (S.states[y].state === 'unavailable') || nameOf(x).localeCompare(nameOf(y), 'es'));
-  const list = h('div', { class: 'speaker-list' });
   // «Este panel» sale siempre que el altavoz esté activado (web → Ajustes → Altavoz), aunque Music Assistant
   // aún no haya creado su reproductor en Home Assistant. Se guarda como '@panel'.
   const own = speakerEntity();
@@ -2461,18 +2473,11 @@ function speakerCard() {
   if (SET.defaultSpeaker === own && own) SET.defaultSpeaker = '@panel';
   const ownSub = !own ? 'Aún no está en Music Assistant' : S.states[own].state === 'unavailable' ? 'No disponible' : 'El altavoz de esta pantalla';
   const ownRow = SPK && SPK.enabled ? [['@panel', 'Este panel', 'mdi-tablet', ownSub]] : [];
-  const paint = () => list.replaceChildren(...[['', 'Ninguno', 'mdi-volume-off', '']].concat(ownRow, players.map((id) => [id,
-    nameOf(id), iconOf(S.states[id]), S.states[id].state === 'unavailable' ? 'No disponible' : (S.areaById[areaOf(id)] || {}).name || '']))
-    .map(([id, name, ic, sub]) => {
-      const b = h('button', { class: 'speaker-opt' + (SET.defaultSpeaker === id ? ' on' : '') }, icon(ic),
-        h('div', { class: 'speaker-text' }, h('div', null, name), sub ? h('div', { class: 'muted small' }, sub) : null),
-        SET.defaultSpeaker === id ? icon('mdi-check-circle', 'speaker-check') : null);
-      b.addEventListener('click', () => { SET.defaultSpeaker = id; saveSettings(); paint(); });
-      return b;
-    }));
-  paint();
+  const options = [['', 'Ninguno', 'mdi-volume-off', '']].concat(ownRow, players.map((id) => [id,
+    nameOf(id), iconOf(S.states[id]), S.states[id].state === 'unavailable' ? 'No disponible' : (S.areaById[areaOf(id)] || {}).name || '']));
   return h('div', { class: 'card set-card' }, h('div', { class: 'set-title' }, icon('mdi-speaker'), 'Altavoz por defecto'),
-    h('div', { class: 'muted small' }, 'Sus controles salen abajo a la derecha en el modo ambiente.'), list);
+    h('div', { class: 'muted small' }, 'Sus controles salen abajo a la derecha en el modo ambiente.'),
+    pickList(options, SET.defaultSpeaker, (id) => { SET.defaultSpeaker = id; saveSettings(); }));
 }
 /** Ajustes: qué burbujas salen en el modo ambiente y en Inicio, y en qué orden. */
 function bulletsCard() {
