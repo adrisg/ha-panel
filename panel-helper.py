@@ -453,7 +453,7 @@ def voice_settings():
             'mic': str(s.get('mic') or '').strip()[:120], 'output': str(s.get('output') or '').strip()[:120],
             'wake': wake if wake in dict(WAKE_WORDS) else 'okay_nabu',
             'volume': _int(s.get('volume'), 10, 100, 100),     # volumen de las respuestas (%)
-            'micGain': _int(s.get('micGain'), 20, 100, 80)}    # ganancia del micro (%; al 100 % suele saturar)
+            'micGain': _int(s.get('micGain'), 20, 100, 100)}   # ganancia del micro (%; solo en la web, por defecto al máximo)
 
 
 def _int(v, lo, hi, default):
@@ -504,7 +504,7 @@ def set_voice(body):
     for k in ('name', 'mic', 'output', 'wake'):
         new[k] = str(new[k] or '').strip()[:120]
     new['volume'] = _int(new['volume'], 10, 100, 100)
-    new['micGain'] = _int(new['micGain'], 20, 100, 80)
+    new['micGain'] = _int(new['micGain'], 20, 100, 100)
     if new['mic'] and new['mic'] not in {o['id'] for o in audio_inputs()}:
         raise ValueError('ese micro no está conectado')
     if new['output'] and new['output'] not in {o['id'] for o in audio_outputs()}:
@@ -538,7 +538,7 @@ def run_voice():
     if not mic:
         sys.exit('No hay ningún micro conectado.')
     out = s['output'] or 'default'
-    # Muchos micros USB vienen muy bajos y no se oye la palabra: se sube la ganancia (al 100 % satura)
+    # Muchos micros USB vienen muy bajos y no se oye la palabra: se sube la ganancia (por defecto al máximo)
     card = mic.split('CARD=', 1)[1].split(',')[0] if 'CARD=' in mic else ''
     if card:
         for ctl in ('Mic', 'Capture'):

@@ -2235,9 +2235,7 @@ function soundCard() {
     if (r.voice.installed) {
       const vv = slider({ min: 10, max: 100, step: 10, label: 'Respuestas del asistente de voz', fmt: pct, onchange: (v) => post({ voiceVolume: v }) });
       vv.set(r.voice.volume);
-      const mg = slider({ min: 20, max: 100, step: 5, label: 'Sensibilidad del micro', fmt: pct, onchange: (v) => post({ micGain: v }) });
-      mg.set(r.voice.micGain);
-      card.append(vv, mg);
+      card.append(vv);
     }
   }).catch(() => {});
   return card;
