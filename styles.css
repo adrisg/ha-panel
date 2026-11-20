@@ -461,6 +461,13 @@ main { display: flex; flex-direction: column; min-width: 0; min-height: 0; heigh
 .speaker-opt.on > .mdi { color: var(--accent); }
 .speaker-text { flex: 1; min-width: 0; }
 .speaker-check { margin-left: auto; }
+/* Desplegable de los Ajustes (altavoz por defecto, asistente de voz) */
+.pick { display: flex; flex-direction: column; gap: 6px; }
+.pick-head { border-color: var(--accent); }
+.pick-chevron { margin-left: auto; font-size: 24px; color: var(--muted); transition: transform .25s; }
+.pick-head.open .pick-chevron { transform: rotate(180deg); }
+.pick-list { display: none; flex-direction: column; gap: 6px; max-height: 300px; overflow-y: auto; padding-left: 14px; border-left: 2px solid var(--surface-2); }
+.pick-list.open { display: flex; }
 /* Mini reproductor del modo ambiente (abajo a la derecha) */
 .amb-player.own .amb-pinfo { cursor: pointer; }
 .amb-player { position: absolute; right: 4%; bottom: 7%; width: 290px; padding: 12px 14px; border-radius: 20px;
