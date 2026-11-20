@@ -2070,12 +2070,26 @@ function panelVoice(stage, data = {}) {
   if (VOICE.stage === 'idle') { wakeScreen(); resetIdle(); }
   VOICE.stage = stage;
   const style = VOICE_STYLES.includes(SET.voiceStyle) ? SET.voiceStyle : 'onda';
+  // Si ya estaba a la vista, el cambio de alto (p. ej. al llegar la respuesta) se anima en vez de saltar
+  const wasShown = box.classList.contains('show'), oldH = wasShown ? box.getBoundingClientRect().height : 0;
+  const oldText = (box.querySelector('.voice-text') || {}).textContent || '';
   box.className = `voice show ${stage} vs-${style}`;
-  box.replaceChildren(
-    voiceAnim(style),
-    h('div', { class: 'voice-text' },
-      VOICE.heard ? h('div', { class: 'voice-heard' }, '«' + VOICE.heard + '»') : null,
-      h('div', { class: 'voice-main' + (VOICE.reply ? '' : ' hint') }, VOICE.reply || VOICE_TEXT[stage] || '')));
+  const text = h('div', { class: 'voice-text' },
+    VOICE.heard ? h('div', { class: 'voice-heard' }, '«' + VOICE.heard + '»') : null,
+    h('div', { class: 'voice-main' + (VOICE.reply ? '' : ' hint') }, VOICE.reply || VOICE_TEXT[stage] || ''));
+  box.replaceChildren(voiceAnim(style), text);
+  if (wasShown && text.textContent !== oldText) text.classList.add('fresh');      // el texto nuevo entra suave
+  if (wasShown) {
+    clearTimeout(VOICE.sizeT);
+    box.style.height = '';
+    const newH = box.getBoundingClientRect().height;
+    if (Math.abs(newH - oldH) > 1) {
+      box.style.height = oldH + 'px';
+      void box.offsetHeight;                     // fija el alto viejo antes de animar
+      box.style.height = newH + 'px';
+      VOICE.sizeT = setTimeout(() => (box.style.height = ''), 450);
+    }
+  }
   if (stage === 'error') VOICE.hideT = setTimeout(() => panelVoice('idle'), 4000);
   if (style === 'onda') voiceWave();
 }
