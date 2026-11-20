@@ -2094,6 +2094,11 @@ function panelVoice(stage, data = {}) {
   if (style === 'onda') voiceWave();
 }
 window.panelVoice = panelVoice;
+// Tocar la barra no debe tocar lo que hay debajo (luces, burbujas, el modo ambiente…)
+['pointerdown', 'pointerup', 'click', 'touchstart', 'touchend'].forEach((t) => $('#voice').addEventListener(t, (e) => {
+  e.stopPropagation();
+  if (e.cancelable && t !== 'pointerdown') e.preventDefault();
+}));
 /** Animaciones de la barra (se eligen en Ajustes → Asistente de voz) */
 const VOICE_STYLES = ['onda', 'micro', 'luz', 'eq'];
 function voiceAnim(style) {
