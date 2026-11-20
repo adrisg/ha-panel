@@ -2215,23 +2215,25 @@ function soundCard() {
       if (r.error) throw new Error(r.error);
     } catch (e) { toast('No se pudo cambiar: ' + e.message); }
   };
+  // El volumen principal es el de la música y lo multimedia (el altavoz del panel en Music Assistant).
+  // Sin altavoz, el de la salida de la Pi.
   const music = speakerEntity();
+  const main = h('div', { style: 'display:contents' });
+  if (music && S.states[music]) {
+    const m = slider({ min: 0, max: 100, step: 1, label: 'Volumen (música y multimedia)', fmt: pct,
+      onchange: (v) => call('media_player', 'volume_set', { volume_level: v / 100 }, music) });
+    m.set(Math.round((S.states[music].attributes.volume_level || 0) * 100));
+    main.append(m);
+  }
   const avisos = slider({ min: 10, max: 100, step: 10, label: 'Avisos y alarmas', fmt: pct, onchange: (v) => { SET.sound.volume = v; saveSettings(); tone([784, 622], 0.4); } });
   avisos.set(SET.sound.volume);
-  const musicSl = music && S.states[music] ? slider({ min: 0, max: 100, step: 1, label: 'Música (este panel en Music Assistant)', fmt: pct,
-    onchange: (v) => call('media_player', 'volume_set', { volume_level: v / 100 }, music) }) : null;
-  if (musicSl) musicSl.set(Math.round((S.states[music].attributes.volume_level || 0) * 100));
-  const rest = h('div', { style: 'display:contents' });
-  card.append(h('div', { class: 'muted small' }, 'El general sube o baja todo lo que suena en el panel; los de debajo, cada cosa por separado.'),
-    rest, musicSl, avisos);
+  card.append(main, avisos);
   if (!window.PANEL_HELPER) return card;
   fetch(HELPER + '/sonido', { cache: 'no-store' }).then((r) => r.json()).then((r) => {
-    const parts = [];
-    if (r.master.available) {
-      const m = slider({ min: 0, max: 100, step: 1, label: 'Volumen general', fmt: pct, onchange: (v) => post({ master: v }) });
-      m.set(r.master.value); parts.push(m);
-    } else parts.push(setRow('Volumen general', `La salida (${r.master.card || '¿?'}) no tiene volumen propio: usa los de debajo`, null));
-    card.insertBefore(h('div', { style: 'display:contents' }, ...parts), rest);
+    if (!main.childNodes.length && r.master.available) {
+      const m = slider({ min: 0, max: 100, step: 1, label: 'Volumen', fmt: pct, onchange: (v) => post({ master: v }) });
+      m.set(r.master.value); main.append(m);
+    }
     if (r.voice.installed) {
       const vv = slider({ min: 10, max: 100, step: 10, label: 'Respuestas del asistente de voz', fmt: pct, onchange: (v) => post({ voiceVolume: v }) });
       vv.set(r.voice.volume);
