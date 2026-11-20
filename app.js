@@ -193,6 +193,7 @@ function setState(id, st) {
     structTimer = setTimeout(() => !S.sheetId && render(), 1500);
   }
   onSpeaker(id, old, st);
+  if (id === SET.voiceSatellite) onVoiceSat(old, st);
   markCode(id);
   clearTimeout(ambTimer);
   ambTimer = setTimeout(paintBullets, 500);
@@ -1341,6 +1342,7 @@ const DEFAULTS = () => ({
   photos: { enabled: true, seconds: CFG.photoSeconds || 30, fit: 'blur' },   // fit: cover | blur | contain
   alarms: [],
   ambientChips: null,   // null = orden y selección por defecto
+  voiceSatellite: '',   // assist_satellite cuya voz se muestra encima de la pantalla ('' = ninguno)
   defaultSpeaker: '',   // media_player que se controla desde el modo ambiente ('@panel' = el altavoz de este panel)
   bullets: null,        // burbujas (integradas y de script); null = las de siempre
   tabs: null,           // pestañas con sus tarjetas; null = una por cada vista
@@ -1633,6 +1635,8 @@ function renderSettings() {
     bulletsCard(),
 
     speakerCard(),
+
+    voiceCard(),
 
     netCard(),
 
@@ -2040,6 +2044,107 @@ function go(view) {
   view = tabFor(view);
   if (S.view !== view) { S.view = view; $('#view').scrollTop = 0; }
   render();
+}
+
+/* ====================== Asistente de voz ======================
+ * Una barra abajo, encima de cualquier pantalla (Inicio, ambiente, «Sonando»…), mientras el satélite de Assist
+ * elegido en Ajustes escucha, piensa o contesta. El texto (lo que has dicho y la respuesta) se lee de la
+ * depuración de Assist en Home Assistant (solo lectura). También se puede mover desde fuera: panelVoice(fase, {heard, reply}). */
+const VOICE = { stage: 'idle', heard: '', reply: '', hideT: null, run: null };
+const VOICE_TEXT = { listening: 'Te escucho…', processing: 'Un momento…', responding: '', error: 'No te he entendido' };
+function panelVoice(stage, data = {}) {
+  const box = $('#voice');
+  clearTimeout(VOICE.hideT);
+  if (stage === 'listening' && VOICE.stage !== 'listening') { VOICE.heard = ''; VOICE.reply = ''; }
+  if (data.heard != null) VOICE.heard = data.heard;
+  if (data.reply != null) VOICE.reply = data.reply;
+  if (stage === 'idle') {
+    if (VOICE.stage === 'idle') return;
+    VOICE.stage = 'idle';
+    box.classList.remove('listening', 'processing', 'responding');
+    // deja leer la respuesta un rato y se va
+    VOICE.hideT = setTimeout(() => box.classList.remove('show'), VOICE.reply || VOICE.heard ? 6000 : 400);
+    return;
+  }
+  if (VOICE.stage === 'idle') { wakeScreen(); resetIdle(); }
+  VOICE.stage = stage;
+  box.className = 'voice show ' + stage;
+  box.replaceChildren(
+    h('div', { class: 'voice-orb' }, h('i'), h('i'), h('i'), h('i')),
+    h('div', { class: 'voice-text' },
+      VOICE.heard ? h('div', { class: 'voice-heard' }, '«' + VOICE.heard + '»') : null,
+      h('div', { class: 'voice-main' + (VOICE.reply ? '' : ' hint') }, VOICE.reply || VOICE_TEXT[stage] || '')));
+  if (stage === 'error') VOICE.hideT = setTimeout(() => panelVoice('idle'), 4000);
+}
+window.panelVoice = panelVoice;
+const VOICE_STAGE = { listening: 'listening', processing: 'processing', responding: 'responding' };
+function onVoiceSat(old, st) {
+  const stage = VOICE_STAGE[st && st.state] || 'idle';
+  if (stage === 'listening' && VOICE.stage === 'idle') VOICE.run = Date.now();
+  panelVoice(stage);
+  // En cuanto entiende la frase, se busca el texto en la depuración de Assist
+  if (stage === 'responding' || (stage === 'idle' && old && VOICE_STAGE[old.state])) voiceText();
+}
+/** Lo que se dijo y lo que contestó, de la última ejecución de Assist (assist_pipeline/pipeline_debug, solo lectura). */
+async function voiceText() {
+  const since = VOICE.run || 0;
+  try {
+    const sat = SET.voiceSatellite, dev = reg(sat).device_id;
+    // el asistente que usa el satélite: su select «Asistente» ('preferred' = el preferido)
+    const sel = Object.keys(S.states).find((id) => domain(id) === 'select' && reg(id).device_id === dev && /pipeline|asistente/.test(id));
+    const list = await conn.send({ type: 'assist_pipeline/pipeline/list' });
+    const want = sel && S.states[sel].state;
+    const pipe = (list.pipelines || []).find((p) => p.name === want) || (list.pipelines || []).find((p) => p.id === list.preferred_pipeline);
+    if (!pipe) return;
+    const runs = (await conn.send({ type: 'assist_pipeline/pipeline_debug/list', pipeline_id: pipe.id })).pipeline_runs || [];
+    const last = runs[runs.length - 1];
+    if (!last || new Date(last.timestamp).getTime() < since - 3000) return;
+    const run = await conn.send({ type: 'assist_pipeline/pipeline_debug/get', pipeline_id: pipe.id, pipeline_run_id: last.pipeline_run_id });
+    let heard = '', reply = '';
+    for (const e of run.events || []) {
+      if (e.type === 'stt-end') heard = (((e.data || {}).stt_output) || {}).text || heard;
+      if (e.type === 'intent-end') {
+        const sp = ((((e.data || {}).intent_output || {}).response || {}).speech || {});
+        reply = (sp.plain || {}).speech || reply;
+      }
+      if (e.type === 'error' && VOICE.stage !== 'idle') { panelVoice('error'); return; }
+    }
+    if (VOICE.run !== since) return;           // ya empezó otra frase
+    panelVoice(VOICE.stage === 'idle' ? 'responding' : VOICE.stage, { heard, reply });
+    if (S.states[SET.voiceSatellite] && !VOICE_STAGE[S.states[SET.voiceSatellite].state]) panelVoice('idle');
+  } catch (e) { console.warn('Texto de Assist:', e.message); }
+}
+/** Ajustes: qué satélite de voz se muestra en la pantalla. */
+function voiceCard() {
+  const sats = Object.keys(S.states).filter((id) => domain(id) === 'assist_satellite')
+    .sort((x, y) => nameOf(x, false).localeCompare(nameOf(y, false), 'es'));
+  const list = h('div', { class: 'speaker-list' });
+  const paint = () => list.replaceChildren(...[['', 'Ninguno', 'mdi-microphone-off', '']].concat(sats.map((id) => [id,
+    (deviceOf(id) || {}).name_by_user || (deviceOf(id) || {}).name || nameOf(id, false), 'mdi-microphone-message',
+    S.states[id].state === 'unavailable' ? 'No disponible' : (S.areaById[areaOf(id)] || {}).name || '']))
+    .map(([id, name, ic, sub]) => {
+      const b = h('button', { class: 'speaker-opt' + (SET.voiceSatellite === id ? ' on' : '') }, icon(ic),
+        h('div', { class: 'speaker-text' }, h('div', null, name), sub ? h('div', { class: 'muted small' }, sub) : null),
+        SET.voiceSatellite === id ? icon('mdi-check-circle', 'speaker-check') : null);
+      b.addEventListener('click', () => { SET.voiceSatellite = id; saveSettings(); panelVoice('idle'); paint(); });
+      return b;
+    }));
+  paint();
+  return h('div', { class: 'card set-card' }, h('div', { class: 'set-title' }, icon('mdi-microphone'), 'Asistente de voz'),
+    h('div', { class: 'muted small' }, sats.length
+      ? 'Cuando le hables a este satélite de Assist, lo que dices y su respuesta salen abajo, encima de cualquier pantalla.'
+      : 'No hay ningún satélite de Assist en Home Assistant (p. ej. un Home Assistant Voice).'), list,
+    h('div', { class: 'btn-row' },
+      h('button', { class: 'big-action', onclick: voiceDemo }, icon('mdi-play'), 'Ver cómo queda')));
+}
+/** Ejemplo de la barra de voz, sin hablar con Home Assistant. */
+function voiceDemo() {
+  const at = (ms, f) => setTimeout(f, ms);
+  VOICE.run = null;
+  panelVoice('listening');
+  at(1800, () => panelVoice('processing', { heard: 'Enciende la luz del salón' }));
+  at(3000, () => panelVoice('responding', { reply: 'Hecho, he encendido la luz del salón' }));
+  at(5200, () => panelVoice('idle'));
 }
 
 /* ====================== Modo ambiente ====================== */

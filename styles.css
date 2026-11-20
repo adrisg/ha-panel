@@ -296,6 +296,27 @@ main { display: flex; flex-direction: column; min-width: 0; min-height: 0; heigh
 .pin-name { color: var(--muted); font-size: 15px; }
 .pin-card .icon-btn { position: absolute; top: 14px; right: 14px; }
 
+/* Asistente de voz: barra abajo, encima de cualquier pantalla (y del oscurecido de noche) */
+.voice { position: fixed; left: 50%; bottom: 18px; z-index: 52; width: min(760px, calc(100% - 32px));
+  display: flex; align-items: center; gap: 20px; padding: 16px 24px; border-radius: 30px; color: #fff;
+  background: rgba(22, 24, 32, .88); backdrop-filter: blur(18px); -webkit-backdrop-filter: blur(18px);
+  box-shadow: 0 12px 40px rgba(0,0,0,.55); border: 1px solid rgba(255,255,255,.08);
+  transform: translate(-50%, calc(100% + 40px)); opacity: 0; pointer-events: none;
+  transition: transform .4s cubic-bezier(.2,.8,.2,1), opacity .4s; }
+.voice.show { transform: translate(-50%, 0); opacity: 1; }
+.voice-orb { flex: none; display: flex; align-items: center; gap: 6px; height: 44px; }
+.voice-orb i { width: 11px; height: 11px; border-radius: 6px; background: #7aa2ff; transition: height .3s; }
+.voice-orb i:nth-child(2) { background: #ff7a90; } .voice-orb i:nth-child(3) { background: #ffd166; } .voice-orb i:nth-child(4) { background: #5ee0a0; }
+.voice.listening .voice-orb i { animation: voice-wave 1.1s ease-in-out infinite; }
+.voice.responding .voice-orb i { animation: voice-wave .7s ease-in-out infinite; }
+.voice.processing .voice-orb i { animation: voice-hop .9s ease-in-out infinite; }
+.voice-orb i:nth-child(2) { animation-delay: .15s !important; } .voice-orb i:nth-child(3) { animation-delay: .3s !important; } .voice-orb i:nth-child(4) { animation-delay: .45s !important; }
+@keyframes voice-wave { 0%, 100% { height: 11px; } 50% { height: 38px; } }
+@keyframes voice-hop { 0%, 100% { transform: translateY(0); } 40% { transform: translateY(-12px); } }
+.voice-text { flex: 1; min-width: 0; }
+.voice-heard { color: rgba(255,255,255,.6); font-size: 17px; margin-bottom: 4px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.voice-main { font-size: 23px; font-weight: 600; line-height: 1.25; display: -webkit-box; -webkit-line-clamp: 3; -webkit-box-orient: vertical; overflow: hidden; }
+.voice-main.hint { color: rgba(255,255,255,.75); font-weight: 500; }
 #dim { position: fixed; inset: 0; background: #000; opacity: 0; pointer-events: none; z-index: 40; transition: opacity 3s; }
 
 .toast {
