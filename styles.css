@@ -304,22 +304,37 @@ main { display: flex; flex-direction: column; min-width: 0; min-height: 0; heigh
   transform: translate(-50%, calc(100% + 40px)); opacity: 0; pointer-events: none;
   transition: transform .4s cubic-bezier(.2,.8,.2,1), opacity .4s; }
 .voice.show { transform: translate(-50%, 0); opacity: 1; }
-.voice-orb { flex: none; position: relative; width: 46px; height: 46px; display: grid; place-items: center; }
-.voice-orb i { width: 24px; height: 24px; border-radius: 50%; transition: transform .3s;
-  background: radial-gradient(circle at 35% 30%, #e3ecff 0%, #7aa2ff 45%, #6a5cf0 100%); box-shadow: 0 0 18px rgba(122,162,255,.65); }
-.voice-orb::before, .voice-orb::after { content: ''; position: absolute; inset: 0; border-radius: 50%; border: 2px solid rgba(122,162,255,.6); opacity: 0; }
-/* escuchando: respira y salen ondas */
-.voice.listening .voice-orb i { animation: voice-breathe 1.6s ease-in-out infinite; }
-.voice.listening .voice-orb::before, .voice.listening .voice-orb::after { animation: voice-ripple 1.6s ease-out infinite; }
-.voice.listening .voice-orb::after { animation-delay: .8s; }
-/* pensando: un arco gira alrededor */
-.voice.processing .voice-orb i { transform: scale(.8); }
-.voice.processing .voice-orb::before { opacity: 1; border-color: transparent; border-top-color: #7aa2ff; border-right-color: rgba(122,162,255,.35); animation: voice-spin .8s linear infinite; }
-/* contestando: late al hablar */
-.voice.responding .voice-orb i { animation: voice-breathe .55s ease-in-out infinite; }
-@keyframes voice-breathe { 0%, 100% { transform: scale(1); } 50% { transform: scale(1.22); } }
-@keyframes voice-ripple { 0% { transform: scale(.55); opacity: .9; } 100% { transform: scale(1.35); opacity: 0; } }
+.voice { overflow: hidden; }
+.voice-anim { flex: none; width: 56px; height: 44px; display: grid; place-items: center; }
+/* 1 · Onda (la dibuja voiceWave) */
+.voice-wave { width: 56px; height: 44px; }
+.voice-wave path { fill: none; stroke: #9db8ff; stroke-width: 2.6; stroke-linecap: round; stroke-linejoin: round; }
+/* 2 · Micrófono con latido; al pensar, un aro gira; al contestar, altavoz */
+.voice-mic { position: relative; width: 40px; height: 40px; border-radius: 50%; border: 2px solid #9db8ff; display: grid; place-items: center;
+  font-size: 22px; color: #9db8ff; }
+.voice.listening .voice-mic { animation: voice-beat 1.4s ease-in-out infinite; }
+.voice.responding .voice-mic { animation: voice-beat .7s ease-in-out infinite; }
+.voice.processing .voice-mic { border-color: rgba(157,184,255,.25); border-top-color: #9db8ff; animation: voice-spin .8s linear infinite; }
+.voice.processing .voice-mic .mdi { animation: voice-spin .8s linear infinite reverse; }
+@keyframes voice-beat { 0%, 100% { box-shadow: 0 0 0 0 rgba(157,184,255,.5); } 50% { box-shadow: 0 0 0 10px rgba(157,184,255,0); } }
 @keyframes voice-spin { to { transform: rotate(360deg); } }
+/* 3 · Línea de luz arriba, sin icono */
+.voice-light { position: absolute; left: 0; right: 0; top: 0; height: 3px; background: linear-gradient(90deg, transparent, #9db8ff, transparent) no-repeat;
+  background-size: 40% 100%; }
+.voice.listening .voice-light { animation: voice-sweep 1.6s ease-in-out infinite alternate; }
+.voice.processing .voice-light { animation: voice-sweep .6s ease-in-out infinite alternate; }
+.voice.responding .voice-light { background-size: 100% 100%; animation: voice-glow .8s ease-in-out infinite; }
+@keyframes voice-sweep { from { background-position: 0 0; } to { background-position: 100% 0; } }
+@keyframes voice-glow { 0%, 100% { opacity: .45; } 50% { opacity: 1; } }
+.voice.vs-luz { padding-left: 28px; }
+/* 4 · Ecualizador fino blanco */
+.voice-eq { display: flex; gap: 4px; align-items: center; justify-content: center; }
+.voice-eq i { width: 3px; height: 6px; border-radius: 2px; background: #fff; }
+.voice.listening .voice-eq i { animation: voice-eq 1s ease-in-out infinite; }
+.voice.responding .voice-eq i { animation: voice-eq .55s ease-in-out infinite; }
+.voice.processing .voice-eq i { animation: voice-hop .9s ease-in-out infinite; }
+@keyframes voice-eq { 0%, 100% { height: 6px; } 50% { height: 30px; } }
+@keyframes voice-hop { 0%, 100% { transform: translateY(0); } 40% { transform: translateY(-8px); } }
 .voice-text { flex: 1; min-width: 0; }
 .voice-heard { color: rgba(255,255,255,.6); font-size: 17px; margin-bottom: 4px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .voice-main { font-size: 23px; font-weight: 600; line-height: 1.25; display: -webkit-box; -webkit-line-clamp: 3; -webkit-box-orient: vertical; overflow: hidden; }
