@@ -576,6 +576,10 @@ go = 'home' | 'rooms' | 'sensors' | 'media' | 'printers' | 'scooter' | 'settings
         <label for="voiceSatellite">Asistente de voz <span class="hint">(satélite de Assist: lo que dices y su respuesta salen encima de la pantalla)</span></label>
         <select id="voiceSatellite"><option value="">Ninguno</option></select>
       </div>
+      <div class="field">
+        <label for="voiceStyle">Animación de la voz</label>
+        <select id="voiceStyle"><option value="onda">Onda</option><option value="micro">Micrófono</option><option value="luz">Línea de luz</option><option value="eq">Ecualizador</option></select>
+      </div>
     </div>
 
     <div class="card">
@@ -1677,6 +1681,7 @@ function fill(cfg) {
   $('#voiceSatellite').dataset.value = a.voiceSatellite || '';
   if (![...$('#voiceSatellite').options].some((o) => o.value === (a.voiceSatellite || ''))) $('#voiceSatellite').append(new Option(a.voiceSatellite, a.voiceSatellite));
   $('#voiceSatellite').value = a.voiceSatellite || '';
+  $('#voiceStyle').value = a.voiceStyle || 'onda';
   window.__ajustes = cfg.ajustes || {};
 }
 function collect() {
@@ -1702,6 +1707,7 @@ function collect() {
     bullets, tabs,
     defaultSpeaker: $('#defaultSpeaker').value,
     voiceSatellite: $('#voiceSatellite').value,
+    voiceStyle: $('#voiceStyle').value,
   };
   return { panel, ajustes };
 }

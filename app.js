@@ -1343,6 +1343,7 @@ const DEFAULTS = () => ({
   alarms: [],
   ambientChips: null,   // null = orden y selección por defecto
   voiceSatellite: '',   // assist_satellite cuya voz se muestra encima de la pantalla ('' = ninguno)
+  voiceStyle: 'onda',   // animación de la barra de voz: onda | micro | luz | eq
   defaultSpeaker: '',   // media_player que se controla desde el modo ambiente ('@panel' = el altavoz de este panel)
   bullets: null,        // burbujas (integradas y de script); null = las de siempre
   tabs: null,           // pestañas con sus tarjetas; null = una por cada vista
@@ -2068,15 +2069,48 @@ function panelVoice(stage, data = {}) {
   }
   if (VOICE.stage === 'idle') { wakeScreen(); resetIdle(); }
   VOICE.stage = stage;
-  box.className = 'voice show ' + stage;
+  const style = VOICE_STYLES.includes(SET.voiceStyle) ? SET.voiceStyle : 'onda';
+  box.className = `voice show ${stage} vs-${style}`;
   box.replaceChildren(
-    h('div', { class: 'voice-orb' }, h('i')),
+    voiceAnim(style),
     h('div', { class: 'voice-text' },
       VOICE.heard ? h('div', { class: 'voice-heard' }, '«' + VOICE.heard + '»') : null,
       h('div', { class: 'voice-main' + (VOICE.reply ? '' : ' hint') }, VOICE.reply || VOICE_TEXT[stage] || '')));
   if (stage === 'error') VOICE.hideT = setTimeout(() => panelVoice('idle'), 4000);
+  if (style === 'onda') voiceWave();
 }
 window.panelVoice = panelVoice;
+/** Animaciones de la barra (se eligen en Ajustes → Asistente de voz) */
+const VOICE_STYLES = ['onda', 'micro', 'luz', 'eq'];
+function voiceAnim(style) {
+  if (style === 'micro') return h('div', { class: 'voice-anim' }, h('div', { class: 'voice-mic' },
+    icon(VOICE.stage === 'responding' ? 'mdi-volume-high' : 'mdi-microphone')));
+  if (style === 'luz') return h('div', { class: 'voice-light' });
+  if (style === 'eq') return h('div', { class: 'voice-anim voice-eq' }, ...[0, .2, .4, .1, .3, .5, .15].map((d) => h('i', { style: `animation-delay:${d}s` })));
+  const svg = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
+  svg.setAttribute('viewBox', '0 0 56 44'); svg.setAttribute('class', 'voice-wave');
+  svg.append(document.createElementNS('http://www.w3.org/2000/svg', 'path'));
+  return h('div', { class: 'voice-anim' }, svg);
+}
+/** Onda: se dibuja mientras la barra está a la vista (más quieta al pensar, más viva al contestar) */
+let waveRaf = 0, waveT = 0;
+function voiceWave() {
+  if (waveRaf) return;
+  const step = () => {
+    const path = $('#voice .voice-wave path');
+    if (!path || !$('#voice').classList.contains('show')) { waveRaf = 0; return; }
+    const st = VOICE.stage, amp = st === 'processing' ? 0.25 : st === 'responding' ? 1.15 : st === 'idle' ? 0 : 0.9;
+    waveT += st === 'responding' ? 0.16 : st === 'processing' ? 0.05 : 0.09;
+    let d = '';
+    for (let x = 0; x <= 56; x += 2) {
+      const env = Math.sin((x / 56) * Math.PI) * 15 * amp * (0.65 + 0.35 * Math.sin(waveT * 0.7));
+      d += (x ? 'L' : 'M') + x + ' ' + (22 + Math.sin(x / 5 + waveT) * env).toFixed(1) + ' ';
+    }
+    path.setAttribute('d', d);
+    waveRaf = requestAnimationFrame(step);
+  };
+  waveRaf = requestAnimationFrame(step);
+}
 const VOICE_STAGE = { listening: 'listening', processing: 'processing', responding: 'responding' };
 function onVoiceSat(old, st) {
   const stage = VOICE_STAGE[st && st.state] || 'idle';
@@ -2134,13 +2168,17 @@ function voiceCard() {
     h('div', { class: 'muted small' }, sats.length
       ? 'Cuando le hables a este satélite de Assist, lo que dices y su respuesta salen abajo, encima de cualquier pantalla.'
       : 'No hay ningún satélite de Assist en Home Assistant (p. ej. un Home Assistant Voice).'), list,
+    setBlock('Animación', null, segmented([['onda', 'Onda'], ['micro', 'Micrófono'], ['luz', 'Línea de luz'], ['eq', 'Ecualizador']],
+      SET.voiceStyle || 'onda', (v) => { SET.voiceStyle = v; saveSettings(); voiceDemo(); })),
     h('div', { class: 'btn-row' },
       h('button', { class: 'big-action', onclick: voiceDemo }, icon('mdi-play'), 'Ver cómo queda')));
 }
 /** Ejemplo de la barra de voz, sin hablar con Home Assistant. */
+const DEMO_T = [];
 function voiceDemo() {
-  const at = (ms, f) => setTimeout(f, ms);
-  VOICE.run = null;
+  const at = (ms, f) => DEMO_T.push(setTimeout(f, ms));
+  DEMO_T.splice(0).forEach(clearTimeout);
+  VOICE.run = null; VOICE.stage = 'idle';
   panelVoice('listening');
   at(1800, () => panelVoice('processing', { heard: 'Enciende la luz del salón' }));
   at(3000, () => panelVoice('responding', { reply: 'Hecho, he encendido la luz del salón' }));
