@@ -432,6 +432,110 @@ def run_speaker():
     os.execv(args[0], args)
 
 
+# ---------------------------------------------------------------- asistente de voz (satélite Wyoming)
+# setup-voz.sh instala wyoming-satellite + microWakeWord y el servicio de usuario panel-voz, que arranca
+# «panel-helper.py --voz» (lee voz.json y lanza el satélite). Micro, salida y palabra se eligen en la web o el panel.
+VOICE_FILE = DATA / 'voz.json'
+VOICE_PY = Path.home() / '.local' / 'share' / 'panel-hogar' / 'voz' / 'bin' / 'python'
+VOICE_UNIT = 'panel-voz.service'
+VOICE_PORT = 10700
+WAKE_WORDS = [('okay_nabu', 'Okay Nabu'), ('hey_jarvis', 'Hey Jarvis'), ('hey_mycroft', 'Hey Mycroft'), ('alexa', 'Alexa')]
+SIM_VOICE = {'active': False}
+
+
+def voice_settings():
+    try:
+        s = json.loads(VOICE_FILE.read_text(encoding='utf-8'))
+    except (OSError, ValueError):
+        s = {}
+    wake = str(s.get('wake') or 'okay_nabu')
+    return {'enabled': s.get('enabled', True) is not False, 'name': str(s.get('name') or '').strip()[:60],
+            'mic': str(s.get('mic') or '').strip()[:120], 'output': str(s.get('output') or '').strip()[:120],
+            'wake': wake if wake in dict(WAKE_WORDS) else 'okay_nabu'}
+
+
+def audio_inputs():
+    # Micros: uno por tarjeta que pueda grabar ('' = el primero que haya)
+    ins = [{'id': '', 'name': 'Automático (el primero que haya)'}]
+    if SIMULATE:
+        return ins + [{'id': 'plughw:CARD=Device,DEV=0', 'name': 'USB Audio Device'}]
+    code, out, _ = _run(['arecord', '-L'], timeout=5)
+    lines = out.splitlines() if code == 0 else []
+    for i, line in enumerate(lines):
+        if line.startswith('plughw:CARD='):
+            card = line.split('=', 1)[1].split(',')[0]
+            desc = lines[i + 1].strip().split(',')[0] if i + 1 < len(lines) else card
+            ins.append({'id': line.strip(), 'name': CARD_NAMES.get(card, desc or card)})
+    return ins
+
+
+def voice_info():
+    s = voice_settings()
+    info = {'settings': s, 'defaultName': speaker_default_name(), 'inputs': audio_inputs(), 'outputs': audio_outputs(),
+            'wakeWords': [{'id': k, 'name': v} for k, v in WAKE_WORDS], 'port': VOICE_PORT, 'log': ''}
+    if SIMULATE:
+        return dict(info, installed=True, active=SIM_VOICE['active'])
+    info['installed'] = VOICE_PY.exists()
+    info['active'] = info['installed'] and _user_ctl('is-active', VOICE_UNIT)[1] == 'active'
+    if info['installed']:
+        env = dict(os.environ, XDG_RUNTIME_DIR=os.environ.get('XDG_RUNTIME_DIR') or f'/run/user/{os.getuid()}')
+        try:
+            r = subprocess.run(['journalctl', '--user-unit', VOICE_UNIT, '-n', '12', '-o', 'cat', '--no-pager'],
+                               capture_output=True, text=True, timeout=10, env=env)
+            info['log'] = (r.stdout or '').strip()[-3000:]
+        except (OSError, subprocess.SubprocessError):
+            pass
+    return info
+
+
+def set_voice(body):
+    cur = voice_settings()
+    new = {k: body.get(k, cur[k]) for k in cur}
+    new['enabled'] = bool(new['enabled'])
+    for k in ('name', 'mic', 'output', 'wake'):
+        new[k] = str(new[k] or '').strip()[:120]
+    if new['mic'] and new['mic'] not in {o['id'] for o in audio_inputs()}:
+        raise ValueError('ese micro no está conectado')
+    if new['output'] and new['output'] not in {o['id'] for o in audio_outputs()}:
+        raise ValueError('esa salida de audio no existe')
+    if new['wake'] not in dict(WAKE_WORDS):
+        raise ValueError('palabra de activación desconocida')
+    DATA.mkdir(parents=True, exist_ok=True)
+    VOICE_FILE.write_text(json.dumps(new, ensure_ascii=False, indent=2), encoding='utf-8')
+    if SIMULATE:
+        SIM_VOICE['active'] = new['enabled']
+        return '[Simulación] Guardado (en el PC no se escucha nada).'
+    if not VOICE_PY.exists():
+        return 'Guardado. Falta instalarlo en la Pi: bash ~/ha-panel/setup-voz.sh'
+    if new['enabled']:
+        _user_ctl('enable', VOICE_UNIT)
+        code, _, err = _user_ctl('restart', VOICE_UNIT)
+        if code != 0:
+            raise RuntimeError(f'no arrancó: {err or "mira el registro"}')
+        return 'Asistente de voz activado.'
+    _user_ctl('disable', '--now', VOICE_UNIT)
+    return 'Asistente de voz desactivado.'
+
+
+def run_voice():
+    # Lo arranca el servicio panel-voz: lanza el satélite con los ajustes de la web
+    s = voice_settings()
+    if not s['enabled']:
+        print('Asistente de voz desactivado (Ajustes → Asistente de voz).', flush=True)
+        return
+    mic = s['mic'] or next((o['id'] for o in audio_inputs()[1:]), '')
+    if not mic:
+        sys.exit('No hay ningún micro conectado.')
+    out = s['output'] or 'default'
+    args = [str(VOICE_PY), '-m', 'wyoming_satellite', '--name', s['name'] or speaker_default_name(),
+            '--uri', f'tcp://0.0.0.0:{VOICE_PORT}',
+            '--mic-command', f'arecord -q -D {mic} -r 16000 -c 1 -f S16_LE -t raw',
+            '--snd-command', f'aplay -q -D {out} -r 22050 -c 1 -f S16_LE -t raw',
+            '--wake-command', f'{VOICE_PY} -m pymicro_wakeword --model {s["wake"]}']
+    print('Micro:', mic, '· Salida:', out, '· Palabra:', s['wake'], flush=True)
+    os.execv(args[0], args)
+
+
 # ---------------------------------------------------------------- actualizaciones (git)
 # Se comprueba cada 3 h si hay versión nueva en GitHub (misma rama). Según la web (Ajustes → Actualizaciones):
 # solo avisar (botón «Actualizar») o actualizar sola cada día a una hora. Tras actualizar se lanza update-hook.sh
@@ -522,6 +626,8 @@ def _restart_after_update(before):
         return
     if speaker and SENDSPIN_BIN.exists() and _user_ctl('is-active', SENDSPIN_UNIT)[1] == 'active':
         _user_ctl('restart', SENDSPIN_UNIT)
+    if ('def run_voice' in hunks or 'VOICE' in hunks) and VOICE_PY.exists() and _user_ctl('is-active', VOICE_UNIT)[1] == 'active':
+        _user_ctl('restart', VOICE_UNIT)
     if 'panel-helper.py' in changed:
         sys.stdout.flush()
         os.execv(sys.executable, [sys.executable, str(HERE / 'panel-helper.py')])   # mismo proceso, código nuevo
@@ -863,6 +969,8 @@ class LocalHandler(Base):
             return self._json(200, dict(load_config(), modulos=list_scripts(), altavoz=speaker_panel()))
         if u.path == '/red':
             return self._json(200, net_info())
+        if u.path == '/voz':
+            return self._json(200, voice_info())
         if u.path == '/actualizaciones':
             return self._json(200, update_info())
         if u.path == '/poll':
@@ -889,6 +997,11 @@ class LocalHandler(Base):
                 return self._json(200, {'ok': set_power(q.get('on', ['1'])[0] == '1')})
             if u.path == '/actualizaciones':
                 return self._json(*update_action(self._body()))
+            if u.path == '/voz':
+                try:
+                    return self._json(200, {'ok': True, 'mensaje': set_voice(self._body()), 'info': voice_info()})
+                except (ValueError, RuntimeError) as e:
+                    return self._json(400, {'error': str(e)})
             if u.path == '/datos':  # el panel manda screen e info de entidades para probar burbujas en la web
                 body = self._body()
                 PANEL_DATA.update(body if isinstance(body, dict) else {})
@@ -1002,6 +1115,10 @@ class WebHandler(Base):
             if not self._guard():
                 return
             return self._json(200, speaker_info())
+        if u.path == '/api/voz':
+            if not self._guard():
+                return
+            return self._json(200, voice_info())
         if u.path == '/api/actualizaciones':
             if not self._guard():
                 return
@@ -1081,6 +1198,11 @@ class WebHandler(Base):
                 return self._json(200, {'ok': True, 'mensaje': set_speaker(body), 'info': speaker_info()})
             except (ValueError, RuntimeError) as e:
                 return self._json(400, {'error': str(e)})
+        if u.path == '/api/voz':           # micro, salida y palabra del asistente de voz
+            try:
+                return self._json(200, {'ok': True, 'mensaje': set_voice(body), 'info': voice_info()})
+            except (ValueError, RuntimeError) as e:
+                return self._json(400, {'error': str(e)})
         if u.path == '/api/actualizaciones':   # comprobar, actualizar ya, o modo (avisar / automático) y hora
             return self._json(*update_action(body))
         if u.path == '/api/orden':         # recargar, apagar/encender pantalla, modo ambiente, inicio
@@ -1146,9 +1268,12 @@ def main():
     ap = argparse.ArgumentParser(description='Ayudante del Panel Hogar')
     ap.add_argument('--set-password', action='store_true', help='poner o cambiar la contraseña de la web')
     ap.add_argument('--sendspin', action='store_true', help='arrancar el altavoz Sendspin (lo usa el servicio panel-sendspin)')
+    ap.add_argument('--voz', action='store_true', help='arrancar el asistente de voz (lo usa el servicio panel-voz)')
     args = ap.parse_args()
     if args.sendspin:
         return run_speaker()
+    if args.voz:
+        return run_voice()
     if args.set_password:
         if sys.stdin.isatty():
             pw = getpass.getpass('Nueva contraseña para la web del panel: ')

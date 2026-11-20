@@ -2203,7 +2203,32 @@ function voiceCard() {
     setBlock('Animación', null, segmented([['onda', 'Onda'], ['micro', 'Micrófono'], ['luz', 'Línea de luz'], ['eq', 'Ecualizador']],
       SET.voiceStyle || 'onda', (v) => { SET.voiceStyle = v; saveSettings(); voiceDemo(); })),
     h('div', { class: 'btn-row' },
-      h('button', { class: 'big-action', onclick: voiceDemo }, icon('mdi-play'), 'Ver cómo queda')));
+      h('button', { class: 'big-action', onclick: voiceDemo }, icon('mdi-play'), 'Ver cómo queda')),
+    window.PANEL_HELPER ? voiceMicBlock() : null);
+}
+/** El micro de la propia Pi (servicio panel-voz): micro, por dónde contesta y palabra para despertarlo. */
+function voiceMicBlock() {
+  const box = h('div', null, h('div', { class: 'muted small' }, 'Cargando el micro de este panel…'));
+  const save = async (patch) => {
+    try {
+      const r = await (await fetch(HELPER + '/voz', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(patch) })).json();
+      if (r.error) throw new Error(r.error);
+      toast(r.mensaje); paint(r.info);
+    } catch (e) { toast('No se pudo guardar: ' + e.message); }
+  };
+  const paint = (r) => {
+    const s = r.settings;
+    const estado = !r.installed ? 'Sin instalar: bash ~/ha-panel/setup-voz.sh' : r.active ? 'Escuchando' : s.enabled ? 'No está funcionando (mira el registro en la web)' : 'Apagado';
+    const opts = (list, ic) => list.map((o) => [o.id, o.name, ic, '']);
+    box.replaceChildren(
+      setBlock('Escuchar con el micro de este panel', estado, switchBtn(s.enabled, (v) => save({ enabled: v }))),
+      setBlock('Micrófono', null, pickList(opts(r.inputs, 'mdi-microphone'), s.mic, (v) => save({ mic: v }))),
+      setBlock('Por dónde contesta', null, pickList(opts(r.outputs, 'mdi-speaker'), s.output, (v) => save({ output: v }))),
+      setBlock('Palabra para despertarlo', null, segmented(r.wakeWords.map((w) => [w.id, w.name]), s.wake, (v) => save({ wake: v }))));
+  };
+  fetch(HELPER + '/voz', { cache: 'no-store' }).then((r) => r.json()).then(paint)
+    .catch(() => box.replaceChildren(h('div', { class: 'muted small' }, 'No se pudo leer el micro de este panel.')));
+  return box;
 }
 /** Ejemplo de la barra de voz, sin hablar con Home Assistant. */
 const DEMO_T = [];
