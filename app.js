@@ -1600,8 +1600,6 @@ function renderSettings() {
   bright.set(SET.brightness);
   const nightBright = slider({ min: 5, max: 100, step: 5, label: 'Brillo de noche', fmt: pct, onchange: (v) => { SET.night.brightness = v; saveSettings(); } });
   nightBright.set(SET.night.brightness);
-  const vol = slider({ min: 10, max: 100, step: 10, label: 'Volumen', fmt: pct, onchange: (v) => { SET.sound.volume = v; saveSettings(); tone([784, 622], 0.4); } });
-  vol.set(SET.sound.volume);
 
   const hw = SCREEN.helper;
   const helperText = !hw ? 'No detectado: el brillo y el apagado se hacen oscureciendo la imagen'
@@ -1620,6 +1618,8 @@ function renderSettings() {
       h('div', { class: 'btn-row' },
         h('button', { class: 'big-action', onclick: () => showAmbient() }, icon('mdi-image-filter-hdr'), 'Modo ambiente'),
         h('button', { class: 'big-action', onclick: () => { SCREEN.lastTouch = 0; setScreenOff(true); } }, icon('mdi-monitor-off'), 'Apagar ahora'))),
+
+    soundCard(),
 
     h('div', { class: 'card set-card' }, h('div', { class: 'set-title' }, icon('mdi-image-multiple'), 'Fotos del modo ambiente'),
       setRow('Mostrar fotos',
@@ -1646,8 +1646,7 @@ function renderSettings() {
         switchBtn(SET.night.screenOff, (v) => { SET.night.screenOff = v; saveSettings(); }))),
 
     h('div', { class: 'card set-card' }, h('div', { class: 'set-title' }, icon('mdi-bell-ring'), 'Avisos'),
-      setRow('Sonido', 'Ding-dong en los avisos y pitido en los críticos', switchBtn(SET.sound.enabled, (v) => { SET.sound.enabled = v; saveSettings(); })),
-      vol,
+      setRow('Sonido', 'Ding-dong en los avisos y pitido en los críticos (su volumen, en Sonido)', switchBtn(SET.sound.enabled, (v) => { SET.sound.enabled = v; saveSettings(); })),
       h('div', { class: 'btn-row' },
         h('button', { class: 'big-action', onclick: () => onNotif({ data: { id: 'prueba_ajustes', titulo: 'Aviso de prueba', mensaje: 'Así se ven los avisos que lances desde Home Assistant', nivel: 'aviso', icono: 'mdi:bell-ring', duracion: 15 } }) },
           icon('mdi-bell-badge'), 'Probar aviso'))),
@@ -2205,6 +2204,43 @@ function voiceCard() {
     h('div', { class: 'btn-row' },
       h('button', { class: 'big-action', onclick: voiceDemo }, icon('mdi-play'), 'Ver cómo queda')),
     window.PANEL_HELPER ? voiceMicBlock() : null);
+}
+/** Todos los volúmenes juntos: el general (la salida de la Pi) y, dentro de él, cada cosa que suena. */
+function soundCard() {
+  const pct = (v) => v + ' %';
+  const card = h('div', { class: 'card set-card' }, h('div', { class: 'set-title' }, icon('mdi-volume-high'), 'Sonido'));
+  const post = async (body) => {
+    try {
+      const r = await (await fetch(HELPER + '/sonido', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) })).json();
+      if (r.error) throw new Error(r.error);
+    } catch (e) { toast('No se pudo cambiar: ' + e.message); }
+  };
+  const music = speakerEntity();
+  const avisos = slider({ min: 10, max: 100, step: 10, label: 'Avisos y alarmas', fmt: pct, onchange: (v) => { SET.sound.volume = v; saveSettings(); tone([784, 622], 0.4); } });
+  avisos.set(SET.sound.volume);
+  const musicSl = music && S.states[music] ? slider({ min: 0, max: 100, step: 1, label: 'Música (este panel en Music Assistant)', fmt: pct,
+    onchange: (v) => call('media_player', 'volume_set', { volume_level: v / 100 }, music) }) : null;
+  if (musicSl) musicSl.set(Math.round((S.states[music].attributes.volume_level || 0) * 100));
+  const rest = h('div', { style: 'display:contents' });
+  card.append(h('div', { class: 'muted small' }, 'El general sube o baja todo lo que suena en el panel; los de debajo, cada cosa por separado.'),
+    rest, musicSl, avisos);
+  if (!window.PANEL_HELPER) return card;
+  fetch(HELPER + '/sonido', { cache: 'no-store' }).then((r) => r.json()).then((r) => {
+    const parts = [];
+    if (r.master.available) {
+      const m = slider({ min: 0, max: 100, step: 1, label: 'Volumen general', fmt: pct, onchange: (v) => post({ master: v }) });
+      m.set(r.master.value); parts.push(m);
+    } else parts.push(setRow('Volumen general', `La salida (${r.master.card || '¿?'}) no tiene volumen propio: usa los de debajo`, null));
+    card.insertBefore(h('div', { style: 'display:contents' }, ...parts), rest);
+    if (r.voice.installed) {
+      const vv = slider({ min: 10, max: 100, step: 10, label: 'Respuestas del asistente de voz', fmt: pct, onchange: (v) => post({ voiceVolume: v }) });
+      vv.set(r.voice.volume);
+      const mg = slider({ min: 20, max: 100, step: 5, label: 'Sensibilidad del micro', fmt: pct, onchange: (v) => post({ micGain: v }) });
+      mg.set(r.voice.micGain);
+      card.append(vv, mg);
+    }
+  }).catch(() => {});
+  return card;
 }
 /** El micro de la propia Pi (servicio panel-voz): micro, por dónde contesta y palabra para despertarlo. */
 function voiceMicBlock() {

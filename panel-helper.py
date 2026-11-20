@@ -451,7 +451,16 @@ def voice_settings():
     wake = str(s.get('wake') or 'okay_nabu')
     return {'enabled': s.get('enabled', True) is not False, 'name': str(s.get('name') or '').strip()[:60],
             'mic': str(s.get('mic') or '').strip()[:120], 'output': str(s.get('output') or '').strip()[:120],
-            'wake': wake if wake in dict(WAKE_WORDS) else 'okay_nabu'}
+            'wake': wake if wake in dict(WAKE_WORDS) else 'okay_nabu',
+            'volume': _int(s.get('volume'), 10, 100, 100),     # volumen de las respuestas (%)
+            'micGain': _int(s.get('micGain'), 20, 100, 80)}    # ganancia del micro (%; al 100 % suele saturar)
+
+
+def _int(v, lo, hi, default):
+    try:
+        return max(lo, min(hi, int(v)))
+    except (TypeError, ValueError):
+        return default
 
 
 def audio_inputs():
@@ -494,6 +503,8 @@ def set_voice(body):
     new['enabled'] = bool(new['enabled'])
     for k in ('name', 'mic', 'output', 'wake'):
         new[k] = str(new[k] or '').strip()[:120]
+    new['volume'] = _int(new['volume'], 10, 100, 100)
+    new['micGain'] = _int(new['micGain'], 20, 100, 80)
     if new['mic'] and new['mic'] not in {o['id'] for o in audio_inputs()}:
         raise ValueError('ese micro no está conectado')
     if new['output'] and new['output'] not in {o['id'] for o in audio_outputs()}:
@@ -531,15 +542,95 @@ def run_voice():
     card = mic.split('CARD=', 1)[1].split(',')[0] if 'CARD=' in mic else ''
     if card:
         for ctl in ('Mic', 'Capture'):
-            if _run(['amixer', '-q', '-c', card, 'sset', ctl, 'capture', '80%', 'cap'], timeout=5)[0] == 0:
+            if _run(['amixer', '-q', '-c', card, 'sset', ctl, 'capture', f'{s["micGain"]}%', 'cap'], timeout=5)[0] == 0:
                 break
     args = [str(VOICE_PY), '-m', 'wyoming_satellite', '--name', s['name'] or speaker_default_name(),
             '--uri', f'tcp://0.0.0.0:{VOICE_PORT}',
             '--mic-command', f'arecord -q -D {mic} -r 16000 -c 1 -f S16_LE -t raw',
             '--snd-command', f'aplay -q -D {out} -r 22050 -c 1 -f S16_LE -t raw',
+            '--snd-volume-multiplier', str(s['volume'] / 100),
             '--wake-command', f'{VOICE_PY} -m pymicro_wakeword --model {s["wake"]}']
     print('Micro:', mic, '· Salida:', out, '· Palabra:', s['wake'], flush=True)
     os.execv(args[0], args)
+
+
+# ---------------------------------------------------------------- sonido (volumen general)
+# El volumen general es el de la salida de audio de la Pi (jack, USB…): afecta a todo lo que suena en ella.
+# Se guarda en sonido.json y se vuelve a poner al arrancar (ALSA no lo recuerda sin sudo).
+SOUND_FILE = DATA / 'sonido.json'
+MIXER_CTLS = ('Master', 'PCM', 'Speaker', 'Headphone', 'Digital')
+SIM_SOUND = {'master': 70}
+
+
+def output_card():
+    # La tarjeta por la que suena el panel: la del altavoz, la del asistente o la de por defecto (la 0)
+    for dev in (speaker_settings()['device'], voice_settings()['output']):
+        if 'CARD=' in dev:
+            return dev.split('CARD=', 1)[1].split(',')[0]
+    try:
+        first = Path('/proc/asound/cards').read_text().splitlines()[0]
+        return first.split('[', 1)[1].split(']', 1)[0].strip()
+    except (OSError, IndexError):
+        return ''
+
+
+def master_control(card):
+    code, out, _ = _run(['amixer', '-c', card, 'scontrols'], timeout=5)
+    names = re.findall(r"'([^']+)'", out) if code == 0 else []
+    return next((c for c in MIXER_CTLS if c in names), '')
+
+
+def master_get():
+    if SIMULATE:
+        return {'available': True, 'value': SIM_SOUND['master'], 'card': 'Jack 3,5 mm'}
+    card = output_card()
+    ctl = master_control(card) if card else ''
+    if not ctl:
+        return {'available': False, 'value': None, 'card': CARD_NAMES.get(card, card)}
+    code, out, _ = _run(['amixer', '-M', '-c', card, 'sget', ctl], timeout=5)
+    m = re.search(r'\[(\d+)%\]', out) if code == 0 else None
+    return {'available': True, 'value': int(m.group(1)) if m else None, 'card': CARD_NAMES.get(card, card)}
+
+
+def master_set(v):
+    v = _int(v, 0, 100, 70)
+    DATA.mkdir(parents=True, exist_ok=True)
+    SOUND_FILE.write_text(json.dumps({'master': v}), encoding='utf-8')
+    if SIMULATE:
+        SIM_SOUND['master'] = v
+        return
+    card = output_card()
+    ctl = master_control(card) if card else ''
+    if not ctl:
+        raise RuntimeError('esta salida de audio no tiene volumen propio')
+    _run(['amixer', '-q', '-M', '-c', card, 'sset', ctl, f'{v}%', 'unmute'], timeout=5)
+
+
+def master_restore():
+    try:
+        v = json.loads(SOUND_FILE.read_text(encoding='utf-8')).get('master')
+    except (OSError, ValueError):
+        return
+    if v is not None and not SIMULATE:
+        try:
+            master_set(v)
+        except RuntimeError:
+            pass
+
+
+def sound_info():
+    v = voice_settings()
+    vi = voice_info() if (SIMULATE or VOICE_PY.exists()) else None
+    return {'master': master_get(), 'voice': {'installed': bool(vi and vi['installed']), 'volume': v['volume'], 'micGain': v['micGain']}}
+
+
+def set_sound(body):
+    if 'master' in body:
+        master_set(body['master'])
+    voice = {k: body[k] for k in ('voiceVolume', 'micGain') if k in body}
+    if voice:
+        set_voice({'volume': voice.get('voiceVolume', voice_settings()['volume']), 'micGain': voice.get('micGain', voice_settings()['micGain'])})
+    return sound_info()
 
 
 # ---------------------------------------------------------------- actualizaciones (git)
@@ -977,6 +1068,8 @@ class LocalHandler(Base):
             return self._json(200, net_info())
         if u.path == '/voz':
             return self._json(200, voice_info())
+        if u.path == '/sonido':
+            return self._json(200, sound_info())
         if u.path == '/actualizaciones':
             return self._json(200, update_info())
         if u.path == '/poll':
@@ -1006,6 +1099,11 @@ class LocalHandler(Base):
             if u.path == '/voz':
                 try:
                     return self._json(200, {'ok': True, 'mensaje': set_voice(self._body()), 'info': voice_info()})
+                except (ValueError, RuntimeError) as e:
+                    return self._json(400, {'error': str(e)})
+            if u.path == '/sonido':
+                try:
+                    return self._json(200, set_sound(self._body()))
                 except (ValueError, RuntimeError) as e:
                     return self._json(400, {'error': str(e)})
             if u.path == '/datos':  # el panel manda screen e info de entidades para probar burbujas en la web
@@ -1125,6 +1223,10 @@ class WebHandler(Base):
             if not self._guard():
                 return
             return self._json(200, voice_info())
+        if u.path == '/api/sonido':
+            if not self._guard():
+                return
+            return self._json(200, sound_info())
         if u.path == '/api/actualizaciones':
             if not self._guard():
                 return
@@ -1202,6 +1304,11 @@ class WebHandler(Base):
         if u.path == '/api/altavoz':       # activar / desactivar, nombre y salida del altavoz Sendspin
             try:
                 return self._json(200, {'ok': True, 'mensaje': set_speaker(body), 'info': speaker_info()})
+            except (ValueError, RuntimeError) as e:
+                return self._json(400, {'error': str(e)})
+        if u.path == '/api/sonido':        # volumen general, de las respuestas y ganancia del micro
+            try:
+                return self._json(200, set_sound(body))
             except (ValueError, RuntimeError) as e:
                 return self._json(400, {'error': str(e)})
         if u.path == '/api/voz':           # micro, salida y palabra del asistente de voz
@@ -1296,6 +1403,7 @@ def main():
         print('Panel Hogar · ayudante en MODO SIMULACIÓN (pantalla y red simuladas; no se cambia nada del equipo)', flush=True)
     threading.Thread(target=serve, args=(WEB_PORT, WebHandler, '0.0.0.0'), daemon=True).start()
     threading.Thread(target=update_loop, daemon=True).start()
+    master_restore()
     serve(LOCAL_PORT, LocalHandler, '127.0.0.1')
 
 

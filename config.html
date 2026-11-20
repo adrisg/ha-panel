@@ -568,11 +568,31 @@ go = 'home' | 'rooms' | 'sensors' | 'media' | 'printers' | 'scooter' | 'settings
 
     <div class="card">
       <h2>🔔 Avisos</h2>
-      <div class="row"><label for="sound-enabled">Sonido</label><label class="switch"><input id="sound-enabled" type="checkbox"><span></span></label></div>
+      <div class="row"><label for="sound-enabled">Sonido <span class="hint">(su volumen, en 🔊 Sonido)</span></label><label class="switch"><input id="sound-enabled" type="checkbox"><span></span></label></div>
+    </div>
+
+    <div class="card">
+      <h2>🔊 Sonido</h2>
+      <span class="hint">El general sube o baja todo lo que suena en la Pi; los de debajo, cada cosa por separado. La música se cambia en Music Assistant o en el panel.</span>
+      <div class="field" id="snd-master-box" data-nodirty>
+        <div class="row" style="padding:0"><label for="snd-master">Volumen general</label><span class="val" id="snd-master-v"></span></div>
+        <input id="snd-master" type="range" min="0" max="100" step="1">
+      </div>
       <div class="field">
-        <div class="row" style="padding:0"><label for="sound-volume">Volumen</label><span class="val" id="sound-volume-v"></span></div>
+        <div class="row" style="padding:0"><label for="sound-volume">Avisos y alarmas</label><span class="val" id="sound-volume-v"></span></div>
         <input id="sound-volume" type="range" min="10" max="100" step="10">
       </div>
+      <div id="snd-voice" class="hidden" data-nodirty>
+        <div class="field">
+          <div class="row" style="padding:0"><label for="snd-voice-vol">Respuestas del asistente de voz</label><span class="val" id="snd-voice-vol-v"></span></div>
+          <input id="snd-voice-vol" type="range" min="10" max="100" step="10">
+        </div>
+        <div class="field">
+          <div class="row" style="padding:0"><label for="snd-mic">Sensibilidad del micro</label><span class="val" id="snd-mic-v"></span></div>
+          <input id="snd-mic" type="range" min="20" max="100" step="5">
+        </div>
+      </div>
+      <div id="snd-msg" class="hint"></div>
     </div>
 
     <div class="card">
@@ -1767,7 +1787,7 @@ async function load() {
   $('#login').classList.add('hidden'); $('#app').classList.remove('hidden');
   loadEntities();
   loadRed();
-  loadSpk(); loadVoz();
+  loadSpk(); loadVoz(); loadSnd();
   loadUpd();
   loadScripts().catch((e) => bmsg('No se pudo leer el funcionamiento de las burbujas: ' + e.message, 'err'));
 }
@@ -1955,6 +1975,26 @@ $('#spk-ok').onclick = async () => {
     setTimeout(loadSpk, 4000);
   } catch (e) { spkMsg(e.message, false); }
 };
+
+/* ---------- sonido: volumen general, respuestas y micro (se aplican al soltar) ---------- */
+function sndFill(r) {
+  const set = (id, v) => { const i = $('#' + id); i.value = v; i.dispatchEvent(new Event('input')); };
+  $('#snd-master').disabled = !r.master.available;
+  $('#snd-msg').textContent = r.master.available ? '' : `La salida (${r.master.card || '¿?'}) no tiene volumen propio: usa los de debajo.`;
+  if (r.master.available && r.master.value != null) set('snd-master', r.master.value);
+  $('#snd-voice').classList.toggle('hidden', !r.voice.installed);
+  set('snd-voice-vol', r.voice.volume); set('snd-mic', r.voice.micGain);
+}
+async function loadSnd() {
+  try { sndFill(await api('GET', '/api/sonido')); } catch (e) { $('#snd-msg').textContent = 'No se pudo leer el sonido: ' + e.message; }
+}
+['snd-master', 'snd-voice-vol', 'snd-mic'].forEach((id) => {
+  bindRange(id);
+  $('#' + id).addEventListener('change', async () => {
+    const key = { 'snd-master': 'master', 'snd-voice-vol': 'voiceVolume', 'snd-mic': 'micGain' }[id];
+    try { sndFill(await api('POST', '/api/sonido', { [key]: +$('#' + id).value })); } catch (e) { $('#snd-msg').textContent = e.message; }
+  });
+});
 
 /* ---------- asistente de voz (micro de la Pi) ---------- */
 function vozMsg(t, ok) { const m = $('#voz-msg'); m.textContent = t; m.style.color = ok === false ? 'var(--danger)' : ok ? 'var(--ok)' : ''; }
