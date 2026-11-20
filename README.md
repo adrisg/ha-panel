@@ -83,7 +83,10 @@ Se cambian en el botón ⚙ de la pantalla o desde la web del móvil:
 | **Qué se ve** | favoritos, ocultar dispositivos, enchufes de las impresoras |
 | **Red** | WiFi, IP y nombre del panel |
 | **Altavoz** | nombre, salida de audio y qué altavoces abren «Sonando» |
+| **Asistente de voz** | qué satélite de Assist se muestra y su animación |
 | **Actualizaciones** | avisar o actualizar sola a una hora |
+
+**Asistente de voz:** con un micro USB, `bash ~/ha-panel/setup-voz.sh` convierte la Pi en satélite de Assist («Okay Nabu»). En Home Assistant necesitas un motor de voz a texto (Speech-to-Phrase o Whisper) y añadir la Pi en la integración **Wyoming**. Luego elígela en Ajustes → Asistente de voz y saldrá una barra encima de la pantalla mientras escucha y contesta.
 
 **Altavoz:** si no lo instalaste con `install.sh`, lanza `bash ~/ha-panel/setup-sendspin.sh` y actívalo en la web → Ajustes → Altavoz.
 
