@@ -293,6 +293,7 @@ main { display: flex; flex-direction: column; min-width: 0; min-height: 0; heigh
 /* la flotante: la misma, sobre la pantalla que haya */
 .vol-osd { position: fixed; z-index: 38; color: #fff; display: none; }
 .vol-osd.show { display: flex; }
+.vol-osd .np-vbtn { display: none; }   /* fuera de «Sonando» no hace falta el botón: sale sola */
 @media (max-aspect-ratio: 1/1) {
   .np-main { flex-direction: column; justify-content: center; text-align: center; gap: 4vh; }
   .np-art { width: min(72vw, 42vh); }
