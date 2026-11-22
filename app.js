@@ -2269,7 +2269,8 @@ function soundCard() {
   const main = h('div', { style: 'display:contents' });
   if (music && S.states[music]) {
     const m = slider({ min: 0, max: 100, step: 1, label: 'Volumen (música y multimedia)', fmt: pct,
-      onchange: (v) => call('media_player', 'volume_set', { volume_level: v / 100 }, music) });
+      // cambiado desde aquí: no sale la barra flotante (ya lo estás viendo)
+      onchange: (v) => { OSD.sent = v; OSD.sentAt = Date.now(); call('media_player', 'volume_set', { volume_level: v / 100 }, music); } });
     // Sigue al volumen real: si se cambia en Music Assistant, se mueve aquí también
     bind('view', music, (st) => st && st.attributes.volume_level != null && m.set(Math.round(st.attributes.volume_level * 100)));
     main.append(m);
