@@ -505,9 +505,10 @@ def set_voice(body):
         new[k] = str(new[k] or '').strip()[:120]
     new['volume'] = _int(new['volume'], 10, 100, 100)
     new['micGain'] = _int(new['micGain'], 20, 100, 100)
-    if new['mic'] and new['mic'] not in {o['id'] for o in audio_inputs()}:
+    # Solo se comprueban si cambian: cambiar el volumen no debe fallar porque el micro esté desenchufado
+    if new['mic'] and new['mic'] != cur['mic'] and new['mic'] not in {o['id'] for o in audio_inputs()}:
         raise ValueError('ese micro no está conectado')
-    if new['output'] and new['output'] not in {o['id'] for o in audio_outputs()}:
+    if new['output'] and new['output'] != cur['output'] and new['output'] not in {o['id'] for o in audio_outputs()}:
         raise ValueError('esa salida de audio no existe')
     if new['wake'] not in dict(WAKE_WORDS):
         raise ValueError('palabra de activación desconocida')
