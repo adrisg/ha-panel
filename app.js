@@ -798,14 +798,14 @@ function dragOn(el, { start, move, end }) {
   el.addEventListener('pointercancel', pEnd);
 }
 /* Barra de volumen (la de «Sonando» y la flotante son la misma pieza).
-   Cada barra lleva dentro su símbolo arriba y el % abajo. Con los tres puntitos de debajo se despliegan
+   Cada barra lleva dentro su símbolo arriba. Con los tres puntitos de debajo se despliegan
    a la izquierda los demás volúmenes: avisos y alarmas y, si está instalado, las respuestas del asistente de voz. */
 const volIconOf = (v) => v <= 0 ? 'mdi-volume-off' : v < 34 ? 'mdi-volume-low' : v < 67 ? 'mdi-volume-medium' : 'mdi-volume-high';
 function volBar(ic, { step = 1, min = 0 } = {}) {
-  const fill = h('i'), val = h('span', { class: 'vb-val' }), ico = h('span', { class: 'vb-ic' }, icon(ic));
-  const el = h('div', { class: 'np-vtrack' }, fill, ico, val);
+  const fill = h('i'), ico = h('span', { class: 'vb-ic' }, icon(ic));
+  const el = h('div', { class: 'np-vtrack' }, fill, ico);
   const b = { el, v: 0, drag: false, onStart: null, onLive: null, onEnd: null };
-  b.set = (v, force) => { if (b.drag && !force) return; b.v = v; fill.style.height = v + '%'; val.textContent = v + ' %'; };
+  b.set = (v, force) => { if (b.drag && !force) return; b.v = v; fill.style.height = v + '%'; };
   const at = (y) => {
     const r = el.getBoundingClientRect();
     const v = Math.max(min, Math.round(Math.max(0, Math.min(1, (r.bottom - y) / r.height)) * 100 / step) * step);
