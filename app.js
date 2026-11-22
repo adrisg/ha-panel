@@ -193,6 +193,7 @@ function setState(id, st) {
     structTimer = setTimeout(() => !S.sheetId && render(), 1500);
   }
   onSpeaker(id, old, st);
+  onVolumeChange(id, st);
   if (id === SET.voiceSatellite) onVoiceSat(old, st);
   markCode(id);
   clearTimeout(ambTimer);
@@ -795,6 +796,53 @@ function dragOn(el, { start, move, end }) {
   const pEnd = (e) => { if (e.pointerType !== 'touch') tEnd(); };
   el.addEventListener('pointerup', pEnd);
   el.addEventListener('pointercancel', pEnd);
+}
+/* Volumen flotante: si cambia el volumen del altavoz del panel (desde Music Assistant, el móvil…), sale la misma
+   barra vertical que en la pantalla «Sonando», en cualquier pantalla. Se puede arrastrar y se esconde sola a los 4 s. */
+const OSD = { el: null, now: 0, known: null, drag: false, timer: null, live: null, sent: -1, sentAt: 0 };
+function volOsdBuild() {
+  const txt = h('span', { class: 'np-vval' }), fill = h('i'), btn = h('button', { class: 'np-vbtn' });
+  const track = h('div', { class: 'np-vtrack' }, fill);
+  const el = h('div', { class: 'np-vol vol-osd' }, h('div', { class: 'np-vpanel' }, txt, track), btn);
+  OSD.paint = () => {
+    const v = OSD.now;
+    txt.textContent = v + ' %'; fill.style.height = v + '%';
+    btn.replaceChildren(icon(v <= 0 ? 'mdi-volume-off' : v < 34 ? 'mdi-volume-low' : v < 67 ? 'mdi-volume-medium' : 'mdi-volume-high'));
+  };
+  const send = () => {
+    const id = speakerEntity();
+    if (!id || OSD.now === OSD.sent) return;
+    OSD.sent = OSD.now; OSD.sentAt = Date.now();
+    call('media_player', 'volume_set', { volume_level: OSD.now / 100 }, id);
+  };
+  const at = (y) => { const r = track.getBoundingClientRect(); OSD.now = Math.round(Math.max(0, Math.min(1, (r.bottom - y) / r.height)) * 100); OSD.paint(); };
+  dragOn(track, {
+    start: (x, y) => { OSD.drag = true; clearTimeout(OSD.timer); at(y); send(); clearInterval(OSD.live); OSD.live = setInterval(send, 250); },
+    move: (x, y) => at(y),
+    end: () => { OSD.drag = false; clearInterval(OSD.live); send(); volOsdHideLater(); },
+  });
+  btn.onclick = () => { clearTimeout(OSD.timer); el.classList.remove('open', 'show'); };
+  document.body.append(el);
+  OSD.el = el;
+}
+function volOsdHideLater() {
+  clearTimeout(OSD.timer);
+  OSD.timer = setTimeout(() => { if (!OSD.drag) { OSD.el.classList.remove('open'); setTimeout(() => !OSD.el.classList.contains('open') && OSD.el.classList.remove('show'), 400); } }, 4000);
+}
+function onVolumeChange(id, st) {
+  if (!st || id !== speakerEntity() || st.attributes.volume_level == null) return;
+  const v = Math.round(st.attributes.volume_level * 100), was = OSD.known;
+  OSD.known = v;
+  if (was == null || v === was) return;
+  if (!OSD.el) volOsdBuild();
+  // lo que llega con retraso de un arrastre propio no hace saltar la barra
+  const recent = Date.now() - OSD.sentAt < 4000;
+  if (OSD.drag || (recent && v !== OSD.sent)) return;
+  OSD.now = v; OSD.paint();
+  if ($('#np').classList.contains('show') || recent) return;   // la pantalla «Sonando» ya tiene la suya
+  OSD.el.classList.add('show');
+  requestAnimationFrame(() => OSD.el.classList.add('open'));
+  volOsdHideLater();
 }
 function showNowPlaying(id) {
   if (NP.id === id && $('#np').classList.contains('show')) return;
