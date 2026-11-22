@@ -285,6 +285,10 @@ main { display: flex; flex-direction: column; min-width: 0; min-height: 0; heigh
 .np-vol .np-vtrack, .np-vol .np-vbtn { background: #3a3a3c; box-shadow: 0 4px 18px rgba(0,0,0,.45); }
 .np-vol.open .np-vbtn { background: #58585a; }
 .np-vol .np-vval { text-shadow: 0 1px 6px #000, 0 0 2px #000; }
+/* fondo detrás de la barra y el % (las dos iguales) */
+.np-vol .np-vpanel { padding: 12px 0 8px; background: rgba(62,62,66,.92); border: 1px solid rgba(255,255,255,.14); backdrop-filter: blur(16px); border-radius: 26px; box-shadow: 0 6px 24px rgba(0,0,0,.5); }
+.np-vol .np-vtrack { width: 48px; box-shadow: none; background: #1e1e20; }
+.np-vol.open .np-vpanel { clip-path: inset(0 0 0 0 round 26px); }
 @media (max-aspect-ratio: 1/1) {
   .np-main { flex-direction: column; justify-content: center; text-align: center; gap: 4vh; }
   .np-art { width: min(72vw, 42vh); }
