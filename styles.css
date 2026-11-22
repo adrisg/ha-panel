@@ -281,10 +281,10 @@ main { display: flex; flex-direction: column; min-width: 0; min-height: 0; heigh
 /* igual que la de «Sonando» (mismo sitio y tamaño); solo cambia que flota sobre la pantalla que haya */
 .vol-osd { position: fixed; z-index: 38; color: #fff; display: none; }
 .vol-osd.show { display: flex; }
-/* los mismos colores que sobre el fondo oscuro de «Sonando», pero opacos para que no se vea lo de detrás */
-.vol-osd .np-vtrack, .vol-osd .np-vbtn { background: #3a3a3c; box-shadow: 0 4px 18px rgba(0,0,0,.45); }
-.vol-osd.open .np-vbtn { background: #58585a; }
-.vol-osd .np-vval { text-shadow: 0 1px 6px #000, 0 0 2px #000; }
+/* las dos barras (la de «Sonando» y la flotante) con fondo opaco: no se ve lo de detrás */
+.np-vol .np-vtrack, .np-vol .np-vbtn { background: #3a3a3c; box-shadow: 0 4px 18px rgba(0,0,0,.45); }
+.np-vol.open .np-vbtn { background: #58585a; }
+.np-vol .np-vval { text-shadow: 0 1px 6px #000, 0 0 2px #000; }
 @media (max-aspect-ratio: 1/1) {
   .np-main { flex-direction: column; justify-content: center; text-align: center; gap: 4vh; }
   .np-art { width: min(72vw, 42vh); }
