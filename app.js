@@ -797,52 +797,99 @@ function dragOn(el, { start, move, end }) {
   el.addEventListener('pointerup', pEnd);
   el.addEventListener('pointercancel', pEnd);
 }
-/* Volumen flotante: si cambia el volumen del altavoz del panel (desde Music Assistant, el móvil…), sale la misma
-   barra vertical que en la pantalla «Sonando», en cualquier pantalla. Se puede arrastrar y se esconde sola a los 4 s. */
-const OSD = { el: null, now: 0, known: null, drag: false, timer: null, live: null, sent: -1, sentAt: 0 };
-function volOsdBuild() {
-  const txt = h('span', { class: 'np-vval' }), fill = h('i'), btn = h('button', { class: 'np-vbtn' });
-  const track = h('div', { class: 'np-vtrack' }, fill);
-  const el = h('div', { class: 'np-vol vol-osd' }, h('div', { class: 'np-vpanel' }, txt, track), btn);
-  OSD.paint = () => {
-    const v = OSD.now;
-    txt.textContent = v + ' %'; fill.style.height = v + '%';
-    btn.replaceChildren(icon(v <= 0 ? 'mdi-volume-off' : v < 34 ? 'mdi-volume-low' : v < 67 ? 'mdi-volume-medium' : 'mdi-volume-high'));
+/* Barra de volumen (la de «Sonando» y la flotante son la misma pieza).
+   Cada barra lleva dentro su símbolo arriba y el % abajo. Con los tres puntitos de debajo se despliegan
+   a la izquierda los demás volúmenes: avisos y alarmas y, si está instalado, las respuestas del asistente de voz. */
+const volIconOf = (v) => v <= 0 ? 'mdi-volume-off' : v < 34 ? 'mdi-volume-low' : v < 67 ? 'mdi-volume-medium' : 'mdi-volume-high';
+function volBar(ic, { step = 1, min = 0 } = {}) {
+  const fill = h('i'), val = h('span', { class: 'vb-val' }), ico = h('span', { class: 'vb-ic' }, icon(ic));
+  const el = h('div', { class: 'np-vtrack' }, fill, ico, val);
+  const b = { el, v: 0, drag: false, onStart: null, onLive: null, onEnd: null };
+  b.set = (v, force) => { if (b.drag && !force) return; b.v = v; fill.style.height = v + '%'; val.textContent = v + ' %'; };
+  const at = (y) => {
+    const r = el.getBoundingClientRect();
+    const v = Math.max(min, Math.round(Math.max(0, Math.min(1, (r.bottom - y) / r.height)) * 100 / step) * step);
+    b.set(v, true); if (b.onLive) b.onLive(v);
   };
-  const send = () => {
-    const id = speakerEntity();
-    if (!id || OSD.now === OSD.sent) return;
-    OSD.sent = OSD.now; OSD.sentAt = Date.now();
-    call('media_player', 'volume_set', { volume_level: OSD.now / 100 }, id);
-  };
-  const at = (y) => { const r = track.getBoundingClientRect(); OSD.now = Math.round(Math.max(0, Math.min(1, (r.bottom - y) / r.height)) * 100); OSD.paint(); };
-  dragOn(track, {
-    start: (x, y) => { OSD.drag = true; clearTimeout(OSD.timer); at(y); send(); clearInterval(OSD.live); OSD.live = setInterval(send, 250); },
+  dragOn(el, {
+    start: (x, y) => { b.drag = true; if (b.onStart) b.onStart(); at(y); },
     move: (x, y) => at(y),
-    end: () => { OSD.drag = false; clearInterval(OSD.live); send(); volOsdHideLater(); },
+    end: () => { b.drag = false; if (b.onEnd) b.onEnd(b.v); },
   });
-  btn.onclick = () => { clearTimeout(OSD.timer); el.classList.remove('open', 'show'); };
-  document.body.append(el);
-  OSD.el = el;
+  return b;
 }
-function volOsdHideLater() {
-  clearTimeout(OSD.timer);
-  OSD.timer = setTimeout(() => { if (!OSD.drag) { OSD.el.classList.remove('open'); setTimeout(() => !OSD.el.classList.contains('open') && OSD.el.classList.remove('show'), 400); } }, 4000);
+function volWidget(getId, cls = '') {
+  const W = { sent: -1, sentAt: 0, known: null, timer: null, live: null, first: false, onClose: null };
+  const main = volBar('mdi-music'), avisos = volBar('mdi-bell-ring', { step: 10, min: 10 }), voz = volBar('mdi-account-voice', { step: 10, min: 10 });
+  voz.el.hidden = true;
+  const btn = h('button', { class: 'np-vbtn' });
+  const dots = h('button', { class: 'np-vdots' }, icon('mdi-dots-horizontal'));
+  const el = h('div', { class: 'np-vol ' + cls },
+    h('div', { class: 'np-vpanel' }, h('div', { class: 'np-vbars' }, h('div', { class: 'np-vx' }, voz.el, avisos.el), main.el), dots), btn);
+  const paintBtn = () => btn.replaceChildren(icon(volIconOf(main.v)));
+  const send = () => {
+    const id = getId();
+    if (!id || main.v === W.sent) return;
+    W.sent = main.v; W.sentAt = Date.now();
+    call('media_player', 'volume_set', { volume_level: main.v / 100 }, id);
+  };
+  const dragging = () => main.drag || avisos.drag || voz.drag;
+  W.close = () => { el.classList.remove('open', 'more'); if (W.onClose) W.onClose(); };
+  W.open = () => { el.classList.add('open'); W.hideLater(); };
+  W.hideLater = () => { clearTimeout(W.timer); W.timer = setTimeout(() => !dragging() && W.close(), 4000); };
+  btn.onclick = () => (el.classList.contains('open') ? W.close() : W.open());
+  // música: cambia mientras arrastras
+  main.onStart = () => { clearTimeout(W.timer); W.first = true; clearInterval(W.live); W.live = setInterval(send, 250); };
+  main.onLive = () => { paintBtn(); if (W.first) { W.first = false; send(); } };
+  main.onEnd = () => { clearInterval(W.live); send(); W.hideLater(); };
+  // avisos y voz: al soltar
+  avisos.onStart = voz.onStart = () => clearTimeout(W.timer);
+  avisos.onEnd = (v) => { SET.sound.volume = v; saveSettings(); tone([784, 622], 0.4); W.hideLater(); };
+  voz.onEnd = async (v) => {
+    W.hideLater();
+    try {
+      const r = await (await fetch(HELPER + '/sonido', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ voiceVolume: v }) })).json();
+      if (r.error) throw new Error(r.error);
+    } catch (e) { toast('No se pudo cambiar: ' + e.message); }
+  };
+  dots.onclick = () => {
+    const more = !el.classList.contains('more');
+    if (more) {
+      avisos.set(SET.sound.volume);
+      if (window.PANEL_HELPER) fetch(HELPER + '/sonido', { cache: 'no-store' }).then((r) => r.json())
+        .then((r) => { voz.el.hidden = !r.voice.installed; voz.set(r.voice.volume); }).catch(() => {});
+    }
+    el.classList.toggle('more', more);
+    W.hideLater();
+  };
+  // Volumen que llega de Home Assistant. Devuelve true si lo han cambiado desde otro sitio.
+  // Lo que llega con retraso de un arrastre propio se ignora, para que la barra no dé saltos atrás.
+  W.update = (v) => {
+    const recent = Date.now() - W.sentAt < 4000;
+    let ext = false;
+    if (!main.drag && !(recent && v !== W.sent)) { ext = !recent && W.known != null && v !== W.known; main.set(v); paintBtn(); }
+    W.known = v;
+    return ext;
+  };
+  W.markSent = (v) => { W.sent = v; W.sentAt = Date.now(); };
+  W.el = el;
+  return W;
 }
+/* Volumen flotante: si cambia el volumen del altavoz del panel desde otro sitio (Music Assistant, el móvil…),
+   sale la misma barra que en «Sonando», en cualquier pantalla. Se esconde sola a los 4 s. */
+const OSD = { w: null };
 function onVolumeChange(id, st) {
   if (!st || id !== speakerEntity() || st.attributes.volume_level == null) return;
-  const v = Math.round(st.attributes.volume_level * 100), was = OSD.known;
-  OSD.known = v;
-  if (was == null || v === was) return;
-  if (!OSD.el) volOsdBuild();
-  // lo que llega con retraso de un arrastre propio no hace saltar la barra
-  const recent = Date.now() - OSD.sentAt < 4000;
-  if (OSD.drag || (recent && v !== OSD.sent)) return;
-  OSD.now = v; OSD.paint();
-  if ($('#np').classList.contains('show') || recent) return;   // la pantalla «Sonando» ya tiene la suya
-  OSD.el.classList.add('show');
-  requestAnimationFrame(() => OSD.el.classList.add('open'));
-  volOsdHideLater();
+  if (!OSD.w) {
+    const w = OSD.w = volWidget(speakerEntity, 'vol-osd');
+    w.onClose = () => setTimeout(() => !w.el.classList.contains('open') && w.el.classList.remove('show'), 400);
+    document.body.append(w.el);
+  }
+  const w = OSD.w;
+  if (!w.update(Math.round(st.attributes.volume_level * 100))) return;
+  if ($('#np').classList.contains('show')) return;   // la pantalla «Sonando» ya tiene la suya
+  w.el.classList.add('show');
+  requestAnimationFrame(() => w.open());
 }
 function showNowPlaying(id) {
   if (NP.id === id && $('#np').classList.contains('show')) return;
@@ -898,35 +945,8 @@ function showNowPlaying(id) {
   const clock = h('span', { class: 'np-clock' });
   const svc = (s) => () => call('media_player', s, {}, id);
   const play = h('button', { class: 'np-play', onclick: svc('media_play_pause') });
-  // Volumen: botón 🔊 abajo a la derecha; al tocarlo sube una barra vertical (tocar o arrastrar: cambia mientras arrastras).
-  // Se esconde sola a los 4 s sin tocarla, o al volver a tocar el botón. Si el volumen cambia desde otro sitio, se abre sola.
-  const volTxt = h('span', { class: 'np-vval' }), volFill = h('i'), volIc = h('button', { class: 'np-vbtn' });
-  const volTrack = h('div', { class: 'np-vtrack' }, volFill);
-  const vol = h('div', { class: 'np-vol' }, h('div', { class: 'np-vpanel' }, volTxt, volTrack), volIc);
-  let volNow = 0, volDrag = false, volTimer = null, volSent = -1, volSentAt = 0, volKnown = null, volLive = null;
-  const volIcon = (v) => icon(v <= 0 ? 'mdi-volume-off' : v < 34 ? 'mdi-volume-low' : v < 67 ? 'mdi-volume-medium' : 'mdi-volume-high');
-  const volPaint = () => {
-    volTxt.textContent = volNow + ' %';
-    volFill.style.height = volNow + '%';
-    volIc.replaceChildren(volIcon(volNow));
-  };
-  const volHideLater = () => { clearTimeout(volTimer); volTimer = setTimeout(() => !volDrag && vol.classList.remove('open'), 4000); };
-  volIc.onclick = () => { vol.classList.toggle('open'); volHideLater(); };
-  const volSend = () => {
-    if (volNow === volSent) return;
-    volSent = volNow; volSentAt = Date.now();
-    call('media_player', 'volume_set', { volume_level: volNow / 100 }, id);
-  };
-  const volAt = (y) => {
-    const r = volTrack.getBoundingClientRect();
-    volNow = Math.round(Math.max(0, Math.min(1, (r.bottom - y) / r.height)) * 100);
-    volPaint();
-  };
-  dragOn(volTrack, {
-    start: (x, y) => { volDrag = true; clearTimeout(volTimer); volAt(y); volSend(); clearInterval(volLive); volLive = setInterval(volSend, 250); },
-    move: (x, y) => volAt(y),
-    end: () => { volDrag = false; clearInterval(volLive); volSend(); volHideLater(); },
-  });
+  // Volumen: botón 🔊 abajo a la derecha; al tocarlo sube la barra. Si cambia desde otro sitio, se abre sola.
+  const volW = volWidget(() => id), vol = volW.el;
   const root = $('#np');
   root.replaceChildren(bg,
     h('div', { class: 'np-top' }, icon('mdi-speaker'), h('span', { class: 'np-spk' }, nameOf(id, false)), clock,
@@ -952,15 +972,7 @@ function showNowPlaying(id) {
     if (title.textContent !== ttl) { title.textContent = ttl; requestAnimationFrame(fitTitle); }
     sub.textContent = [a.media_artist, a.media_album_name].filter(Boolean).join(' · ');
     play.replaceChildren(icon(st.state === 'playing' ? 'mdi-pause' : 'mdi-play'));
-    const v = Math.round((a.volume_level || 0) * 100);
-    // Mientras arrastras manda lo tuyo. Después llegan con retraso los valores intermedios que se enviaron:
-    // se ignoran hasta que llega el último (o pasan 4 s), para que la barra no dé saltos atrás.
-    const recent = Date.now() - volSentAt < 4000;
-    if (!volDrag && !(recent && v !== volSent)) {
-      if (!recent && volKnown != null && v !== volKnown) { vol.classList.add('open'); volHideLater(); }   // cambiado desde otro sitio
-      volNow = v; volPaint();
-    }
-    volKnown = v;
+    if (volW.update(Math.round((a.volume_level || 0) * 100))) volW.open();
     if (a.entity_picture !== pic) {
       pic = a.entity_picture;
       const url = pic ? `url("${absUrl(pic)}")` : '';
@@ -2270,7 +2282,7 @@ function soundCard() {
   if (music && S.states[music]) {
     const m = slider({ min: 0, max: 100, step: 1, label: 'Volumen (música y multimedia)', fmt: pct,
       // cambiado desde aquí: no sale la barra flotante (ya lo estás viendo)
-      onchange: (v) => { OSD.sent = v; OSD.sentAt = Date.now(); call('media_player', 'volume_set', { volume_level: v / 100 }, music); } });
+      onchange: (v) => { if (OSD.w) OSD.w.markSent(v); call('media_player', 'volume_set', { volume_level: v / 100 }, music); } });
     // Sigue al volumen real: si se cambia en Music Assistant, se mueve aquí también
     bind('view', music, (st) => st && st.attributes.volume_level != null && m.set(Math.round(st.attributes.volume_level * 100)));
     main.append(m);

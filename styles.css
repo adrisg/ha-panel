@@ -266,29 +266,33 @@ main { display: flex; flex-direction: column; min-width: 0; min-height: 0; heigh
 .np-ctrls button { flex: none; width: clamp(52px, 7vw, 72px); aspect-ratio: 1; height: auto; border-radius: 50%; border: 0; background: none; color: inherit;
   font-size: clamp(34px, 4.3vw, 44px); display: grid; place-items: center; }
 .np-ctrls .np-play { width: clamp(68px, 8.8vw, 90px); background: #fff; color: #000; font-size: clamp(38px, 4.9vw, 50px); }
-.np-vol { position: absolute; right: 34px; bottom: 96px; top: 90px; width: 64px; display: flex; flex-direction: column; align-items: center; justify-content: flex-end; gap: 14px; pointer-events: none; }
-.np-vbtn { pointer-events: auto; flex: none; width: 60px; height: 60px; border-radius: 50%; border: 0; background: rgba(255,255,255,.16); color: inherit; font-size: 30px; display: grid; place-items: center; transition: background .2s; }
-.np-vol.open .np-vbtn { background: rgba(255,255,255,.32); }
-/* la barra sube desde el botón (y baja al esconderse) */
-.np-vpanel { flex: 1; min-height: 0; width: 100%; display: flex; flex-direction: column; align-items: center; gap: 10px;
-  clip-path: inset(100% 0 0 0 round 18px); opacity: 0; transform: translateY(24px);
+/* Volumen: la de «Sonando» y la flotante son la misma barra. Sube desde el botón 🔊 (y baja al esconderse). */
+.np-vol { position: absolute; right: 34px; bottom: 96px; top: 90px; display: flex; flex-direction: column; align-items: flex-end; justify-content: flex-end; gap: 14px; pointer-events: none; }
+.np-vbtn { pointer-events: auto; flex: none; width: 60px; height: 60px; margin-right: 3px; border-radius: 50%; border: 0; background: #3a3a3c; box-shadow: 0 4px 18px rgba(0,0,0,.45);
+  color: inherit; font-size: 30px; display: grid; place-items: center; transition: background .2s; }
+.np-vol.open .np-vbtn { background: #58585a; }
+.np-vpanel { flex: 1; min-height: 0; display: flex; flex-direction: column; align-items: center; gap: 4px; padding: 8px 8px 2px;
+  background: rgba(62,62,66,.92); border: 1px solid rgba(255,255,255,.14); backdrop-filter: blur(16px); border-radius: 26px; box-shadow: 0 6px 24px rgba(0,0,0,.5);
+  clip-path: inset(100% 0 0 0 round 26px); opacity: 0; transform: translateY(24px);
   transition: clip-path .35s cubic-bezier(.2,.8,.2,1), opacity .25s, transform .35s cubic-bezier(.2,.8,.2,1); }
-.np-vol.open .np-vpanel { clip-path: inset(0 0 0 0 round 18px); opacity: 1; transform: none; pointer-events: auto; }
-.np-vval { font-size: 17px; font-weight: 600; font-variant-numeric: tabular-nums; }
-.np-vtrack { position: relative; flex: 1; width: 56px; border-radius: 18px; background: rgba(255,255,255,.16); overflow: hidden; touch-action: none; cursor: pointer; }
-.np-vtrack i { position: absolute; left: 0; right: 0; bottom: 0; background: rgba(255,255,255,.9); }
-/* la misma barra, flotando sobre cualquier pantalla cuando cambia el volumen */
-/* igual que la de «Sonando» (mismo sitio y tamaño); solo cambia que flota sobre la pantalla que haya */
+.np-vol.open .np-vpanel { clip-path: inset(0 0 0 0 round 26px); opacity: 1; transform: none; pointer-events: auto; }
+.np-vbars { flex: 1; min-height: 0; display: flex; }
+/* los demás volúmenes: se despliegan a la izquierda con los tres puntitos */
+.np-vx { display: flex; gap: 10px; max-width: 0; margin-right: 0; opacity: 0; overflow: hidden;
+  transition: max-width .4s cubic-bezier(.2,.8,.2,1), margin-right .4s cubic-bezier(.2,.8,.2,1), opacity .3s; }
+.np-vol.more .np-vx { max-width: 120px; margin-right: 10px; opacity: 1; }
+.np-vx .np-vtrack[hidden] { display: none; }
+.np-vtrack { position: relative; flex: none; width: 48px; border-radius: 18px; background: #1e1e20; overflow: hidden; touch-action: none; cursor: pointer; isolation: isolate; }
+.np-vtrack > i { position: absolute; left: 0; right: 0; bottom: 0; background: rgba(255,255,255,.9); }
+/* símbolo arriba y % abajo, dentro de la barra; se invierten de color al quedar sobre la parte llena */
+.vb-ic, .vb-val { position: absolute; left: 0; right: 0; text-align: center; color: #fff; mix-blend-mode: difference; pointer-events: none; }
+.vb-ic { top: 10px; font-size: 22px; }
+.vb-val { bottom: 10px; font-size: 14px; font-weight: 700; font-variant-numeric: tabular-nums; }
+.np-vdots { flex: none; align-self: flex-end; width: 48px; height: 30px; border: 0; background: none; color: inherit; font-size: 26px; display: grid; place-items: center; opacity: .85; cursor: pointer; }
+.np-vol.more .np-vdots { opacity: 1; }
+/* la flotante: la misma, sobre la pantalla que haya */
 .vol-osd { position: fixed; z-index: 38; color: #fff; display: none; }
 .vol-osd.show { display: flex; }
-/* las dos barras (la de «Sonando» y la flotante) con fondo opaco: no se ve lo de detrás */
-.np-vol .np-vtrack, .np-vol .np-vbtn { background: #3a3a3c; box-shadow: 0 4px 18px rgba(0,0,0,.45); }
-.np-vol.open .np-vbtn { background: #58585a; }
-.np-vol .np-vval { text-shadow: 0 1px 6px #000, 0 0 2px #000; }
-/* fondo detrás de la barra y el % (las dos iguales) */
-.np-vol .np-vpanel { padding: 12px 0 8px; background: rgba(62,62,66,.92); border: 1px solid rgba(255,255,255,.14); backdrop-filter: blur(16px); border-radius: 26px; box-shadow: 0 6px 24px rgba(0,0,0,.5); }
-.np-vol .np-vtrack { width: 48px; box-shadow: none; background: #1e1e20; }
-.np-vol.open .np-vpanel { clip-path: inset(0 0 0 0 round 26px); }
 @media (max-aspect-ratio: 1/1) {
   .np-main { flex-direction: column; justify-content: center; text-align: center; gap: 4vh; }
   .np-art { width: min(72vw, 42vh); }
