@@ -2222,7 +2222,8 @@ function soundCard() {
   if (music && S.states[music]) {
     const m = slider({ min: 0, max: 100, step: 1, label: 'Volumen (música y multimedia)', fmt: pct,
       onchange: (v) => call('media_player', 'volume_set', { volume_level: v / 100 }, music) });
-    m.set(Math.round((S.states[music].attributes.volume_level || 0) * 100));
+    // Sigue al volumen real: si se cambia en Music Assistant, se mueve aquí también
+    bind('view', music, (st) => st && st.attributes.volume_level != null && m.set(Math.round(st.attributes.volume_level * 100)));
     main.append(m);
   }
   const avisos = slider({ min: 10, max: 100, step: 10, label: 'Avisos y alarmas', fmt: pct, onchange: (v) => { SET.sound.volume = v; saveSettings(); tone([784, 622], 0.4); } });
