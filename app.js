@@ -2424,8 +2424,9 @@ function shadeTabs(main) {
   const btns = [h('button', { class: 'sht-tab' }, icon('mdi-bell'), 'Avisos', badge), h('button', { class: 'sht-tab' }, icon('mdi-tune-variant'), 'Controles'),
     h('button', { class: 'sht-tab' }, icon('mdi-lightning-bolt'), 'Accesos rápidos')];
   const bar = h('div', { class: 'sht-bar' }, btns);
-  const notif = h('div', { class: 'sht-page scroll' }), quick = h('div', { class: 'sht-page scroll' });
-  track.append(notif, h('div', { class: 'sht-page sht-main' }, main), quick);
+  // las listas no cuentan para el alto: la cortina mide lo que miden los controles y ellas se desplazan dentro
+  const notif = h('div', { class: 'sht-scroll' }), quick = h('div', { class: 'sht-scroll' });
+  track.append(h('div', { class: 'sht-page scroll' }, notif), h('div', { class: 'sht-page sht-main' }, main), h('div', { class: 'sht-page scroll' }, quick));
 
   const paintNotif = () => {
     if (SH.tab === 0) { N.unread = 0; renderBell(); }
