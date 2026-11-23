@@ -881,7 +881,7 @@ function volWidget(getId, cls = '') {
   return W;
 }
 /* Burbuja de volumen: si cambia el volumen del altavoz del panel desde otro sitio (Home Assistant, Music Assistant,
-   el móvil…), sale arriba a la derecha una burbuja con el número nuevo, en cualquier pantalla. Se va sola a los 2 s.
+   el móvil…), sale arriba en el centro una burbuja con el número nuevo, en cualquier pantalla. Se va sola a los 2 s.
    Lo que cambias desde el propio panel no la saca. */
 const OSD = { known: null, sent: -1, sentAt: 0, timer: null };
 function volMarkSent(v) { OSD.sent = v; OSD.sentAt = Date.now(); }
