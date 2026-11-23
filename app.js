@@ -2362,18 +2362,13 @@ function topMenu(open) {
   if (open == null) open = !m.classList.contains('open');
   if (open) {
     const item = (ic, label, fn) => h('button', { class: 'tm-item', onclick: () => { topMenu(false); fn(); } }, icon(ic), label);
-    // Volumen, dentro del propio menú: música (el altavoz del panel) y avisos y alarmas
-    const pct = (v) => v + ' %', vols = h('div', { class: 'tm-vols' });
-    const id = speakerEntity(), st = id && S.states[id];
-    if (st && st.attributes.volume_level != null) {
-      const mus = slider({ label: 'Música', fmt: pct, onchange: (v) => { if (OSD.w) OSD.w.markSent(v); call('media_player', 'volume_set', { volume_level: v / 100 }, id); } });
-      mus.set(Math.round(st.attributes.volume_level * 100));
-      vols.append(mus);
-    }
-    const av = slider({ min: 10, max: 100, step: 10, label: 'Avisos y alarmas', fmt: pct, onchange: (v) => { SET.sound.volume = v; saveSettings(true); tone([784, 622], 0.4); } });
-    av.set(SET.sound.volume);
-    vols.append(av);
-    m.replaceChildren(vols,
+    m.replaceChildren(
+      item('mdi-volume-high', 'Volumen', () => {
+        const id = speakerEntity(), st = id && S.states[id];
+        if (!st || st.attributes.volume_level == null) return toast('El altavoz del panel no está disponible');
+        volOsd().update(Math.round(st.attributes.volume_level * 100));
+        volOsdShow();
+      }),
       item('mdi-cog', 'Ajustes', () => go('settings')),
       item('mdi-image-filter-hdr', 'Modo ambiente', () => showAmbient()),
       item('mdi-monitor-off', 'Apagar la pantalla', () => { SCREEN.lastTouch = 0; setScreenOff(true); }));
