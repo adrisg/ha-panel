@@ -1388,6 +1388,7 @@ const DEFAULTS = () => ({
     end: (CFG.night && CFG.night.end) || '07:00', brightness: Math.round((1 - ((CFG.night && CFG.night.dim) ?? 0.6)) * 100),
     screenOff: false,                      // apagar la pantalla de noche cuando no se usa
   },
+  theme: 'oscuro',      // oscuro | claro | auto (claro de día y oscuro de noche)
   sound: { enabled: true, volume: 70 },
   photos: { enabled: true, seconds: CFG.photoSeconds || 30, fit: 'blur' },   // fit: cover | blur | contain
   alarms: [],
@@ -1435,7 +1436,21 @@ function saveSettings(quiet) {   // quiet: sin el aviso «Ajustes guardados»
     } catch (e) { toast('No se pudieron guardar: ' + e.message, true); }
   }, 600);
 }
-function applySettings() { resetIdle(); screenTick(); try { COMPILED.forEach((m) => (m.cache = {})); } catch (e) { /* aún no cargado */ } }
+function applySettings() { applyTheme(); resetIdle(); screenTick(); try { COMPILED.forEach((m) => (m.cache = {})); } catch (e) { /* aún no cargado */ } }
+
+/** Tema claro u oscuro. «auto»: claro mientras el sol está arriba (sun.sun) o, sin él, de 8:00 a 20:00. */
+function themeIsLight() {
+  if (SET.theme === 'claro') return true;
+  if (SET.theme !== 'auto') return false;
+  const sun = S.states['sun.sun'];
+  if (sun && sun.state !== 'unavailable') return sun.state === 'above_horizon';
+  const hr = new Date().getHours();
+  return hr >= 8 && hr < 20;
+}
+function applyTheme() {
+  const light = themeIsLight();
+  if (document.documentElement.classList.contains('light') !== light) document.documentElement.classList.toggle('light', light);
+}
 
 function isNight(now = new Date()) {
   const n = SET.night;
@@ -1475,6 +1490,7 @@ function setScreenOff(off) {
 }
 /** Decide brillo y apagado: se llama cada 5 s, al tocar, al cambiar ajustes y al llegar un aviso. */
 function screenTick() {
+  applyTheme();
   const night = isNight(), alert = alertOpen();
   const idle = (Date.now() - SCREEN.lastTouch) / 1000;
   let off = false;
@@ -1660,6 +1676,8 @@ function renderSettings() {
   return [h('div', { class: 'settings' },
     h('div', { class: 'card set-card' }, h('div', { class: 'set-title' }, icon('mdi-monitor'), 'Pantalla'),
       bright,
+      setBlock('Tema', 'Automático: claro de día y oscuro de noche (con la salida y la puesta del sol)',
+        segmented([['oscuro', 'Oscuro'], ['claro', 'Claro'], ['auto', 'Automático']], SET.theme || 'oscuro', (v) => { SET.theme = v; saveSettings(); })),
       setBlock('Modo ambiente', 'Tiempo sin tocar la pantalla hasta mostrar el reloj',
         segmented([[0, 'Nunca'], [30, '30 s'], [60, '1 min'], [90, '1,5 min'], [180, '3 min'], [300, '5 min'], [600, '10 min']],
           SET.idleSeconds, (v) => { SET.idleSeconds = v; saveSettings(); })),
