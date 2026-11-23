@@ -194,6 +194,7 @@ function setState(id, st) {
   }
   onSpeaker(id, old, st);
   onVolumeChange(id, st);
+  if (id === TM.id && TM.paint) TM.paint();
   if (id === SET.voiceSatellite) onVoiceSat(old, st);
   markCode(id);
   clearTimeout(ambTimer);
@@ -2357,12 +2358,38 @@ function resetIdle() {
   if (SET.idleSeconds > 0) idleTimer = setTimeout(() => !S.sheetId && !NP.id && !alertOpen() && showAmbient(), SET.idleSeconds * 1000);
 }
 /** Menú de los tres puntitos de arriba a la derecha: se despliega con una animación. */
+/* Mini reproductor arriba del menú ⋮: carátula, título y anterior / play / siguiente.
+   Tocar la carátula o el título abre «Sonando». Se repinta solo mientras el menú está abierto. */
+const TM = { id: null, paint: null };
+function tmPlayer() {
+  const id = ambientSpeaker() || speakerEntity();
+  TM.id = null; TM.paint = null;
+  if (!id || !S.states[id] || S.states[id].state === 'unavailable') return null;
+  const art = h('div', { class: 'tm-art' }), title = h('div', { class: 'tm-ptitle' }), sub = h('div', { class: 'tm-psub' });
+  const btn = (ic, svc, cls = '') => h('button', { class: 'tm-pbtn ' + cls, onclick: (e) => { e.stopPropagation(); call('media_player', svc, {}, id); } }, icon(ic));
+  const play = btn('mdi-play', 'media_play_pause', 'main');
+  const box = h('div', { class: 'tm-player' },
+    h('div', { class: 'tm-pinfo', onclick: () => { topMenu(false); showNowPlaying(id); } }, art, h('div', { class: 'tm-ptext' }, title, sub)),
+    h('div', { class: 'tm-pctrls' }, btn('mdi-skip-previous', 'media_previous_track'), play, btn('mdi-skip-next', 'media_next_track')));
+  TM.id = id;
+  TM.paint = () => {
+    const st = S.states[id]; if (!st) return;
+    const a = st.attributes, pic = a.entity_picture ? absUrl(a.entity_picture) : '';
+    art.style.backgroundImage = pic ? `url("${pic}")` : '';
+    art.classList.toggle('empty', !pic);
+    title.textContent = a.media_title || nameOf(id);
+    sub.textContent = a.media_title ? (a.media_artist || a.app_name || nameOf(id)) : (T[st.state] || cap(st.state));
+    play.replaceChildren(icon(st.state === 'playing' ? 'mdi-pause' : 'mdi-play'));
+  };
+  TM.paint();
+  return box;
+}
 function topMenu(open) {
   const m = $('#top-menu');
   if (open == null) open = !m.classList.contains('open');
   if (open) {
     const item = (ic, label, fn) => h('button', { class: 'tm-item', onclick: () => { topMenu(false); fn(); } }, icon(ic), label);
-    m.replaceChildren(
+    m.replaceChildren(tmPlayer() || '',
       item('mdi-volume-high', 'Volumen', () => {
         const id = speakerEntity(), st = id && S.states[id];
         if (!st || st.attributes.volume_level == null) return toast('El altavoz del panel no está disponible');
@@ -2378,6 +2405,7 @@ function topMenu(open) {
       item('mdi-image-filter-hdr', 'Modo ambiente', () => showAmbient()),
       item('mdi-monitor-off', 'Apagar la pantalla', () => { SCREEN.lastTouch = 0; setScreenOff(true); }));
   }
+  if (!open) { TM.id = null; TM.paint = null; }
   m.classList.toggle('open', open);
   $('#menu-btn').classList.toggle('open', open);
 }

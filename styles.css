@@ -573,6 +573,18 @@ main { display: flex; flex-direction: column; min-width: 0; min-height: 0; heigh
   transform-origin: top right; opacity: 0; transform: scale(.85) translateY(-8px); pointer-events: none;
   transition: opacity .18s, transform .22s cubic-bezier(.2,.8,.2,1); }
 .top-menu.open { opacity: 1; transform: none; pointer-events: auto; }
+.tm-player { padding: 10px 10px 12px; margin-bottom: 4px; border-bottom: 1px solid rgba(255,255,255,.08); }
+.tm-pinfo { display: flex; align-items: center; gap: 12px; min-width: 0; cursor: pointer; }
+.tm-art { flex: none; width: 52px; height: 52px; border-radius: 10px; background: var(--surface-3) center/cover no-repeat; }
+.tm-art.empty::after { content: "\F075A"; font-family: "Material Design Icons"; font-size: 26px; display: grid; place-items: center; height: 100%; opacity: .6; }
+.tm-ptext { min-width: 0; flex: 1; }
+.tm-ptitle { font-weight: 600; font-size: 16px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.tm-psub { font-size: 13px; color: var(--muted); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.tm-pctrls { display: flex; align-items: center; justify-content: center; gap: 22px; margin-top: 10px; }
+.tm-pbtn { width: 44px; height: 44px; border-radius: 50%; display: grid; place-items: center; font-size: 26px; color: var(--text); }
+.tm-pbtn.main { width: 52px; height: 52px; background: #fff; color: #111; font-size: 30px; }
+.tm-pbtn:active { background: var(--surface-3); }
+.top-menu { width: 290px; }
 .tm-item { display: flex; align-items: center; gap: 14px; width: 100%; padding: 14px 16px; border-radius: 12px;
   font-size: 17px; color: var(--text); text-align: left; }
 .tm-item .mdi { font-size: 22px; color: var(--muted); }
