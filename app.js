@@ -161,7 +161,7 @@ const S = {
   viewTimers: [], sheetTimers: [], forecast: null, forecastAt: 0,
 };
 // Enlaces entidad → funciones que repintan una parte de la pantalla (por "ámbito")
-const B = { view: new Map(), sheet: new Map(), np: new Map() };
+const B = { view: new Map(), sheet: new Map(), np: new Map(), shade: new Map() };
 function bind(scope, id, fn) {
   if (!id) return;
   const m = B[scope];
@@ -1036,6 +1036,7 @@ function hideNowPlaying(quiet) {
 }
 
 function openSheet(id) {
+  if (SH.open) shade(false);   // la pulsación larga en un acceso rápido abre su detalle
   closeSheet();
   const st = S.states[id];
   if (!st) return;
@@ -1260,6 +1261,7 @@ function onNotif(ev) {
   }
   if (n.sonido) playSound(n.nivel);
   showNotif();
+  if (SH.paintNotif) SH.paintNotif();
 }
 function onNotifClose(ev) { closeNotif(String((ev.data || {}).id || ''), false); }
 
@@ -1414,6 +1416,7 @@ const DEFAULTS = () => ({
   voiceSatellite: '',   // assist_satellite cuya voz se muestra encima de la pantalla ('' = ninguno)
   voiceStyle: 'onda',   // animación de la barra de voz: onda | micro | luz | eq
   defaultSpeaker: '',   // media_player que se controla desde el modo ambiente ('@panel' = el altavoz de este panel)
+  quick: [],            // accesos rápidos de la cortina (entity_id)
   bullets: null,        // burbujas (integradas y de script); null = las de siempre
   tabs: null,           // pestañas con sus tarjetas; null = una por cada vista
 });
@@ -2387,7 +2390,7 @@ function tmPlayer() {
  * si has bajado más de un tercio (o lo has hecho rápido) y si no se recoge. También la abre el botón ⋮.
  * Dentro: la hora, apagar la pantalla y ajustes (arriba a la derecha), el mini reproductor, los volúmenes y el brillo.
  * Se cierra deslizando hacia arriba, tocando fuera o eligiendo algo. */
-const SH = { open: false, sync: null };
+const SH = { open: false, sync: null, tab: 0, paintNotif: null };
 const shadeEdge = 30;   // alto (px) de la franja de arriba donde empieza el gesto
 /** Barra tipo Android: una píldora gruesa que se llena, con el símbolo dentro a la izquierda y el valor a la derecha.
  *  Se arrastra (o se toca) de lado a lado. onLive mientras arrastras, onEnd al soltar. */
@@ -2409,6 +2412,104 @@ function pill(ic, { min = 0, max = 100, step = 1, value = 0, onLive, onEnd } = {
   dragOn(el, { start: (x) => { p.drag = true; at(x); }, move: (x) => at(x), end: () => { p.drag = false; if (onEnd) onEnd(p.v); } });
   p.set(value);
   return p;
+}
+/* Pestañas de la cortina: a la izquierda los avisos y a la derecha los accesos rápidos (SET.quick).
+ * Se cambia tocando la pestaña o deslizando el dedo de lado sobre ellas. */
+const QUICK_KINDS = { light: 'Luces', switch: 'Enchufes', input_boolean: 'Interruptores', fan: 'Ventiladores', cover: 'Persianas',
+  lock: 'Cerraduras', climate: 'Clima', scene: 'Escenas', script: 'Scripts', button: 'Botones', input_button: 'Botones' };
+function shadeTabs() {
+  const track = h('div', { class: 'sht-track' });
+  const pages = h('div', { class: 'sht-pages' }, track);
+  const badge = h('span', { class: 'sht-badge' });
+  const btns = [h('button', { class: 'sht-tab' }, icon('mdi-bell'), 'Avisos', badge), h('button', { class: 'sht-tab' }, icon('mdi-lightning-bolt'), 'Accesos rápidos')];
+  const bar = h('div', { class: 'sht-bar' }, btns);
+  const notif = h('div', { class: 'sht-page' }), quick = h('div', { class: 'sht-page' });
+  track.append(notif, quick);
+
+  const paintNotif = () => {
+    if (SH.tab === 0) { N.unread = 0; renderBell(); }
+    badge.textContent = N.unread > 0 ? N.unread : '';
+    if (!N.history.length) { notif.replaceChildren(h('div', { class: 'sht-empty' }, icon('mdi-bell-check-outline'), 'No hay avisos')); return; }
+    notif.replaceChildren(...N.history.map((n) => h('div', { class: 'hist-row ' + n.nivel }, icon(n.icono),
+      h('div', { class: 'hist-text' }, h('b', null, n.titulo), n.mensaje ? h('div', { class: 'muted small' }, n.mensaje) : null),
+      h('span', { class: 'muted small' }, hhmm(n.at)))),
+    h('button', { class: 'sht-clear', onclick: () => { N.history = []; N.unread = 0; renderBell(); paintNotif(); } }, icon('mdi-delete-sweep'), 'Borrar todos'));
+  };
+  // Accesos rápidos: los elegidos como baldosas y, al final, una para añadir o quitar
+  let editing = false, kind = null;
+  const paintQuick = () => {
+    B.shade.clear();
+    const ids = (SET.quick || []).filter((id) => S.states[id]);
+    if (!editing) {
+      const add = h('button', { class: 'tile sht-add', onclick: () => { editing = true; paintQuick(); } }, icon('mdi-plus'), ids.length ? 'Editar' : 'Añadir');
+      quick.replaceChildren(h('div', { class: 'sht-grid' }, ...ids.map((id) => tile(id, 'shade')), add));
+      return;
+    }
+    const all = Object.keys(S.states).filter((id) => QUICK_KINDS[domain(id)] && visible(id));
+    const kinds = [...new Set(all.map((id) => QUICK_KINDS[domain(id)]))];
+    if (!kinds.includes(kind)) kind = kinds[0];
+    const rows = all.filter((id) => QUICK_KINDS[domain(id)] === kind).sort((a, b) => nameOf(a).localeCompare(nameOf(b), 'es')).map((id) => {
+      const on = () => (SET.quick || []).includes(id);
+      const chk = icon(on() ? 'mdi-check-circle' : 'mdi-plus-circle-outline', 'sht-chk');
+      const row = h('button', { class: 'sht-pick' + (on() ? ' on' : '') }, icon(iconOf(S.states[id])), h('span', null, nameOf(id)), chk);
+      row.onclick = () => {
+        SET.quick = on() ? SET.quick.filter((x) => x !== id) : [...(SET.quick || []), id];
+        saveSettings(true);
+        row.classList.toggle('on', on()); chk.className = 'mdi ' + (on() ? 'mdi-check-circle' : 'mdi-plus-circle-outline') + ' sht-chk';
+      };
+      return row;
+    });
+    quick.replaceChildren(
+      h('div', { class: 'sht-edit-head' },
+        h('div', { class: 'sht-kinds' }, kinds.map((k) => h('button', { class: 'sht-kind' + (k === kind ? ' on' : ''), onclick: () => { kind = k; paintQuick(); quick.scrollTop = 0; } }, k))),
+        h('button', { class: 'sht-done', onclick: () => { editing = false; paintQuick(); } }, icon('mdi-check'), 'Listo')),
+      h('div', { class: 'sht-list' }, rows.length ? rows : h('div', { class: 'sht-empty' }, 'Nada que añadir')));
+  };
+
+  const goTab = (i, anim = true) => {
+    SH.tab = i;
+    track.classList.toggle('anim', anim);
+    track.style.transform = `translateX(${-i * 50}%)`;
+    btns.forEach((b, j) => b.classList.toggle('active', j === i));
+    if (i === 0) paintNotif();
+  };
+  btns.forEach((b, i) => { b.onclick = () => goTab(i); });
+
+  // deslizar de lado sobre las páginas
+  let sw = null, swallow = false;
+  const sBegin = (x, y) => { sw = { x, y, dx: 0, on: false }; };
+  const sMove = (x, y, e) => {
+    if (!sw) return;
+    const dx = x - sw.x, dy = y - sw.y;
+    if (!sw.on) {
+      if (Math.abs(dx) < 10 && Math.abs(dy) < 10) return;
+      if (Math.abs(dy) >= Math.abs(dx)) { sw = null; return; }   // era para subir o bajar la lista
+      sw.on = true; track.classList.remove('anim');
+    }
+    if (e && e.cancelable) e.preventDefault();
+    sw.dx = dx;
+    track.style.transform = `translateX(calc(${-SH.tab * 50}% + ${dx / 2}px))`;
+  };
+  const sEnd = () => {
+    if (!sw) return;
+    const was = sw; sw = null;
+    if (!was.on) return;
+    swallow = true; setTimeout(() => { swallow = false; }, 50);
+    goTab(was.dx < -50 ? 1 : was.dx > 50 ? 0 : SH.tab);
+  };
+  pages.addEventListener('touchstart', (e) => { if (e.touches.length === 1) sBegin(e.touches[0].clientX, e.touches[0].clientY); }, { passive: true });
+  pages.addEventListener('touchmove', (e) => sMove(e.touches[0].clientX, e.touches[0].clientY, e), { passive: false });
+  pages.addEventListener('touchend', sEnd);
+  pages.addEventListener('touchcancel', () => { sw = null; goTab(SH.tab); });
+  pages.addEventListener('pointerdown', (e) => { if (e.pointerType !== 'touch') sBegin(e.clientX, e.clientY); });
+  window.addEventListener('pointermove', (e) => { if (sw && e.pointerType !== 'touch') sMove(e.clientX, e.clientY, e); });
+  window.addEventListener('pointerup', (e) => { if (sw && e.pointerType !== 'touch') sEnd(); });
+  pages.addEventListener('click', (e) => { if (swallow) { e.stopPropagation(); e.preventDefault(); } }, true);
+
+  SH.paintNotif = paintNotif;
+  paintQuick();
+  goTab(SH.tab || 0, false);
+  return h('div', { class: 'sht' }, bar, pages);
 }
 function shadeFill() {
   const box = $('#shade-in');
@@ -2445,7 +2546,8 @@ function shadeFill() {
           if ($('#np').classList.contains('show')) hideNowPlaying(true);
           if (S.ambient) hideAmbient('settings'); else go('settings');
         }))),
-    h('div', { class: 'sh-body' }, player, pills));
+    h('div', { class: 'sh-body' }, player, pills),
+    shadeTabs());
 }
 /** Abre (true) o cierra (false) la cortina con animación. Sin argumento: la cambia. */
 function shade(open) {
@@ -2457,7 +2559,7 @@ function shade(open) {
   el.style.transform = ''; bg.style.opacity = '';
   el.classList.toggle('open', open); bg.classList.toggle('open', open);
   $('#menu-btn').classList.toggle('open', open);
-  if (!open) { TM.id = null; TM.paint = null; SH.sync = null; }
+  if (!open) { TM.id = null; TM.paint = null; SH.sync = null; SH.paintNotif = null; B.shade.clear(); }
 }
 function shadeGestures() {
   const el = $('#shade'), bg = $('#shade-bg');
@@ -2496,7 +2598,7 @@ function shadeGestures() {
     if (e.pointerType !== 'touch' && !SH.open && e.clientY <= shadeEdge && !blocked()) begin(e.clientX, e.clientY, 0);
   }, true);
   // Cerrar: deslizando hacia arriba sobre la cortina (no sobre las barras ni los botones) o sobre el fondo
-  const closeStart = (x, y, target) => { if (SH.open && !target.closest('input, button, .sh-pill')) begin(x, y, 1); };
+  const closeStart = (x, y, target) => { if (SH.open && !target.closest('input, button, .sh-pill, .sht-pages')) begin(x, y, 1); };
   [el, bg].forEach((n) => {
     n.addEventListener('touchstart', (e) => { const t = e.touches[0]; closeStart(t.clientX, t.clientY, e.target); }, { passive: true });
     n.addEventListener('pointerdown', (e) => { if (e.pointerType !== 'touch') closeStart(e.clientX, e.clientY, e.target); });
