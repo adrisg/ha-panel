@@ -2387,25 +2387,47 @@ function tmPlayer() {
 /* ====================== Cortina (como en Android) ======================
  * Arrastrando hacia abajo desde el borde de arriba baja una cortina que sigue al dedo; al soltar se abre del todo
  * si has bajado más de un tercio (o lo has hecho rápido) y si no se recoge. También la abre el botón ⋮.
- * Dentro: el mini reproductor, los volúmenes, el brillo y unos botones rápidos.
+ * Dentro: la hora, apagar la pantalla y ajustes (arriba a la derecha), el mini reproductor, los volúmenes y el brillo.
  * Se cierra deslizando hacia arriba, tocando fuera o eligiendo algo. */
 const SH = { open: false, sync: null };
 const shadeEdge = 30;   // alto (px) de la franja de arriba donde empieza el gesto
+/** Barra tipo Android: una píldora gruesa que se llena, con el símbolo dentro a la izquierda y el valor a la derecha.
+ *  Se arrastra (o se toca) de lado a lado. onLive mientras arrastras, onEnd al soltar. */
+function pill(ic, { min = 0, max = 100, step = 1, value = 0, onLive, onEnd } = {}) {
+  const fill = h('i'), val = h('span', { class: 'sp-val' });
+  const el = h('div', { class: 'sh-pill' }, fill, h('span', { class: 'sp-ic' }, icon(ic)), val);
+  const p = { el, v: value, drag: false };
+  p.set = (v, force) => {
+    if (p.drag && !force) return;
+    const f = (v - min) / (max - min);
+    p.v = v; fill.style.width = f * 100 + '%'; val.textContent = v + ' %';
+    el.classList.toggle('full', f > 0.86);   // el valor queda sobre la parte llena: en oscuro
+  };
+  const at = (x) => {
+    const r = el.getBoundingClientRect();
+    const v = Math.max(min, Math.min(max, Math.round((min + ((x - r.left) / r.width) * (max - min)) / step) * step));
+    if (v !== p.v) { p.set(v, true); if (onLive) onLive(v); }
+  };
+  dragOn(el, { start: (x) => { p.drag = true; at(x); }, move: (x) => at(x), end: () => { p.drag = false; if (onEnd) onEnd(p.v); } });
+  p.set(value);
+  return p;
+}
 function shadeFill() {
-  const pct = (v) => v + ' %', box = $('#shade-in');
-  const tile = (ic, label, fn) => h('button', { class: 'sh-tile', onclick: () => { shade(false); fn(); } }, icon(ic), h('span', null, label));
-  const vols = h('div', { class: 'sh-sliders' });
+  const box = $('#shade-in');
+  const iconBtn = (ic, title, fn) => h('button', { class: 'sh-ibtn', title, onclick: () => { shade(false); fn(); } }, icon(ic));
+  const pills = h('div', { class: 'sh-pills' });
   const id = speakerEntity();
   let mus = null;
   if (id && S.states[id] && S.states[id].attributes.volume_level != null) {
-    mus = slider({ label: 'Música', fmt: pct, onchange: (v) => { if (OSD.w) OSD.w.markSent(v); call('media_player', 'volume_set', { volume_level: v / 100 }, id); } });
-    vols.append(mus);
+    // la música cambia mientras arrastras (como en «Sonando»)
+    let last = -1, timer = null;
+    const send = () => { if (mus.v === last) return; last = mus.v; if (OSD.w) OSD.w.markSent(mus.v); call('media_player', 'volume_set', { volume_level: mus.v / 100 }, id); };
+    mus = pill('mdi-music', { onLive: () => { if (!timer) { send(); timer = setInterval(send, 250); } }, onEnd: () => { clearInterval(timer); timer = null; send(); } });
+    pills.append(mus.el);
   }
-  const av = slider({ min: 10, max: 100, step: 10, label: 'Avisos y alarmas', fmt: pct, onchange: (v) => { SET.sound.volume = v; saveSettings(true); tone([784, 622], 0.4); } });
-  av.set(SET.sound.volume);
-  const br = slider({ min: 5, max: 100, step: 5, label: 'Brillo', fmt: pct, onchange: (v) => { SET.brightness = v; saveSettings(true); } });
-  br.set(SET.brightness);
-  vols.append(av, br);
+  const av = pill('mdi-bell-ring', { min: 10, step: 10, value: SET.sound.volume, onEnd: (v) => { SET.sound.volume = v; saveSettings(true); tone([784, 622], 0.4); } });
+  const br = pill('mdi-brightness-6', { min: 5, step: 5, value: SET.brightness, onEnd: (v) => { SET.brightness = v; saveSettings(true); } });
+  pills.append(av.el, br.el);
   const player = tmPlayer() || h('div', { class: 'tm-player sh-noplayer' }, icon('mdi-music-off'), 'Nada sonando');
   // lo que cambie mientras está abierta (la canción, el volumen desde el móvil…) se ve al momento
   SH.sync = (sid) => {
@@ -2413,12 +2435,16 @@ function shadeFill() {
     if (mus && sid === id && S.states[id]) mus.set(Math.round((S.states[id].attributes.volume_level || 0) * 100));
   };
   SH.sync(id);
+  const now = new Date();
   box.replaceChildren(
-    h('div', { class: 'sh-top' }, player,
-      h('div', { class: 'sh-tiles' },
-        tile('mdi-monitor-off', 'Apagar la pantalla', () => { SCREEN.lastTouch = 0; setScreenOff(true); }),
-        tile('mdi-cog', 'Ajustes', () => go('settings')))),
-    vols);
+    // arriba: la hora y la fecha, y a la derecha los botones pequeños (apagar la pantalla y ajustes)
+    h('div', { class: 'sh-head' },
+      h('div', { class: 'sh-when' }, h('b', null, now.toLocaleTimeString('es-ES', { hour: '2-digit', minute: '2-digit' })),
+        h('span', null, cap(now.toLocaleDateString('es-ES', { weekday: 'long', day: 'numeric', month: 'long' })))),
+      h('div', { class: 'sh-ibtns' },
+        iconBtn('mdi-monitor-off', 'Apagar la pantalla', () => { SCREEN.lastTouch = 0; setScreenOff(true); }),
+        iconBtn('mdi-cog', 'Ajustes', () => go('settings')))),
+    h('div', { class: 'sh-body' }, player, pills));
 }
 /** Abre (true) o cierra (false) la cortina con animación. Sin argumento: la cambia. */
 function shade(open) {
@@ -2469,7 +2495,7 @@ function shadeGestures() {
     if (e.pointerType !== 'touch' && !SH.open && e.clientY <= shadeEdge && !blocked()) begin(e.clientX, e.clientY, 0);
   }, true);
   // Cerrar: deslizando hacia arriba sobre la cortina (no sobre las barras ni los botones) o sobre el fondo
-  const closeStart = (x, y, target) => { if (SH.open && !target.closest('input, button')) begin(x, y, 1); };
+  const closeStart = (x, y, target) => { if (SH.open && !target.closest('input, button, .sh-pill')) begin(x, y, 1); };
   [el, bg].forEach((n) => {
     n.addEventListener('touchstart', (e) => { const t = e.touches[0]; closeStart(t.clientX, t.clientY, e.target); }, { passive: true });
     n.addEventListener('pointerdown', (e) => { if (e.pointerType !== 'touch') closeStart(e.clientX, e.clientY, e.target); });

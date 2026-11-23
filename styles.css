@@ -590,20 +590,27 @@ main { display: flex; flex-direction: column; min-width: 0; min-height: 0; heigh
 .shade.dragging { transition: none; }
 .shade-in { max-width: 900px; margin: 0 auto; padding: 22px 26px 6px; display: flex; flex-direction: column; gap: 20px; }
 .shade-grip { width: 56px; height: 5px; border-radius: 3px; background: var(--surface-3); margin: 6px auto 12px; }
-.sh-top { display: flex; gap: 16px; align-items: stretch; }
-.sh-top .tm-player { flex: 1; min-width: 0; margin: 0; padding: 14px 16px; border: 0; border-radius: 20px; background: var(--surface-2); }
-.sh-noplayer { display: flex; align-items: center; gap: 12px; color: var(--muted); font-size: 16px; }
+.sh-head { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
+.sh-when { display: flex; align-items: baseline; gap: 14px; }
+.sh-when b { font-size: 30px; font-weight: 600; font-variant-numeric: tabular-nums; }
+.sh-when span { color: var(--muted); font-size: 16px; }
+.sh-ibtns { display: flex; gap: 8px; }
+.sh-ibtn { width: 48px; height: 48px; border-radius: 50%; display: grid; place-items: center; font-size: 24px; color: var(--text); background: var(--surface-2); }
+.sh-ibtn:active { background: var(--surface-3); }
+.sh-body { display: flex; gap: 16px; align-items: stretch; }
+.sh-body .tm-player { flex: 1; min-width: 0; margin: 0; padding: 16px; border: 0; border-radius: 24px; background: var(--surface-2);
+  display: flex; flex-direction: column; justify-content: center; }
+.sh-noplayer { flex-direction: row !important; align-items: center; justify-content: flex-start !important; gap: 12px; color: var(--muted); font-size: 16px; }
 .sh-noplayer .mdi { font-size: 26px; }
-.sh-tiles { display: grid; grid-template-columns: repeat(2, 150px); gap: 12px; }
-.sh-tile { display: flex; flex-direction: column; align-items: flex-start; justify-content: space-between; gap: 10px; padding: 16px; border-radius: 20px;
-  background: var(--surface-2); color: var(--text); font-size: 15px; font-weight: 600; text-align: left; }
-.sh-tile .mdi { font-size: 26px; color: var(--accent); }
-.sh-tile:active { background: var(--surface-3); }
-.sh-sliders { display: grid; grid-template-columns: repeat(3, 1fr); gap: 18px; }
+/* barras tipo Android: píldora que se llena, símbolo dentro a la izquierda y valor a la derecha */
+.sh-pills { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 12px; justify-content: center; }
+.sh-pill { position: relative; height: 56px; border-radius: 28px; background: var(--surface-3); overflow: hidden; touch-action: none; cursor: pointer; }
+.sh-pill > i { position: absolute; left: 0; top: 0; bottom: 0; background: var(--accent); border-radius: 28px 0 0 28px; min-width: 56px; }
+.sp-ic { position: absolute; left: 18px; top: 50%; transform: translateY(-50%); font-size: 24px; color: #0e1014; pointer-events: none; }
+.sp-val { position: absolute; right: 20px; top: 50%; transform: translateY(-50%); font-size: 15px; font-weight: 600; color: var(--text); pointer-events: none; font-variant-numeric: tabular-nums; }
+.sh-pill.full .sp-val { color: #0e1014; }
 @media (max-width: 720px) {
-  .sh-top { flex-direction: column; }
-  .sh-tiles { grid-template-columns: 1fr 1fr; }
-  .sh-sliders { grid-template-columns: 1fr; }
+  .sh-body { flex-direction: column; }
 }
 
 /* Pie de foto del modo ambiente (fecha y ciudad de Immich) */
