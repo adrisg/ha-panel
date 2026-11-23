@@ -2396,9 +2396,8 @@ function topMenu(open) {
         volOsd().update(Math.round(st.attributes.volume_level * 100));
         volOsdShow();
       }),
-      item('mdi-cog', 'Ajustes', () => go('settings')),
-      item('mdi-image-filter-hdr', 'Modo ambiente', () => showAmbient()),
-      item('mdi-monitor-off', 'Apagar la pantalla', () => { SCREEN.lastTouch = 0; setScreenOff(true); }));
+      item('mdi-monitor-off', 'Apagar la pantalla', () => { SCREEN.lastTouch = 0; setScreenOff(true); }),
+      item('mdi-cog', 'Ajustes', () => go('settings')));
   }
   if (!open) { TM.id = null; TM.paint = null; }
   m.classList.toggle('open', open);
