@@ -2118,7 +2118,7 @@ function render() {
   if (S.view !== 'settings' && !visibleTabs().some((t) => t.id === S.view)) S.view = tabFor(S.view);
   const t = S.view === 'settings' ? null : visibleTabs().find((x) => x.id === S.view);
   $('#view-title').textContent = t ? t.title : VIEWS.settings.title;
-  $('#settings-btn').classList.toggle('active', S.view === 'settings');
+  $('#menu-btn').classList.toggle('active', S.view === 'settings');
   const view = $('#view');
   const scroll = view.scrollTop;
   view.replaceChildren(...(t ? renderTab(t) : VIEWS.settings.render()).filter(Boolean));
@@ -2349,6 +2349,20 @@ let idleTimer;
 function resetIdle() {
   clearTimeout(idleTimer);
   if (SET.idleSeconds > 0) idleTimer = setTimeout(() => !S.sheetId && !NP.id && !alertOpen() && showAmbient(), SET.idleSeconds * 1000);
+}
+/** Menú de los tres puntitos de arriba a la derecha: se despliega con una animación. */
+function topMenu(open) {
+  const m = $('#top-menu');
+  if (open == null) open = !m.classList.contains('open');
+  if (open) {
+    const item = (ic, label, fn) => h('button', { class: 'tm-item', onclick: () => { topMenu(false); fn(); } }, icon(ic), label);
+    m.replaceChildren(
+      item('mdi-cog', 'Ajustes', () => go('settings')),
+      item('mdi-image-filter-hdr', 'Modo ambiente', () => showAmbient()),
+      item('mdi-monitor-off', 'Apagar la pantalla', () => { SCREEN.lastTouch = 0; setScreenOff(true); }));
+  }
+  m.classList.toggle('open', open);
+  $('#menu-btn').classList.toggle('open', open);
 }
 function showAmbient() {
   closeSheet();
@@ -2970,7 +2984,8 @@ function start() {
   $('#view').replaceChildren(empty('mdi-home-assistant', 'Conectando con Home Assistant…'));
   $('#sheet').addEventListener('click', (e) => { if (e.target.id === 'sheet') closeSheet(); });
   $('#bell').addEventListener('click', openHistory);
-  $('#settings-btn').addEventListener('click', () => go('settings'));
+  $('#menu-btn').addEventListener('click', (e) => { e.stopPropagation(); topMenu(); });
+  document.addEventListener('pointerdown', (e) => { if (!e.target.closest('#top-menu, #menu-btn')) topMenu(false); }, true);
   // Tocar el fondo vuelve a Inicio; tocar una burbuja abre su vista (patinete, impresoras, música…)
   $('#ambient').addEventListener('pointerdown', (e) => {
     e.preventDefault();

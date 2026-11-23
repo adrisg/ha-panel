@@ -69,7 +69,7 @@ Una pantalla bonita para el escritorio que decora con tus fotos y desde la que v
 
 ## Ajustes
 
-Se cambian en el botón ⚙ de la pantalla o desde la web del móvil:
+Se cambian en el menú ⋮ de arriba a la derecha (Ajustes) o desde la web del móvil:
 
 <p align="center"><img src="docs/settings.png" width="60%"></p>
 
