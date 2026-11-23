@@ -1449,7 +1449,9 @@ function themeIsLight() {
 }
 function applyTheme() {
   const light = themeIsLight();
-  if (document.documentElement.classList.contains('light') !== light) document.documentElement.classList.toggle('light', light);
+  if (document.documentElement.classList.contains('light') === light) return;
+  document.documentElement.classList.toggle('light', light);
+  try { if (!photosOn()) nextBackground(); } catch (e) { /* aún arrancando */ }   // el fondo sin fotos del modo ambiente cambia con el tema
 }
 
 function isNight(now = new Date()) {
@@ -3056,6 +3058,12 @@ const GRADIENTS = [
   [9, 'linear-gradient(160deg,#4facfe,#2b5876 70%,#1a2a44)'], [18, 'linear-gradient(160deg,#f7971e,#c0392b 50%,#3a1c4a)'],
   [21, 'linear-gradient(160deg,#141e30,#243b55)'],
 ];
+// los mismos momentos del día, en claro (tema claro y sin fotos)
+const GRADIENTS_LIGHT = [
+  [0, 'linear-gradient(160deg,#e6e9f5,#d9def0 55%,#e3dbef)'], [6, 'linear-gradient(160deg,#fff1e4,#fcdcd6 60%,#efd9ee)'],
+  [9, 'linear-gradient(160deg,#e7f3ff,#d6e8fb 60%,#e4eefa)'], [18, 'linear-gradient(160deg,#fff0dc,#fbd9cc 55%,#ead7ee)'],
+  [21, 'linear-gradient(160deg,#e4e8f2,#d6dcea)'],
+];
 /** Una capa del fondo: foto (rellenando, entera con fondo difuminado o entera) o nada. */
 function setPhotoLayer(el, url, fit) {
   const v = url ? `url("${url}")` : '';
@@ -3090,6 +3098,7 @@ function nextBackground() {
       img.onload = () => {
         setPhotoLayer(el, img.src, p.fit);
         el.classList.add('photo', 'visible'); front.classList.remove('visible'); bgFront = back;
+        $('#ambient').classList.remove('lightbg');   // sobre una foto, siempre letras blancas
         caption.replaceChildren(...[p.caption ? h('div', { class: 'cap-date' }, p.caption) : null,
           p.source ? h('div', { class: 'cap-src' }, p.source) : null].filter(Boolean));
       };
@@ -3104,7 +3113,8 @@ function nextBackground() {
   } else {
     caption.replaceChildren();
     const hr = new Date().getHours();
-    const g = GRADIENTS.filter(([from]) => hr >= from).pop()[1];
+    const g = (themeIsLight() ? GRADIENTS_LIGHT : GRADIENTS).filter(([from]) => hr >= from).pop()[1];
+    $('#ambient').classList.toggle('lightbg', themeIsLight());   // sin foto: letras oscuras sobre fondo claro
     if (front.style.backgroundImage === g && !front.classList.contains('photo')) return;
     setPhotoLayer(el, null);
     el.style.backgroundImage = g;
