@@ -744,7 +744,12 @@ function speakerEntity() {
   const want = String(SPK.name || '').trim().toLowerCase();
   const found = Object.keys(S.states).filter((id) => domain(id) === 'media_player' &&
     String(S.states[id].attributes.friendly_name || '').trim().toLowerCase() === want);
-  return found.find((id) => reg(id).platform === 'music_assistant') || found[0] || null;
+  const byName = found.find((id) => reg(id).platform === 'music_assistant') || found[0];
+  if (byName) return byName;
+  // Si le han cambiado el nombre en Home Assistant o Music Assistant, el id sigue siendo el del nombre original
+  // («Panel ha-panel» → media_player.panel_ha_panel)
+  const slug = 'media_player.' + want.normalize('NFD').replace(/[̀-ͯ]/g, '').replace(/[^a-z0-9]+/g, '_').replace(/^_+|_+$/g, '');
+  return S.states[slug] ? slug : null;
 }
 /** Altavoces que abren «Sonando»: el del panel (si está activado) y los elegidos en la web (p. ej. el de la habitación). */
 function watchedSpeakers() {
