@@ -882,18 +882,24 @@ function volWidget(getId, cls = '') {
 /* Volumen flotante: si cambia el volumen del altavoz del panel desde otro sitio (Music Assistant, el móvil…),
    sale la misma barra que en «Sonando», en cualquier pantalla. Se esconde sola a los 4 s. */
 const OSD = { w: null };
-function onVolumeChange(id, st) {
-  if (!st || id !== speakerEntity() || st.attributes.volume_level == null) return;
+function volOsd() {
   if (!OSD.w) {
     const w = OSD.w = volWidget(speakerEntity, 'vol-osd');
     w.onClose = () => setTimeout(() => !w.el.classList.contains('open') && w.el.classList.remove('show'), 400);
     document.body.append(w.el);
   }
-  const w = OSD.w;
-  if (!w.update(Math.round(st.attributes.volume_level * 100))) return;
-  if ($('#np').classList.contains('show')) return;   // la pantalla «Sonando» ya tiene la suya
+  return OSD.w;
+}
+function volOsdShow() {
+  const w = volOsd();
   w.el.classList.add('show');
   requestAnimationFrame(() => w.open());
+}
+function onVolumeChange(id, st) {
+  if (!st || id !== speakerEntity() || st.attributes.volume_level == null) return;
+  if (!volOsd().update(Math.round(st.attributes.volume_level * 100))) return;
+  if ($('#np').classList.contains('show')) return;   // la pantalla «Sonando» ya tiene la suya
+  volOsdShow();
 }
 function showNowPlaying(id) {
   if (NP.id === id && $('#np').classList.contains('show')) return;
@@ -2357,6 +2363,12 @@ function topMenu(open) {
   if (open) {
     const item = (ic, label, fn) => h('button', { class: 'tm-item', onclick: () => { topMenu(false); fn(); } }, icon(ic), label);
     m.replaceChildren(
+      item('mdi-volume-high', 'Volumen', () => {
+        const id = speakerEntity(), st = id && S.states[id];
+        if (!st || st.attributes.volume_level == null) return toast('El altavoz del panel no está disponible');
+        volOsd().update(Math.round(st.attributes.volume_level * 100));
+        volOsdShow();
+      }),
       item('mdi-cog', 'Ajustes', () => go('settings')),
       item('mdi-image-filter-hdr', 'Modo ambiente', () => showAmbient()),
       item('mdi-monitor-off', 'Apagar la pantalla', () => { SCREEN.lastTouch = 0; setScreenOff(true); }));
