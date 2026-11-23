@@ -775,7 +775,7 @@ function onSpeaker(id, old, st) {
   }
 }
 
-/* Pantalla «Sonando»: carátula grande con el fondo difuminado, título, progreso, controles y volumen */
+/* Pantalla «Sonando»: carátula grande con el fondo difuminado, título, progreso y controles (el volumen, en la cortina) */
 const NP = { id: null, timer: null, closeTimer: null, fromAmbient: false };
 const npPlaying = () => !!NP.id && (S.states[NP.id] || {}).state === 'playing';
 function fmtTime(s) {
@@ -802,84 +802,8 @@ function dragOn(el, { start, move, end }) {
   el.addEventListener('pointerup', pEnd);
   el.addEventListener('pointercancel', pEnd);
 }
-/* Barra de volumen (la de «Sonando» y la flotante son la misma pieza).
-   Cada barra lleva dentro su símbolo arriba y el número (sin %) abajo. Con los tres puntitos de debajo se despliegan
-   a la izquierda los demás volúmenes: avisos y alarmas y, si está instalado, las respuestas del asistente de voz. */
+/* Símbolo del altavoz según el volumen (para la burbuja). */
 const volIconOf = (v) => v <= 0 ? 'mdi-volume-off' : v < 34 ? 'mdi-volume-low' : v < 67 ? 'mdi-volume-medium' : 'mdi-volume-high';
-function volBar(ic, { step = 1, min = 0 } = {}) {
-  const fill = h('i'), val = h('span', { class: 'vb-val' }), ico = h('span', { class: 'vb-ic' }, icon(ic));
-  const el = h('div', { class: 'np-vtrack' }, fill, ico, val);
-  const b = { el, v: 0, drag: false, onStart: null, onLive: null, onEnd: null };
-  b.set = (v, force) => { if (b.drag && !force) return; b.v = v; fill.style.height = v + '%'; val.textContent = v; };
-  const at = (y) => {
-    const r = el.getBoundingClientRect();
-    const v = Math.max(min, Math.round(Math.max(0, Math.min(1, (r.bottom - y) / r.height)) * 100 / step) * step);
-    b.set(v, true); if (b.onLive) b.onLive(v);
-  };
-  dragOn(el, {
-    start: (x, y) => { b.drag = true; if (b.onStart) b.onStart(); at(y); },
-    move: (x, y) => at(y),
-    end: () => { b.drag = false; if (b.onEnd) b.onEnd(b.v); },
-  });
-  return b;
-}
-function volWidget(getId, cls = '') {
-  const W = { sent: -1, sentAt: 0, known: null, timer: null, live: null, first: false, onClose: null };
-  const main = volBar('mdi-music'), avisos = volBar('mdi-bell-ring', { step: 10, min: 10 }), voz = volBar('mdi-account-voice', { step: 10, min: 10 });
-  voz.el.hidden = true;
-  const btn = h('button', { class: 'np-vbtn' });
-  const dots = h('button', { class: 'np-vdots' }, icon('mdi-dots-horizontal'));
-  const el = h('div', { class: 'np-vol ' + cls },
-    h('div', { class: 'np-vpanel' }, h('div', { class: 'np-vbars' }, h('div', { class: 'np-vx' }, voz.el, avisos.el), main.el), dots), btn);
-  const paintBtn = () => btn.replaceChildren(icon(volIconOf(main.v)));
-  const send = () => {
-    const id = getId();
-    if (!id || main.v === W.sent) return;
-    W.sent = main.v; W.sentAt = Date.now(); volMarkSent(main.v);
-    call('media_player', 'volume_set', { volume_level: main.v / 100 }, id);
-  };
-  const dragging = () => main.drag || avisos.drag || voz.drag;
-  W.close = () => { el.classList.remove('open', 'more'); if (W.onClose) W.onClose(); };
-  W.open = () => { el.classList.add('open'); W.hideLater(); };
-  W.hideLater = () => { clearTimeout(W.timer); W.timer = setTimeout(() => !dragging() && W.close(), 4000); };
-  btn.onclick = () => (el.classList.contains('open') ? W.close() : W.open());
-  // música: cambia mientras arrastras
-  main.onStart = () => { clearTimeout(W.timer); W.first = true; clearInterval(W.live); W.live = setInterval(send, 250); };
-  main.onLive = () => { paintBtn(); if (W.first) { W.first = false; send(); } };
-  main.onEnd = () => { clearInterval(W.live); send(); W.hideLater(); };
-  // avisos y voz: al soltar
-  avisos.onStart = voz.onStart = () => clearTimeout(W.timer);
-  avisos.onEnd = (v) => { SET.sound.volume = v; saveSettings(true); tone([784, 622], 0.4); W.hideLater(); };
-  voz.onEnd = async (v) => {
-    W.hideLater();
-    try {
-      const r = await (await fetch(HELPER + '/sonido', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ voiceVolume: v }) })).json();
-      if (r.error) throw new Error(r.error);
-    } catch (e) { toast('No se pudo cambiar: ' + e.message); }
-  };
-  dots.onclick = () => {
-    const more = !el.classList.contains('more');
-    if (more) {
-      avisos.set(SET.sound.volume);
-      if (window.PANEL_HELPER) fetch(HELPER + '/sonido', { cache: 'no-store' }).then((r) => r.json())
-        .then((r) => { voz.el.hidden = !r.voice.installed; voz.set(r.voice.volume); }).catch(() => {});
-    }
-    el.classList.toggle('more', more);
-    W.hideLater();
-  };
-  // Volumen que llega de Home Assistant. Devuelve true si lo han cambiado desde otro sitio.
-  // Lo que llega con retraso de un arrastre propio se ignora, para que la barra no dé saltos atrás.
-  W.update = (v) => {
-    const recent = Date.now() - W.sentAt < 4000;
-    let ext = false;
-    if (!main.drag && !(recent && v !== W.sent)) { ext = !recent && W.known != null && v !== W.known; main.set(v); paintBtn(); }
-    W.known = v;
-    return ext;
-  };
-  W.markSent = (v) => { W.sent = v; W.sentAt = Date.now(); };
-  W.el = el;
-  return W;
-}
 /* Burbuja de volumen: si cambia el volumen del altavoz del panel desde otro sitio (Home Assistant, Music Assistant,
    el móvil…), sale arriba en el centro una burbuja con el número nuevo, en cualquier pantalla. Se va sola a los 2 s.
    Lo que cambias desde el propio panel no la saca. */
@@ -954,8 +878,6 @@ function showNowPlaying(id) {
   const clock = h('span', { class: 'np-clock' });
   const svc = (s) => () => call('media_player', s, {}, id);
   const play = h('button', { class: 'np-play', onclick: svc('media_play_pause') });
-  // Volumen: botón 🔊 abajo a la derecha; al tocarlo sube la barra. Si cambia desde otro sitio, se abre sola.
-  const volW = volWidget(() => id), vol = volW.el;
   const root = $('#np');
   root.replaceChildren(bg,
     h('div', { class: 'np-top' }, icon('mdi-speaker'), h('span', { class: 'np-spk' }, nameOf(id, false)), clock,
@@ -963,7 +885,6 @@ function showNowPlaying(id) {
     h('div', { class: 'np-main' }, art, h('div', { class: 'np-info' }, title, sub,
       h('div', { class: 'np-ctrls' }, h('button', { onclick: svc('media_previous_track') }, icon('mdi-skip-previous')), play,
         h('button', { onclick: svc('media_next_track') }, icon('mdi-skip-next'))))),
-    vol,
     // progreso: abajo del todo, de lado a lado
     h('div', { class: 'np-prog' }, h('div', { class: 'np-times' }, cur, dur), seek));
   // Si una palabra no cabe, la letra se hace más pequeña (hasta un 60 %); si aun así no cabe, se parte
@@ -981,7 +902,6 @@ function showNowPlaying(id) {
     if (title.textContent !== ttl) { title.textContent = ttl; requestAnimationFrame(fitTitle); }
     sub.textContent = [a.media_artist, a.media_album_name].filter(Boolean).join(' · ');
     play.replaceChildren(icon(st.state === 'playing' ? 'mdi-pause' : 'mdi-play'));
-    volW.update(Math.round((a.volume_level || 0) * 100));   // si cambia desde fuera, sale la burbuja (no se abre la barra)
     if (a.entity_picture !== pic) {
       pic = a.entity_picture;
       const url = pic ? `url("${absUrl(pic)}")` : '';

@@ -83,11 +83,6 @@
 :root.light .np-bar i, :root.light .np-knob { background: #15181d; }
 :root.light .np-tip { background: #15181d; color: #fff; }
 :root.light .np-ctrls .np-play { background: #15181d; color: #fff; }
-:root.light .np-vbtn { background: #fff; box-shadow: 0 4px 18px rgba(0,0,0,.16); }
-:root.light .np-vol.open .np-vbtn { background: #e4e7ec; }
-:root.light .np-vpanel { background: rgba(255,255,255,.94); border-color: rgba(0,0,0,.08); box-shadow: 0 6px 24px rgba(0,0,0,.14); }
-:root.light .np-vtrack { background: #e2e5ea; }
-:root.light .np-vtrack > i { background: #15181d; }
 
 * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
 html, body { margin: 0; height: 100%; overflow: hidden; }
@@ -304,7 +299,7 @@ main { display: flex; flex-direction: column; min-width: 0; min-height: 0; heigh
 .np-spk { opacity: .85; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .np-clock { margin-left: auto; font-variant-numeric: tabular-nums; opacity: .85; margin-right: 8px; }
 .np-close { flex: none; width: 50px; height: 50px; border-radius: 50%; border: 0; background: rgba(255,255,255,.14); color: inherit; font-size: 26px; display: grid; place-items: center; }
-.np-main { position: absolute; inset: 84px 130px 96px 5%; display: flex; align-items: center; gap: 5%; }
+.np-main { position: absolute; inset: 84px 5% 96px 5%; display: flex; align-items: center; gap: 5%; }
 .np-art { flex: none; width: min(64vh, 42vw); aspect-ratio: 1; border-radius: 18px; background: rgba(255,255,255,.08) center/cover no-repeat;
   box-shadow: 0 24px 70px rgba(0,0,0,.55); display: grid; place-items: center; font-size: min(22vh, 14vw); color: rgba(255,255,255,.3); }
 .np-art.has .mdi { display: none; }
@@ -335,29 +330,8 @@ main { display: flex; flex-direction: column; min-width: 0; min-height: 0; heigh
   font-size: clamp(34px, 4.3vw, 44px); display: grid; place-items: center; }
 .np-ctrls .np-play { width: clamp(68px, 8.8vw, 90px); background: #fff; color: #000; font-size: clamp(38px, 4.9vw, 50px); }
 /* Volumen: la de «Sonando» y la flotante son la misma barra. Sube desde el botón 🔊 (y baja al esconderse). */
-.np-vol { position: absolute; right: 34px; bottom: 96px; top: 90px; display: flex; flex-direction: column; align-items: flex-end; justify-content: flex-end; gap: 14px; pointer-events: none; }
-.np-vbtn { pointer-events: auto; flex: none; width: 60px; height: 60px; margin-right: 3px; border-radius: 50%; border: 0; background: #3a3a3c; box-shadow: 0 4px 18px rgba(0,0,0,.45);
-  color: inherit; font-size: 30px; display: grid; place-items: center; transition: background .2s; }
-.np-vol.open .np-vbtn { background: #58585a; }
-.np-vpanel { flex: 1; min-height: 0; display: flex; flex-direction: column; align-items: center; gap: 4px; padding: 8px 8px 2px;
-  background: rgba(62,62,66,.92); border: 1px solid rgba(255,255,255,.14); backdrop-filter: blur(16px); border-radius: 26px; box-shadow: 0 6px 24px rgba(0,0,0,.5);
-  clip-path: inset(100% 0 0 0 round 26px); opacity: 0; transform: translateY(24px);
-  transition: clip-path .35s cubic-bezier(.2,.8,.2,1), opacity .25s, transform .35s cubic-bezier(.2,.8,.2,1); }
-.np-vol.open .np-vpanel { clip-path: inset(0 0 0 0 round 26px); opacity: 1; transform: none; pointer-events: auto; }
-.np-vbars { flex: 1; min-height: 0; display: flex; }
 /* los demás volúmenes: se despliegan a la izquierda con los tres puntitos */
-.np-vx { display: flex; gap: 22px; max-width: 0; margin-right: 0; opacity: 0; overflow: hidden;
-  transition: max-width .4s cubic-bezier(.2,.8,.2,1), margin-right .4s cubic-bezier(.2,.8,.2,1), opacity .3s; }
-.np-vol.more .np-vx { max-width: 140px; margin-right: 22px; opacity: 1; }
-.np-vx .np-vtrack[hidden] { display: none; }
-.np-vtrack { position: relative; flex: none; width: 48px; border-radius: 18px; background: #1e1e20; overflow: hidden; touch-action: none; cursor: pointer; isolation: isolate; }
-.np-vtrack > i { position: absolute; left: 0; right: 0; bottom: 0; background: rgba(255,255,255,.9); }
 /* el símbolo arriba y el número abajo, dentro de la barra; se invierten de color al quedar sobre la parte llena */
-.vb-ic, .vb-val { position: absolute; left: 0; right: 0; text-align: center; color: #fff; mix-blend-mode: difference; pointer-events: none; }
-.vb-ic { top: 10px; font-size: 22px; }
-.vb-val { bottom: 10px; font-size: 15px; font-weight: 700; font-variant-numeric: tabular-nums; }
-.np-vdots { flex: none; align-self: flex-end; width: 48px; height: 30px; border: 0; background: none; color: inherit; font-size: 26px; display: grid; place-items: center; opacity: .85; cursor: pointer; }
-.np-vol.more .np-vdots { opacity: 1; }
 /* burbuja con el volumen nuevo cuando cambia desde fuera: arriba en el centro, en el hueco de la barra de arriba */
 .vol-bubble { position: fixed; top: 8px; left: 50%; z-index: 39; display: flex; align-items: center; gap: 10px; padding: 8px 20px 8px 16px;
   border-radius: 30px; background: rgba(45,50,61,.94); backdrop-filter: blur(14px); color: #fff; box-shadow: 0 8px 28px rgba(0,0,0,.5);
