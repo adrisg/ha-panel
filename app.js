@@ -194,7 +194,7 @@ function setState(id, st) {
   }
   onSpeaker(id, old, st);
   onVolumeChange(id, st);
-  if (id === TM.id && TM.paint) TM.paint();
+  if (SH.sync) SH.sync(id);
   if (id === SET.voiceSatellite) onVoiceSat(old, st);
   markCode(id);
   clearTimeout(ambTimer);
@@ -2369,7 +2369,7 @@ function tmPlayer() {
   const btn = (ic, svc, cls = '') => h('button', { class: 'tm-pbtn ' + cls, onclick: (e) => { e.stopPropagation(); call('media_player', svc, {}, id); } }, icon(ic));
   const play = btn('mdi-play', 'media_play_pause', 'main');
   const box = h('div', { class: 'tm-player' },
-    h('div', { class: 'tm-pinfo', onclick: () => { topMenu(false); showNowPlaying(id); } }, art, h('div', { class: 'tm-ptext' }, title, sub)),
+    h('div', { class: 'tm-pinfo', onclick: () => { shade(false); showNowPlaying(id); } }, art, h('div', { class: 'tm-ptext' }, title, sub)),
     h('div', { class: 'tm-pctrls' }, btn('mdi-skip-previous', 'media_previous_track'), play, btn('mdi-skip-next', 'media_next_track')));
   TM.id = id;
   TM.paint = () => {
@@ -2384,24 +2384,103 @@ function tmPlayer() {
   TM.paint();
   return box;
 }
-function topMenu(open) {
-  const m = $('#top-menu');
-  if (open == null) open = !m.classList.contains('open');
-  if (open) {
-    const item = (ic, label, fn) => h('button', { class: 'tm-item', onclick: () => { topMenu(false); fn(); } }, icon(ic), label);
-    m.replaceChildren(tmPlayer() || '',
-      item('mdi-volume-high', 'Volumen', () => {
-        const id = speakerEntity(), st = id && S.states[id];
-        if (!st || st.attributes.volume_level == null) return toast('El altavoz del panel no está disponible');
-        volOsd().update(Math.round(st.attributes.volume_level * 100));
-        volOsdShow();
-      }),
-      item('mdi-monitor-off', 'Apagar la pantalla', () => { SCREEN.lastTouch = 0; setScreenOff(true); }),
-      item('mdi-cog', 'Ajustes', () => go('settings')));
+/* ====================== Cortina (como en Android) ======================
+ * Arrastrando hacia abajo desde el borde de arriba baja una cortina que sigue al dedo; al soltar se abre del todo
+ * si has bajado más de un tercio (o lo has hecho rápido) y si no se recoge. También la abre el botón ⋮.
+ * Dentro: el mini reproductor, los volúmenes, el brillo y unos botones rápidos.
+ * Se cierra deslizando hacia arriba, tocando fuera o eligiendo algo. */
+const SH = { open: false, sync: null };
+const shadeEdge = 30;   // alto (px) de la franja de arriba donde empieza el gesto
+function shadeFill() {
+  const pct = (v) => v + ' %', box = $('#shade-in');
+  const tile = (ic, label, fn) => h('button', { class: 'sh-tile', onclick: () => { shade(false); fn(); } }, icon(ic), h('span', null, label));
+  const vols = h('div', { class: 'sh-sliders' });
+  const id = speakerEntity();
+  let mus = null;
+  if (id && S.states[id] && S.states[id].attributes.volume_level != null) {
+    mus = slider({ label: 'Música', fmt: pct, onchange: (v) => { if (OSD.w) OSD.w.markSent(v); call('media_player', 'volume_set', { volume_level: v / 100 }, id); } });
+    vols.append(mus);
   }
-  if (!open) { TM.id = null; TM.paint = null; }
-  m.classList.toggle('open', open);
+  const av = slider({ min: 10, max: 100, step: 10, label: 'Avisos y alarmas', fmt: pct, onchange: (v) => { SET.sound.volume = v; saveSettings(true); tone([784, 622], 0.4); } });
+  av.set(SET.sound.volume);
+  const br = slider({ min: 5, max: 100, step: 5, label: 'Brillo', fmt: pct, onchange: (v) => { SET.brightness = v; saveSettings(true); } });
+  br.set(SET.brightness);
+  vols.append(av, br);
+  const player = tmPlayer() || h('div', { class: 'tm-player sh-noplayer' }, icon('mdi-music-off'), 'Nada sonando');
+  // lo que cambie mientras está abierta (la canción, el volumen desde el móvil…) se ve al momento
+  SH.sync = (sid) => {
+    if (sid === TM.id && TM.paint) TM.paint();
+    if (mus && sid === id && S.states[id]) mus.set(Math.round((S.states[id].attributes.volume_level || 0) * 100));
+  };
+  SH.sync(id);
+  box.replaceChildren(
+    h('div', { class: 'sh-top' }, player,
+      h('div', { class: 'sh-tiles' },
+        tile('mdi-monitor-off', 'Apagar la pantalla', () => { SCREEN.lastTouch = 0; setScreenOff(true); }),
+        tile('mdi-cog', 'Ajustes', () => go('settings')))),
+    vols);
+}
+/** Abre (true) o cierra (false) la cortina con animación. Sin argumento: la cambia. */
+function shade(open) {
+  const el = $('#shade'), bg = $('#shade-bg');
+  if (open == null) open = !SH.open;
+  if (open && !SH.open && !el.classList.contains('dragging')) shadeFill();
+  SH.open = open;
+  el.classList.remove('dragging'); bg.classList.remove('dragging');
+  el.style.transform = ''; bg.style.opacity = '';
+  el.classList.toggle('open', open); bg.classList.toggle('open', open);
   $('#menu-btn').classList.toggle('open', open);
+  if (!open) { TM.id = null; TM.paint = null; SH.sync = null; }
+}
+function shadeGestures() {
+  const el = $('#shade'), bg = $('#shade-bg');
+  let g = null;   // gesto en curso: { y0, x0, t0, from (0 cerrada / 1 abierta), moved, p }
+  const blocked = () => S.ambient || $('#np').classList.contains('show') || alertOpen() || !!S.sheetId;
+  const begin = (x, y, from) => { g = { x0: x, y0: y, t0: Date.now(), from, moved: false, p: from }; };
+  const move = (x, y, e) => {
+    if (!g) return;
+    const dy = y - g.y0;
+    if (!g.moved) {
+      if (Math.abs(dy) < 8) return;
+      if (Math.abs(x - g.x0) > Math.abs(dy)) { g = null; return; }   // era un deslizamiento de lado
+      g.moved = true;
+      if (g.from === 0) shadeFill();
+      el.classList.add('dragging'); bg.classList.add('dragging');
+    }
+    if (e && e.cancelable) e.preventDefault();
+    const hgt = el.offsetHeight || 1;
+    g.p = Math.max(0, Math.min(1, g.from + dy / hgt));
+    el.style.transform = `translateY(${(g.p - 1) * 100}%)`;
+    bg.style.opacity = g.p;
+  };
+  const end = (y) => {
+    if (!g) return;
+    const was = g; g = null;
+    if (!was.moved) return;
+    const v = (y - was.y0) / Math.max(1, Date.now() - was.t0);   // px/ms (+ hacia abajo)
+    shade(v > 0.5 ? true : v < -0.5 ? false : was.p > (was.from ? 0.66 : 0.33));
+  };
+  // Abrir: desde la franja de arriba (con el dedo o con el ratón)
+  window.addEventListener('touchstart', (e) => {
+    const t = e.touches[0];
+    if (e.touches.length === 1 && !SH.open && t.clientY <= shadeEdge && !blocked()) begin(t.clientX, t.clientY, 0);
+  }, { passive: true, capture: true });
+  window.addEventListener('pointerdown', (e) => {
+    if (e.pointerType !== 'touch' && !SH.open && e.clientY <= shadeEdge && !blocked()) begin(e.clientX, e.clientY, 0);
+  }, true);
+  // Cerrar: deslizando hacia arriba sobre la cortina (no sobre las barras ni los botones) o sobre el fondo
+  const closeStart = (x, y, target) => { if (SH.open && !target.closest('input, button')) begin(x, y, 1); };
+  [el, bg].forEach((n) => {
+    n.addEventListener('touchstart', (e) => { const t = e.touches[0]; closeStart(t.clientX, t.clientY, e.target); }, { passive: true });
+    n.addEventListener('pointerdown', (e) => { if (e.pointerType !== 'touch') closeStart(e.clientX, e.clientY, e.target); });
+  });
+  window.addEventListener('touchmove', (e) => { if (g) { const t = e.touches[0]; move(t.clientX, t.clientY, e); } }, { passive: false, capture: true });
+  window.addEventListener('touchend', (e) => { if (g) end(e.changedTouches[0].clientY); }, true);
+  window.addEventListener('touchcancel', () => { if (g) { g = null; shade(SH.open); } }, true);
+  window.addEventListener('pointermove', (e) => { if (g && e.pointerType !== 'touch') move(e.clientX, e.clientY, e); }, true);
+  window.addEventListener('pointerup', (e) => { if (g && e.pointerType !== 'touch') end(e.clientY); }, true);
+  // tocar el fondo (sin arrastrar) la cierra
+  bg.addEventListener('click', () => shade(false));
 }
 function showAmbient() {
   closeSheet();
@@ -3023,8 +3102,8 @@ function start() {
   $('#view').replaceChildren(empty('mdi-home-assistant', 'Conectando con Home Assistant…'));
   $('#sheet').addEventListener('click', (e) => { if (e.target.id === 'sheet') closeSheet(); });
   $('#bell').addEventListener('click', openHistory);
-  $('#menu-btn').addEventListener('click', (e) => { e.stopPropagation(); topMenu(); });
-  document.addEventListener('pointerdown', (e) => { if (!e.target.closest('#top-menu, #menu-btn')) topMenu(false); }, true);
+  $('#menu-btn').addEventListener('click', (e) => { e.stopPropagation(); shade(); });
+  shadeGestures();
   // Tocar el fondo vuelve a Inicio; tocar una burbuja abre su vista (patinete, impresoras, música…)
   $('#ambient').addEventListener('pointerdown', (e) => {
     e.preventDefault();
