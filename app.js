@@ -2443,7 +2443,10 @@ function shadeFill() {
         h('span', null, cap(now.toLocaleDateString('es-ES', { weekday: 'long', day: 'numeric', month: 'long' })))),
       h('div', { class: 'sh-ibtns' },
         iconBtn('mdi-monitor-off', 'Apagar la pantalla', () => { SCREEN.lastTouch = 0; setScreenOff(true); }),
-        iconBtn('mdi-cog', 'Ajustes', () => go('settings')))),
+        iconBtn('mdi-cog', 'Ajustes', () => {   // desde el modo ambiente o «Sonando» también
+          if ($('#np').classList.contains('show')) hideNowPlaying(true);
+          if (S.ambient) hideAmbient('settings'); else go('settings');
+        }))),
     h('div', { class: 'sh-body' }, player, pills));
 }
 /** Abre (true) o cierra (false) la cortina con animación. Sin argumento: la cambia. */
@@ -2461,7 +2464,7 @@ function shade(open) {
 function shadeGestures() {
   const el = $('#shade'), bg = $('#shade-bg');
   let g = null;   // gesto en curso: { y0, x0, t0, from (0 cerrada / 1 abierta), moved, p }
-  const blocked = () => S.ambient || $('#np').classList.contains('show') || alertOpen() || !!S.sheetId;
+  const blocked = () => alertOpen();   // en todas las pantallas (ambiente, «Sonando»…) menos con una alarma o un aviso importante
   const begin = (x, y, from) => { g = { x0: x, y0: y, t0: Date.now(), from, moved: false, p: from }; };
   const move = (x, y, e) => {
     if (!g) return;
@@ -2510,6 +2513,7 @@ function shadeGestures() {
 }
 function showAmbient() {
   closeSheet();
+  if (SH.open) shade(false);
   S.ambient = true;
   renderAmbientChips();
   if (photosOn()) nextBackground();
@@ -3133,6 +3137,7 @@ function start() {
   // Tocar el fondo vuelve a Inicio; tocar una burbuja abre su vista (patinete, impresoras, música…)
   $('#ambient').addEventListener('pointerdown', (e) => {
     e.preventDefault();
+    if (e.clientY <= shadeEdge) return;   // ahí empieza la cortina: no se sale del modo ambiente
     if (e.target.closest('#amb-next')) { e.stopPropagation(); nextBackground(); resetIdle(); return; }
     const act = e.target.closest('[data-act]');
     if (act) { e.stopPropagation(); ambientPlayerAction(act.dataset.act); resetIdle(); return; }
