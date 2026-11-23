@@ -2413,18 +2413,19 @@ function pill(ic, { min = 0, max = 100, step = 1, value = 0, onLive, onEnd } = {
   p.set(value);
   return p;
 }
-/* Pestañas de la cortina: a la izquierda los avisos y a la derecha los accesos rápidos (SET.quick).
- * Se cambia tocando la pestaña o deslizando el dedo de lado sobre ellas. */
+/* Ventanas de la cortina que se deslizan de lado: avisos (izquierda) · controles (centro, la que sale al abrir)
+ * · accesos rápidos (derecha, SET.quick). Se cambia deslizando el dedo o tocando las pestañas de arriba. */
 const QUICK_KINDS = { light: 'Luces', switch: 'Enchufes', input_boolean: 'Interruptores', fan: 'Ventiladores', cover: 'Persianas',
   lock: 'Cerraduras', climate: 'Clima', scene: 'Escenas', script: 'Scripts', button: 'Botones', input_button: 'Botones' };
-function shadeTabs() {
+function shadeTabs(main) {
   const track = h('div', { class: 'sht-track' });
   const pages = h('div', { class: 'sht-pages' }, track);
   const badge = h('span', { class: 'sht-badge' });
-  const btns = [h('button', { class: 'sht-tab' }, icon('mdi-bell'), 'Avisos', badge), h('button', { class: 'sht-tab' }, icon('mdi-lightning-bolt'), 'Accesos rápidos')];
+  const btns = [h('button', { class: 'sht-tab' }, icon('mdi-bell'), 'Avisos', badge), h('button', { class: 'sht-tab' }, icon('mdi-tune-variant'), 'Controles'),
+    h('button', { class: 'sht-tab' }, icon('mdi-lightning-bolt'), 'Accesos rápidos')];
   const bar = h('div', { class: 'sht-bar' }, btns);
-  const notif = h('div', { class: 'sht-page' }), quick = h('div', { class: 'sht-page' });
-  track.append(notif, quick);
+  const notif = h('div', { class: 'sht-page scroll' }), quick = h('div', { class: 'sht-page scroll' });
+  track.append(notif, h('div', { class: 'sht-page sht-main' }, main), quick);
 
   const paintNotif = () => {
     if (SH.tab === 0) { N.unread = 0; renderBell(); }
@@ -2469,7 +2470,7 @@ function shadeTabs() {
   const goTab = (i, anim = true) => {
     SH.tab = i;
     track.classList.toggle('anim', anim);
-    track.style.transform = `translateX(${-i * 50}%)`;
+    track.style.transform = `translateX(${(-i * 100) / 3}%)`;
     btns.forEach((b, j) => b.classList.toggle('active', j === i));
     if (i === 0) paintNotif();
   };
@@ -2477,7 +2478,7 @@ function shadeTabs() {
 
   // deslizar de lado sobre las páginas
   let sw = null, swallow = false;
-  const sBegin = (x, y) => { sw = { x, y, dx: 0, on: false }; };
+  const sBegin = (x, y, t) => { sw = t && t.closest('.sh-pill, input') ? null : { x, y, dx: 0, on: false }; };   // las barras se arrastran solas
   const sMove = (x, y, e) => {
     if (!sw) return;
     const dx = x - sw.x, dy = y - sw.y;
@@ -2488,27 +2489,28 @@ function shadeTabs() {
     }
     if (e && e.cancelable) e.preventDefault();
     sw.dx = dx;
-    track.style.transform = `translateX(calc(${-SH.tab * 50}% + ${dx / 2}px))`;
+    const edge = (SH.tab === 0 && dx > 0) || (SH.tab === 2 && dx < 0);   // en los extremos cuesta más
+    track.style.transform = `translateX(calc(${(-SH.tab * 100) / 3}% + ${edge ? dx / 4 : dx / 3}px))`;
   };
   const sEnd = () => {
     if (!sw) return;
     const was = sw; sw = null;
     if (!was.on) return;
     swallow = true; setTimeout(() => { swallow = false; }, 50);
-    goTab(was.dx < -50 ? 1 : was.dx > 50 ? 0 : SH.tab);
+    goTab(Math.max(0, Math.min(2, SH.tab + (was.dx < -50 ? 1 : was.dx > 50 ? -1 : 0))));
   };
-  pages.addEventListener('touchstart', (e) => { if (e.touches.length === 1) sBegin(e.touches[0].clientX, e.touches[0].clientY); }, { passive: true });
+  pages.addEventListener('touchstart', (e) => { if (e.touches.length === 1) sBegin(e.touches[0].clientX, e.touches[0].clientY, e.target); }, { passive: true });
   pages.addEventListener('touchmove', (e) => sMove(e.touches[0].clientX, e.touches[0].clientY, e), { passive: false });
   pages.addEventListener('touchend', sEnd);
   pages.addEventListener('touchcancel', () => { sw = null; goTab(SH.tab); });
-  pages.addEventListener('pointerdown', (e) => { if (e.pointerType !== 'touch') sBegin(e.clientX, e.clientY); });
+  pages.addEventListener('pointerdown', (e) => { if (e.pointerType !== 'touch') sBegin(e.clientX, e.clientY, e.target); });
   window.addEventListener('pointermove', (e) => { if (sw && e.pointerType !== 'touch') sMove(e.clientX, e.clientY, e); });
   window.addEventListener('pointerup', (e) => { if (sw && e.pointerType !== 'touch') sEnd(); });
   pages.addEventListener('click', (e) => { if (swallow) { e.stopPropagation(); e.preventDefault(); } }, true);
 
   SH.paintNotif = paintNotif;
   paintQuick();
-  goTab(SH.tab || 0, false);
+  goTab(1, false);   // siempre abre en los controles
   return h('div', { class: 'sht' }, bar, pages);
 }
 function shadeFill() {
@@ -2546,8 +2548,7 @@ function shadeFill() {
           if ($('#np').classList.contains('show')) hideNowPlaying(true);
           if (S.ambient) hideAmbient('settings'); else go('settings');
         }))),
-    h('div', { class: 'sh-body' }, player, pills),
-    shadeTabs());
+    shadeTabs(h('div', { class: 'sh-body' }, player, pills)));
 }
 /** Abre (true) o cierra (false) la cortina con animación. Sin argumento: la cambia. */
 function shade(open) {
@@ -2598,7 +2599,7 @@ function shadeGestures() {
     if (e.pointerType !== 'touch' && !SH.open && e.clientY <= shadeEdge && !blocked()) begin(e.clientX, e.clientY, 0);
   }, true);
   // Cerrar: deslizando hacia arriba sobre la cortina (no sobre las barras ni los botones) o sobre el fondo
-  const closeStart = (x, y, target) => { if (SH.open && !target.closest('input, button, .sh-pill, .sht-pages')) begin(x, y, 1); };
+  const closeStart = (x, y, target) => { if (SH.open && !target.closest('input, button, .sh-pill, .sht-page.scroll')) begin(x, y, 1); };
   [el, bg].forEach((n) => {
     n.addEventListener('touchstart', (e) => { const t = e.touches[0]; closeStart(t.clientX, t.clientY, e.target); }, { passive: true });
     n.addEventListener('pointerdown', (e) => { if (e.pointerType !== 'touch') closeStart(e.clientX, e.clientY, e.target); });
