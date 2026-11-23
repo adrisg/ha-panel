@@ -835,7 +835,7 @@ function volWidget(getId, cls = '') {
   const send = () => {
     const id = getId();
     if (!id || main.v === W.sent) return;
-    W.sent = main.v; W.sentAt = Date.now();
+    W.sent = main.v; W.sentAt = Date.now(); volMarkSent(main.v);
     call('media_player', 'volume_set', { volume_level: main.v / 100 }, id);
   };
   const dragging = () => main.drag || avisos.drag || voz.drag;
@@ -880,27 +880,25 @@ function volWidget(getId, cls = '') {
   W.el = el;
   return W;
 }
-/* Volumen flotante: si cambia el volumen del altavoz del panel desde otro sitio (Music Assistant, el móvil…),
-   sale la misma barra que en «Sonando», en cualquier pantalla. Se esconde sola a los 4 s. */
-const OSD = { w: null };
-function volOsd() {
-  if (!OSD.w) {
-    const w = OSD.w = volWidget(speakerEntity, 'vol-osd');
-    w.onClose = () => setTimeout(() => !w.el.classList.contains('open') && w.el.classList.remove('show'), 400);
-    document.body.append(w.el);
-  }
-  return OSD.w;
-}
-function volOsdShow() {
-  const w = volOsd();
-  w.el.classList.add('show');
-  requestAnimationFrame(() => w.open());
+/* Burbuja de volumen: si cambia el volumen del altavoz del panel desde otro sitio (Home Assistant, Music Assistant,
+   el móvil…), sale arriba a la derecha una burbuja con el número nuevo, en cualquier pantalla. Se va sola a los 2 s.
+   Lo que cambias desde el propio panel no la saca. */
+const OSD = { known: null, sent: -1, sentAt: 0, timer: null };
+function volMarkSent(v) { OSD.sent = v; OSD.sentAt = Date.now(); }
+function volBubble(v) {
+  let el = $('#vol-bubble');
+  if (!el) { el = h('div', { id: 'vol-bubble', class: 'vol-bubble' }); document.body.append(el); }
+  el.replaceChildren(icon(volIconOf(v)), h('b', null, String(v)));
+  el.classList.add('show');
+  clearTimeout(OSD.timer);
+  OSD.timer = setTimeout(() => el.classList.remove('show'), 2000);
 }
 function onVolumeChange(id, st) {
   if (!st || id !== speakerEntity() || st.attributes.volume_level == null) return;
-  if (!volOsd().update(Math.round(st.attributes.volume_level * 100))) return;
-  if ($('#np').classList.contains('show')) return;   // la pantalla «Sonando» ya tiene la suya
-  volOsdShow();
+  const v = Math.round(st.attributes.volume_level * 100), was = OSD.known;
+  OSD.known = v;
+  if (was == null || v === was || Date.now() - OSD.sentAt < 4000) return;   // primera vez, sin cambios o cambiado aquí
+  volBubble(v);
 }
 function showNowPlaying(id) {
   if (NP.id === id && $('#np').classList.contains('show')) return;
@@ -983,7 +981,7 @@ function showNowPlaying(id) {
     if (title.textContent !== ttl) { title.textContent = ttl; requestAnimationFrame(fitTitle); }
     sub.textContent = [a.media_artist, a.media_album_name].filter(Boolean).join(' · ');
     play.replaceChildren(icon(st.state === 'playing' ? 'mdi-pause' : 'mdi-play'));
-    if (volW.update(Math.round((a.volume_level || 0) * 100))) volW.open();
+    volW.update(Math.round((a.volume_level || 0) * 100));   // si cambia desde fuera, sale la burbuja (no se abre la barra)
     if (a.entity_picture !== pic) {
       pic = a.entity_picture;
       const url = pic ? `url("${absUrl(pic)}")` : '';
@@ -2293,7 +2291,7 @@ function soundCard() {
   if (music && S.states[music]) {
     const m = slider({ min: 0, max: 100, step: 1, label: 'Volumen (música y multimedia)', fmt: pct,
       // cambiado desde aquí: no sale la barra flotante (ya lo estás viendo)
-      onchange: (v) => { if (OSD.w) OSD.w.markSent(v); call('media_player', 'volume_set', { volume_level: v / 100 }, music); } });
+      onchange: (v) => { volMarkSent(v); call('media_player', 'volume_set', { volume_level: v / 100 }, music); } });
     // Sigue al volumen real: si se cambia en Music Assistant, se mueve aquí también
     bind('view', music, (st) => st && st.attributes.volume_level != null && m.set(Math.round(st.attributes.volume_level * 100)));
     main.append(m);
@@ -2421,7 +2419,7 @@ function shadeFill() {
   if (id && S.states[id] && S.states[id].attributes.volume_level != null) {
     // la música cambia mientras arrastras (como en «Sonando»)
     let last = -1, timer = null;
-    const send = () => { if (mus.v === last) return; last = mus.v; if (OSD.w) OSD.w.markSent(mus.v); call('media_player', 'volume_set', { volume_level: mus.v / 100 }, id); };
+    const send = () => { if (mus.v === last) return; last = mus.v; volMarkSent(mus.v); call('media_player', 'volume_set', { volume_level: mus.v / 100 }, id); };
     mus = pill('mdi-music', { onLive: () => { if (!timer) { send(); timer = setInterval(send, 250); } }, onEnd: () => { clearInterval(timer); timer = null; send(); } });
     pills.append(mus.el);
   }

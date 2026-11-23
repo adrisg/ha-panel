@@ -290,10 +290,13 @@ main { display: flex; flex-direction: column; min-width: 0; min-height: 0; heigh
 .vb-val { bottom: 10px; font-size: 15px; font-weight: 700; font-variant-numeric: tabular-nums; }
 .np-vdots { flex: none; align-self: flex-end; width: 48px; height: 30px; border: 0; background: none; color: inherit; font-size: 26px; display: grid; place-items: center; opacity: .85; cursor: pointer; }
 .np-vol.more .np-vdots { opacity: 1; }
-/* la flotante: la misma, sobre la pantalla que haya */
-.vol-osd { position: fixed; z-index: 38; color: #fff; display: none; }
-.vol-osd.show { display: flex; }
-.vol-osd .np-vbtn { display: none; }   /* fuera de «Sonando» no hace falta el botón: sale sola */
+/* burbuja con el volumen nuevo cuando cambia desde fuera (arriba a la derecha) */
+.vol-bubble { position: fixed; top: 76px; right: 24px; z-index: 39; display: flex; align-items: center; gap: 10px; padding: 10px 20px 10px 16px;
+  border-radius: 30px; background: rgba(45,50,61,.94); backdrop-filter: blur(14px); color: #fff; box-shadow: 0 8px 28px rgba(0,0,0,.5);
+  opacity: 0; transform: translateX(24px) scale(.9); pointer-events: none; transition: opacity .25s, transform .3s cubic-bezier(.2,.8,.2,1); }
+.vol-bubble.show { opacity: 1; transform: none; }
+.vol-bubble .mdi { font-size: 26px; }
+.vol-bubble b { font-size: 26px; font-weight: 700; font-variant-numeric: tabular-nums; min-width: 2ch; text-align: right; }
 @media (max-aspect-ratio: 1/1) {
   .np-main { flex-direction: column; justify-content: center; text-align: center; gap: 4vh; }
   .np-art { width: min(72vw, 42vh); }
