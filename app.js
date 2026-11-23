@@ -1342,27 +1342,6 @@ function renderBell() {
   b.classList.toggle('hidden', !N.history.length);
   $('#bell-count').textContent = N.unread > 0 ? N.unread : '';
 }
-function openHistory() {
-  N.unread = 0; renderBell();
-  closeSheet();
-  const rows = N.history.map((n) => h('div', { class: 'hist-row ' + n.nivel }, icon(n.icono),
-    h('div', { class: 'hist-text' }, h('b', null, n.titulo), n.mensaje ? h('div', { class: 'muted small' }, n.mensaje) : null),
-    h('span', { class: 'muted small' }, hhmm(n.at))));
-  $('#sheet-card').replaceChildren(
-    h('div', { class: 'sheet-head' }, h('div', { class: 'tile-icon' }, icon('mdi-bell')), h('div', { class: 'sheet-title' }, 'Avisos'),
-      h('button', { class: 'icon-btn', onclick: closeSheet }, icon('mdi-close'))),
-    h('div', { class: 'sheet-body' }, rows.length ? rows : h('div', { class: 'muted' }, 'No hay avisos'),
-      rows.length ? h('button', { class: 'big-action', onclick: clearHistory }, icon('mdi-delete-sweep'), 'Borrar todos') : null));
-  $('#sheet').classList.remove('hidden');
-  S.sheetId = 'avisos';
-}
-/** Vacía el historial de la campana (los avisos que sigan abiertos en pantalla no se tocan). */
-function clearHistory() {
-  N.history = []; N.unread = 0;
-  renderBell();
-  closeSheet();
-  toast('Avisos borrados');
-}
 
 /* Sonidos generados con Web Audio (no hacen falta archivos) */
 function tone(freqs, dur, vol) {
@@ -2510,7 +2489,9 @@ function shadeTabs(main) {
 
   SH.paintNotif = paintNotif;
   paintQuick();
-  goTab(1, false);   // siempre abre en los controles
+  SH.goTab = goTab;
+  goTab(SH.startTab ?? 1, false);   // abre en los controles (la campana, en los avisos)
+  SH.startTab = null;
   return h('div', { class: 'sht' }, bar, pages);
 }
 function shadeFill() {
@@ -2550,8 +2531,10 @@ function shadeFill() {
         }))),
     shadeTabs(h('div', { class: 'sh-body' }, player, pills)));
 }
-/** Abre (true) o cierra (false) la cortina con animación. Sin argumento: la cambia. */
-function shade(open) {
+/** Abre (true) o cierra (false) la cortina con animación. Sin argumento: la cambia. tab: ventana (0 avisos, 1 controles, 2 accesos). */
+function shade(open, tab) {
+  if (open && SH.open && tab != null && SH.goTab) { SH.goTab(tab); return; }
+  SH.startTab = tab;
   const el = $('#shade'), bg = $('#shade-bg');
   if (open == null) open = !SH.open;
   if (open && !SH.open && !el.classList.contains('dragging')) shadeFill();
@@ -2559,7 +2542,7 @@ function shade(open) {
   el.classList.remove('dragging'); bg.classList.remove('dragging');
   el.style.transform = ''; bg.style.opacity = '';
   el.classList.toggle('open', open); bg.classList.toggle('open', open);
-  if (!open) { TM.id = null; TM.paint = null; SH.sync = null; SH.paintNotif = null; B.shade.clear(); }
+  if (!open) { TM.id = null; TM.paint = null; SH.sync = null; SH.paintNotif = null; SH.goTab = null; B.shade.clear(); }
 }
 function shadeGestures() {
   const el = $('#shade'), bg = $('#shade-bg');
@@ -3231,7 +3214,7 @@ function start() {
 
   $('#view').replaceChildren(empty('mdi-home-assistant', 'Conectando con Home Assistant…'));
   $('#sheet').addEventListener('click', (e) => { if (e.target.id === 'sheet') closeSheet(); });
-  $('#bell').addEventListener('click', openHistory);
+  $('#bell').addEventListener('click', () => shade(true, 0));   // la cortina, en los avisos
   shadeGestures();
   // Tocar el fondo vuelve a Inicio; tocar una burbuja abre su vista (patinete, impresoras, música…)
   $('#ambient').addEventListener('pointerdown', (e) => {
