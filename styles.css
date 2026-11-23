@@ -60,7 +60,7 @@
 :root.light .card, :root.light .tile, :root.light .media-card { box-shadow: 0 1px 3px rgba(20,30,50,.08); }
 :root.light .shade-bg { background: rgba(20,24,32,.35); }
 :root.light .banner .mdi { color: var(--accent); }
-:root.light .vol-bubble { background: rgba(226,230,236,.97); color: #15181d; border: 1px solid rgba(0,0,0,.06); box-shadow: 0 8px 24px rgba(20,30,50,.18); }
+:root.light .vol-bubble { background: rgba(206,211,219,.97); color: #15181d; border: 1px solid rgba(0,0,0,.06); box-shadow: 0 8px 24px rgba(20,30,50,.18); }
 
 /* Modo ambiente en claro: con foto se queda igual (letras blancas); sin foto, fondo claro y letras oscuras */
 :root.light .ambient.lightbg { color: #1b1e24; }
