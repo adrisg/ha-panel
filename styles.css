@@ -284,9 +284,10 @@ main { display: flex; flex-direction: column; min-width: 0; min-height: 0; heigh
 .np-vx .np-vtrack[hidden] { display: none; }
 .np-vtrack { position: relative; flex: none; width: 48px; border-radius: 18px; background: #1e1e20; overflow: hidden; touch-action: none; cursor: pointer; isolation: isolate; }
 .np-vtrack > i { position: absolute; left: 0; right: 0; bottom: 0; background: rgba(255,255,255,.9); }
-/* el símbolo, arriba dentro de la barra; se invierte de color al quedar sobre la parte llena */
-.vb-ic { position: absolute; left: 0; right: 0; text-align: center; color: #fff; mix-blend-mode: difference; pointer-events: none; }
+/* el símbolo arriba y el número abajo, dentro de la barra; se invierten de color al quedar sobre la parte llena */
+.vb-ic, .vb-val { position: absolute; left: 0; right: 0; text-align: center; color: #fff; mix-blend-mode: difference; pointer-events: none; }
 .vb-ic { top: 10px; font-size: 22px; }
+.vb-val { bottom: 10px; font-size: 15px; font-weight: 700; font-variant-numeric: tabular-nums; }
 .np-vdots { flex: none; align-self: flex-end; width: 48px; height: 30px; border: 0; background: none; color: inherit; font-size: 26px; display: grid; place-items: center; opacity: .85; cursor: pointer; }
 .np-vol.more .np-vdots { opacity: 1; }
 /* la flotante: la misma, sobre la pantalla que haya */
