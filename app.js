@@ -2126,7 +2126,6 @@ function render() {
   if (S.view !== 'settings' && !visibleTabs().some((t) => t.id === S.view)) S.view = tabFor(S.view);
   const t = S.view === 'settings' ? null : visibleTabs().find((x) => x.id === S.view);
   $('#view-title').textContent = t ? t.title : VIEWS.settings.title;
-  $('#menu-btn').classList.toggle('active', S.view === 'settings');
   const view = $('#view');
   const scroll = view.scrollTop;
   view.replaceChildren(...(t ? renderTab(t) : VIEWS.settings.render()).filter(Boolean));
@@ -2359,7 +2358,7 @@ function resetIdle() {
   if (SET.idleSeconds > 0) idleTimer = setTimeout(() => !S.sheetId && !NP.id && !alertOpen() && showAmbient(), SET.idleSeconds * 1000);
 }
 /** Menú de los tres puntitos de arriba a la derecha: se despliega con una animación. */
-/* Mini reproductor arriba del menú ⋮: carátula, título y anterior / play / siguiente.
+/* Mini reproductor de la cortina: carátula, título y anterior / play / siguiente.
    Tocar la carátula o el título abre «Sonando». Se repinta solo mientras el menú está abierto. */
 const TM = { id: null, paint: null };
 function tmPlayer() {
@@ -2387,7 +2386,7 @@ function tmPlayer() {
 }
 /* ====================== Cortina (como en Android) ======================
  * Arrastrando hacia abajo desde el borde de arriba baja una cortina que sigue al dedo; al soltar se abre del todo
- * si has bajado más de un tercio (o lo has hecho rápido) y si no se recoge. También la abre el botón ⋮.
+ * si has bajado más de un tercio (o lo has hecho rápido) y si no se recoge.
  * Dentro: la hora, apagar la pantalla y ajustes (arriba a la derecha), el mini reproductor, los volúmenes y el brillo.
  * Se cierra deslizando hacia arriba, tocando fuera o eligiendo algo. */
 const SH = { open: false, sync: null, tab: 0, paintNotif: null };
@@ -2560,7 +2559,6 @@ function shade(open) {
   el.classList.remove('dragging'); bg.classList.remove('dragging');
   el.style.transform = ''; bg.style.opacity = '';
   el.classList.toggle('open', open); bg.classList.toggle('open', open);
-  $('#menu-btn').classList.toggle('open', open);
   if (!open) { TM.id = null; TM.paint = null; SH.sync = null; SH.paintNotif = null; B.shade.clear(); }
 }
 function shadeGestures() {
@@ -3234,7 +3232,6 @@ function start() {
   $('#view').replaceChildren(empty('mdi-home-assistant', 'Conectando con Home Assistant…'));
   $('#sheet').addEventListener('click', (e) => { if (e.target.id === 'sheet') closeSheet(); });
   $('#bell').addEventListener('click', openHistory);
-  $('#menu-btn').addEventListener('click', (e) => { e.stopPropagation(); shade(); });
   shadeGestures();
   // Tocar el fondo vuelve a Inicio; tocar una burbuja abre su vista (patinete, impresoras, música…)
   $('#ambient').addEventListener('pointerdown', (e) => {
