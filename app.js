@@ -848,7 +848,7 @@ function volWidget(getId, cls = '') {
   main.onEnd = () => { clearInterval(W.live); send(); W.hideLater(); };
   // avisos y voz: al soltar
   avisos.onStart = voz.onStart = () => clearTimeout(W.timer);
-  avisos.onEnd = (v) => { SET.sound.volume = v; saveSettings(); tone([784, 622], 0.4); W.hideLater(); };
+  avisos.onEnd = (v) => { SET.sound.volume = v; saveSettings(true); tone([784, 622], 0.4); W.hideLater(); };
   voz.onEnd = async (v) => {
     W.hideLater();
     try {
@@ -1433,7 +1433,7 @@ async function loadSettings() {
   applySettings();
 }
 let saveTimer;
-function saveSettings() {
+function saveSettings(quiet) {   // quiet: sin el aviso «Ajustes guardados»
   applySettings();
   clearTimeout(saveTimer);
   saveTimer = setTimeout(async () => {
@@ -1444,7 +1444,7 @@ function saveSettings() {
       } else {                          // sin ayudante: en este navegador (nunca se escribe nada en Home Assistant)
         try { localStorage.setItem(SETTINGS_KEY, JSON.stringify(SET)); } catch (e) { /* sin almacenamiento */ }
       }
-      toast('Ajustes guardados');
+      if (!quiet) toast('Ajustes guardados');
     } catch (e) { toast('No se pudieron guardar: ' + e.message, true); }
   }, 600);
 }

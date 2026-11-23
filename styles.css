@@ -278,9 +278,9 @@ main { display: flex; flex-direction: column; min-width: 0; min-height: 0; heigh
 .np-vol.open .np-vpanel { clip-path: inset(0 0 0 0 round 26px); opacity: 1; transform: none; pointer-events: auto; }
 .np-vbars { flex: 1; min-height: 0; display: flex; }
 /* los demás volúmenes: se despliegan a la izquierda con los tres puntitos */
-.np-vx { display: flex; gap: 10px; max-width: 0; margin-right: 0; opacity: 0; overflow: hidden;
+.np-vx { display: flex; gap: 22px; max-width: 0; margin-right: 0; opacity: 0; overflow: hidden;
   transition: max-width .4s cubic-bezier(.2,.8,.2,1), margin-right .4s cubic-bezier(.2,.8,.2,1), opacity .3s; }
-.np-vol.more .np-vx { max-width: 120px; margin-right: 10px; opacity: 1; }
+.np-vol.more .np-vx { max-width: 140px; margin-right: 22px; opacity: 1; }
 .np-vx .np-vtrack[hidden] { display: none; }
 .np-vtrack { position: relative; flex: none; width: 48px; border-radius: 18px; background: #1e1e20; overflow: hidden; touch-action: none; cursor: pointer; isolation: isolate; }
 .np-vtrack > i { position: absolute; left: 0; right: 0; bottom: 0; background: rgba(255,255,255,.9); }
