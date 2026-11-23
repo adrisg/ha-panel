@@ -2396,11 +2396,6 @@ function topMenu(open) {
         volOsd().update(Math.round(st.attributes.volume_level * 100));
         volOsdShow();
       }),
-      item('mdi-music', 'Sonando', () => {
-        const id = ambientSpeaker() || speakerEntity();
-        if (!id || !S.states[id]) return toast('No hay ningún altavoz disponible');
-        showNowPlaying(id);
-      }),
       item('mdi-cog', 'Ajustes', () => go('settings')),
       item('mdi-image-filter-hdr', 'Modo ambiente', () => showAmbient()),
       item('mdi-monitor-off', 'Apagar la pantalla', () => { SCREEN.lastTouch = 0; setScreenOff(true); }));
