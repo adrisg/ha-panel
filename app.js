@@ -2380,7 +2380,7 @@ function shadeTabs(main) {
   const track = h('div', { class: 'sht-track' });
   const pages = h('div', { class: 'sht-pages' }, track);
   const badge = h('span', { class: 'sht-badge' });
-  const btns = [h('button', { class: 'sht-tab' }, icon('mdi-bell'), 'Avisos', badge), h('button', { class: 'sht-tab' }, icon('mdi-tune-variant'), 'Controles'),
+  const btns = [h('button', { class: 'sht-tab' }, h('span', { class: 'sht-bell' }, icon('mdi-bell'), badge), 'Avisos'), h('button', { class: 'sht-tab' }, icon('mdi-tune-variant'), 'Controles'),
     h('button', { class: 'sht-tab' }, icon('mdi-lightning-bolt'), 'Accesos rápidos')];
   const bar = h('div', { class: 'sht-bar' }, btns);
   // las listas no cuentan para el alto: la cortina mide lo que miden los controles y ellas se desplazan dentro
@@ -2389,7 +2389,7 @@ function shadeTabs(main) {
 
   const paintNotif = () => {
     if (SH.tab === 0) { N.unread = 0; renderBell(); }
-    badge.textContent = N.unread > 0 ? N.unread : '';
+    badge.classList.toggle('on', N.unread > 0);
     if (!N.history.length) { notif.replaceChildren(h('div', { class: 'sht-empty' }, icon('mdi-bell-check-outline'), 'No hay avisos')); return; }
     // tocar un aviso lo vuelve a abrir entero (con su imagen y sus botones); la × lo quita de la lista
     notif.replaceChildren(...N.history.map((n) => h('div', { class: 'hist-row tappable ' + n.nivel, onclick: () => { shade(false); reopenNotif(n); } }, icon(n.icono),
@@ -2473,8 +2473,8 @@ function shadeTabs(main) {
   SH.paintNotif = paintNotif;
   paintQuick();
   SH.goTab = goTab;
-  paintNotif.badge = () => { badge.textContent = N.unread > 0 ? N.unread : ''; };
-  paintNotif.badge();   // avisos sin ver: el número en la pestaña, aunque abra en otra ventana
+  paintNotif.badge = () => { badge.classList.toggle('on', N.unread > 0); };
+  paintNotif.badge();   // avisos sin ver: un puntito en la campana de la pestaña, aunque abra en otra ventana
   goTab(SH.startTab ?? 1, false);   // abre en los controles (la campana, en los avisos)
   SH.startTab = null;
   return h('div', { class: 'sht' }, bar, pages);
