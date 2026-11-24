@@ -1175,40 +1175,39 @@ function weatherCard(id, days = 5) {
   return h('div', { class: 'card weather-card' }, now, days > 0 ? fc : null);
 }
 
-/* ====================== Avisos lanzados desde Home Assistant ======================
- * Una automatización hace:   event: panel_notificacion   con event_data:
- *   id, titulo, mensaje, nivel (info | aviso | critico), icono, imagen (cámara/imagen o URL),
- *   duracion (s, 0 = hasta tocar), sonido (true/false) y acciones: [{texto, icono, servicio, entidad, datos, confirmar, estilo}]
- * Para cerrarlo desde HA:    event: panel_notificacion_cerrar   con event_data: {id}
- * Al pulsar un botón el panel lanza:  panel_notificacion_accion  con {id, accion}
+/* ====================== Notifications from Home Assistant ======================
+ * An automation fires:   event: panel_notification   with event_data:
+ *   id, title, message, level (info | warning | critical), icon, image (camera/image entity or URL),
+ *   timeout (s, 0 = until tapped), sound (true/false) and actions: [{title, icon, service, entity_id, data, confirm, style}]
+ * Close it from HA:      event: panel_notification_close   with event_data: {id}
+ * Tapping a button fires: panel_notification_action   with {id, action}
  */
 const N = { queue: [], history: [], unread: 0, ctx: null, soundTimer: null, closeTimer: null, imgTimer: null };
-const NIVEL = { info: 'info', aviso: 'aviso', warning: 'aviso', critico: 'critico', 'crítico': 'critico', critical: 'critico' };
+const LEVELS = { info: 'info', warning: 'warning', critical: 'critical' };
 const mdi = (s) => (s || '').replace('mdi:', 'mdi-');
 
 function normNotif(d) {
   d = d || {};
-  const nivel = NIVEL[String(d.nivel || d.level || 'aviso').toLowerCase()] || 'aviso';
-  const def = { info: 10, aviso: 120, critico: 0 }[nivel];
+  const level = LEVELS[String(d.level || 'warning').toLowerCase()] || 'warning';
+  const def = { info: 10, warning: 120, critical: 0 }[level];
   return {
     id: String(d.id || 'n' + Date.now()),
-    titulo: d.titulo || d.title || 'Aviso',
-    mensaje: d.mensaje || d.message || '',
-    nivel,
-    icono: mdi(d.icono || d.icon) || (nivel === 'critico' ? 'mdi-alert' : 'mdi-bell-ring'),
-    imagen: d.imagen || d.image || null,
-    duracion: Number(d.duracion ?? d.timeout ?? def) || 0,
-    sonido: d.sonido ?? d.sound ?? nivel !== 'info',
-    acciones: (d.acciones || d.actions || []).map((a) => ({
-      texto: a.texto || a.title || 'OK', icono: mdi(a.icono || a.icon), servicio: a.servicio || a.action || a.service,
-      entidad: a.entidad || a.entity_id, datos: a.datos || a.data || {}, confirmar: !!(a.confirmar || a.confirm),
-      estilo: a.estilo || a.style || '',
+    title: d.title || 'Aviso',
+    message: d.message || '',
+    level,
+    icon: mdi(d.icon) || (level === 'critical' ? 'mdi-alert' : 'mdi-bell-ring'),
+    image: d.image || null,
+    timeout: Number(d.timeout ?? def) || 0,
+    sound: d.sound ?? level !== 'info',
+    actions: (d.actions || []).map((x) => ({
+      title: x.title || 'OK', icon: mdi(x.icon), service: x.service,
+      entity: x.entity_id, data: x.data || {}, confirm: !!x.confirm, style: x.style || '',
     })),
     at: new Date(),
   };
 }
 
-const alertOpen = () => !!(typeof RING !== 'undefined' && RING.active) || N.queue.some((n) => n.nivel !== 'info');
+const alertOpen = () => !!(typeof RING !== 'undefined' && RING.active) || N.queue.some((n) => n.level !== 'info');
 
 function onNotif(ev) {
   const n = normNotif(ev.data);
@@ -1217,12 +1216,12 @@ function onNotif(ev) {
   N.history = [n, ...N.history.filter((x) => x.id !== n.id || x.at !== n.at)].slice(0, 30);
   N.unread++;
   renderBell();
-  if (n.nivel !== 'info') {                            // despierta la pantalla
+  if (n.level !== 'info') {                            // despierta la pantalla
     if (S.ambient) { S.ambient = false; $('#ambient').classList.remove('show'); }
     closeSheet();
     tick();
   }
-  if (n.sonido) playSound(n.nivel);
+  if (n.sound) playSound(n.level);
   showNotif();
   if (SH.paintNotif) SH.paintNotif();
 }
@@ -1232,7 +1231,7 @@ function closeNotif(id, byUser) {
   const was = N.queue.find((n) => n.id === id);
   if (!was) return;
   N.queue = N.queue.filter((n) => n.id !== id);
-  if (!N.queue.some((n) => n.sonido && n.nivel !== 'info')) stopSound();
+  if (!N.queue.some((n) => n.sound && n.level !== 'info')) stopSound();
   showNotif();
   tick();
   if (byUser) resetIdle();
@@ -1243,46 +1242,46 @@ function showNotif() {
   const banner = $('#banner'), modal = $('#alert');
   const top = N.queue[0];
   if (!top) { banner.classList.remove('show'); modal.classList.add('hidden'); return; }
-  if (top.duracion > 0) {
-    const left = top.duracion * 1000 - (Date.now() - top.at.getTime());
+  if (top.timeout > 0) {
+    const left = top.timeout * 1000 - (Date.now() - top.at.getTime());
     N.closeTimer = setTimeout(() => closeNotif(top.id, false), Math.max(1000, left));
   }
-  if (top.nivel === 'info') {
+  if (top.level === 'info') {
     modal.classList.add('hidden');
-    banner.replaceChildren(icon(top.icono), h('div', null, h('b', null, top.titulo), top.mensaje ? h('div', { class: 'small' }, top.mensaje) : null));
+    banner.replaceChildren(icon(top.icon), h('div', null, h('b', null, top.title), top.message ? h('div', { class: 'small' }, top.message) : null));
     banner.onclick = () => closeNotif(top.id, true);
     banner.classList.add('show');
     return;
   }
   banner.classList.remove('show');
   const card = $('#alert-card');
-  modal.className = 'alert ' + top.nivel;
+  modal.className = 'alert ' + top.level;
   const parts = [h('div', { class: 'alert-head' },
-    h('div', { class: 'alert-icon' }, icon(top.icono)),
-    h('div', { class: 'alert-title' }, h('div', null, top.titulo), h('div', { class: 'alert-time' }, hhmm(top.at))),
+    h('div', { class: 'alert-icon' }, icon(top.icon)),
+    h('div', { class: 'alert-title' }, h('div', null, top.title), h('div', { class: 'alert-time' }, hhmm(top.at))),
     h('button', { class: 'icon-btn', onclick: () => closeNotif(top.id, true) }, icon('mdi-close')))];
-  if (top.mensaje) parts.push(h('div', { class: 'alert-msg' }, top.mensaje));
-  if (top.imagen) {
+  if (top.message) parts.push(h('div', { class: 'alert-msg' }, top.message));
+  if (top.image) {
     const img = h('img', { class: 'alert-img', alt: '' });
     img.onerror = () => img.remove();
     const src = () => {
-      const st = S.states[top.imagen];
-      const u = st ? absUrl(st.attributes.entity_picture) : top.imagen;
+      const st = S.states[top.image];
+      const u = st ? absUrl(st.attributes.entity_picture) : top.image;
       if (!u) return;
-      img.src = u.startsWith('data:') ? u : u + (u.includes('?') ? '&' : '?') + (st && domain(top.imagen) === 'camera' ? 'width=640&' : '') + '_t=' + Date.now();
+      img.src = u.startsWith('data:') ? u : u + (u.includes('?') ? '&' : '?') + (st && domain(top.image) === 'camera' ? 'width=640&' : '') + '_t=' + Date.now();
     };
     src();
-    if (S.states[top.imagen] && domain(top.imagen) === 'camera') N.imgTimer = setInterval(src, 2000);
+    if (S.states[top.image] && domain(top.image) === 'camera') N.imgTimer = setInterval(src, 2000);
     parts.push(img);
   }
-  const acts = top.acciones.length ? top.acciones : [{ texto: 'Entendido', icono: 'mdi-check' }];
+  const acts = top.actions.length ? top.actions : [{ title: 'Entendido', icon: 'mdi-check' }];
   parts.push(h('div', { class: 'alert-actions' }, acts.map((a, i) => {
     const run = () => runNotifAction(top, a);
-    const cls = 'big-action ' + (a.estilo === 'peligro' || a.estilo === 'danger' ? 'danger' : (a.estilo === 'primario' || i === 0) ? 'primary' : '');
-    if (a.confirmar) { const b = confirmBtn(a.icono || 'mdi-check', a.texto, run); b.className = cls; return b; }
-    return h('button', { class: cls, onclick: run }, a.icono ? icon(a.icono) : null, a.texto);
+    const cls = 'big-action ' + (a.style === 'danger' ? 'danger' : (a.style === 'primary' || i === 0) ? 'primary' : '');
+    if (a.confirm) { const b = confirmBtn(a.icon || 'mdi-check', a.title, run); b.className = cls; return b; }
+    return h('button', { class: cls, onclick: run }, a.icon ? icon(a.icon) : null, a.title);
   })));
-  const more = N.queue.filter((n) => n.nivel !== 'info').length - 1;
+  const more = N.queue.filter((n) => n.level !== 'info').length - 1;
   if (more > 0) parts.push(h('div', { class: 'alert-more' }, `+${more} aviso${more > 1 ? 's' : ''} más`));
   card.replaceChildren(...parts);
   modal.classList.remove('hidden');
@@ -1290,18 +1289,18 @@ function showNotif() {
 
 /** Vuelve a abrir un aviso del historial, en grande y sin sonido, hasta que se cierre. */
 function reopenNotif(n) {
-  const c = { ...n, nivel: n.nivel === 'info' ? 'aviso' : n.nivel, duracion: 0, sonido: false };
+  const c = { ...n, level: n.level === 'info' ? 'warning' : n.level, timeout: 0, sound: false };
   N.queue = [c, ...N.queue.filter((x) => x.id !== c.id)];
   showNotif();
 }
 async function runNotifAction(n, a) {
-  if (a.servicio) {
-    const [dom, svc] = String(a.servicio).split('.');
-    const r = await call(dom, svc, a.datos, a.entidad);
+  if (a.service) {
+    const [dom, svc] = String(a.service).split('.');
+    const r = await call(dom, svc, a.data, a.entity);
     if (r === null) return;                          // falló: el aviso sigue abierto para reintentar
-    toast(`${a.texto} ✓`);
+    toast(`${a.title} ✓`);
   }
-  conn.send({ type: 'fire_event', event_type: 'panel_notificacion_accion', event_data: { id: n.id, accion: a.texto } }).catch(() => {});
+  conn.send({ type: 'fire_event', event_type: 'panel_notification_action', event_data: { id: n.id, action: a.title } }).catch(() => {});
   closeNotif(n.id, true);
 }
 
@@ -1339,13 +1338,13 @@ function tone(freqs, dur, vol) {
     }
   } catch (e) { /* sin audio */ }
 }
-function playSound(nivel) {
+function playSound(level) {
   stopSound();
   if (!SET.sound.enabled) return;
-  if (nivel === 'critico') {                           // pitido insistente hasta que lo cierres
+  if (level === 'critical') {                          // pitido insistente hasta que lo cierres
     const beep = () => tone([880, 660, 880, 660], 0.18);
     beep(); N.soundTimer = setInterval(beep, 1500);
-  } else if (nivel === 'aviso') {                      // "ding-dong" cada 6 s durante 30 s
+  } else if (level === 'warning') {                    // "ding-dong" cada 6 s durante 30 s
     const dd = () => tone([784, 622], 0.5);
     dd(); N.soundTimer = setInterval(dd, 6000);
     N.soundStop = setTimeout(stopSound, 30000);
@@ -1730,7 +1729,7 @@ function renderSettings() {
     h('div', { class: 'card set-card' }, h('div', { class: 'set-title' }, icon('mdi-bell-ring'), 'Avisos'),
       setRow('Sonido', 'Ding-dong en los avisos y pitido en los críticos (su volumen, en Sonido)', switchBtn(SET.sound.enabled, (v) => { SET.sound.enabled = v; saveSettings(); })),
       h('div', { class: 'btn-row' },
-        h('button', { class: 'big-action', onclick: () => onNotif({ data: { id: 'prueba_ajustes', titulo: 'Aviso de prueba', mensaje: 'Así se ven los avisos que lances desde Home Assistant', nivel: 'aviso', icono: 'mdi:bell-ring', duracion: 15 } }) },
+        h('button', { class: 'big-action', onclick: () => onNotif({ data: { id: 'prueba_ajustes', title: 'Aviso de prueba', message: 'Así se ven los avisos que lances desde Home Assistant', level: 'warning', icon: 'mdi:bell-ring', timeout: 15 } }) },
           icon('mdi-bell-badge'), 'Probar aviso'))),
 
     alarmsCard(),
@@ -1999,12 +1998,12 @@ function renderCard(c) {
     const paint = () => {
       watch = [];
       box.replaceChildren(...items.flatMap(({ it, m }) => {
-        if (m.err) return [bubbleEl({ icon: 'mdi-alert-circle-outline', text: `${it.script}: ${m.err}`, color: PM.color('rojo') }, 'chip')];
+        if (m.err) return [bubbleEl({ icon: 'mdi-alert-circle-outline', text: `${it.script}: ${m.err}`, color: PM.color('red') }, 'chip')];
         try {
           const bound = m.mod.bind(it.config, HA);
           watch.push(bound.matches);
           return PM.bubbles(m.mod.render(HA, screenFor('home'), bound.cfg)).map((b) => bubbleEl(b, 'chip'));
-        } catch (e) { return [bubbleEl({ icon: 'mdi-alert-circle-outline', text: `${it.script}: ${e.message}`, color: PM.color('rojo') }, 'chip')]; }
+        } catch (e) { return [bubbleEl({ icon: 'mdi-alert-circle-outline', text: `${it.script}: ${e.message}`, color: PM.color('red') }, 'chip')]; }
       }));
     };
     paint(); VIEW_CODE.push({ matches: (id) => watch.some((f) => f(id)), paint });
@@ -2447,8 +2446,8 @@ function shadeTabs(main) {
     badge.classList.toggle('on', N.unread > 0);
     if (!N.history.length) { notif.replaceChildren(h('div', { class: 'sht-empty' }, icon('mdi-bell-check-outline'), 'No hay avisos')); return; }
     // tocar un aviso lo vuelve a abrir entero (con su imagen y sus botones); la × lo quita de la lista
-    notif.replaceChildren(...N.history.map((n) => h('div', { class: 'hist-row tappable ' + n.nivel, onclick: () => { shade(false); reopenNotif(n); } }, icon(n.icono),
-      h('div', { class: 'hist-text' }, h('b', null, n.titulo), n.mensaje ? h('div', { class: 'muted small' }, n.mensaje) : null),
+    notif.replaceChildren(...N.history.map((n) => h('div', { class: 'hist-row tappable ' + n.level, onclick: () => { shade(false); reopenNotif(n); } }, icon(n.icono),
+      h('div', { class: 'hist-text' }, h('b', null, n.title), n.message ? h('div', { class: 'muted small' }, n.message) : null),
       h('span', { class: 'muted small' }, hhmm(n.at)),
       h('button', { class: 'hist-x', title: 'Quitar', onclick: (e) => { e.stopPropagation(); N.history = N.history.filter((x) => x !== n); renderBell(); paintNotif(); } }, icon('mdi-close')))),
     h('button', { class: 'sht-clear', onclick: () => { N.history = []; N.unread = 0; renderBell(); paintNotif(); } }, icon('mdi-delete-sweep'), 'Borrar todos'));
@@ -2720,7 +2719,7 @@ const HA_TAP = PM.makeHA(() => S.states, Object.assign({}, HA_OPTS, {
 function screenData(place) {
   return {
     place, brightness: SCREEN.level, on: !SCREEN.off, night: isNight(), ambient: !!S.ambient, light: null, favorites: CFG.favorites || [],
-    notices: { unread: N.unread, total: N.history.length, last: (N.history[0] || {}).titulo || '' },
+    notices: { unread: N.unread, total: N.history.length, last: (N.history[0] || {}).title || '' },
     alarms: (SET.alarms || []).map((a) => {
       const sn = RING.snooze[a.id];
       const when = sn && sn > Date.now() ? new Date(sn) : a.enabled ? nextOccurrence(a) : null;
@@ -2794,7 +2793,7 @@ function bulletOutputs() {
       } catch (e) { m.cache[key] = { err: e.message, t: Date.now() }; }
     }
     const err = m.err || m.cache[key].err;
-    if (err) out.push({ icon: 'mdi-alert-circle-outline', text: `${name}: ${err}`, color: PM.color('rojo') });
+    if (err) out.push({ icon: 'mdi-alert-circle-outline', text: `${name}: ${err}`, color: PM.color('red') });
     else out.push(...m.cache[key].out);
   }
   return out;
@@ -3288,8 +3287,8 @@ async function loadAll() {
   printersCache = null;
   S.vacuumDevs = new Set(ents.filter((e) => domain(e.entity_id) === 'vacuum' && e.device_id).map((e) => e.device_id));
   await conn.subscribe('state_changed', (ev) => setState(ev.data.entity_id, ev.data.new_state));
-  await conn.subscribe('panel_notificacion', onNotif);
-  await conn.subscribe('panel_notificacion_cerrar', onNotifClose);
+  await conn.subscribe('panel_notification', onNotif);
+  await conn.subscribe('panel_notification_close', onNotifClose);
   S.forecastAt = 0;
   await loadSettings();
   seedHelper();

@@ -94,7 +94,7 @@ Se recalculan cuando cambia algo de su `watch` y, como mínimo, una vez por minu
 
 - `go`: a qué pestaña lleva al tocar (`home`, `rooms`, `sensors`, `media`, `printers`, `scooter`, `settings` o el id de una pestaña tuya).
 - `onTap(ha, screen)`: lo que se hace al tocar, por ejemplo `(ha) => ha.call('light.turn_off', { entity_id: 'light.salon' })`.
-- Colores: `verde`, `rojo`, `amarillo`, `azul`, `naranja`, `gris`, `morado` o cualquier color CSS.
+- Colores: `green`, `red`, `yellow`, `blue`, `orange`, `grey`, `purple` o cualquier color CSS.
 
 ## Componentes
 

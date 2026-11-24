@@ -1330,9 +1330,9 @@ class WebHandler(Base):
             code, res = ha_request('GET', '/api/', ha_url=body.get('haUrl') or None, token=body.get('token') or None)
             return self._json(200, {'ok': code == 200, 'mensaje': 'Conectado con Home Assistant' if code == 200 else res.get('error')})
         if u.path == '/api/aviso':
-            code, res = ha_request('POST', '/api/events/panel_notificacion', {
-                'id': 'prueba_web', 'titulo': 'Aviso de prueba', 'mensaje': 'Enviado desde la web de configuración',
-                'nivel': 'aviso', 'icono': 'mdi:bell-ring', 'duracion': 20})
+            code, res = ha_request('POST', '/api/events/panel_notification', {
+                'id': 'prueba_web', 'title': 'Aviso de prueba', 'message': 'Enviado desde la web de configuración',
+                'level': 'warning', 'icon': 'mdi:bell-ring', 'timeout': 20})
             return self._json(200, {'ok': code == 200, 'mensaje': 'Aviso enviado al panel' if code == 200 else res.get('error')})
         if u.path.startswith('/api/red/'):
             try:
