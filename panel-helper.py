@@ -1640,8 +1640,8 @@ class WebHandler(Base):
             self.wfile.write(data)
             return
         # mismo código que usa el panel, para probar burbujas y componentes en la web
-        if u.path in ('/lib/modulos.js', '/lib/componentes.js', '/lib/i18n.js', '/lib/i18n-en.js'):
-            data = (HERE / 'lib' / u.path.rsplit('/', 1)[1]).read_bytes()
+        if u.path in ('/lib/modulos.js', '/lib/componentes.js') or re.fullmatch(r'/translations/[a-z0-9_-]+\.js', u.path):
+            data = (HERE / u.path.lstrip('/')).read_bytes()
             self.send_response(200)
             self.send_header('Content-Type', ('text/css' if u.path.endswith('.css') else 'text/javascript') + '; charset=utf-8')
             self.send_header('Content-Length', str(len(data)))

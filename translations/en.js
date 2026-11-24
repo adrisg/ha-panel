@@ -1,8 +1,5 @@
-/* English for Panel Hogar (see lib/i18n.js). Keys are the Spanish texts used in the code. */
+/* English for Panel Hogar (see translations/i18n.js and translations/README.md). Keys are the Spanish texts used in the code. */
 I18N.add('en', {
-  // languages (each one in its own language)
-  'Español': 'Español', 'English': 'English',
-
   // states
   'Encendido': 'On', 'Apagado': 'Off', 'No disponible': 'Unavailable', 'Abierto': 'Open', 'Abierta': 'Open', 'Cerrado': 'Closed',
   'Cerrada': 'Closed', 'Abriendo': 'Opening', 'Cerrando': 'Closing', 'Cerrado con llave': 'Locked', 'Cerrando…': 'Locking…',
@@ -136,7 +133,7 @@ I18N.add('en', {
   [/^Ahora (.+)$/, 'Now $1'],
   [/^(Imprimiendo|En pausa|Preparando|Terminada|Error|Inactiva) · (.+)$/, (m, st, rest) => I18N.t(st) + ' · ' + rest],
   [/^(-?[\d.,]+°) (.+)$/, (m, deg, text) => deg + ' ' + I18N.t(text)],
-]);
+], { name: 'English', locale: 'en-GB' });
 
 // Configuration web
 I18N.add('en', {

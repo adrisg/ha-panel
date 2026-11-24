@@ -1,30 +1,32 @@
-/* Panel Hogar — translations, shared by the panel and the configuration web.
- * Texts are written in Spanish in the code and translated with t('Texto'). Each language is a file
- * (lib/i18n-en.js…) that calls I18N.add('en', { 'Texto': 'Text' }, [[/^(\d+) encendidas?$/, '$1 on']]).
+/* Panel Hogar — translation engine, shared by the panel and the configuration web.
+ * Texts are written in Spanish in the code and translated with t('Texto'). Each language is a file in this folder
+ * (translations/en.js…) that calls I18N.add('en', { 'Texto': 'Text' }, [[/^(\d+) encendidas?$/, '$1 on']], { name: 'English', locale: 'en-GB' }).
  * Strings with numbers or names use patterns (regex → replacement). Anything without a translation stays in Spanish. */
 (function () {
   const DICTS = {}, PATTERNS = {};
-  const LANGS = { es: 'Español', en: 'English' };
+  const LANGS = {}, LOCALES = {};   // filled by each language file
   const I18N = {
     lang: 'es',
     langs: LANGS,
     /** Texts with no translation (the dev tests fill it to find what is missing) */
     missing: null,
-    add(lang, dict, patterns) {
+    add(lang, dict, patterns, info) {
+      if (info) { LANGS[lang] = info.name || lang; LOCALES[lang] = info.locale || lang; }
       DICTS[lang] = Object.assign(DICTS[lang] || {}, dict || {});
       PATTERNS[lang] = (PATTERNS[lang] || []).concat(patterns || []);
     },
     /** 'auto' → the given fallback (Home Assistant's or the browser's language) */
     resolve(choice, fallback) {
       const want = choice && choice !== 'auto' ? choice : String(fallback || navigator.language || 'es');
-      return want.slice(0, 2).toLowerCase() === 'es' ? 'es' : LANGS[want.slice(0, 2)] ? want.slice(0, 2) : 'en';
+      const base = want.slice(0, 2).toLowerCase();
+      return LANGS[base] ? base : LANGS.en ? 'en' : 'es';
     },
     set(lang) {
       I18N.lang = LANGS[lang] ? lang : 'es';
       if (typeof document !== 'undefined') document.documentElement.lang = I18N.lang;
     },
     /** For dates and numbers: toLocaleDateString(I18N.locale(), …) */
-    locale() { return I18N.lang === 'es' ? 'es-ES' : I18N.lang === 'en' ? 'en-GB' : I18N.lang; },
+    locale() { return LOCALES[I18N.lang] || I18N.lang; },
     t(s, vars) {
       if (typeof s !== 'string' || !s) return s;
       let r = s;

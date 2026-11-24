@@ -542,7 +542,7 @@ go = 'home' | 'rooms' | 'sensors' | 'media' | 'printers' | 'scooter' | 'settings
       <div class="row"><label for="screenOffMinutes">Apagar la pantalla tras <span class="hint">(en modo ambiente)</span></label>
         <select id="screenOffMinutes"><option value="0">Nunca</option><option value="5">5 min</option><option value="15">15 min</option><option value="30">30 min</option><option value="60">1 h</option><option value="120">2 h</option></select></div>
       <div class="row"><label for="language">Idioma <span class="hint">(automático: el de Home Assistant)</span></label>
-        <select id="language"><option value="auto">Automático</option><option value="es">Español</option><option value="en">English</option></select></div>
+        <select id="language"><option value="auto">Automático</option></select></div>
       <div class="row"><label for="theme">Tema <span class="hint">(automático: claro de día, oscuro de noche)</span></label>
         <select id="theme"><option value="oscuro">Oscuro</option><option value="claro">Claro</option><option value="auto">Automático</option></select></div>
       <div class="field">
@@ -763,8 +763,9 @@ go = 'home' | 'rooms' | 'sensors' | 'media' | 'printers' | 'scooter' | 'settings
   </div></div>
 </div>
 
-<script src="/lib/i18n.js"></script>
-<script src="/lib/i18n-en.js"></script>
+<script src="/translations/i18n.js"></script>
+<script src="/translations/es.js"></script>
+<script src="/translations/en.js"></script>
 <script src="/lib/modulos.js"></script>
 <script src="/lib/componentes.js"></script>
 <script>
@@ -797,7 +798,7 @@ const el = (tag, props = {}, ...kids) => {
     else if (k in e && k !== 'list') e[k] = (k === 'textContent' || k === 'title' || k === 'placeholder') && typeof v === 'string' ? t(v) : v;
     else e.setAttribute(k, v === true ? '' : (k === 'title' || k === 'placeholder') ? t(v) : v);
   }
-  e.append(...kids.flat().filter((x) => x != null && x !== false).map((x) => (typeof x === 'string' ? t(x) : x)));   // textos traducidos (lib/i18n.js)
+  e.append(...kids.flat().filter((x) => x != null && x !== false).map((x) => (typeof x === 'string' ? t(x) : x)));   // textos traducidos (translations/)
   return e;
 };
 const switchEl = (checked, onchange) => {
@@ -1877,7 +1878,9 @@ function fill(cfg) {
   for (const k of EXPOSE_KEYS) $('#expose-' + k).checked = !a.haExpose || a.haExpose[k] !== false;
   Object.keys(lists).forEach(renderChips);
   $('#theme').value = a.theme || 'oscuro';
-  $('#language').value = a.language || 'auto';
+  const ls = $('#language');
+  if (ls.options.length === 1) for (const [code, name] of Object.entries(I18N.langs)) ls.append(new Option(name, code));   // translations/*.js
+  ls.value = a.language || 'auto';
   webLanguage(a.language);
   accent = a.accent || 'azul'; renderAccents();
   $('#weatherEntity').dataset.value = p.weatherEntity || '';

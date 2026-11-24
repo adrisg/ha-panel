@@ -30,7 +30,7 @@ function h(tag, props, ...kids) {
   }
   for (const c of kids.flat(Infinity)) {
     if (c == null || c === false) continue;
-    el.append(c.nodeType ? c : document.createTextNode(typeof c === 'string' ? t(c) : String(c)));   // textos traducidos (lib/i18n.js)
+    el.append(c.nodeType ? c : document.createTextNode(typeof c === 'string' ? t(c) : String(c)));   // textos traducidos (translations/)
   }
   return el;
 }
@@ -1422,7 +1422,7 @@ function saveSettings(quiet) {   // quiet: sin el aviso «Ajustes guardados»
 function applySettings() { setLanguage(); applyTheme(); resetIdle(); screenTick(); try { COMPILED.forEach((m) => (m.cache = {})); } catch (e) { /* aún no cargado */ } }
 
 /** Tema claro u oscuro. «auto»: claro mientras el sol está arriba (sun.sun) o, sin él, de 8:00 a 20:00. */
-/* Idioma de los textos (lib/i18n.js). «Automático»: el de Home Assistant (o, sin conexión, el del navegador). */
+/* Idioma de los textos (translations/). «Automático»: el de Home Assistant (o, sin conexión, el del navegador). */
 let HA_LANG = null;
 function setLanguage() {
   const want = I18N.resolve(SET.language, HA_LANG || navigator.language);
@@ -1705,7 +1705,7 @@ function renderSettings() {
   return [h('div', { class: 'settings' },
     h('div', { class: 'card set-card' }, h('div', { class: 'set-title' }, icon('mdi-monitor'), 'Pantalla'),
       bright,
-      setBlock('Idioma', null, segmented([['auto', 'Automático'], ['es', 'Español'], ['en', 'English']], SET.language || 'auto',
+      setBlock('Idioma', null, segmented([['auto', 'Automático'], ...Object.entries(I18N.langs)], SET.language || 'auto',
         (v) => { SET.language = v; saveSettings(); })),
       setBlock('Tema', 'Automático: claro de día y oscuro de noche (con la salida y la puesta del sol)',
         segmented([['oscuro', 'Oscuro'], ['claro', 'Claro'], ['auto', 'Automático']], SET.theme || 'oscuro', (v) => { SET.theme = v; saveSettings(); if (accentPicker.paint) accentPicker.paint(); })),   // los círculos, en el tono del tema
