@@ -16,7 +16,7 @@ Una pantalla bonita para el escritorio que decora con tus fotos y desde la que v
 - 🫧 **Toda la información de un solo golpe**: burbujas en la pantalla de inicio y en el modo ambiente con el tiempo, las luces encendidas, el coche cargando, la impresora… Eliges cuáles salen y en qué orden, y puedes crear las tuyas ([cómo configurarlas](SCRIPTS.md)).
 - 🧩 **Pestañas a tu gusto**, con componentes que puedes crear tú ([cómo](SCRIPTS.md#componentes)).
 - ⬇️ **Cortina como en Android**: desliza desde arriba para la música, el volumen, el brillo, los avisos y tus accesos rápidos.
-- 🌗 **Modo claro, oscuro o automático** (claro de día, oscuro de noche) y el **color** que quieras.
+- 🎨 **Totalmente configurable a tu gusto**: el aspecto, qué sale en cada pantalla y cómo se comporta.
 
 ## Qué puedes controlar
 
@@ -90,7 +90,7 @@ En la pantalla: cortina → ⚙. Desde el móvil: la web de configuración (el Q
 | Pestaña de la web | Qué hay |
 |---|---|
 | 🏠 **General** | mando a distancia, Home Assistant, favoritos y entidades ocultas, accesos rápidos de la cortina |
-| 🖥️ **Pantalla** | brillo, tema (oscuro, claro o automático), color, cuándo pasa a modo ambiente y cuándo se apaga, modo noche |
+| 🖥️ **Pantalla** | brillo, aspecto, cuándo pasa a modo ambiente y cuándo se apaga, modo noche |
 | 🖼️ **Modo ambiente** | altavoces por prioridad, fotos (álbumes, cada cuánto cambian, cómo se ven) y burbujas |
 | 🔊 **Sonido** | por dónde suena la Pi y su volumen (el límite), música, avisos y alarmas, altavoz de Music Assistant, «Sonando», voz en la pantalla y asistente de voz |
 | 🗂️ **Pestañas** | las pestañas del panel y qué lleva cada una |
