@@ -88,7 +88,7 @@ Se cambian en la cortina (desliza hacia abajo desde el borde de arriba → ⚙) 
 
 **Asistente de voz:** con un micro USB, `bash ~/ha-panel/setup-voz.sh` convierte la Pi en satélite de Assist («Okay Nabu»). En Home Assistant necesitas un motor de voz a texto (Speech-to-Phrase o Whisper) y añadir la Pi en la integración **Wyoming**. Luego elígela en Ajustes → Asistente de voz y saldrá una barra encima de la pantalla mientras escucha y contesta.
 
-**Altavoz:** si no lo instalaste con `install.sh`, lanza `bash ~/ha-panel/setup-sendspin.sh` y actívalo en la web → Ajustes → Altavoz.
+**Altavoz:** si no lo instalaste con `install.sh`, lanza `bash ~/ha-panel/setup-sendspin.sh` y actívalo en la web → Sonido → Altavoz.
 
 ## Probarlo en el ordenador
 

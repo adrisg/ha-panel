@@ -3,7 +3,7 @@
 Las burbujas y los componentes de las pestañas (botones, tarjetas, tiempo…) son pequeños archivos JavaScript.
 **Todas las burbujas funcionan así**, también las de serie (`tiempo.js`, `alarma.js`, `impresoras-bambu.js`, `impresoras-klipper.js`, `vehiculo.js`, `musica.js`, `luces.js`, `aberturas.js`). Si editas una, se guarda tu versión. Con «Restaurar» vuelves a la de serie.
 
-- **Dónde:** en la web de configuración, pestaña **🫧 Burbujas**. Cada burbuja tiene un título; al tocarla se despliega su **funcionamiento** (el código), que puedes editar, **probar** con los datos actuales de tu casa, descargar o, en las de serie, restaurar.
+- **Dónde:** en la web de configuración, pestaña **🖼️ Modo ambiente** (tarjeta 🫧 Burbujas). Cada burbuja tiene un título; al tocarla se despliega su **funcionamiento** (el código), que puedes editar, **probar** con los datos actuales de tu casa, descargar o, en las de serie, restaurar.
 - **Nuevas:** pon un título y «Crear», tráela de una URL o sube un archivo `.js`. Después pulsa **Guardar**.
 - **Cómo funcionan:** se guardan en la Pi; el panel las descarga y las ejecuta **en el navegador**. Para pintar solo leen; a Home Assistant solo se manda algo cuando tocas la burbuja o el botón (`onTap`).
 - **Componentes:** en **🧩 Componentes** (los de serie: `boton.js`, `informacion.js`, `lista.js`, `tarjeta.js`, `tarjeta-tiempo.js`, `tarjeta-vehiculo.js`, `saludo.js`, `escenas.js`, `impresora.js`, `reproductor.js`, `camara.js`, `deslizador.js` y `resumen-ejemplo.js`). Se colocan en **🗂️ Pantallas**. Ver [Componentes](#componentes).
@@ -56,7 +56,7 @@ Recibe dos variables:
 
 ## Ajustes (`config`)
 
-Un script puede declarar campos que se rellenan en la web (**🫧 Burbujas → la burbuja → Ajustes**), sin tocar el código. Llegan como tercer parámetro de `render`:
+Un script puede declarar campos que se rellenan en la web (**🖼️ Modo ambiente → 🫧 Burbujas → la burbuja → Ajustes**), sin tocar el código. Llegan como tercer parámetro de `render`:
 
 ```js
 {

@@ -735,7 +735,7 @@ function historyChart(id) {
 }
 
 /* ====================== Altavoz Sendspin del panel ======================
- * Si la Pi es altavoz de Music Assistant (web → Ajustes → Altavoz) y empieza a sonar algo en ella,
+ * Si la Pi es altavoz de Music Assistant (web → Sonido → Altavoz) y empieza a sonar algo en ella,
  * sale del modo ambiente y abre su reproductor; al parar, se cierra solo. */
 const SPK = (window.PANEL_HELPER && window.PANEL_HELPER.altavoz) || null;
 function speakerEntity() {
@@ -765,7 +765,7 @@ function onSpeaker(id, old, st) {
     if (alertOpen()) return;                 // una alarma o un aviso importante mandan
     showNowPlaying(id);
   } else if (NP.id === id && now !== 'playing' && was === 'playing') {
-    // En pausa o parada: se queda un rato (web → Ajustes → Altavoz) por si vuelve a sonar
+    // En pausa o parada: se queda un rato (web → Sonido → Altavoz) por si vuelve a sonar
     const secs = SPK.closeAfter == null ? 60 : SPK.closeAfter;
     clearTimeout(NP.closeTimer);
     // al cerrarse sola vuelve al modo ambiente (con la ✕ se queda donde estaba)
@@ -2823,7 +2823,7 @@ function ambientPlayerAction(act) {
 function speakerCard() {
   const players = dedupeMedia(ids((id) => domain(id) === 'media_player'))
     .sort((x, y) => (S.states[x].state === 'unavailable') - (S.states[y].state === 'unavailable') || nameOf(x).localeCompare(nameOf(y), 'es'));
-  // «Este panel» sale siempre que el altavoz esté activado (web → Ajustes → Altavoz), aunque Music Assistant
+  // «Este panel» sale siempre que el altavoz esté activado (web → Sonido → Altavoz), aunque Music Assistant
   // aún no haya creado su reproductor en Home Assistant. Se guarda como '@panel'.
   const own = speakerEntity();
   if (own && players.includes(own)) players.splice(players.indexOf(own), 1);
