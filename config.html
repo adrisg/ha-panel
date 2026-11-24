@@ -346,6 +346,14 @@
 
     <div data-pg="ambiente" class="hidden">
     <div class="card">
+      <h2>🎵 Reproductor del modo ambiente</h2>
+      <div class="field">
+        <label for="defaultSpeaker">Altavoz por defecto <span class="hint">(sus controles salen en el modo ambiente)</span></label>
+        <select id="defaultSpeaker"><option value="">Ninguno</option></select>
+      </div>
+    </div>
+
+    <div class="card">
       <h2>🖼️ Fotos del modo ambiente</h2>
       <div class="row"><label for="photos-enabled">Mostrar fotos</label><label class="switch"><input id="photos-enabled" type="checkbox"><span></span></label></div>
       <div class="row"><label for="photos-fit">Cómo se ve la foto <span class="hint">(por defecto)</span></label>
@@ -364,18 +372,6 @@
           </select>
           <button class="btn" id="src-add" type="button">Añadir fuente</button>
         </div>
-      </div>
-      <div class="field">
-        <label for="defaultSpeaker">Altavoz por defecto <span class="hint">(sus controles salen en el modo ambiente)</span></label>
-        <select id="defaultSpeaker"><option value="">Ninguno</option></select>
-      </div>
-      <div class="field">
-        <label for="voiceSatellite">Asistente de voz <span class="hint">(satélite de Assist: lo que dices y su respuesta salen encima de la pantalla)</span></label>
-        <select id="voiceSatellite"><option value="">Ninguno</option></select>
-      </div>
-      <div class="field">
-        <label for="voiceStyle">Animación de la voz</label>
-        <select id="voiceStyle"><option value="onda">Onda</option><option value="micro">Micrófono</option><option value="luz">Línea de luz</option><option value="eq">Ecualizador</option></select>
       </div>
     </div>
 
@@ -595,6 +591,18 @@ go = 'home' | 'rooms' | 'sensors' | 'media' | 'printers' | 'scooter' | 'settings
       <div class="btns"><button class="btn primary" id="spk-ok">Aplicar</button></div>
       <div id="spk-msg" class="hint"></div>
       <details id="spk-log-box" class="hidden"><summary>Registro</summary><pre id="spk-log"></pre></details>
+    </div>
+
+    <div class="card">
+      <h2>🗣️ Voz en la pantalla</h2>
+      <div class="field">
+        <label for="voiceSatellite">Asistente de voz <span class="hint">(satélite de Assist: lo que dices y su respuesta salen encima de la pantalla)</span></label>
+        <select id="voiceSatellite"><option value="">Ninguno</option></select>
+      </div>
+      <div class="field">
+        <label for="voiceStyle">Animación de la voz</label>
+        <select id="voiceStyle"><option value="onda">Onda</option><option value="micro">Micrófono</option><option value="luz">Línea de luz</option><option value="eq">Ecualizador</option></select>
+      </div>
     </div>
 
     <div class="card" data-nodirty>
