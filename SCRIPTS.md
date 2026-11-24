@@ -53,6 +53,7 @@ Recibe dos variables:
 | `screen.visible(id)` | ¿la entidad no está oculta en el panel? |
 | `screen.go('media')`, `screen.now()` | ir a una pestaña; hora actual |
 | `screen.nowPlaying(id)` | abrir la pantalla «Sonando» de un reproductor (p. ej. `tap=${(ha, screen) => screen.nowPlaying(id)}`) |
+| `screen.notices`, `screen.openNotices()` | avisos del panel `{ unread, total, last }` y abrir la cortina en Avisos (lo usa la burbuja **Avisos**) |
 
 ## Ajustes (`config`)
 

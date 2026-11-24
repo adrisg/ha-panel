@@ -1310,6 +1310,15 @@ function renderBell() {
   const b = $('#bell');
   b.classList.toggle('hidden', !N.history.length);
   $('#bell-count').textContent = N.unread > 0 ? N.unread : '';
+  refreshBubbles();   // la burbuja de Avisos sale o se va al momento
+}
+/** Vuelve a pintar las burbujas (las que dependen del panel, no de Home Assistant, como la de Avisos). */
+function refreshBubbles() {
+  try {
+    COMPILED.forEach((m) => (m.cache = {}));
+    renderAmbientChips();
+    if (!S.sheetId) VIEW_CODE.forEach((v) => v && v.paint());
+  } catch (e) { /* aún arrancando */ }
 }
 
 /* Sonidos generados con Web Audio (no hacen falta archivos) */
@@ -2711,6 +2720,7 @@ const HA_TAP = PM.makeHA(() => S.states, Object.assign({}, HA_OPTS, {
 function screenData(place) {
   return {
     place, brightness: SCREEN.level, on: !SCREEN.off, night: isNight(), ambient: !!S.ambient, light: null, favorites: CFG.favorites || [],
+    notices: { unread: N.unread, total: N.history.length, last: (N.history[0] || {}).titulo || '' },
     alarms: (SET.alarms || []).map((a) => {
       const sn = RING.snooze[a.id];
       const when = sn && sn > Date.now() ? new Date(sn) : a.enabled ? nextOccurrence(a) : null;
@@ -2723,6 +2733,7 @@ const screenFor = (place) => PM.makeScreen(screenData(place), {
   visible: compVisible,
   go: (v) => go(v),
   nowPlaying: (id) => S.states[id] && showNowPlaying(id),
+  openNotices: () => shade(true, 0),
 });
 const bulletList = () => PM.bulletList(SET.bullets, SET.ambientChips);
 /* La web de configuración prueba las burbujas con lo mismo que ve el panel: le pasamos al ayudante
@@ -3312,7 +3323,7 @@ function start() {
     if (e.target.closest('#amb-player.own .amb-pinfo')) { e.stopPropagation(); swallowTouch(); showNowPlaying(ambientSpeaker()); return; }
     if (e.target.closest('#amb-player')) { resetIdle(); return; }
     const chip = e.target.closest('.amb-chip');
-    if (chip && chip.bubble && (chip.bubble.action || chip.bubble.onTap)) { e.stopPropagation(); runBubble(chip.bubble); resetIdle(); return; }
+    if (chip && chip.bubble && (chip.bubble.action || chip.bubble.onTap)) { e.stopPropagation(); swallowTouch(); runBubble(chip.bubble); resetIdle(); return; }
     swallowTouch();
     hideAmbient(chip && chip.bubble && chip.bubble.go ? chip.bubble.go : 'home');
   });
