@@ -1427,6 +1427,61 @@ class WebHandler(Base):
             return False
         return True
 
+    # ------------------------------------------------------------------ el panel, desde otro equipo
+    # http://<pi>:8080/panel/ — el mismo panel, en tu navegador (con la contraseña de la web). Llega al ayudante
+    # por /_helper/… con lo justo: no toca la pantalla ni el brillo de la Pi y no se hace pasar por ella.
+    PANEL_FILES = ('.html', '.js', '.css', '.woff', '.woff2', '.ttf', '.eot', '.svg', '.png', '.jpg', '.json')
+    HELPER_GET = ('/config', '/poll', '/sonido', '/voz', '/bridge/poll')
+    HELPER_POST = ('/bridge/send', '/sonido', '/voz')
+
+    def _panel_file(self, u):
+        if not self._session():
+            self.send_response(302)
+            self.send_header('Location', '/')
+            self.end_headers()
+            return
+        rel = u.path[len('/panel/'):] or 'index.html'
+        path = (HERE / rel).resolve()
+        if HERE.resolve() not in path.parents or path.suffix not in self.PANEL_FILES or not path.is_file() \
+                or path.name in ('config.html',) or '.git' in path.parts:
+            return self._json(404)
+        data = path.read_bytes()
+        types = {'.html': 'text/html; charset=utf-8', '.js': 'text/javascript; charset=utf-8', '.css': 'text/css; charset=utf-8',
+                 '.svg': 'image/svg+xml', '.png': 'image/png', '.jpg': 'image/jpeg', '.json': 'application/json',
+                 '.woff': 'font/woff', '.woff2': 'font/woff2', '.ttf': 'font/ttf', '.eot': 'application/vnd.ms-fontobject'}
+        self.send_response(200)
+        self.send_header('Content-Type', types.get(path.suffix, 'application/octet-stream'))
+        self.send_header('Content-Length', str(len(data)))
+        self.send_header('Cache-Control', 'no-store')
+        self.end_headers()
+        self.wfile.write(data)
+
+    def _helper_proxy(self, u, method):
+        """El panel abierto desde otro equipo llega al ayudante local por aquí, solo a lo permitido."""
+        if not self._session():
+            return self._json(401, {'error': 'inicia sesión'})
+        path = u.path[len('/_helper'):]
+        allowed = self.HELPER_GET if method == 'GET' else ('/ajustes',) if method == 'PUT' else self.HELPER_POST
+        if path not in allowed:
+            return self._json(403, {'error': 'no permitido desde otro equipo'})
+        n = int(self.headers.get('Content-Length') or 0)
+        body = self.rfile.read(n) if n and n < 256 * 1024 else None
+        req = urllib.request.Request(f'http://127.0.0.1:{LOCAL_PORT}{path}' + (f'?{u.query}' if u.query else ''), data=body,
+                                     method=method, headers={'Content-Type': self.headers.get('Content-Type', 'application/json')})
+        try:
+            r = urllib.request.urlopen(req, timeout=40)
+        except urllib.error.HTTPError as e:
+            r = e
+        except OSError:
+            return self._json(502)
+        data = r.read()
+        self.send_response(getattr(r, 'status', None) or r.code)
+        self.send_header('Content-Type', r.headers.get('Content-Type', 'application/json'))
+        self.send_header('Content-Length', str(len(data)))
+        self.send_header('Cache-Control', 'no-store')
+        self.end_headers()
+        self.wfile.write(data)
+
     def _ha_auth(self):
         """Integración de Home Assistant: «Authorization: Bearer <clave>»."""
         got = (self.headers.get('Authorization') or '').removeprefix('Bearer ').strip()
@@ -1439,6 +1494,15 @@ class WebHandler(Base):
 
     def do_GET(self):
         u = urlparse(self.path)
+        if u.path == '/panel':
+            self.send_response(301)
+            self.send_header('Location', '/panel/')
+            self.end_headers()
+            return
+        if u.path.startswith('/panel/'):
+            return self._panel_file(u)
+        if u.path.startswith('/_helper/'):
+            return self._helper_proxy(u, 'GET')
         if u.path.startswith('/api/v1/'):
             if not self._ha_auth():
                 return
@@ -1548,6 +1612,8 @@ class WebHandler(Base):
 
     def do_POST(self):
         u = urlparse(self.path)
+        if u.path.startswith('/_helper/'):
+            return self._helper_proxy(u, 'POST')
         try:
             body = self._body()
         except ValueError:
@@ -1691,6 +1757,8 @@ class WebHandler(Base):
             except ValueError as e:
                 return self._json(400, {'error': str(e)})
             return self._json(200, {'ok': True, 'name': name, 'version': bump_version()})
+        if urlparse(self.path).path.startswith('/_helper/'):
+            return self._helper_proxy(urlparse(self.path), 'PUT')
         if urlparse(self.path).path != '/api/config':
             return self._json(404)
         if not self._guard(mutating=True):

@@ -78,6 +78,7 @@
   .ac-opt small { flex: none; color: var(--muted); font-size: 12px; max-width: 45%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
   .btn { border: 0; border-radius: 12px; padding: 10px 16px; background: var(--surface-3); cursor: pointer; font-weight: 600; }
   .btn:hover { filter: brightness(1.15); }
+  a.btn { display: inline-flex; align-items: center; text-decoration: none; color: inherit; }
   .btn.primary { background: var(--accent); color: #0b1d3a; }
   .btn.danger { background: #4a1d1a; color: var(--danger); }
   .btns { display: flex; flex-wrap: wrap; gap: 8px; }
@@ -432,6 +433,7 @@ go = 'home' | 'rooms' | 'sensors' | 'media' | 'printers' | 'scooter' | 'settings
     <div class="card">
       <h2>📱 Mando a distancia</h2>
       <div class="btns">
+        <a class="btn primary" href="/panel/" target="_blank" rel="noopener">🖥️ Abrir el panel aquí</a>
         <button class="btn" data-orden="recargar">🔄 Recargar panel</button>
         <button class="btn" data-orden="inicio">🏠 Ir a Inicio</button>
         <button class="btn" data-orden="ambiente">🖼️ Modo ambiente</button>

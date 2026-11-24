@@ -195,6 +195,8 @@ class BridgeConn {
 
 /** «Con token»: acceso a todo Home Assistant. «Con la integración»: solo lo que le des en sus opciones. */
 const BRIDGE_MODE = CFG.connection === 'integration';
+/** Abierto desde otro equipo (http://<pi>:8080/panel/): no toca la pantalla de la Pi ni se hace pasar por ella. */
+const VIEWER = /\/_helper$/.test(window.PANEL_HELPER_URL || '');
 const conn = BRIDGE_MODE ? new BridgeConn() : new HAConn(CFG.haUrl, CFG.token);
 
 const api = {
@@ -3283,7 +3285,7 @@ const REMOTE = { version: window.PANEL_HELPER ? window.PANEL_HELPER.version : nu
 const SEED_KEYS = ['haUrl', 'token', 'ambientPhotos', 'immichApiKey', 'favorites', 'hiddenEntities', 'weatherEntity',
   'excludePlatforms', 'printerPlugs'];
 async function seedHelper() {
-  if (!window.PANEL_HELPER || REMOTE.seeded || NEEDS_SETUP) return;
+  if (!window.PANEL_HELPER || REMOTE.seeded || NEEDS_SETUP || VIEWER) return;
   REMOTE.seeded = true;
   const h = window.PANEL_HELPER;
   if (h.panel && h.panel.haUrl && h.ajustes && Object.keys(h.ajustes).length) return;   // ya tiene todo
@@ -3314,7 +3316,7 @@ async function applyRemoteSettings() {
 let LAST_TOUCH = 0;
 const PSTATE = { sent: '', touch: 0 };
 function reportState() {
-  if (!window.PANEL_HELPER) return;
+  if (!window.PANEL_HELPER || VIEWER) return;
   if (LAST_TOUCH - PSTATE.touch > 30000) PSTATE.touch = LAST_TOUCH;
   const body = JSON.stringify({ screen_on: !SCREEN.off, brightness: SET.brightness, ambient: !!S.ambient,
     last_touch: PSTATE.touch ? new Date(PSTATE.touch).toISOString() : null });
@@ -3323,6 +3325,7 @@ function reportState() {
   fetch(HELPER + '/estado', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body }).catch(() => { PSTATE.sent = ''; });
 }
 function runRemote(type, value) {
+  if (VIEWER) return;   // las órdenes son para la pantalla de la Pi
   if (type === 'recargar') location.reload();
   else if (type === 'brillo' && value) { SET.brightness = value; saveSettings(true); wakeScreen(); }
   else if (type === 'ambiente') showAmbient();

@@ -140,6 +140,10 @@ El panel aparece solo en **Ajustes → Dispositivos → Descubiertos**. Al añad
 
 En la web → 🏠 General → **Integración de Home Assistant** eliges qué entidades se ven y puedes desvincularlo.
 
+## Ver el panel desde otro equipo
+
+Abre `http://<nombre-de-la-pi>.local:8080/panel/` en el navegador (o la web de configuración → **🖥️ Abrir el panel aquí**) y entra con la contraseña de la web. Es el mismo panel, para usarlo desde el móvil o el ordenador; no cambia el brillo ni apaga la pantalla de la Pi.
+
 ## Probarlo en el ordenador
 
 Con Python instalado: `python dev.py`. El panel se abre en el navegador y la web de configuración está en `http://127.0.0.1:8080` (contraseña `panel`).
