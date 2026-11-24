@@ -14,7 +14,7 @@ const CFG = Object.assign({
 CFG.haUrl = (CFG.haUrl || '').replace(/\/+$/, '');
 const PARAMS = new URLSearchParams(location.search);
 // Sin dirección o sin token no hay nada que mostrar: se enseña cómo conectarlo
-const NEEDS_SETUP = !CFG.haUrl || !CFG.token || CFG.token === 'PEGA_AQUI_TU_TOKEN';
+const NEEDS_SETUP = CFG.connection !== 'integration' && (!CFG.haUrl || !CFG.token || CFG.token === 'PEGA_AQUI_TU_TOKEN');
 
 /* ====================== Utilidades ====================== */
 const $ = (s) => document.querySelector(s);
@@ -125,7 +125,77 @@ class HAConn {
   }
 }
 
-const conn = new HAConn(CFG.haUrl, CFG.token);
+/* Modo «con la integración» (sin token): los mismos mensajes que con Home Assistant, pero por el ayudante de la Pi
+ * y la integración Panel Hogar, que solo deja ver y tocar las entidades que se le hayan dado (sus opciones). */
+class BridgeConn {
+  constructor() {
+    this.id = 1; this.pending = new Map(); this.subs = new Map();
+    this.seq = null; this.session = null; this.helloAt = 0;
+    this.onstatus = () => {}; this.onready = () => {};
+  }
+  connect() { this.loop(); }
+  async loop() {
+    for (;;) {
+      try {
+        const q = this.seq == null ? '' : `?since=${this.seq}&timeout=25`;
+        const r = await (await fetch(HELPER + '/bridge/poll' + q, { cache: 'no-store' })).json();
+        if (this.seq == null) { this.seq = r.seq; this.hello(); continue; }   // empieza desde ahora
+        this.seq = r.seq;
+        r.messages.forEach((m) => this.handle(m));
+        if (!r.online && this.session) this.lost('Sin conexión con la integración de Home Assistant');
+        if (!this.session && Date.now() - this.helloAt > 10000) this.hello();
+      } catch (e) {
+        if (this.session) this.lost();
+        await new Promise((res) => setTimeout(res, 3000));
+      }
+    }
+  }
+  post(msg) { return fetch(HELPER + '/bridge/send', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(msg) }); }
+  hello() { this.helloAt = Date.now(); this.post({ type: 'bridge_hello' }).catch(() => {}); }
+  lost(msg) {
+    this.session = null;
+    for (const p of this.pending.values()) p.reject(new Error('Conexión perdida'));
+    this.pending.clear(); this.subs.clear();
+    this.onstatus(false, msg);
+  }
+  handle(m) {
+    if (m.type === 'bridge_welcome') {
+      if (m.session === this.session) return;
+      if (this.session) this.lost();            // la integración se reinició: se empieza de nuevo
+      this.session = m.session;
+      if (m.ha_url) CFG.haUrl = m.ha_url.replace(/\/+$/, '');   // para las imágenes (cámaras, carátulas)
+      this.id = 1;
+      this.onstatus(true);
+      this.onready();
+    } else if (m.type === 'result' || m.type === 'pong') {
+      const p = this.pending.get(m.id);
+      if (!p) return;
+      this.pending.delete(m.id);
+      if (m.type === 'pong' || m.success) p.resolve(m.result);
+      else p.reject(new Error((m.error && m.error.message) || 'Error'));
+    } else if (m.type === 'event') {
+      const cb = this.subs.get(m.id);
+      if (cb) cb(m.event);
+    }
+  }
+  send(msg) {
+    return new Promise((resolve, reject) => {
+      if (!this.session) return reject(new Error('Sin conexión'));
+      const id = this.id++;
+      this.pending.set(id, { resolve, reject });
+      setTimeout(() => { if (this.pending.delete(id)) reject(new Error('Sin respuesta de Home Assistant')); }, 30000);
+      this.post(Object.assign({}, msg, { id })).catch((e) => { this.pending.delete(id); reject(e); });
+    });
+  }
+  subscribe(eventType, cb) {
+    this.subs.set(this.id, cb);
+    return this.send({ type: 'subscribe_events', event_type: eventType });
+  }
+}
+
+/** «Con token»: acceso a todo Home Assistant. «Con la integración»: solo lo que le des en sus opciones. */
+const BRIDGE_MODE = CFG.connection === 'integration';
+const conn = BRIDGE_MODE ? new BridgeConn() : new HAConn(CFG.haUrl, CFG.token);
 
 const api = {
   callService(dom, service, data, entityId, returnResponse) {

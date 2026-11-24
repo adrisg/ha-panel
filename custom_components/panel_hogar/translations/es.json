@@ -5,7 +5,10 @@
       "user": {
         "title": "Añadir un panel",
         "description": "Los paneles de tu red se encuentran solos. Si el tuyo no aparece, escribe su dirección.",
-        "data": { "host": "Dirección (IP o nombre.local)", "port": "Puerto" }
+        "data": {
+          "host": "Dirección (IP o nombre.local)",
+          "port": "Puerto"
+        }
       },
       "discovery_confirm": {
         "title": "Panel encontrado",
@@ -14,7 +17,9 @@
       "pair": {
         "title": "Código del panel",
         "description": "Escribe el código que sale en la pantalla de **{name}**.",
-        "data": { "code": "Código" }
+        "data": {
+          "code": "Código"
+        }
       },
       "reauth_confirm": {
         "title": "Volver a vincular",
@@ -34,9 +39,36 @@
     }
   },
   "entity": {
-    "light": { "screen": { "name": "Pantalla" } },
-    "switch": { "ambient": { "name": "Modo ambiente" } },
-    "sensor": { "last_touch": { "name": "Último toque" } },
-    "button": { "reload": { "name": "Recargar" } }
+    "light": {
+      "screen": {
+        "name": "Pantalla"
+      }
+    },
+    "switch": {
+      "ambient": {
+        "name": "Modo ambiente"
+      }
+    },
+    "sensor": {
+      "last_touch": {
+        "name": "Último toque"
+      }
+    },
+    "button": {
+      "reload": {
+        "name": "Recargar"
+      }
+    }
+  },
+  "options": {
+    "step": {
+      "init": {
+        "title": "Lo que ve el panel",
+        "description": "Si el panel está conectado «con la integración» (sin token), solo ve y maneja estas entidades.",
+        "data": {
+          "entities": "Entidades"
+        }
+      }
+    }
   }
 }

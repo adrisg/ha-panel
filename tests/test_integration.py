@@ -86,6 +86,10 @@ def _fake_state(state):
     return fake
 
 
+async def _never_requests(self):
+    await asyncio.Event().wait()      # the bridge never gets messages in these tests
+
+
 async def _setup(hass, expose=None):
     expose = expose or EXPOSE
     state = dict(STATE, expose=expose)
@@ -95,7 +99,9 @@ async def _setup(hass, expose=None):
     command = AsyncMock()
     patches = [patch(f"{API}.info", AsyncMock(return_value=dict(INFO, expose=expose))),
                patch(f"{API}.state", new=_fake_state(state)),
-               patch(f"{API}.command", command)]
+               patch(f"{API}.command", command),
+               patch(f"{API}.bridge_requests", new=_never_requests),
+               patch(f"{API}.bridge_messages", AsyncMock())]
     for p in patches:
         p.start()
     assert await hass.config_entries.async_setup(entry.entry_id)

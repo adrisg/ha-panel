@@ -444,15 +444,23 @@ go = 'home' | 'rooms' | 'sensors' | 'media' | 'printers' | 'scooter' | 'settings
     <div class="card">
       <h2>🏠 Home Assistant</h2>
       <div class="field">
+        <label for="connection">Cómo se conecta el panel</label>
+        <select id="connection">
+          <option value="token">Con token (acceso a todo Home Assistant)</option>
+          <option value="integration">Con la integración (solo lo que tú elijas)</option>
+        </select>
+        <span class="hint" id="connection-hint"></span>
+      </div>
+      <div class="field" data-conn="token">
         <label for="haUrl">Dirección</label>
         <input id="haUrl" type="url" placeholder="http://homeassistant.local:8123">
       </div>
-      <div class="field">
+      <div class="field" data-conn="token">
         <label for="token">Token de larga duración <span id="token-pill" class="pill">sin token</span></label>
         <input id="token" type="password" autocomplete="off" placeholder="Escribe uno nuevo solo si quieres cambiarlo">
         <span class="hint">Por seguridad el token guardado nunca se muestra. Se crea en Home Assistant → tu perfil → Seguridad.</span>
       </div>
-      <div class="btns"><button class="btn" id="probar">Probar conexión</button><span id="probar-msg" class="hint" style="align-self:center"></span></div>
+      <div class="btns" data-conn="token"><button class="btn" id="probar">Probar conexión</button><span id="probar-msg" class="hint" style="align-self:center"></span></div>
     </div>
 
     <div class="card">
@@ -1828,6 +1836,7 @@ function fill(cfg) {
   a.sound = { ...DEF.sound, ...((cfg.ajustes || {}).sound || {}) };
   a.photos = { ...DEF.photos, ...((cfg.ajustes || {}).photos || {}) };
   $('#haUrl').value = p.haUrl || '';
+  $('#connection').value = p.connection || 'token'; connPaint();
   $('#token').value = '';
   $('#token-pill').textContent = p.hasToken ? 'guardado' : 'sin token';
   $('#token-pill').className = 'pill' + (p.hasToken ? ' ok' : '');
@@ -1876,6 +1885,7 @@ function collect() {
     if (k && v) plugs[k] = v;
   }
   const panel = {
+    connection: $('#connection').value,
     haUrl: $('#haUrl').value.trim().replace(/\/+$/, ''),
     token: $('#token').value.trim(),
     photoSources: sources.map(({ hasApiKey, ...x }) => x),
@@ -1939,6 +1949,15 @@ async function loadEntities() {
 }
 /* ---------- integración de Home Assistant: dirección y clave ---------- */
 const EXPOSE_KEYS = ['screen', 'ambient', 'last_touch', 'reload'];
+/** Con token: dirección y token. Con la integración: nada más aquí; lo que ve se elige en Home Assistant. */
+function connPaint() {
+  const integ = $('#connection').value === 'integration';
+  document.querySelectorAll('[data-conn="token"]').forEach((x) => x.classList.toggle('hidden', integ));
+  $('#connection-hint').textContent = t(integ
+    ? 'Sin token: añade la integración «Panel Hogar» en Home Assistant y, en sus opciones, elige qué entidades ve y maneja el panel.'
+    : 'El panel ve y maneja todo Home Assistant con un token de larga duración.');
+}
+$('#connection').addEventListener('change', connPaint);
 async function loadHaKey() {
   let estado;
   try {

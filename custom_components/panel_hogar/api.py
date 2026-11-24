@@ -5,6 +5,8 @@ from typing import Any
 
 import aiohttp
 
+from homeassistant.helpers.json import json_dumps
+
 from .const import LONG_POLL_TIMEOUT
 
 
@@ -39,8 +41,12 @@ class PanelApi:
 
     async def _request(self, method: str, path: str, *, json: Any = None, auth: bool = True, timeout: float = 10) -> dict:
         headers = {"Authorization": f"Bearer {self.key}"} if auth and self.key else {}
+        body = None
+        if json is not None:     # Home Assistant's encoder: states carry dates and other non-JSON types
+            body = json_dumps(json)
+            headers["Content-Type"] = "application/json"
         try:
-            async with self._session.request(method, self.base + path, json=json, headers=headers,
+            async with self._session.request(method, self.base + path, data=body, headers=headers,
                                              timeout=aiohttp.ClientTimeout(total=timeout)) as resp:
                 data = await resp.json(content_type=None) if resp.content_length != 0 else {}
                 if resp.status == 401:
@@ -74,6 +80,15 @@ class PanelApi:
         if rev is None:
             return await self._request("GET", "/state")
         return await self._request("GET", f"/state?rev={rev}&timeout={LONG_POLL_TIMEOUT}", timeout=LONG_POLL_TIMEOUT + 10)
+
+    async def bridge_requests(self) -> list[dict]:
+        """Messages the panel sent for Home Assistant (waits until there are some)."""
+        data = await self._request("GET", f"/bridge/requests?timeout={LONG_POLL_TIMEOUT}", timeout=LONG_POLL_TIMEOUT + 10)
+        return data.get("messages") or []
+
+    async def bridge_messages(self, messages: list[dict]) -> None:
+        """Answers and events for the panel."""
+        await self._request("POST", "/bridge/messages", json={"messages": messages})
 
     async def command(self, command: str, value: Any = None) -> None:
         """screen_on, screen_off, brightness (5–100), ambient_on, ambient_off, reload."""

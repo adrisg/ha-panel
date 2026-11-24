@@ -113,6 +113,18 @@ Todo se guarda con **Guardar**, abajo.
 
 **Altavoz:** si no lo instalaste con `install.sh`, lanza `bash ~/ha-panel/scripts/setup-sendspin.sh` y actívalo en la web → Sonido → Altavoz.
 
+## Dos formas de conectarlo con Home Assistant
+
+En la web → 🏠 General → **Home Assistant** eliges cómo:
+
+| | **Con token** | **Con la integración** |
+|---|---|---|
+| Qué ve el panel | todo Home Assistant | solo las entidades que elijas |
+| Qué necesita | un token de larga duración | la integración «Panel Hogar» (abajo) |
+| Dónde se elige lo que ve | en el propio panel (favoritos, ocultas…) | en Home Assistant → la integración → **Configurar** |
+
+Con la integración no hace falta ningún token: el panel le pide a la integración los estados y las acciones, y la integración solo deja pasar las entidades que le hayas dado.
+
 ## Home Assistant: el panel como dispositivo
 
 Instala la integración **Panel Hogar**: en HACS, añade este repositorio como repositorio personalizado (tipo *Integración*), o copia `custom_components/panel_hogar` a tu carpeta `config/custom_components`. Reinicia Home Assistant.

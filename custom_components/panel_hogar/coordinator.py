@@ -23,6 +23,7 @@ class PanelCoordinator(DataUpdateCoordinator[dict]):
         self.api = api
         self.info = info
         self._task: asyncio.Task | None = None
+        self.bridge = None
 
     async def _async_update_data(self) -> dict:
         try:

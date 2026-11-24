@@ -6,19 +6,26 @@ from typing import Any
 
 import voluptuous as vol
 
-from homeassistant.config_entries import SOURCE_REAUTH, ConfigFlow, ConfigFlowResult
+from homeassistant.config_entries import SOURCE_REAUTH, ConfigEntry, ConfigFlow, ConfigFlowResult, OptionsFlow
 from homeassistant.const import CONF_HOST, CONF_PORT
+from homeassistant.core import callback
+from homeassistant.helpers import selector
 from homeassistant.helpers.aiohttp_client import async_get_clientsession
 from homeassistant.helpers.service_info.zeroconf import ZeroconfServiceInfo
 
 from .api import PanelApi, PanelCodeError, PanelCodeExpired, PanelError
-from .const import CONF_KEY, DEFAULT_PORT, DOMAIN
+from .const import CONF_ENTITIES, CONF_KEY, DEFAULT_PORT, DOMAIN
 
 CONF_CODE = "code"
 
 
 class PanelConfigFlow(ConfigFlow, domain=DOMAIN):
     VERSION = 1
+
+    @staticmethod
+    @callback
+    def async_get_options_flow(config_entry: ConfigEntry) -> PanelOptionsFlow:
+        return PanelOptionsFlow()
 
     def __init__(self) -> None:
         self._host: str | None = None
@@ -123,3 +130,16 @@ class PanelConfigFlow(ConfigFlow, domain=DOMAIN):
         if user_input is not None:
             return await self.async_step_pair()
         return self.async_show_form(step_id="reauth_confirm", description_placeholders={"name": self._name or ""})
+
+
+class PanelOptionsFlow(OptionsFlow):
+    """What the panel may see and control when it is connected «with the integration» (no token)."""
+
+    async def async_step_init(self, user_input: dict[str, Any] | None = None) -> ConfigFlowResult:
+        if user_input is not None:
+            return self.async_create_entry(data=user_input)
+        return self.async_show_form(
+            step_id="init",
+            data_schema=vol.Schema({vol.Optional(CONF_ENTITIES, default=self.config_entry.options.get(CONF_ENTITIES, [])):
+                                    selector.EntitySelector(selector.EntitySelectorConfig(multiple=True))}),
+        )

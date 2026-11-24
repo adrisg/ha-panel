@@ -66,7 +66,7 @@ SIM_NETS = [('MiCasa_5G', 82, True), ('MiCasa', 64, True), ('Vecino_2.4', 41, Tr
 # Rutas de Immich que el panel puede leer a través del ayudante (solo lectura)
 IMMICH_PATHS = ('/api/shared-links/me', '/api/albums/', '/api/timeline/buckets', '/api/timeline/bucket')
 # Opciones de config.js que se pueden cambiar desde la web
-PANEL_KEYS = ('haUrl', 'token', 'ambientPhotos', 'immichApiKey', 'favorites', 'hiddenEntities', 'weatherEntity',
+PANEL_KEYS = ('connection', 'haUrl', 'token', 'ambientPhotos', 'immichApiKey', 'favorites', 'hiddenEntities', 'weatherEntity',
               'excludePlatforms', 'printerPlugs', 'sensorClasses', 'cameraRefreshSeconds', 'hideUnavailable', 'photoSources')
 # Álbumes compartidos de Google Fotos: solo se leen enlaces de estos dominios
 GOOGLE_HOSTS = ('photos.app.goo.gl', 'photos.google.com', 'goo.gl')
@@ -980,6 +980,53 @@ def mdns_announce():
         time.sleep(30)          # si se corta (o aún no está instalado), se vuelve a intentar
 
 
+# Modo «con la integración» (sin token): el panel habla con Home Assistant a través de la integración Panel Hogar,
+# que solo deja ver y tocar las entidades que se le hayan dado. Aquí solo se pasan los mensajes:
+#   panel → POST /bridge/send {msg}          (127.0.0.1)    → la integración los recoge con GET /api/v1/bridge/requests
+#   integración → POST /api/v1/bridge/messages {messages}  → el panel los recoge con GET /bridge/poll?since=N
+BRIDGE = {'to_ha': [], 'to_panel': [], 'seq': 0, 'seen': 0.0}
+BRIDGE_COND = threading.Condition()
+
+
+def bridge_send(msg):
+    with BRIDGE_COND:
+        if len(BRIDGE['to_ha']) < 500:
+            BRIDGE['to_ha'].append(msg)
+        BRIDGE_COND.notify_all()
+
+
+def bridge_take(timeout):
+    """La integración recoge lo que ha mandado el panel (espera si no hay nada)."""
+    with BRIDGE_COND:
+        BRIDGE['seen'] = time.time()
+        if not BRIDGE['to_ha'] and timeout > 0:
+            BRIDGE_COND.wait(timeout)
+        out, BRIDGE['to_ha'] = BRIDGE['to_ha'], []
+        BRIDGE['seen'] = time.time()
+        return out
+
+
+def bridge_put(messages):
+    """Respuestas y eventos de la integración para el panel."""
+    with BRIDGE_COND:
+        BRIDGE['seen'] = time.time()
+        for m in messages[:500]:
+            BRIDGE['seq'] += 1
+            BRIDGE['to_panel'].append((BRIDGE['seq'], m))
+        BRIDGE['to_panel'] = BRIDGE['to_panel'][-1000:]
+        BRIDGE_COND.notify_all()
+
+
+def bridge_poll(since, timeout):
+    """El panel recoge lo nuevo (espera si no hay nada). online = la integración está conectada."""
+    with BRIDGE_COND:
+        if since is not None and BRIDGE['seq'] <= since and timeout > 0:
+            BRIDGE_COND.wait(timeout)
+        msgs = [m for s, m in BRIDGE['to_panel'] if since is None or s > since]
+        return {'seq': BRIDGE['seq'], 'messages': msgs if since is not None else [],
+                'online': time.time() - BRIDGE['seen'] < 45}
+
+
 def update_info():
     # ¿puede instalar paquetes sin contraseña? (permiso que da setup-kiosk.sh)
     # («sudo -l apt-get» no vale: también dice que sí cuando se puede con contraseña)
@@ -1279,6 +1326,14 @@ class LocalHandler(Base):
             return self._json(200, sound_info())
         if u.path == '/actualizaciones':
             return self._json(200, update_info())
+        if u.path == '/bridge/poll':     # modo «con la integración»: respuestas y eventos de Home Assistant
+            q = parse_qs(u.query)
+            try:
+                since = int(q['since'][0]) if 'since' in q else None
+                timeout = max(0.0, min(30.0, float(q.get('timeout', ['0'])[0])))
+            except ValueError:
+                return self._json(400)
+            return self._json(200, bridge_poll(since, timeout))
         if u.path == '/poll':
             cfg = load_config()
             return self._json(200, {'version': cfg['version'], 'reload': cfg.get('reload', 0), 'command': COMMAND, 'pin': speaker_pin(), 'haCode': pair_code(),
@@ -1300,6 +1355,9 @@ class LocalHandler(Base):
         try:
             if u.path == '/estado':     # el panel cuenta cómo está (para la integración de Home Assistant)
                 return self._json(200, {'rev': set_panel_state(self._body())})
+            if u.path == '/bridge/send':   # modo «con la integración»: un mensaje para Home Assistant
+                bridge_send(self._body())
+                return self._json(200, {'ok': True})
             if u.path == '/brightness':
                 return self._json(200, {'ok': set_brightness(int(q.get('value', ['100'])[0]))})
             if u.path == '/power':
@@ -1386,6 +1444,12 @@ class WebHandler(Base):
                 return
             if u.path == '/api/v1/info':
                 return self._json(200, panel_info())
+            if u.path == '/api/v1/bridge/requests':
+                try:
+                    timeout = max(0.0, min(55.0, float(parse_qs(u.query).get('timeout', ['0'])[0])))
+                except ValueError:
+                    return self._json(400)
+                return self._json(200, {'messages': bridge_take(timeout)})
             if u.path == '/api/v1/state':
                 q = parse_qs(u.query)
                 try:
@@ -1501,6 +1565,12 @@ class WebHandler(Base):
                 return self._json(403, {'error': str(e)})
             except ValueError as e:
                 return self._json(410, {'error': str(e)})
+        if u.path == '/api/v1/bridge/messages':
+            if not self._ha_auth():
+                return
+            msgs = body.get('messages')
+            bridge_put(msgs if isinstance(msgs, list) else [])
+            return self._json(200, {'ok': True})
         if u.path == '/api/v1/command':
             if not self._ha_auth():
                 return

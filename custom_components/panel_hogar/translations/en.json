@@ -5,7 +5,10 @@
       "user": {
         "title": "Add a panel",
         "description": "Panels on your network are found automatically. If yours does not appear, enter its address.",
-        "data": { "host": "Address (IP or name.local)", "port": "Port" }
+        "data": {
+          "host": "Address (IP or name.local)",
+          "port": "Port"
+        }
       },
       "discovery_confirm": {
         "title": "Panel found",
@@ -14,7 +17,9 @@
       "pair": {
         "title": "Code on the panel",
         "description": "Type the code shown on the screen of **{name}**.",
-        "data": { "code": "Code" }
+        "data": {
+          "code": "Code"
+        }
       },
       "reauth_confirm": {
         "title": "Link again",
@@ -34,9 +39,36 @@
     }
   },
   "entity": {
-    "light": { "screen": { "name": "Screen" } },
-    "switch": { "ambient": { "name": "Ambient mode" } },
-    "sensor": { "last_touch": { "name": "Last touched" } },
-    "button": { "reload": { "name": "Reload" } }
+    "light": {
+      "screen": {
+        "name": "Screen"
+      }
+    },
+    "switch": {
+      "ambient": {
+        "name": "Ambient mode"
+      }
+    },
+    "sensor": {
+      "last_touch": {
+        "name": "Last touched"
+      }
+    },
+    "button": {
+      "reload": {
+        "name": "Reload"
+      }
+    }
+  },
+  "options": {
+    "step": {
+      "init": {
+        "title": "What the panel sees",
+        "description": "When the panel is connected «with the integration» (no token), it only sees and controls these entities.",
+        "data": {
+          "entities": "Entities"
+        }
+      }
+    }
   }
 }
