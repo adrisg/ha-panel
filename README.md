@@ -142,7 +142,9 @@ En la web → 🏠 General → **Integración de Home Assistant** eliges qué en
 
 ## Ver el panel desde otro equipo
 
-Abre `http://<nombre-de-la-pi>.local:8080/panel/` en el navegador (o la web de configuración → **🖥️ Abrir el panel aquí**) y entra con la contraseña de la web. Es el mismo panel, para usarlo desde el móvil o el ordenador; no cambia el brillo ni apaga la pantalla de la Pi.
+**Pantalla en directo:** en la web → 🏠 General → **📺 Pantalla en directo** → **Ver**, para ver lo que muestra ahora mismo la pantalla de la Pi (se actualiza cada segundo).
+
+**El panel en tu navegador:** Abre `http://<nombre-de-la-pi>.local:8080/panel/` en el navegador (o la web de configuración → **🖥️ Abrir el panel aquí**) y entra con la contraseña de la web. Es el mismo panel, para usarlo desde el móvil o el ordenador; no cambia el brillo ni apaga la pantalla de la Pi.
 
 ## Probarlo en el ordenador
 
