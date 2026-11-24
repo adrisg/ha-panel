@@ -1,9 +1,9 @@
 <!doctype html>
-<html lang="es">
+<html lang="en">
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Panel Hogar · Configuración</title>
+<title>Panel Hogar · Settings</title>
 <!-- Iconos, para ver las burbujas como en el panel al probarlas -->
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@mdi/font@7.4.47/css/materialdesignicons.min.css">
 <style>
@@ -296,9 +296,9 @@
   <div class="card">
     <h2>🔒 Panel Hogar</h2>
     <form id="login-form" class="field">
-      <label for="pw" data-i18n="web.login.password">Contraseña</label>
+      <label for="pw" data-i18n="web.login.password">Password</label>
       <input id="pw" type="password" autocomplete="current-password" autofocus>
-      <button class="btn primary" type="submit" style="margin-top:8px" data-i18n="web.login.log_in">Entrar</button>
+      <button class="btn primary" type="submit" style="margin-top:8px" data-i18n="web.login.log_in">Log in</button>
       <div id="login-msg" class="hint"></div>
     </form>
   </div>
@@ -308,37 +308,36 @@
 <div id="app" class="hidden">
   <div class="wrap">
     <header>
-      <h1>Panel Hogar <small data-i18n="web.login.raspberry_pi_panel">Configuración del panel de la Raspberry Pi</small></h1>
-      <button class="btn" id="logout" data-i18n="web.login.log_out">Salir</button>
+      <h1>Panel Hogar <small data-i18n="web.login.raspberry_pi_panel">Raspberry Pi panel configuration</small></h1>
+      <button class="btn" id="logout" data-i18n="web.login.log_out">Log out</button>
     </header>
     <nav class="pages">
       <button type="button" data-page="general" class="on">🏠 General</button>
-      <button type="button" data-page="pantalla">🖥️ Pantalla</button>
-      <button type="button" data-page="ambiente">🖼️ Modo ambiente</button>
-      <button type="button" data-page="sonido">🔊 Sonido</button>
-      <button type="button" data-page="pantallas">🗂️ Pestañas</button>
-      <button type="button" data-page="componentes">🧩 Componentes</button>
-      <button type="button" data-page="sistema">🛠️ Sistema</button>
+      <button type="button" data-page="pantalla">🖥️ Screen</button>
+      <button type="button" data-page="ambiente">🖼️ Ambient mode</button>
+      <button type="button" data-page="sonido">🔊 Sound</button>
+      <button type="button" data-page="pantallas">🗂️ Tabs</button>
+      <button type="button" data-page="componentes">🧩 Components</button>
+      <button type="button" data-page="sistema">🛠️ System</button>
       <button type="button" data-page="beta">🧪 Beta</button>
     </nav>
-    <div class="card sim hidden" id="sim-banner">🧪 <b data-i18n="web.tabs.simulation_mode_computer">Modo simulación (ordenador).</b> El brillo, el apagado de pantalla y la red se simulan: puedes probarlo todo sin que cambie nada de este equipo.</div>
+    <div class="card sim hidden" id="sim-banner">🧪 <b data-i18n="web.tabs.simulation_mode_computer">Simulation mode (computer).</b> Brightness, screen off and the network are simulated: you can try everything without changing anything on this computer.</div>
 
     <div data-pg="componentes" class="hidden">
     <div class="card">
-      <h2>🧩 Componentes</h2>
-      <div class="hint" data-i18n="web.editor.what_goes_tabs">Lo que se coloca en las pestañas (botones, tarjetas, tiempo…). Cada uno es código: declara sus campos,
-        qué vigila y qué pinta. Se colocan en 🗂️ Pestañas.</div>
+      <h2>🧩 Components</h2>
+      <div class="hint" data-i18n="web.editor.what_goes_tabs">What goes in the tabs (buttons, cards, weather…). Each one is code: it declares its fields, what it watches and what it draws. Place them in 🗂️ Tabs.</div>
       <div id="cscripts" class="bubs"></div>
-      <div class="sub" style="margin-top:14px;font-weight:600" data-i18n="web.editor.new_component">Nuevo componente</div>
+      <div class="sub" style="margin-top:14px;font-weight:600" data-i18n="web.editor.new_component">New component</div>
       <div class="add" style="margin-top:6px">
-        <input id="cscript-title" type="text" placeholder="Nombre (p. ej. Termostato)">
+        <input id="cscript-title" type="text" placeholder="Name (e.g. Thermostat)">
         <select id="cscript-tpl" style="width:auto"></select>
-        <button class="btn primary" id="cscript-add" type="button" data-i18n="web.ambient.create">Crear</button>
+        <button class="btn primary" id="cscript-add" type="button" data-i18n="web.ambient.create">Create</button>
       </div>
       <div class="add" style="margin-top:8px">
-        <input id="cscript-url" type="url" placeholder="Importar de una dirección (https://…/componente.js)">
-        <button class="btn" id="cscript-import" type="button" data-i18n="web.ambient.get">Traer</button>
-        <label class="btn" style="display:inline-flex;align-items:center">Subir archivo<input id="cscript-file" type="file" accept=".js,text/javascript" hidden></label>
+        <input id="cscript-url" type="url" placeholder="Import from an address (https://…/component.js)">
+        <button class="btn" id="cscript-import" type="button" data-i18n="web.ambient.get">Get</button>
+        <label class="btn" style="display:inline-flex;align-items:center">Upload file<input id="cscript-file" type="file" accept=".js,text/javascript" hidden></label>
       </div>
       <div id="cscript-msg" class="hint" style="margin-top:6px"></div>
     </div>
@@ -346,64 +345,63 @@
 
     <div data-pg="pantallas" class="hidden">
     <div class="card">
-      <h2>🗂️ Pestañas del panel</h2>
-      <div class="hint" data-i18n="web.editor.each_tab_side">Cada pestaña de la barra lateral con sus tarjetas, como se colocan en el panel. Toca una para cambiarla.</div>
+      <h2>🗂️ Panel tabs</h2>
+      <div class="hint" data-i18n="web.editor.each_tab_side">Each tab of the side bar with its cards, laid out as on the panel. Tap one to change it.</div>
       <div id="ed-tabs" class="ed-tabs"></div>
       <div id="ed-tab"></div>
       <div class="ed-main"><div id="ed-grid"></div><div id="ed-panel"></div></div>
-      <div class="btns" style="margin-top:14px"><button class="btn" id="tab-reset" type="button" data-i18n="web.editor.back_default_tabs">Volver a las pestañas de siempre</button></div>
+      <div class="btns" style="margin-top:14px"><button class="btn" id="tab-reset" type="button" data-i18n="web.editor.back_default_tabs">Back to the default tabs</button></div>
     </div>
     </div>
 
     <div data-pg="ambiente" class="hidden">
     <div class="card">
-      <h2>🎵 Reproductor del modo ambiente</h2>
+      <h2>🎵 Ambient mode player</h2>
       <div class="field">
-        <label>Altavoces, por prioridad <span class="hint" data-i18n="web.ambient.their_controls_appear">(sus controles salen en el modo ambiente)</span></label>
+        <label>Speakers, by priority <span class="hint" data-i18n="web.ambient.their_controls_appear">(their controls appear in ambient mode)</span></label>
         <div id="ambientSpeakers"></div>
-        <span class="hint" data-i18n="web.ambient.first_one_list">Manda el primero de la lista que esté sonando; si no suena ninguno, el primero en pausa y, si no, el primero.</span>
+        <span class="hint" data-i18n="web.ambient.first_one_list">The first one on the list that is playing wins; if none is playing, the first paused one, otherwise the first one.</span>
       </div>
     </div>
 
     <div class="card">
-      <h2>🖼️ Fotos del modo ambiente</h2>
-      <div class="row"><label for="photos-enabled" data-i18n="panel.settings.show_photos">Mostrar fotos</label><label class="switch"><input id="photos-enabled" type="checkbox"><span></span></label></div>
-      <div class="row"><label for="photos-fit">Cómo se ve la foto <span class="hint" data-i18n="web.ambient.default">(por defecto)</span></label>
-        <select id="photos-fit"><option value="cover">Rellenar la pantalla</option><option value="blur">Entera + fondo difuminado</option><option value="contain">Entera (fondo negro)</option></select></div>
-      <div class="row"><label for="photos-seconds" data-i18n="panel.settings.change_photo_every">Cambiar de foto cada</label>
+      <h2>🖼️ Ambient mode photos</h2>
+      <div class="row"><label for="photos-enabled" data-i18n="panel.settings.show_photos">Show photos</label><label class="switch"><input id="photos-enabled" type="checkbox"><span></span></label></div>
+      <div class="row"><label for="photos-fit">How photos are shown <span class="hint" data-i18n="web.ambient.default">(default)</span></label>
+        <select id="photos-fit"><option value="cover">Fill the screen</option><option value="blur">Whole + blurred background</option><option value="contain">Whole (black background)</option></select></div>
+      <div class="row"><label for="photos-seconds" data-i18n="panel.settings.change_photo_every">Change photo every</label>
         <select id="photos-seconds"><option value="15">15 s</option><option value="30">30 s</option><option value="60">1 min</option><option value="300">5 min</option><option value="900">15 min</option></select></div>
       <div class="field">
-        <label>Fuentes de fotos <span class="hint" data-i18n="web.ambient.all_are_mixed">(se mezclan todas)</span></label>
+        <label>Photo sources <span class="hint" data-i18n="web.ambient.all_are_mixed">(all are mixed)</span></label>
         <div id="sources" class="sources"></div>
         <div class="add">
           <select id="src-type">
             <option value="immich">Immich</option>
-            <option value="google">Google Fotos</option>
-            <option value="ha_media">Carpeta de Home Assistant (Medios)</option>
-            <option value="urls">Fotos por URL</option>
+            <option value="google">Google Photos</option>
+            <option value="ha_media">Home Assistant folder (Media)</option>
+            <option value="urls">Photos by URL</option>
           </select>
-          <button class="btn" id="src-add" type="button" data-i18n="web.ambient.add_source">Añadir fuente</button>
+          <button class="btn" id="src-add" type="button" data-i18n="web.ambient.add_source">Add source</button>
         </div>
       </div>
     </div>
 
     <div class="card">
-      <h2>🫧 Burbujas</h2>
-      <div class="hint" data-i18n="web.ambient.those_marked_ambient">Las marcadas con «Ambiente» salen debajo del reloj, en este orden, solo cuando tienen algo que contar.
-        En las pestañas se ponen con una «Fila de burbujas» (🗂️ Pantallas). Toca una para cambiar su título y su funcionamiento.</div>
+      <h2>🫧 Bubbles</h2>
+      <div class="hint" data-i18n="web.ambient.those_marked_ambient">Those marked «Ambient» appear under the clock, in this order, only when they have something to tell. In tabs, add them with a «Bubble row» (🗂️ Tabs). Tap one to change its title and how it works.</div>
       <div id="bullets" class="bubs amb-web"></div>
       <div class="add" style="margin-top:12px">
-        <input id="bullet-title" type="text" placeholder="Título de la nueva burbuja (p. ej. Temperatura del salón)">
-        <select id="bullet-tpl"><option value="burbuja">Que muestre algo</option><option value="luces">Que haga algo al tocarla</option><option value="">Vacía</option></select>
-        <button class="btn" id="bullet-add" type="button" data-i18n="web.ambient.create">Crear</button>
+        <input id="bullet-title" type="text" placeholder="Title of the new bubble (e.g. Living room temperature)">
+        <select id="bullet-tpl"><option value="burbuja">That shows something</option><option value="luces">That does something when tapped</option><option value="">Empty</option></select>
+        <button class="btn" id="bullet-add" type="button" data-i18n="web.ambient.create">Create</button>
       </div>
       <div class="add" style="margin-top:8px">
-        <input id="bullet-url" type="text" placeholder="https://… (traer una burbuja de internet)">
-        <button class="btn" id="bullet-import" type="button" data-i18n="web.ambient.get">Traer</button>
-        <label class="btn" style="text-align:center">Subir archivo<input id="bullet-file" type="file" accept=".js,text/javascript" hidden></label>
+        <input id="bullet-url" type="text" placeholder="https://… (get a bubble from the internet)">
+        <button class="btn" id="bullet-import" type="button" data-i18n="web.ambient.get">Get</button>
+        <label class="btn" style="text-align:center">Upload file<input id="bullet-file" type="file" accept=".js,text/javascript" hidden></label>
       </div>
       <div id="bullet-msg" class="hint" style="margin-top:6px"></div>
-      <details class="help"><summary data-i18n="web.ambient.how_write_how">Cómo se escribe el funcionamiento</summary>
+      <details class="help"><summary data-i18n="web.ambient.how_write_how">How to write how it works</summary>
 <pre>render(ha, screen, config) → lo que se pinta
 
 config (ajustes que se rellenan aquí, en «Ajustes» de la burbuja)
@@ -435,167 +433,167 @@ go = 'home' | 'rooms' | 'sensors' | 'media' | 'printers' | 'scooter' | 'settings
     </div>
     <div data-pg="general">
     <div class="card">
-      <h2>📺 Pantalla en directo</h2>
-      <span class="hint" data-i18n="web.general.what_pi_screen">Lo que se ve ahora mismo en la pantalla de la Pi.</span>
-      <div class="live" id="live"><img id="live-img" alt=""><div id="live-msg" class="hint" data-i18n="web.general.tap_view_start">Toca «Ver» para empezar.</div></div>
-      <div class="btns"><button class="btn primary" type="button" id="live-btn" data-i18n="web.general.view">Ver</button></div>
+      <h2>📺 Live screen</h2>
+      <span class="hint" data-i18n="web.general.what_pi_screen">What the Pi screen shows right now.</span>
+      <div class="live" id="live"><img id="live-img" alt=""><div id="live-msg" class="hint" data-i18n="web.general.tap_view_start">Tap «View» to start.</div></div>
+      <div class="btns"><button class="btn primary" type="button" id="live-btn" data-i18n="web.general.view">View</button></div>
     </div>
 
     <div class="card">
-      <h2>📱 Mando a distancia</h2>
+      <h2>📱 Remote control</h2>
       <div class="btns">
-        <button class="btn" data-orden="recargar">🔄 Recargar panel</button>
-        <button class="btn" data-orden="inicio">🏠 Ir a Inicio</button>
-        <button class="btn" data-orden="ambiente">🖼️ Modo ambiente</button>
-        <button class="btn" data-orden="pantalla_on">💡 Encender pantalla</button>
-        <button class="btn" data-orden="pantalla_off">🌙 Apagar pantalla</button>
-        <button class="btn" id="aviso">🔔 Aviso de prueba</button>
+        <button class="btn" data-orden="recargar">🔄 Reload panel</button>
+        <button class="btn" data-orden="inicio">🏠 Go to Home</button>
+        <button class="btn" data-orden="ambiente">🖼️ Ambient mode</button>
+        <button class="btn" data-orden="pantalla_on">💡 Turn on screen</button>
+        <button class="btn" data-orden="pantalla_off">🌙 Turn off screen</button>
+        <button class="btn" id="aviso">🔔 Test notification</button>
       </div>
     </div>
 
     <div class="card">
       <h2>🏠 Home Assistant</h2>
       <div class="field">
-        <label for="haUrl" data-i18n="web.general.address">Dirección</label>
+        <label for="haUrl" data-i18n="web.general.address">Address</label>
         <input id="haUrl" type="url" placeholder="http://homeassistant.local:8123">
       </div>
       <div class="field">
-        <label for="token">Token de larga duración <span id="token-pill" class="pill" data-i18n="web.general.no_token">sin token</span></label>
-        <input id="token" type="password" autocomplete="off" placeholder="Escribe uno nuevo solo si quieres cambiarlo">
-        <span class="hint" data-i18n="web.general.security_saved_token">Por seguridad el token guardado nunca se muestra. Se crea en Home Assistant → tu perfil → Seguridad.</span>
+        <label for="token">Long-lived token <span id="token-pill" class="pill" data-i18n="web.general.no_token">no token</span></label>
+        <input id="token" type="password" autocomplete="off" placeholder="Type a new one only if you want to change it">
+        <span class="hint" data-i18n="web.general.security_saved_token">For security the saved token is never shown. Create it in Home Assistant → your profile → Security.</span>
       </div>
-      <div class="btns"><button class="btn" id="probar" data-i18n="web.general.test_connection">Probar conexión</button><span id="probar-msg" class="hint" style="align-self:center"></span></div>
+      <div class="btns"><button class="btn" id="probar" data-i18n="web.general.test_connection">Test connection</button><span id="probar-msg" class="hint" style="align-self:center"></span></div>
     </div>
 
     <div class="card">
-      <h2>⭐ Inicio y entidades</h2>
+      <h2>⭐ Home and entities</h2>
       <datalist id="entidades"></datalist>
       <div class="field">
-        <label>Favoritos en Inicio <span class="hint" data-i18n="web.general.empty_picked_automatically">(vacío = se eligen solos)</span></label>
+        <label>Favourites on Home <span class="hint" data-i18n="web.general.empty_picked_automatically">(empty = picked automatically)</span></label>
         <div class="chips" id="favorites"></div>
-        <div class="add"><input list="entidades" placeholder="light.salon…" data-add="favorites"><button class="btn" data-add-btn="favorites" data-i18n="panel.quick.add">Añadir</button></div>
+        <div class="add"><input list="entidades" placeholder="light.living_room…" data-add="favorites"><button class="btn" data-add-btn="favorites" data-i18n="panel.quick.add">Add</button></div>
       </div>
       <div class="field">
-        <label for="weatherEntity" data-i18n="web.general.weather_entity">Entidad del tiempo</label>
-        <select id="weatherEntity"><option value="">Automática (la primera que haya)</option></select>
+        <label for="weatherEntity" data-i18n="web.general.weather_entity">Weather entity</label>
+        <select id="weatherEntity"><option value="">Automatic (the first one found)</option></select>
       </div>
       <div class="field">
-        <label data-i18n="web.general.hidden_entities">Entidades ocultas</label>
+        <label data-i18n="web.general.hidden_entities">Hidden entities</label>
         <div class="chips" id="hiddenEntities"></div>
-        <div class="add"><input list="entidades" placeholder="camera.lava_gui…" data-add="hiddenEntities"><button class="btn" data-add-btn="hiddenEntities" data-i18n="panel.quick.add">Añadir</button></div>
+        <div class="add"><input list="entidades" placeholder="camera.lava_gui…" data-add="hiddenEntities"><button class="btn" data-add-btn="hiddenEntities" data-i18n="panel.quick.add">Add</button></div>
       </div>
       <div class="field">
-        <label>Integraciones que no salen en el panel <span class="hint" data-i18n="web.general.their_cameras_are">(sus cámaras sí)</span></label>
+        <label>Integrations not shown on the panel <span class="hint" data-i18n="web.general.their_cameras_are">(their cameras are)</span></label>
         <div class="chips" id="excludePlatforms"></div>
-        <div class="add"><input placeholder="bambu_lab, moonraker…" data-add="excludePlatforms"><button class="btn" data-add-btn="excludePlatforms" data-i18n="panel.quick.add">Añadir</button></div>
+        <div class="add"><input placeholder="bambu_lab, moonraker…" data-add="excludePlatforms"><button class="btn" data-add-btn="excludePlatforms" data-i18n="panel.quick.add">Add</button></div>
       </div>
       <div class="field">
-        <label for="printerPlugs">Enchufes de las impresoras <span class="hint" data-i18n="web.general.only_if_not">(solo si no se detectan solos; «Nombre = switch.x», uno por línea)</span></label>
+        <label for="printerPlugs">Printer plugs <span class="hint" data-i18n="web.general.only_if_not">(only if not detected; «Name = switch.x», one per line)</span></label>
         <textarea id="printerPlugs" placeholder="Bambu P1S = switch.enchufe_bambu"></textarea>
       </div>
       <div id="entidades-msg" class="hint"></div>
     </div>
 
     <div class="card">
-      <h2>📡 El panel en Home Assistant (MQTT)</h2>
-      <span class="hint" data-i18n="web.general.panel_shows_up">El panel aparece solo en Home Assistant como un dispositivo, por MQTT (por ejemplo con el complemento Mosquitto). No hay que instalar nada más.</span>
-      <div class="row"><label for="mqttEnabled" data-i18n="panel.settings.enabled">Activado</label><label class="switch"><input id="mqttEnabled" type="checkbox"><span></span></label></div>
-      <div class="field"><label for="mqttHost" data-i18n="web.general.mqtt_server">Servidor MQTT</label><input id="mqttHost" type="text" placeholder="homeassistant.local"></div>
-      <div class="field"><label for="mqttPort" data-i18n="web.general.port">Puerto</label><input id="mqttPort" type="number" min="1" max="65535" placeholder="1883"></div>
-      <div class="field"><label for="mqttUser" data-i18n="web.general.user">Usuario</label><input id="mqttUser" type="text" autocomplete="off"></div>
-      <div class="field"><label for="mqttPassword">Contraseña <span id="mqtt-pass-pill" class="pill" data-i18n="web.general.no_password">sin contraseña</span></label>
-        <input id="mqttPassword" type="password" autocomplete="off" placeholder="Escribe una nueva solo si quieres cambiarla"></div>
-      <dl class="info" id="mqtt-info"><dt data-i18n="panel.sheets.status">Estado</dt><dd data-i18n="web.login.loading">Cargando…</dd></dl>
-      <details id="mqtt-log-box" data-nodirty><summary data-i18n="web.sound.log">Registro</summary><pre id="mqtt-log" class="log"></pre>
-        <div class="btns"><button class="btn mini" type="button" id="mqtt-log-copy" data-i18n="web.general.copy">Copiar</button></div></details>
+      <h2>📡 The panel in Home Assistant (MQTT)</h2>
+      <span class="hint" data-i18n="web.general.panel_shows_up">The panel shows up in Home Assistant as a device by itself, over MQTT (for example with the Mosquitto add-on). Nothing else to install.</span>
+      <div class="row"><label for="mqttEnabled" data-i18n="panel.settings.enabled">On</label><label class="switch"><input id="mqttEnabled" type="checkbox"><span></span></label></div>
+      <div class="field"><label for="mqttHost" data-i18n="web.general.mqtt_server">MQTT server</label><input id="mqttHost" type="text" placeholder="homeassistant.local"></div>
+      <div class="field"><label for="mqttPort" data-i18n="web.general.port">Port</label><input id="mqttPort" type="number" min="1" max="65535" placeholder="1883"></div>
+      <div class="field"><label for="mqttUser" data-i18n="web.general.user">User</label><input id="mqttUser" type="text" autocomplete="off"></div>
+      <div class="field"><label for="mqttPassword">Password <span id="mqtt-pass-pill" class="pill" data-i18n="web.general.no_password">no password</span></label>
+        <input id="mqttPassword" type="password" autocomplete="off" placeholder="Type a new one only if you want to change it"></div>
+      <dl class="info" id="mqtt-info"><dt data-i18n="panel.sheets.status">Status</dt><dd data-i18n="web.login.loading">Loading…</dd></dl>
+      <details id="mqtt-log-box" data-nodirty><summary data-i18n="web.sound.log">Log</summary><pre id="mqtt-log" class="log"></pre>
+        <div class="btns"><button class="btn mini" type="button" id="mqtt-log-copy" data-i18n="web.general.copy">Copy</button></div></details>
       <div class="field">
-        <label data-i18n="web.general.what_home_assistant">Qué ve Home Assistant</label>
-      <div class="row"><label for="expose-screen">Pantalla <span class="hint" data-i18n="web.general.off_brightness">(encendida y brillo)</span></label><label class="switch"><input id="expose-screen" type="checkbox"><span></span></label></div>
-      <div class="row"><label for="expose-brightness">Brillo <span class="hint" data-i18n="web.general.separate_control">(control aparte)</span></label><label class="switch"><input id="expose-brightness" type="checkbox"><span></span></label></div>
-      <div class="row"><label for="expose-volume" data-i18n="web.general.output_volume">Volumen de salida</label><label class="switch"><input id="expose-volume" type="checkbox"><span></span></label></div>
-      <div class="row"><label for="expose-music_volume" data-i18n="web.general.music_volume">Volumen de la música</label><label class="switch"><input id="expose-music_volume" type="checkbox"><span></span></label></div>
-      <div class="row"><label for="expose-ambient" data-i18n="panel.settings.ambient_mode">Modo ambiente</label><label class="switch"><input id="expose-ambient" type="checkbox"><span></span></label></div>
-      <div class="row"><label for="expose-last_touch" data-i18n="web.general.last_touched">Última vez que se tocó</label><label class="switch"><input id="expose-last_touch" type="checkbox"><span></span></label></div>
-      <div class="row"><label for="expose-reload">Recargar el panel <span class="hint" data-i18n="web.general.button">(botón)</span></label><label class="switch"><input id="expose-reload" type="checkbox"><span></span></label></div>
+        <label data-i18n="web.general.what_home_assistant">What Home Assistant sees</label>
+      <div class="row"><label for="expose-screen">Screen <span class="hint" data-i18n="web.general.off_brightness">(on/off and brightness)</span></label><label class="switch"><input id="expose-screen" type="checkbox"><span></span></label></div>
+      <div class="row"><label for="expose-brightness">Brightness <span class="hint" data-i18n="web.general.separate_control">(separate control)</span></label><label class="switch"><input id="expose-brightness" type="checkbox"><span></span></label></div>
+      <div class="row"><label for="expose-volume" data-i18n="web.general.output_volume">Output volume</label><label class="switch"><input id="expose-volume" type="checkbox"><span></span></label></div>
+      <div class="row"><label for="expose-music_volume" data-i18n="web.general.music_volume">Music volume</label><label class="switch"><input id="expose-music_volume" type="checkbox"><span></span></label></div>
+      <div class="row"><label for="expose-ambient" data-i18n="panel.settings.ambient_mode">Ambient mode</label><label class="switch"><input id="expose-ambient" type="checkbox"><span></span></label></div>
+      <div class="row"><label for="expose-last_touch" data-i18n="web.general.last_touched">Last touched</label><label class="switch"><input id="expose-last_touch" type="checkbox"><span></span></label></div>
+      <div class="row"><label for="expose-reload">Reload the panel <span class="hint" data-i18n="web.general.button">(button)</span></label><label class="switch"><input id="expose-reload" type="checkbox"><span></span></label></div>
       </div>
     </div>
 
     <div class="card">
-      <h2>⚡ Accesos rápidos</h2>
-      <div class="hint" data-i18n="web.general.they_appear_quick">Salen en el panel de acceso rápido (desliza hacia abajo desde arriba → ventana de la derecha). Un toque los enciende o apaga.</div>
+      <h2>⚡ Quick access</h2>
+      <div class="hint" data-i18n="web.general.they_appear_quick">They appear in the quick access panel (swipe down from the top → right window). One tap turns them on or off.</div>
       <div class="field">
         <div class="chips" id="quick"></div>
-        <div class="add"><input list="entidades" placeholder="light.salon…" data-add="quick"><button class="btn" data-add-btn="quick" data-i18n="panel.quick.add">Añadir</button></div>
+        <div class="add"><input list="entidades" placeholder="light.living_room…" data-add="quick"><button class="btn" data-add-btn="quick" data-i18n="panel.quick.add">Add</button></div>
       </div>
     </div>
     </div>
 
     <div data-pg="pantalla" class="hidden">
     <div class="card">
-      <h2>🖥️ Pantalla</h2>
+      <h2>🖥️ Screen</h2>
       <div class="field">
-        <div class="row" style="padding:0"><label for="brightness" data-i18n="panel.sheets.brightness">Brillo</label><span class="val" id="brightness-v"></span></div>
+        <div class="row" style="padding:0"><label for="brightness" data-i18n="panel.sheets.brightness">Brightness</label><span class="val" id="brightness-v"></span></div>
         <input id="brightness" type="range" min="5" max="100" step="5">
       </div>
-      <div class="row"><label for="idleSeconds" data-i18n="web.screen.ambient_mode_after">Modo ambiente tras</label>
-        <select id="idleSeconds"><option value="0">Nunca</option><option value="30">30 s</option><option value="60">1 min</option><option value="90">1,5 min</option><option value="180">3 min</option><option value="300">5 min</option><option value="600">10 min</option></select></div>
-      <div class="row"><label for="screenOffMinutes">Apagar la pantalla tras <span class="hint" data-i18n="web.screen.ambient_mode">(en modo ambiente)</span></label>
-        <select id="screenOffMinutes"><option value="0">Nunca</option><option value="5">5 min</option><option value="15">15 min</option><option value="30">30 min</option><option value="60">1 h</option><option value="120">2 h</option></select></div>
-      <div class="row"><label for="language">Idioma <span class="hint" data-i18n="web.screen.automatic_home_assistant">(automático: el de Home Assistant)</span></label>
-        <select id="language"><option value="auto">Automático</option></select></div>
-      <div class="row"><label for="theme">Tema <span class="hint" data-i18n="web.screen.automatic_light_by">(automático: claro de día, oscuro de noche)</span></label>
-        <select id="theme"><option value="oscuro">Oscuro</option><option value="claro">Claro</option><option value="auto">Automático</option></select></div>
+      <div class="row"><label for="idleSeconds" data-i18n="web.screen.ambient_mode_after">Ambient mode after</label>
+        <select id="idleSeconds"><option value="0">Never</option><option value="30">30 s</option><option value="60">1 min</option><option value="90">1.5 min</option><option value="180">3 min</option><option value="300">5 min</option><option value="600">10 min</option></select></div>
+      <div class="row"><label for="screenOffMinutes">Turn off the screen after <span class="hint" data-i18n="web.screen.ambient_mode">(in ambient mode)</span></label>
+        <select id="screenOffMinutes"><option value="0">Never</option><option value="5">5 min</option><option value="15">15 min</option><option value="30">30 min</option><option value="60">1 h</option><option value="120">2 h</option></select></div>
+      <div class="row"><label for="language">Language <span class="hint" data-i18n="web.screen.automatic_home_assistant">(automatic: Home Assistant's)</span></label>
+        <select id="language"><option value="auto">Automatic</option></select></div>
+      <div class="row"><label for="theme">Theme <span class="hint" data-i18n="web.screen.automatic_light_by">(automatic: light by day, dark at night)</span></label>
+        <select id="theme"><option value="oscuro">Dark</option><option value="claro">Light</option><option value="auto">Automatic</option></select></div>
       <div class="field">
-        <label>Color <span class="hint" data-i18n="web.screen.buttons_sliders_volume">(botones, barras y burbuja del volumen)</span></label>
+        <label>Colour <span class="hint" data-i18n="web.screen.buttons_sliders_volume">(buttons, sliders and volume bubble)</span></label>
         <div class="accents" id="accent"></div>
       </div>
     </div>
 
     <div class="card">
-      <h2>🌙 Modo noche</h2>
-      <div class="row"><label for="night-enabled" data-i18n="panel.settings.enabled">Activado</label><label class="switch"><input id="night-enabled" type="checkbox"><span></span></label></div>
-      <div class="row"><label for="night-start" data-i18n="panel.settings.from">Desde</label><input id="night-start" type="time" step="1800"></div>
-      <div class="row"><label for="night-end" data-i18n="panel.settings.until">Hasta</label><input id="night-end" type="time" step="1800"></div>
+      <h2>🌙 Night mode</h2>
+      <div class="row"><label for="night-enabled" data-i18n="panel.settings.enabled">On</label><label class="switch"><input id="night-enabled" type="checkbox"><span></span></label></div>
+      <div class="row"><label for="night-start" data-i18n="panel.settings.from">From</label><input id="night-start" type="time" step="1800"></div>
+      <div class="row"><label for="night-end" data-i18n="panel.settings.until">Until</label><input id="night-end" type="time" step="1800"></div>
       <div class="field">
-        <div class="row" style="padding:0"><label for="night-brightness" data-i18n="panel.settings.night_brightness">Brillo de noche</label><span class="val" id="night-brightness-v"></span></div>
+        <div class="row" style="padding:0"><label for="night-brightness" data-i18n="panel.settings.night_brightness">Night brightness</label><span class="val" id="night-brightness-v"></span></div>
         <input id="night-brightness" type="range" min="5" max="100" step="5">
       </div>
-      <div class="row"><label for="night-screenOff">Apagar la pantalla de noche <span class="hint" data-i18n="web.screen.when_not_use">(si no se usa)</span></label><label class="switch"><input id="night-screenOff" type="checkbox"><span></span></label></div>
+      <div class="row"><label for="night-screenOff">Turn off the screen at night <span class="hint" data-i18n="web.screen.when_not_use">(when not in use)</span></label><label class="switch"><input id="night-screenOff" type="checkbox"><span></span></label></div>
     </div>
     </div>
 
     <div data-pg="sonido" class="hidden">
     <div class="card">
-      <h2>🔈 Altavoz de salida</h2>
+      <h2>🔈 Output speaker</h2>
       <div class="field">
-        <label for="spk-device" data-i18n="web.sound.where_pi_plays">Por dónde suena la Pi</label>
+        <label for="spk-device" data-i18n="web.sound.where_pi_plays">Where the Pi plays</label>
         <select id="spk-device"></select>
-        <span class="hint" data-i18n="web.sound.jack_hdmi_or">Jack, HDMI o un altavoz USB.</span>
+        <span class="hint" data-i18n="web.sound.jack_hdmi_or">Jack, HDMI or a USB speaker.</span>
       </div>
       <div id="snd-master" class="field hidden">
-        <div class="row" style="padding:0"><label for="snd-master-vol">Volumen de la salida <span class="hint" id="snd-master-card"></span></label><span class="val" id="snd-master-vol-v"></span></div>
+        <div class="row" style="padding:0"><label for="snd-master-vol">Output volume <span class="hint" id="snd-master-card"></span></label><span class="val" id="snd-master-vol-v"></span></div>
         <input id="snd-master-vol" type="range" min="0" max="100" step="1">
-        <span class="hint" data-i18n="web.sound.limit_music_notifications">Es el límite: la música, los avisos y la voz nunca suenan más fuerte. Si distorsiona, bájalo.</span>
+        <span class="hint" data-i18n="web.sound.limit_music_notifications">It is the limit: music, notifications and voice never play louder. If it distorts, lower it.</span>
       </div>
     </div>
 
     <div class="card">
-      <h2>🔊 Sonido</h2>
+      <h2>🔊 Sound</h2>
       <div id="snd-music" class="field hidden">
-        <div class="row" style="padding:0"><label for="snd-music-vol">Música <span class="hint" id="snd-music-name"></span></label><span class="val" id="snd-music-vol-v"></span></div>
+        <div class="row" style="padding:0"><label for="snd-music-vol">Music <span class="hint" id="snd-music-name"></span></label><span class="val" id="snd-music-vol-v"></span></div>
         <input id="snd-music-vol" type="range" min="0" max="100" step="1">
       </div>
       <div class="field">
-        <div class="row" style="padding:0"><label for="sound-volume" data-i18n="panel.settings.notifications_alarms">Avisos y alarmas</label><span class="val" id="sound-volume-v"></span></div>
+        <div class="row" style="padding:0"><label for="sound-volume" data-i18n="panel.settings.notifications_alarms">Notifications and alarms</label><span class="val" id="sound-volume-v"></span></div>
         <input id="sound-volume" type="range" min="10" max="100" step="10">
       </div>
       <div id="snd-voice" class="hidden">
         <div class="field">
-          <div class="row" style="padding:0"><label for="snd-voice-vol" data-i18n="panel.settings.voice_assistant_answers">Respuestas del asistente de voz</label><span class="val" id="snd-voice-vol-v"></span></div>
+          <div class="row" style="padding:0"><label for="snd-voice-vol" data-i18n="panel.settings.voice_assistant_answers">Voice assistant answers</label><span class="val" id="snd-voice-vol-v"></span></div>
           <input id="snd-voice-vol" type="range" min="10" max="100" step="10">
         </div>
         <div class="field">
-          <div class="row" style="padding:0"><label for="snd-mic" data-i18n="web.sound.microphone_sensitivity">Sensibilidad del micro</label><span class="val" id="snd-mic-v"></span></div>
+          <div class="row" style="padding:0"><label for="snd-mic" data-i18n="web.sound.microphone_sensitivity">Microphone sensitivity</label><span class="val" id="snd-mic-v"></span></div>
           <input id="snd-mic" type="range" min="20" max="100" step="5">
         </div>
       </div>
@@ -603,155 +601,155 @@ go = 'home' | 'rooms' | 'sensors' | 'media' | 'printers' | 'scooter' | 'settings
     </div>
 
     <div class="card">
-      <h2>🔔 Avisos</h2>
-      <div class="row"><label for="sound-enabled">Sonido <span class="hint" data-i18n="web.sound.its_volume_sound">(su volumen, en 🔊 Sonido)</span></label><label class="switch"><input id="sound-enabled" type="checkbox"><span></span></label></div>
+      <h2>🔔 Notifications</h2>
+      <div class="row"><label for="sound-enabled">Sound <span class="hint" data-i18n="web.sound.its_volume_sound">(its volume, in 🔊 Sound)</span></label><label class="switch"><input id="sound-enabled" type="checkbox"><span></span></label></div>
     </div>
 
     <div class="card">
-      <h2>🔊 Altavoz (Music Assistant)</h2>
-      <dl class="info" id="spk-info"><dt data-i18n="panel.sheets.status">Estado</dt><dd data-i18n="web.login.loading">Cargando…</dd></dl>
+      <h2>🔊 Speaker (Music Assistant)</h2>
+      <dl class="info" id="spk-info"><dt data-i18n="panel.sheets.status">Status</dt><dd data-i18n="web.login.loading">Loading…</dd></dl>
       <div id="spk-install" class="hint hidden">Falta instalarlo una vez en la Pi: <code>bash ~/ha-panel/scripts/setup-sendspin.sh</code></div>
-      <div class="row"><label for="spk-enabled" data-i18n="web.sound.use_pi_as">Usar la Pi como altavoz</label><label class="switch"><input id="spk-enabled" type="checkbox"><span></span></label></div>
+      <div class="row"><label for="spk-enabled" data-i18n="web.sound.use_pi_as">Use the Pi as a speaker</label><label class="switch"><input id="spk-enabled" type="checkbox"><span></span></label></div>
       <div class="field">
-        <label for="spk-name" data-i18n="web.sound.name_music_assistant">Nombre en Music Assistant</label>
+        <label for="spk-name" data-i18n="web.sound.name_music_assistant">Name in Music Assistant</label>
         <input id="spk-name" type="text" maxlength="60">
       </div>
       <div class="field">
-        <label for="spk-entity" data-i18n="web.sound.its_player_home">Su reproductor en Home Assistant</label>
+        <label for="spk-entity" data-i18n="web.sound.its_player_home">Its player in Home Assistant</label>
         <select id="spk-entity"></select>
-        <span class="hint" data-i18n="web.sound.music_assistant_one">El de Music Assistant que se crea con el altavoz. En automático se busca por el nombre.</span>
+        <span class="hint" data-i18n="web.sound.music_assistant_one">The Music Assistant one created with the speaker. Automatic finds it by name.</span>
       </div>
       <div class="field">
-        <label data-i18n="web.sound.delay_other_speakers">Desfase con otros altavoces</label>
-        <span class="hint" data-i18n="web.sound.set_music_assistant">Se ajusta en Music Assistant: ajustes del reproductor de este altavoz → retraso.</span>
+        <label data-i18n="web.sound.delay_other_speakers">Delay with other speakers</label>
+        <span class="hint" data-i18n="web.sound.set_music_assistant">Set in Music Assistant: this speaker's player settings → delay.</span>
       </div>
       <div id="spk-msg" class="hint"></div>
-      <details id="spk-log-box" class="hidden"><summary data-i18n="web.sound.log">Registro</summary><pre id="spk-log"></pre></details>
+      <details id="spk-log-box" class="hidden"><summary data-i18n="web.sound.log">Log</summary><pre id="spk-log"></pre></details>
     </div>
 
     <div class="card">
-      <h2>▶️ Sonando</h2>
-      <span class="hint" data-i18n="web.sound.screen_large_cover">La pantalla con la carátula grande que sale cuando suena música.</span>
+      <h2>▶️ Now playing</h2>
+      <span class="hint" data-i18n="web.sound.screen_large_cover">The screen with the large cover that appears when music plays.</span>
       <div class="field">
-        <label for="spk-close" data-i18n="web.sound.when_paused_or">Al pausar o parar, cerrar «Sonando»</label>
+        <label for="spk-close" data-i18n="web.sound.when_paused_or">When paused or stopped, close «Now playing»</label>
         <select id="spk-close">
-          <option value="0">Al momento</option><option value="30">A los 30 segundos</option><option value="60">Al minuto</option>
-          <option value="120">A los 2 minutos</option><option value="300">A los 5 minutos</option><option value="-1">Nunca (se cierra con la ✕)</option>
+          <option value="0">Immediately</option><option value="30">After 30 seconds</option><option value="60">After a minute</option>
+          <option value="120">After 2 minutes</option><option value="300">After 5 minutes</option><option value="-1">Never (close with ✕)</option>
         </select>
       </div>
       <div class="field">
-        <label data-i18n="web.sound.speakers_open_by">Altavoces que la abren, por prioridad</label>
+        <label data-i18n="web.sound.speakers_open_by">Speakers that open it, by priority</label>
         <div id="np-speakers"></div>
-        <span class="hint" data-i18n="web.sound.when_one_starts">Al empezar a sonar uno, sale su «Sonando». Si ya se ve otro, solo cambia si el nuevo está más arriba o si el que se ve no está sonando; al parar, pasa al siguiente que siga sonando.</span>
+        <span class="hint" data-i18n="web.sound.when_one_starts">When one starts playing, its «Now playing» appears. If another one is shown, it only switches if the new one is higher on the list or the shown one is not playing; when it stops, it moves to the next one still playing.</span>
       </div>
     </div>
 
     <div class="card">
-      <h2>🗣️ Voz en la pantalla</h2>
+      <h2>🗣️ Voice on screen</h2>
       <div class="field">
-        <label for="voiceSatellite">Asistente de voz <span class="hint" data-i18n="web.sound.assist_satellite_what">(satélite de Assist: lo que dices y su respuesta salen encima de la pantalla)</span></label>
-        <select id="voiceSatellite"><option value="">Ninguno</option></select>
+        <label for="voiceSatellite">Voice assistant <span class="hint" data-i18n="web.sound.assist_satellite_what">(Assist satellite: what you say and its answer appear on the screen)</span></label>
+        <select id="voiceSatellite"><option value="">None</option></select>
       </div>
       <div class="field">
-        <label for="voiceStyle" data-i18n="web.sound.voice_animation">Animación de la voz</label>
-        <select id="voiceStyle"><option value="onda">Onda</option><option value="micro">Micrófono</option><option value="luz">Línea de luz</option><option value="eq">Ecualizador</option></select>
+        <label for="voiceStyle" data-i18n="web.sound.voice_animation">Voice animation</label>
+        <select id="voiceStyle"><option value="onda">Wave</option><option value="micro">Microphone</option><option value="luz">Light line</option><option value="eq">Equaliser</option></select>
       </div>
     </div>
 
     </div>
 
     <div data-pg="beta" class="hidden">
-    <div class="card sim">🧪 <b data-i18n="web.beta.testing">En pruebas.</b> Funciona, pero puede fallar o cambiar en próximas versiones.</div>
+    <div class="card sim">🧪 <b data-i18n="web.beta.testing">In testing.</b> It works, but it may fail or change in future versions.</div>
 
     <div class="card">
-      <h2>🎙️ Asistente de voz (micro de la Pi)</h2>
-      <dl class="info" id="voz-info"><dt data-i18n="panel.sheets.status">Estado</dt><dd data-i18n="web.login.loading">Cargando…</dd></dl>
+      <h2>🎙️ Voice assistant (Pi microphone)</h2>
+      <dl class="info" id="voz-info"><dt data-i18n="panel.sheets.status">Status</dt><dd data-i18n="web.login.loading">Loading…</dd></dl>
       <div id="voz-install" class="hint hidden">Falta instalarlo una vez en la Pi: <code>bash ~/ha-panel/scripts/setup-voz.sh</code></div>
-      <div class="row"><label for="voz-enabled" data-i18n="web.beta.listen_pi_microphone">Escuchar con el micro de la Pi</label><label class="switch"><input id="voz-enabled" type="checkbox"><span></span></label></div>
+      <div class="row"><label for="voz-enabled" data-i18n="web.beta.listen_pi_microphone">Listen with the Pi microphone</label><label class="switch"><input id="voz-enabled" type="checkbox"><span></span></label></div>
       <div class="field">
-        <label for="voz-name" data-i18n="web.beta.name_home_assistant">Nombre en Home Assistant</label>
+        <label for="voz-name" data-i18n="web.beta.name_home_assistant">Name in Home Assistant</label>
         <input id="voz-name" type="text" maxlength="60">
       </div>
       <div class="field">
-        <label for="voz-mic" data-i18n="panel.settings.microphone">Micrófono</label>
+        <label for="voz-mic" data-i18n="panel.settings.microphone">Microphone</label>
         <select id="voz-mic"></select>
       </div>
       <div class="field">
-        <label for="voz-out" data-i18n="panel.settings.answers_through">Por dónde contesta</label>
+        <label for="voz-out" data-i18n="panel.settings.answers_through">Answers through</label>
         <select id="voz-out"></select>
       </div>
       <div class="field">
-        <label for="voz-wake" data-i18n="panel.settings.wake_word">Palabra para despertarlo</label>
+        <label for="voz-wake" data-i18n="panel.settings.wake_word">Wake word</label>
         <select id="voz-wake"></select>
       </div>
-      <span class="hint">En Home Assistant se añade con la integración <b>Wyoming</b> (suele aparecer sola en «Descubiertos»).</span>
+      <span class="hint">In Home Assistant it is added with the integration <b>Wyoming</b> (it usually appears by itself under «Discovered»).</span>
       <div id="voz-msg" class="hint"></div>
-      <details id="voz-log-box" class="hidden"><summary data-i18n="web.sound.log">Registro</summary><pre id="voz-log"></pre></details>
+      <details id="voz-log-box" class="hidden"><summary data-i18n="web.sound.log">Log</summary><pre id="voz-log"></pre></details>
     </div>
     </div>
 
     <div data-pg="sistema" class="hidden">
     <div class="card">
-      <h2>📶 Red de la Pi</h2>
-      <dl class="info" id="red-info"><dt data-i18n="panel.sheets.status">Estado</dt><dd data-i18n="web.login.loading">Cargando…</dd></dl>
+      <h2>📶 Pi network</h2>
+      <dl class="info" id="red-info"><dt data-i18n="panel.sheets.status">Status</dt><dd data-i18n="web.login.loading">Loading…</dd></dl>
       <div id="red-controles">
         <div class="field">
           <label data-i18n="panel.settings.wifi">WiFi</label>
-          <div class="btns"><button class="btn" id="wifi-buscar" data-i18n="web.system.find_networks">Buscar redes</button></div>
+          <div class="btns"><button class="btn" id="wifi-buscar" data-i18n="web.system.find_networks">Find networks</button></div>
           <div class="wifi-list" id="wifi-list"></div>
           <div id="wifi-form" class="field hidden">
-            <div>Conectar a <b id="wifi-ssid"></b></div>
-            <input id="wifi-pass" type="password" autocomplete="off" placeholder="Contraseña de la WiFi">
-            <div class="btns"><button class="btn primary" id="wifi-ok" data-i18n="web.system.connect">Conectar</button></div>
+            <div>Connect to <b id="wifi-ssid"></b></div>
+            <input id="wifi-pass" type="password" autocomplete="off" placeholder="WiFi password">
+            <div class="btns"><button class="btn primary" id="wifi-ok" data-i18n="web.system.connect">Connect</button></div>
           </div>
         </div>
         <div class="field">
-          <label data-i18n="web.system.ip_address">Dirección IP</label>
-          <div class="radio"><label><input type="radio" name="ipm" value="auto"> Automática (DHCP)</label><label><input type="radio" name="ipm" value="manual"> Fija</label></div>
+          <label data-i18n="web.system.ip_address">IP address</label>
+          <div class="radio"><label><input type="radio" name="ipm" value="auto"> Automatic (DHCP)</label><label><input type="radio" name="ipm" value="manual"> Static</label></div>
           <div id="ip-manual" class="grid2 hidden">
             <input id="ip-address" type="text" placeholder="IP (192.168.1.60)">
-            <input id="ip-prefix" type="text" placeholder="Máscara (24)" value="24">
-            <input id="ip-gateway" type="text" placeholder="Puerta de enlace (192.168.1.1)">
+            <input id="ip-prefix" type="text" placeholder="Mask (24)" value="24">
+            <input id="ip-gateway" type="text" placeholder="Gateway (192.168.1.1)">
             <input id="ip-dns" type="text" placeholder="DNS (192.168.1.1, 1.1.1.1)">
           </div>
-          <div class="btns"><button class="btn" id="ip-ok" data-i18n="web.system.apply_ip">Aplicar IP</button></div>
-          <span class="hint" data-i18n="web.system.set_static_ip">Pon una IP fija si quieres que la dirección de esta web no cambie nunca.</span>
+          <div class="btns"><button class="btn" id="ip-ok" data-i18n="web.system.apply_ip">Apply IP</button></div>
+          <span class="hint" data-i18n="web.system.set_static_ip">Set a static IP if you want this web's address to never change.</span>
         </div>
         <div class="field">
-          <label for="hostname" data-i18n="web.system.device_name">Nombre del equipo</label>
-          <div class="add"><input id="hostname" type="text"><button class="btn" id="host-ok" data-i18n="web.system.change">Cambiar</button></div>
-          <span class="hint">Es el de la dirección http://&lt;nombre&gt;.local:8080</span>
+          <label for="hostname" data-i18n="web.system.device_name">Device name</label>
+          <div class="add"><input id="hostname" type="text"><button class="btn" id="host-ok" data-i18n="web.system.change">Change</button></div>
+          <span class="hint" data-i18n="web.system.one_address_http">It is the one in the address http://&lt;name&gt;.local:8080</span>
         </div>
       </div>
       <div id="red-msg" class="hint"></div>
     </div>
 
     <div class="card">
-      <h2>⬆️ Actualizaciones</h2>
-      <dl class="info" id="upd-info"><dt data-i18n="panel.sheets.version">Versión</dt><dd data-i18n="web.login.loading">Cargando…</dd></dl>
+      <h2>⬆️ Updates</h2>
+      <dl class="info" id="upd-info"><dt data-i18n="panel.sheets.version">Version</dt><dd data-i18n="web.login.loading">Loading…</dd></dl>
       <div id="upd-new" class="hidden">
         <p class="hint" id="upd-new-title"></p>
         <ul id="upd-list" class="hint"></ul>
       </div>
       <div class="field">
-        <label for="upd-mode" data-i18n="panel.settings.when_there_new">Cuando haya una versión nueva</label>
+        <label for="upd-mode" data-i18n="panel.settings.when_there_new">When there is a new version</label>
         <select id="upd-mode">
-          <option value="avisar">Avisarme (actualizo yo con el botón)</option>
-          <option value="auto">Actualizar sola cada día a una hora</option>
+          <option value="avisar">Notify me (I update with the button)</option>
+          <option value="auto">Update by itself every day at a time</option>
         </select>
       </div>
       <div class="field" id="upd-hour-box">
-        <label for="upd-hour" data-i18n="web.system.time">Hora</label>
+        <label for="upd-hour" data-i18n="web.system.time">Time</label>
         <select id="upd-hour"></select>
-        <span class="hint" data-i18n="web.system.better_at_night">Mejor de madrugada: el panel se reinicia unos segundos al actualizar.</span>
+        <span class="hint" data-i18n="web.system.better_at_night">Better at night: the panel restarts for a few seconds when updating.</span>
       </div>
       <div id="upd-sudo" class="hint hidden">Para que pueda instalar paquetes del sistema que necesite una versión nueva, vuelve a lanzar una vez <code>bash ~/ha-panel/scripts/setup-kiosk.sh</code> en la Pi.</div>
       <div class="btns">
-        <button class="btn" id="upd-check" data-i18n="web.system.check_now">Comprobar ahora</button>
-        <button class="btn primary hidden" id="upd-apply" data-i18n="web.system.update">Actualizar</button>
+        <button class="btn" id="upd-check" data-i18n="web.system.check_now">Check now</button>
+        <button class="btn primary hidden" id="upd-apply" data-i18n="web.system.update">Update</button>
       </div>
       <div id="upd-msg" class="hint"></div>
-      <details id="upd-log-box" class="hidden"><summary data-i18n="web.system.last_update">Última actualización</summary><pre id="upd-log"></pre></details>
+      <details id="upd-log-box" class="hidden"><summary data-i18n="web.system.last_update">Last update</summary><pre id="upd-log"></pre></details>
     </div>
     </div>
 
@@ -759,7 +757,7 @@ go = 'home' | 'rooms' | 'sensors' | 'media' | 'printers' | 'scooter' | 'settings
 
   <div class="savebar"><div class="wrap">
     <span id="msg"></span>
-    <button class="btn primary" id="guardar" data-i18n="panel.settings.save">Guardar</button>
+    <button class="btn primary" id="guardar" data-i18n="panel.settings.save">Save</button>
   </div></div>
 </div>
 
@@ -770,6 +768,7 @@ go = 'home' | 'rooms' | 'sensors' | 'media' | 'printers' | 'scooter' | 'settings
 'use strict';
 (() => { let l = null; try { l = localStorage.getItem('panel_lang'); } catch (e) { /* */ } I18N.set(l || I18N.resolve('auto', navigator.language)); })();
 I18N.page(document.body);
+document.title = I18N.t(document.title);
 const $ = (s) => document.querySelector(s);
 const DEF = {   // mismos valores por defecto que el panel
   idleSeconds: 90, screenOffMinutes: 0, brightness: 100,
@@ -855,13 +854,13 @@ function testHA() {
 /** Script compilado (con lo que haya sin guardar) o null */
 const compOf = (name) => { try { return name in scripts || name in drafts ? PM.compile(drafts[name] ?? scripts[name]) : null; } catch (e) { return null; } };
 const isCard = (name) => (compOf(name) || {}).type === 'card';
-const actText = (a) => (typeof a === 'function' ? 'hace algo (código)' : (PM.ACTIONS[(PM.actionOf(a) || {}).action] || ''));
+const actText = (a) => (typeof a === 'function' ? I18N.t('web.editor.does_something') : I18N.t(PM.ACTIONS[(PM.actionOf(a) || {}).action] || ''));
 /** Un componente dibujado como en el panel (mismo HTML y CSS). Al pasar el ratón dice qué hace al pulsar. */
 function compPreview(name, mod, values) {
   const ha = testHA(), b = mod.bind(values || {}, ha), host = el('div', {});
   PanelComp.render(host, name, mod, [ha, testScreen('card'), b.cfg], {
     press(node, p) {
-      const t = [p.tap && actText(p.tap) !== 'Nada' ? 'Al pulsar: ' + actText(p.tap) : '', p.hold && actText(p.hold) !== 'Nada' ? 'Al mantener: ' + actText(p.hold) : ''].filter(Boolean).join(' · ');
+      const t = [p.tap && actText(p.tap) !== I18N.t('web.editor.action_none') ? I18N.t('web.editor.on_tap_prefix') + actText(p.tap) : '', p.hold && actText(p.hold) !== I18N.t('web.editor.action_none') ? I18N.t('web.editor.on_hold_prefix') + actText(p.hold) : ''].filter(Boolean).join(' · ');
       if (t) { node.title = t; node.classList.add('cmp-tap'); }
     },
   });
@@ -870,8 +869,8 @@ function compPreview(name, mod, values) {
 /** Pinta un componente con unos ajustes: { node } o { err } */
 function renderComp(name, values) {
   const m = compOf(name);
-  if (!m) return { err: name in scripts ? 'tiene un error' : 'no existe ' + name };
-  if (m.type !== 'card') return { err: "no es un componente (le falta type: 'card')" };
+  if (!m) return { err: name in scripts ? I18N.t('web.editor.has_error') : 'no existe ' + name };
+  if (m.type !== 'card') return { err: I18N.t("web.editor.not_a_component") };
   try { return Object.assign(compPreview(name, m, values), { mod: m }); } catch (e) { return { err: e.message }; }
 }
 function testScreen(place) {
@@ -1044,7 +1043,7 @@ function loadMonaco() {
       encodeURIComponent(`self.MonacoEnvironment={baseUrl:'${MONACO.replace(/vs$/, '')}'};importScripts('${MONACO}/base/worker/workerMain.js');`) };
     const sc = document.createElement('script');
     sc.src = MONACO + '/loader.js';
-    sc.onerror = () => reject(new Error('sin conexión con el CDN'));
+    sc.onerror = () => reject(new Error(I18N.t('web.editor.no_cdn')));
     sc.onload = () => {
       window.require.config({ paths: { vs: MONACO } });
       window.require(['vs/editor/editor.main'], () => {
@@ -1057,7 +1056,7 @@ function loadMonaco() {
       }, reject);
     };
     document.head.append(sc);
-    setTimeout(() => reject(new Error('Monaco tarda demasiado')), 20000);
+    setTimeout(() => reject(new Error(I18N.t('web.editor.monaco_slow'))), 20000);
   });
   monacoP.catch(() => {});
   return monacoP;
@@ -1120,21 +1119,21 @@ function codeEditor(name, say, getValues = () => ({})) {
         preview = el('div', { class: 'bprev' }, ...row('ambient', I18N.t('panel.nav.ambient')), ...row('home', I18N.t('panel.nav.home')));
       }
       out.replaceChildren(...[
-        el('div', { class: 'hint', textContent: `✓ Sin errores · ${ms.toFixed(1)} ms · se actualiza con: ${!bound.watch ? 'cualquier cambio' : bound.watch.length ? bound.watch.join(', ') : 'nada (cada minuto)'}` }),
-        panelData && panelData.t ? null : el('div', { class: 'hint', textContent: 'ⓘ El panel no está encendido: screen (alarmas, brillo…) y ha.info vienen vacíos aquí.' }),
+        el('div', { class: 'hint', textContent: `✓ Sin errores · ${ms.toFixed(1)} ms · se actualiza con: ${!bound.watch ? 'cualquier cambio' : bound.watch.length ? bound.watch.join(', ') : I18N.t('web.editor.watch_nothing')}` }),
+        panelData && panelData.t ? null : el('div', { class: 'hint', textContent: I18N.t('web.editor.panel_off_hint') }),
         preview,
         el('details', { style: 'margin-top:8px' }, el('summary', { class: 'hint', style: 'cursor:pointer', textContent: I18N.t('web.ambient.see_what_returns') }),
           el('pre', { textContent: card && res && res.__html != null ? res.__html.trim() : JSON.stringify(res, null, 2) ?? 'null' }))].filter(Boolean));
     } catch (e) { out.replaceChildren(el('div', { class: 'err', textContent: '✗ ' + e.message })); }
   };
   const save = async () => {
-    try { PM.compile(ta.value); } catch (e) { if (!confirm('Tiene un error: ' + e.message + '\n¿Guardar igualmente?')) return; }
+    try { PM.compile(ta.value); } catch (e) { if (!confirm(I18N.t('web.editor.has_error_prefix') + e.message + '\n' + I18N.t('web.editor.save_anyway'))) return; }
     try { await saveCode(name, ta.value); say(I18N.t('web.login.saved'), 'ok'); renderAll(); }
     catch (e) { say(e.message, 'err'); }
   };
   const restore = async () => {
-    if (!confirm('¿Volver al funcionamiento de serie? Se pierden tus cambios.')) return;
-    try { await deleteCode(name); say('Restaurado ✓', 'ok'); renderAll(); } catch (e) { say(e.message, 'err'); }
+    if (!confirm(I18N.t('web.editor.restore_confirm'))) return;
+    try { await deleteCode(name); say(I18N.t('web.editor.restored'), 'ok'); renderAll(); } catch (e) { say(e.message, 'err'); }
   };
   const download = () => {
     const a = el('a', { href: URL.createObjectURL(new Blob([ta.value], { type: 'text/javascript' })), download: name });
@@ -1150,7 +1149,7 @@ function codeEditor(name, say, getValues = () => ({})) {
 /** Una burbuja dibujada como en el panel. place: 'ambient' | 'home' */
 function bubblePreview(b, place) {
   const cls = place === 'ambient' ? 'amb' : 'home';
-  const e = el('div', { class: `bchip ${cls}` + (b.progress != null ? ' bar' : ''), title: b.onTap ? 'Al tocar: hace algo (onTap)' : b.action ? 'Al tocar: ' + (b.action.service || '') : b.go ? 'Al tocar: ir a ' + b.go : '' });
+  const e = el('div', { class: `bchip ${cls}` + (b.progress != null ? ' bar' : ''), title: b.onTap ? I18N.t('web.editor.on_tap_does') : b.action ? I18N.t('web.editor.on_touch_prefix') + (b.action.service || '') : b.go ? I18N.t('web.editor.on_tap_go_prefix') + b.go : '' });
   if (b.color) e.style.setProperty('--bc', b.color);
   if (b.icon) e.append(el('i', { class: `mdi ${b.icon} b-ic` }));
   e.append(el('span', { textContent: b.text, style: b.textColor ? `color:${b.textColor}` : null }));
@@ -1171,7 +1170,7 @@ function renderBullets() {
     const head = el('div', { class: 'bub-head' },
       el('button', { type: 'button', class: 'bub-title', onclick: () => { openBullet = open ? null : b.id; renderBullets(); } },
         el('span', { class: 'bub-arrow', textContent: open ? '▾' : '▸' }), title,
-        def ? el('span', { class: 'pill', textContent: isDefault(b.script) && b.script in files ? 'de serie · cambiada' : 'de serie' }) : null),
+        def ? el('span', { class: 'pill', textContent: isDefault(b.script) && b.script in files ? I18N.t('web.editor.builtin_changed_f') : I18N.t('web.editor.builtin') }) : null),
       el('div', { class: 'cols' }, ...moveBtns(bullets, i, renderBullets), flag('ambient', I18N.t('panel.nav.ambient'))));
     const card = el('div', { class: 'bub' + (b.ambient ? '' : ' off') }, head);
     if (!open) return card;
@@ -1182,7 +1181,7 @@ function renderBullets() {
       configForm(b),
       el('details', { class: 'func' }, el('summary', { class: 'sub', textContent: I18N.t('web.ambient.how_works_code') }),
         b.script in scripts ? codeEditor(b.script, say, () => b.config || {}) : el('div', { class: 'err', textContent: I18N.t('web.ambient.its_code_cannot') })),
-      def ? null : el('div', { class: 'btns' }, sureBtn({ class: 'btn danger' }, 'Borrar burbuja', I18N.t('panel.notices.sure_tap_again'), () => delBullet(i)))));
+      def ? null : el('div', { class: 'btns' }, sureBtn({ class: 'btn danger' }, I18N.t('web.editor.delete_bubble'), I18N.t('panel.notices.sure_tap_again'), () => delBullet(i)))));
     return card;
   }));
 }
@@ -1240,10 +1239,10 @@ function fieldsForm(schema, get, set, prefix) {
 /** Elegir entidades o aparatos. Pocas opciones: desplegable / casillas. Muchas: buscador. */
 function entityInput(f, id, v, set) {
   const opts = fieldOptions(f);
-  const auto = f.auto === false ? '— ninguna —' : I18N.t('web.general.automatic_first_one');
-  if (!opts.length) return el('div', { class: 'hint', textContent: f.type === 'device' ? 'No hay aparatos de ' + ([].concat(f.integration || '?').join(' / ')) + ' (o el panel no está encendido).' : 'No hay entidades que encajen.' });
+  const auto = f.auto === false ? I18N.t('web.editor.none_option') : I18N.t('web.general.automatic_first_one');
+  if (!opts.length) return el('div', { class: 'hint', textContent: f.type === 'device' ? I18N.t('web.editor.no_devices_prefix') + ([].concat(f.integration || '?').join(' / ')) + I18N.t('web.editor.or_panel_off') : I18N.t('web.editor.no_matching_entities') });
   // Varias: desplegable de selección múltiple con buscador
-  if (f.multiple) return multiSelect(opts, [].concat(v || []), set, f.auto === false ? I18N.t('panel.settings.none_f') : f.type === 'device' ? 'Ninguno elegido: todos' : 'Ninguna elegida: todas');
+  if (f.multiple) return multiSelect(opts, [].concat(v || []), set, f.auto === false ? I18N.t('panel.settings.none_f') : f.type === 'device' ? I18N.t('web.editor.none_chosen_all') : I18N.t('web.editor.none_chosen_all_f'));
   // Una: desplegable (con buscador si hay muchas)
   const s = el('select', { id, onchange: (e) => set(e.target.value) }, el('option', { value: '', textContent: auto }),
     ...opts.map((o) => el('option', { value: o.value, textContent: o.label })),
@@ -1254,7 +1253,7 @@ function entityInput(f, id, v, set) {
 /** Elegir varias: etiquetas con × y un desplegable con buscador donde se marcan y desmarcan (no se cierra al marcar). */
 function multiSelect(opts, list, set, emptyText) {
   list = list.slice();
-  const labelOf = (x) => (opts.find((o) => o.value === x) || { label: x + ' (no existe)' }).label;
+  const labelOf = (x) => (opts.find((o) => o.value === x) || { label: x + I18N.t('web.editor.not_exists_suffix') }).label;
   const chips = el('div', { class: 'chips ms-chips' });
   const label = el('span', { class: 'fs-label' });
   const btn = el('button', { type: 'button', class: 'fs-btn' }, label, el('i', { class: 'mdi mdi-chevron-down fs-arrow' }));
@@ -1274,7 +1273,7 @@ function multiSelect(opts, list, set, emptyText) {
 /** Lista con orden (prioridad): cada elegido con su número, subir, bajar y quitar; abajo, añadir. */
 function orderSelect(opts, list, set, emptyText) {
   list = list.slice();
-  const labelOf = (x) => (opts.find((o) => o.value === x) || { label: x + ' (no existe)' }).label;
+  const labelOf = (x) => (opts.find((o) => o.value === x) || { label: x + I18N.t('web.editor.not_exists_suffix') }).label;
   const rows = el('div', { class: 'ms' });
   const label = el('span', { class: 'fs-label' });
   const btn = el('button', { type: 'button', class: 'fs-btn' }, label, el('i', { class: 'mdi mdi-chevron-down fs-arrow' }));
@@ -1302,7 +1301,7 @@ function ambSpkPaint() { $('#ambientSpeakers').replaceChildren(orderSelect(speak
 function npSpkPaint() { $('#np-speakers').replaceChildren(orderSelect(speakerOpts(), npSpk, (v) => { npSpk = v; dirty(); }, I18N.t('web.sound.none_now_playing'))); }
 function msShow(btn, opts, getList, toggle) {
   fsClose();
-  const search = opts.length > 7 ? el('input', { type: 'search', class: 'fs-search', placeholder: 'Buscar…' }) : null;
+  const search = opts.length > 7 ? el('input', { type: 'search', class: 'fs-search', placeholder: I18N.t('web.editor.search') }) : null;
   const list = el('div', { class: 'fs-list' });
   const pop = el('div', { class: 'fs-pop' }, search, list);
   let shown = [], active = 0;
@@ -1352,13 +1351,13 @@ function actionInput(f, v, set) {
       g.value = a.go || ''; extra.push(g);
     }
     if (a.action === 'call') {
-      extra.push(el('input', { type: 'text', placeholder: 'Servicio: light.turn_on', value: a.service || '', oninput: (e) => upd('service', e.target.value.trim()) }));
+      extra.push(el('input', { type: 'text', placeholder: I18N.t('web.editor.service_placeholder'), value: a.service || '', oninput: (e) => upd('service', e.target.value.trim()) }));
       const data = el('textarea', { rows: 2, placeholder: 'Datos (JSON): { "brightness_pct": 50 }', value: a.data ? JSON.stringify(a.data) : '' });
       data.addEventListener('change', () => { try { upd('data', data.value.trim() ? JSON.parse(data.value) : undefined); data.classList.remove('bad'); } catch (e) { data.classList.add('bad'); } });
       extra.push(data);
     }
     if (['toggle', 'more-info', 'call'].includes(a.action)) {
-      extra.push(el('input', { type: 'text', list: 'entidades', placeholder: 'Sobre otra entidad (vacío: la de la tarjeta)', value: a.entity || '',
+      extra.push(el('input', { type: 'text', list: 'entidades', placeholder: I18N.t('web.editor.other_entity'), value: a.entity || '',
         onchange: (e) => upd('entity', e.target.value.trim() || undefined) }));
     }
     box.replaceChildren(kind, ...extra);
@@ -1386,7 +1385,7 @@ async function delBullet(i) {
 /** Nueva burbuja con su funcionamiento (código nuevo, de una URL o de un archivo). */
 async function addBullet(title, code, viaUrl) {
   title = String(title || '').trim();
-  if (!title) throw new Error('Ponle un título');
+  if (!title) throw new Error(I18N.t('web.editor.give_title'));
   let name = freeName(title);
   if (viaUrl) { const r = await api('POST', '/api/scripts/importar', { url: viaUrl, name }); name = r.name; scripts[name] = files[name] = r.code; }
   else await saveCode(name, code);
@@ -1452,7 +1451,7 @@ function renderCardScripts() {
     const name = c.script, open = openCard === name, uses = usesOf(name);
     const head = el('div', { class: 'bub-head' }, el('button', { type: 'button', class: 'bub-title', onclick: () => { openCard = open ? null : name; renderCardScripts(); } },
       el('span', { class: 'bub-arrow', textContent: open ? '▾' : '▸' }), el('i', { class: 'mdi ' + (PM.mdi(c.icon) || 'mdi-card-outline') }), el('b', { textContent: c.name }),
-      el('span', { class: 'pill', textContent: c.builtin ? (name in files ? 'de serie · cambiado' : 'de serie') : 'tuyo' }),
+      el('span', { class: 'pill', textContent: c.builtin ? (name in files ? I18N.t('web.editor.builtin_changed') : I18N.t('web.editor.builtin')) : 'tuyo' }),
       uses ? el('span', { class: 'hint', textContent: `en ${uses} sitio${uses > 1 ? 's' : ''}` }) : null));
     const card = el('div', { class: 'bub' }, head);
     if (!open) return card;
@@ -1467,7 +1466,7 @@ function renderCardScripts() {
         el('div', { class: 'cfg' }, ...fieldsForm(m.config, () => testVals[name] || {}, (k, v) => { testVals[name] = Object.assign({}, testVals[name], { [k]: v }); paint(); }, 't-' + name))) : null,
       el('div', { class: 'sub', textContent: I18N.t('web.editor.how_looks') }), prev,
       el('details', { class: 'func' }, el('summary', { class: 'sub', textContent: I18N.t('web.ambient.how_works_code') }), codeEditor(name, say, () => testVals[name] || {})),
-      c.builtin ? null : el('div', { class: 'btns' }, sureBtn({ class: 'btn danger' }, 'Borrar componente', uses ? `¿Seguro? Se usa en ${uses} sitio(s). Toca otra vez` : I18N.t('panel.notices.sure_tap_again'), del))));
+      c.builtin ? null : el('div', { class: 'btns' }, sureBtn({ class: 'btn danger' }, I18N.t('web.editor.delete_component'), uses ? `¿Seguro? Se usa en ${uses} sitio(s). Toca otra vez` : I18N.t('panel.notices.sure_tap_again'), del))));
     paint();
     return card;
   }));
@@ -1475,7 +1474,7 @@ function renderCardScripts() {
 /** Nuevo componente: desde cero, copiando otro, de una dirección o de un archivo */
 async function addComp(title, code, viaUrl) {
   title = String(title || '').trim();
-  if (!title) throw new Error('Ponle un nombre');
+  if (!title) throw new Error(I18N.t('web.editor.give_name'));
   let name = freeName(title);
   if (viaUrl) { const r = await api('POST', '/api/scripts/importar', { url: viaUrl, name }); name = r.name; scripts[name] = files[name] = r.code; }
   else await saveCode(name, code);
@@ -1484,7 +1483,7 @@ async function addComp(title, code, viaUrl) {
 }
 $('#cscript-add').onclick = async () => {
   const title = $('#cscript-title').value.trim(), from = $('#cscript-tpl').value;
-  const code = from ? String(scripts[from]).replace(/name:\s*'[^']*'/, `name: '${title.replace(/'/g, '')}'`) : EMPTY_CARD(title || 'Nuevo');
+  const code = from ? String(scripts[from]).replace(/name:\s*'[^']*'/, `name: '${title.replace(/'/g, '')}'`) : EMPTY_CARD(title || I18N.t('web.editor.new'));
   try { await addComp(title, code); $('#cscript-title').value = ''; } catch (e) { cmsg(e.message, 'err'); }
 };
 $('#cscript-import').onclick = async () => {
@@ -1503,9 +1502,9 @@ $('#cscript-file').onchange = async (e) => {
 let tabs = [];
 function cardFields(c) {
   const f = [];
-  f.push(el('input', { type: 'text', placeholder: 'Título (opcional)', value: c.title || '', oninput: (e) => { c.title = e.target.value; dirty(); } }));
+  f.push(el('input', { type: 'text', placeholder: I18N.t('web.editor.title_optional'), value: c.title || '', oninput: (e) => { c.title = e.target.value; dirty(); } }));
   if (c.type === 'entities') {
-    f.push(el('input', { type: 'text', list: 'entidades', 'data-csv': true, placeholder: 'light.salon, sensor.temperatura… (separadas por comas)', value: (c.entities || []).join(', '),
+    f.push(el('input', { type: 'text', list: 'entidades', 'data-csv': true, placeholder: I18N.t('web.editor.entities_placeholder'), value: (c.entities || []).join(', '),
       oninput: (e) => { c.entities = e.target.value.split(',').map((x) => x.trim()).filter(Boolean); dirty(); } }));
   } else if (c.type === 'camera') {
     f.push(el('input', { type: 'text', list: 'entidades', placeholder: 'camera.entrada', value: c.entity || '', oninput: (e) => { c.entity = e.target.value.trim(); dirty(); } }));
@@ -1543,8 +1542,8 @@ function cardSummary(c) {
         PM.bubbles(m.render(testHA(), testScreen('home'), bd.cfg)).forEach((x) => row.append(bubblePreview(x, 'home')));
       } catch (e) { row.append(el('span', { class: 'err', textContent: it.script + ': ' + e.message })); }
     }
-    if (!row.children.length) row.append(el('span', { class: 'hint', textContent: (c.items || []).length ? 'Ahora no muestran nada' : 'Sin burbujas' }));
-    return { icon: 'mdi-dots-horizontal-circle-outline', title: c.title || 'Fila de burbujas', sub: '', body: row, kind: 'Fila de burbujas' };
+    if (!row.children.length) row.append(el('span', { class: 'hint', textContent: (c.items || []).length ? I18N.t('web.editor.show_nothing_now') : I18N.t('web.editor.no_bubbles') }));
+    return { icon: 'mdi-dots-horizontal-circle-outline', title: c.title || I18N.t('web.editor.card_bubbles'), sub: '', body: row, kind: I18N.t('web.editor.card_bubbles') };
   }
   const kind = I18N.t(PM.CARD_TYPES[c.type] || c.type);
   const sub = c.type === 'view' ? I18N.t((PM.VIEWS.find((v) => v.key === c.view) || {}).title || c.view)
@@ -1561,10 +1560,10 @@ function edGrid(list, base) {
     if (hasWhen && states) try { whenNow = PM.checkWhen(c.when, testHA(), testScreen('card')); } catch (e) { /* sin datos */ }
     const box = el('div', { class: 'ed-slot w-' + String(c.width || 'full').replace('/', '-') + (sel ? ' sel' : '') + (c.type === 'component' && (compOf(c.component) || {}).children ? ' group' : '') + (whenNow ? '' : ' when-off'),
       onclick: (e) => { e.stopPropagation(); if (dragJustEnded()) return; edSel = path; edAdd = null; renderTabs(); } },
-      el('div', { class: 'ed-head' }, el('span', { class: 'ed-handle', title: 'Arrastrar para mover' }, el('i', { class: 'mdi mdi-drag' })),
+      el('div', { class: 'ed-head' }, el('span', { class: 'ed-handle', title: I18N.t('web.editor.drag_to_move') }, el('i', { class: 'mdi mdi-drag' })),
         el('i', { class: 'mdi ' + s.icon }), el('div', { class: 'ed-txt' },
         el('b', { textContent: s.title }), el('span', { class: 'hint', textContent: [s.kind !== s.title ? s.kind : '', s.sub].filter(Boolean).join(' · ') })),
-        hasWhen ? el('i', { class: 'mdi mdi-eye-off-outline ed-when', title: whenNow ? 'Con condiciones (ahora se ve)' : 'Con condiciones: ahora no se vería' }) : null,
+        hasWhen ? el('i', { class: 'mdi mdi-eye-off-outline ed-when', title: whenNow ? I18N.t('web.editor.conditions_visible') : I18N.t('web.editor.conditions_hidden') }) : null,
         el('span', { class: 'ed-w', textContent: c.width && c.width !== 'full' ? c.width : '' })),
       s.body || null,
       c.type === 'component' && (compOf(c.component) || {}).children ? edGrid(c.cards || (c.cards = []), path) : null);
@@ -1666,11 +1665,11 @@ function edAddPanel() {
   const opt = (kind, label, ic, hint) => el('button', { type: 'button', class: 'ed-opt', onclick: () => pick(kind) },
     el('i', { class: 'mdi ' + ic }), el('b', { textContent: label }), hint ? el('span', { class: 'hint', textContent: hint }) : null);
   return el('div', { class: 'ed-panel' }, el('div', { class: 'sub', textContent: I18N.t('web.editor.add_component') }),
-    el('div', { class: 'ed-opts' }, ...PM.componentList(scripts).map((c) => opt(c.script, c.name, PM.mdi(c.icon) || 'mdi-puzzle-outline', c.builtin ? '' : 'Tuyo')),
-      opt('bubbles', 'Fila de burbujas', 'mdi-dots-horizontal-circle-outline', 'Burbujas en fila')),
+    el('div', { class: 'ed-opts' }, ...PM.componentList(scripts).map((c) => opt(c.script, c.name, PM.mdi(c.icon) || 'mdi-puzzle-outline', c.builtin ? '' : I18N.t('web.editor.yours'))),
+      opt('bubbles', I18N.t('web.editor.card_bubbles'), 'mdi-dots-horizontal-circle-outline', I18N.t('web.editor.bubbles_in_row'))),
     el('div', { class: 'hint', textContent: I18N.t('web.editor.components_are_created') }),
     el('div', { class: 'sub', textContent: I18N.t('web.editor.others') }),
-    el('div', { class: 'ed-opts' }, opt('entities', 'Dispositivos', TYPE_ICONS.entities, 'Fichas de varias entidades'),
+    el('div', { class: 'ed-opts' }, opt('entities', I18N.t('web.editor.card_entities'), TYPE_ICONS.entities, I18N.t('web.editor.tiles_of_entities')),
       opt('camera', I18N.t('web.editor.camera'), TYPE_ICONS.camera)),
     el('div', { class: 'btns' }, el('button', { type: 'button', class: 'btn', textContent: I18N.t('web.editor.cancel'), onclick: () => { edAdd = null; renderTabs(); } })));
 }
@@ -1701,7 +1700,7 @@ function edCardPanel() {
   let body = [];
   if (c.type === 'component') {
     const m = compOf(c.component);
-    if (!m) body = [el('div', { class: 'err', textContent: 'No se encuentra el componente ' + c.component + ' (o tiene un error).' })];
+    if (!m) body = [el('div', { class: 'err', textContent: I18N.t('web.editor.component_not_found_prefix') + c.component + I18N.t('web.editor.or_has_error') })];
     else {
       body = fieldsForm(m.config, () => c.config || {}, (k, v) => { c.config = Object.assign({}, c.config, { [k]: v }); dirty(); clearTimeout(edTimer); edTimer = setTimeout(paintGrid, 400); }, 'c');
       if (m.children) body.push(el('div', { class: 'hint', textContent: I18N.t('web.editor.what_inside_edited') }));
@@ -1719,7 +1718,7 @@ function edCardPanel() {
         sureBtn({ class: 'btn danger' }, I18N.t('panel.settings.delete'), I18N.t('panel.notices.sure_tap_again'), () => { list.splice(i, 1); edSel = null; renderTabs(); dirty(); }),
         el('button', { type: 'button', class: 'btn', textContent: I18N.t('panel.sheets.close'), onclick: () => { edSel = null; renderTabs(); } }))),
     el('div', { class: 'field' }, el('label', { textContent: I18N.t('web.editor.width') }), widths),
-    c.type === 'component' || c.type === 'bubbles' ? null : el('div', { class: 'hint', textContent: 'Estas tarjetas ocupan el ancho que elijas, pero se ven como antes.' }),
+    c.type === 'component' || c.type === 'bubbles' ? null : el('div', { class: 'hint', textContent: I18N.t('web.editor.old_cards_hint') }),
     ...body);
 }
 /** «Mostrar solo si…»: condiciones de esta tarjeta en este sitio (c.when) */
@@ -1742,7 +1741,7 @@ function whenEditor(c) {
       f.push(ent, op);
       if (['is', 'not', 'gt', 'lt'].includes(op.value)) {
         const st = states && r.entity && states[r.entity];
-        f.push(el('input', { type: 'text', value: r.value ?? '', placeholder: st ? 'Ahora: ' + st.state : 'Valor (p. ej. on, home, 20)', oninput: (e) => { r.value = e.target.value; save(); }, onchange: () => paint() }));
+        f.push(el('input', { type: 'text', value: r.value ?? '', placeholder: st ? I18N.t('web.editor.now_prefix') + st.state : I18N.t('web.editor.value_placeholder'), oninput: (e) => { r.value = e.target.value; save(); }, onchange: () => paint() }));
       }
     } else if (kind.value === 'time') {
       f.push(el('div', { class: 'add' }, el('input', { type: 'time', value: r.from || '07:00', onchange: (e) => { r.from = e.target.value; save(); } }),
@@ -1761,7 +1760,7 @@ function whenEditor(c) {
     let ok = null;
     try { ok = PM.checkWhen({ rules: [r] }, testHA(), testScreen('card')); } catch (e) { /* sin datos */ }
     return el('div', { class: 'when-rule' }, el('div', { class: 'when-head' }, kind,
-      states ? el('span', { class: 'pill' + (ok ? ' ok' : ''), textContent: ok ? 'ahora sí' : 'ahora no' }) : null,
+      states ? el('span', { class: 'pill' + (ok ? ' ok' : ''), textContent: ok ? I18N.t('web.editor.now_yes') : I18N.t('web.editor.now_no') }) : null,
       el('button', { type: 'button', class: 'btn danger mv', textContent: '×', title: I18N.t('web.editor.remove_condition'), onclick: () => { w.rules.splice(i, 1); save(true); } })), ...f);
   };
   const paint = () => {
@@ -1787,29 +1786,29 @@ function convertViews() {
     visible: (id) => !lists.hiddenEntities.includes(id) && !lists.excludePlatforms.includes((info[id] || {}).platform) && (info[id] || {}).platform !== 'mi_scooter_ble' };
   tabs.forEach((t) => { t.cards = PM.expandViews(t.cards, testHA(), opts); });
   dirty();
-  msg((panelData && panelData.info ? '' : '⚠ El panel no está encendido: sin zonas. ') + 'Las pestañas se han montado con componentes.');
+  msg((panelData && panelData.info ? '' : '⚠ El panel no está encendido: sin zonas. ') + I18N.t('web.editor.tabs_built'));
 }
 function renderTabs() {
   convertViews();
   if (edTab >= tabs.length) edTab = Math.max(0, tabs.length - 1);
   const t = tabs[edTab];
   $('#ed-tabs').replaceChildren(...tabs.map((x, i) => el('button', { type: 'button', class: 'ed-tab' + (i === edTab ? ' on' : ''),
-    onclick: () => { edTab = i; edSel = edAdd = null; renderTabs(); } }, el('i', { class: 'mdi ' + (PM.mdi(x.icon) || 'mdi-tab') }), x.title || 'Sin nombre')),
+    onclick: () => { edTab = i; edSel = edAdd = null; renderTabs(); } }, el('i', { class: 'mdi ' + (PM.mdi(x.icon) || 'mdi-tab') }), x.title || I18N.t('web.editor.no_name'))),
     el('button', { type: 'button', class: 'ed-tab', textContent: I18N.t('web.editor.tab'), onclick: () => {
-      tabs.push({ id: 't-' + Date.now().toString(36), title: 'Nueva', icon: 'mdi:star-outline', cards: [] }); edTab = tabs.length - 1; edSel = edAdd = null; renderTabs(); dirty(); } }));
+      tabs.push({ id: 't-' + Date.now().toString(36), title: I18N.t('web.editor.new_f'), icon: 'mdi:star-outline', cards: [] }); edTab = tabs.length - 1; edSel = edAdd = null; renderTabs(); dirty(); } }));
   if (!t) { $('#ed-tab').replaceChildren(); $('#ed-grid').replaceChildren(); $('#ed-panel').replaceChildren(); return; }
   t.cards = t.cards || [];
   $('#ed-tab').replaceChildren(el('div', { class: 'tab-head' },
     el('input', { type: 'text', placeholder: I18N.t('panel.sheets.name'), value: t.title || '', oninput: (e) => { t.title = e.target.value; dirty(); $('#ed-tabs .on').lastChild.textContent = t.title; } }),
-    el('input', { type: 'text', placeholder: 'Icono (mdi:home)', value: t.icon || '', oninput: (e) => { t.icon = e.target.value.trim(); dirty(); } }),
+    el('input', { type: 'text', placeholder: I18N.t('web.editor.icon_placeholder'), value: t.icon || '', oninput: (e) => { t.icon = e.target.value.trim(); dirty(); } }),
     el('div', { class: 'btns' },
       el('button', { type: 'button', class: 'btn mv', textContent: '↑', title: I18N.t('web.editor.move_up'), disabled: edTab === 0, onclick: () => { [tabs[edTab - 1], tabs[edTab]] = [tabs[edTab], tabs[edTab - 1]]; edTab--; renderTabs(); dirty(); } }),
       el('button', { type: 'button', class: 'btn mv', textContent: '↓', title: I18N.t('web.editor.move_down'), disabled: edTab === tabs.length - 1, onclick: () => { [tabs[edTab + 1], tabs[edTab]] = [tabs[edTab], tabs[edTab + 1]]; edTab++; renderTabs(); dirty(); } }),
-      sureBtn({ class: 'btn danger mv', title: 'Quitar pestaña' }, '×', '¿Quitar?', () => { tabs.splice(edTab, 1); edSel = edAdd = null; renderTabs(); dirty(); }))));
+      sureBtn({ class: 'btn danger mv', title: I18N.t('web.editor.remove_tab') }, '×', I18N.t('web.editor.remove_question'), () => { tabs.splice(edTab, 1); edSel = edAdd = null; renderTabs(); dirty(); }))));
   paintGrid();
   $('#ed-panel').replaceChildren(...[edAdd ? edAddPanel() : edSel ? edCardPanel() : el('div', { class: 'hint', textContent: I18N.t('web.editor.tap_card_change') })].filter(Boolean));
 }
-{ const r = $('#tab-reset'), yes = sureBtn({ class: 'btn', id: 'tab-reset' }, r.textContent, '¿Seguro? Se pierden las tuyas. Toca otra vez',
+{ const r = $('#tab-reset'), yes = sureBtn({ class: 'btn', id: 'tab-reset' }, r.textContent, I18N.t('web.editor.sure_lose_yours'),
   () => { tabs = PM.tabList(null); edTab = 0; edSel = edAdd = null; renderTabs(); dirty(); }); r.replaceWith(yes); }
 let names = {};
 
@@ -1934,7 +1933,7 @@ const EXTRA = {
   sonido: { label: 'panel.settings.sound', snap: null,
     get: () => ({ music: +$('#snd-music-vol').value, master: +$('#snd-master-vol').value, voiceVolume: +$('#snd-voice-vol').value, micGain: +$('#snd-mic').value }),
     save: async (cur, old) => { const d = {}; for (const k in cur) if (cur[k] !== old[k]) d[k] = cur[k]; await api('POST', '/api/sonido', d); } },
-  altavoz: { label: 'Altavoz', snap: null,
+  altavoz: { label: I18N.t('web.sound.speaker'), snap: null,
     get: () => ({ enabled: $('#spk-enabled').checked, name: $('#spk-name').value.trim(), device: $('#spk-device').value, entity: $('#spk-entity').value,
       closeAfter: +$('#spk-close').value, npSpeakers: npSpk.slice() }),
     save: async (cur) => { const r = await api('POST', '/api/altavoz', cur); spkMsg(r.mensaje, true); } },
@@ -1963,7 +1962,7 @@ async function loadEntities() {
     spkEntities();
     Object.keys(lists).forEach(renderChips);
     $('#entidades-msg').textContent = `${ents.length} entidades de Home Assistant para elegir.`;
-  } catch (e) { $('#entidades-msg').textContent = 'No se pudo leer la lista de entidades: ' + e.message; }
+  } catch (e) { $('#entidades-msg').textContent = I18N.t('web.general.entities_error_prefix') + e.message; }
 }
 /* ---------- el panel en Home Assistant por MQTT ---------- */
 const EXPOSE_KEYS = ['screen', 'brightness', 'volume', 'music_volume', 'ambient', 'last_touch', 'reload'];
@@ -1991,11 +1990,11 @@ async function loadMqtt() {
   let estado;
   try {
     const r = await api('GET', '/api/mqtt');
-    estado = { connected: I18N.t('panel.settings.connected'), connecting: I18N.t('web.general.connecting'), off: I18N.t('web.sound.off') }[r.status] || ('Error: ' + (r.error || r.status));
+    estado = { connected: I18N.t('panel.settings.connected'), connecting: I18N.t('web.general.connecting'), off: I18N.t('web.sound.off') }[r.status] || (I18N.t('panel.status.error_prefix') + (r.error || r.status));
     const pre = $('#mqtt-log'), atEnd = pre.scrollTop + pre.clientHeight >= pre.scrollHeight - 4;
     pre.textContent = (r.log || []).join(String.fromCharCode(10)) || t('web.general.nothing_has_happened');
     if (atEnd) pre.scrollTop = pre.scrollHeight;
-  } catch (e) { estado = 'Error: ' + e.message; }
+  } catch (e) { estado = I18N.t('panel.status.error_prefix') + e.message; }
   $('#mqtt-info').replaceChildren(el('dt', { textContent: I18N.t('panel.sheets.status') }), el('dd', { textContent: estado }));
 }
 // con el registro abierto se va actualizando (cada 3 s)
@@ -2011,14 +2010,14 @@ async function load() {
   loadSpk(); loadVoz(); loadSnd();
   loadUpd();
   loadMqtt(); setTimeout(loadMqtt, 4000);
-  loadScripts().catch((e) => bmsg('No se pudo leer el funcionamiento de las burbujas: ' + e.message, 'err'));
+  loadScripts().catch((e) => bmsg(I18N.t('web.editor.bubbles_error_prefix') + e.message, 'err'));
 }
 
 /* ---------- fuentes de fotos (conectores) ---------- */
 const SRC_TYPES = {
   immich: { icon: '🖼️', label: 'web.ambient.immich' },
   google: { icon: '🟦', label: 'web.ambient.google_photos' },
-  ha_media: { icon: '🏠', label: 'Carpeta de Home Assistant' },
+  ha_media: { icon: '🏠', label: 'web.ambient.ha_folder' },
   urls: { icon: '🔗', label: 'web.ambient.photos_by_url' },
 };
 let sources = [];
@@ -2043,20 +2042,20 @@ function input(value, placeholder, onInput, type = 'text') {
 function hint(text) { const s = document.createElement('span'); s.className = 'hint'; s.textContent = t(text); return s; }
 function renderSources() {
   const box = $('#sources');
-  if (!sources.length) { box.replaceChildren(hint('Sin fuentes: el modo ambiente usa un degradado de color.')); return; }
+  if (!sources.length) { box.replaceChildren(hint(I18N.t('web.ambient.no_sources'))); return; }
   box.replaceChildren(...sources.map((src, i) => {
     const t = SRC_TYPES[src.type] || { icon: '❔', label: src.type };
     const card = document.createElement('div'); card.className = 'src' + (src.enabled === false ? ' off' : '');
     const head = document.createElement('div'); head.className = 'src-head';
     const title = document.createElement('b'); title.textContent = `${t.icon} ${I18N.t(t.label)}`;
-    const sw = document.createElement('label'); sw.className = 'switch'; sw.title = 'Activada'; sw.innerHTML = '<input type="checkbox"><span></span>';
+    const sw = document.createElement('label'); sw.className = 'switch'; sw.title = I18N.t('web.ambient.enabled'); sw.innerHTML = '<input type="checkbox"><span></span>';
     sw.firstChild.checked = src.enabled !== false;
     sw.firstChild.onchange = () => { src.enabled = sw.firstChild.checked; card.classList.toggle('off', !src.enabled); dirty(); };
     const del = document.createElement('button'); del.type = 'button'; del.className = 'btn danger'; del.textContent = I18N.t('panel.quick.remove');
     del.onclick = () => { sources.splice(i, 1); renderSources(); dirty(); };
     head.append(title, sw, del);
     const body = document.createElement('div'); body.className = 'src-body';
-    body.append(input(src.name, 'Nombre (opcional; si no, el del álbum)', (v) => { src.name = v; }));
+    body.append(input(src.name, I18N.t('web.ambient.name_optional'), (v) => { src.name = v; }));
     // Modo de visualización propio de esta fuente (vacío = el de por defecto)
     const fit = document.createElement('select');
     const defLabel = $('#photos-fit').selectedOptions[0] ? $('#photos-fit').selectedOptions[0].textContent : '';
@@ -2067,16 +2066,16 @@ function renderSources() {
     body.append(fit);
     if (src.type === 'immich') {
       body.append(input(src.url, 'https://immich.casa/share/XXXX', (v) => { src.url = v.trim(); }),
-        input('', src.hasApiKey ? 'Clave API guardada (escribe para cambiarla)' : 'Clave API (solo para álbumes privados …/albums/<id>)', (v) => { src.apiKey = v.trim(); }, 'password'),
+        input('', src.hasApiKey ? I18N.t('web.ambient.key_saved') : I18N.t('web.ambient.key_placeholder'), (v) => { src.apiKey = v.trim(); }, 'password'),
         hint(I18N.t('web.ambient.shared_album_link')));
     } else if (src.type === 'google') {
       body.append(input(src.url, 'https://photos.app.goo.gl/XXXX', (v) => { src.url = v.trim(); }),
         hint(I18N.t('web.ambient.google_photos_album')));
     } else if (src.type === 'ha_media') {
-      body.append(input(src.folder, 'Carpeta, p. ej. fotos (vacío = todo «My media»)', (v) => { src.folder = v.trim(); }),
-        hint('Fotos que subas a Home Assistant → Medios → My media. Solo se leen.'));
+      body.append(input(src.folder, I18N.t('web.ambient.folder_placeholder'), (v) => { src.folder = v.trim(); }),
+        hint(I18N.t('web.ambient.ha_media_hint')));
     } else if (src.type === 'urls') {
-      body.append(input((src.urls || []).join('\n'), 'Una URL de foto por línea', (v) => { src.urls = v.split('\n').map((x) => x.trim()).filter(Boolean); }, 'textarea'));
+      body.append(input((src.urls || []).join('\n'), I18N.t('web.ambient.urls_placeholder'), (v) => { src.urls = v.split('\n').map((x) => x.trim()).filter(Boolean); }, 'textarea'));
     }
     card.append(head, body);
     return card;
@@ -2097,13 +2096,13 @@ async function loadRed() {
     const r = await api('GET', '/api/red');
     const rows = [[I18N.t('panel.sheets.name'), r.hostname], [I18N.t('panel.settings.ip'), r.ipv4 ? I18N.t(r.ipv4.method === 'manual' ? 'web.system.ip_static' : 'web.system.ip_auto', { ip: r.ip }) : r.ip]];
     if (r.wifi) rows.push([I18N.t('panel.settings.wifi'), I18N.t('web.system.wifi_signal', { ssid: r.wifi.ssid, n: r.wifi.signal })]);
-    else if (r.connection) rows.push(['Conexión', r.connection.type === 'ethernet' ? 'Cable de red' : r.connection.name]);
+    else if (r.connection) rows.push([I18N.t('panel.settings.connection'), r.connection.type === 'ethernet' ? I18N.t('panel.settings.ethernet') : r.connection.name]);
     if (r.gateway) rows.push([I18N.t('web.system.gateway'), r.gateway]);
     if (r.dns) rows.push(['DNS', r.dns]);
     rows.push([I18N.t('web.system.web'), r.urls.join('  ·  ')]);
     $('#red-info').replaceChildren(...rows.flatMap(([k, v]) => { const dt = document.createElement('dt'), dd = document.createElement('dd'); dt.textContent = t(k); dd.textContent = t(v); return [dt, dd]; }));
     $('#red-controles').classList.toggle('hidden', !r.nmcli);
-    if (!r.nmcli) redMsg('Este equipo no usa NetworkManager: solo se muestra la información.');
+    if (!r.nmcli) redMsg(I18N.t('web.system.no_networkmanager'));
     else if (r.simulated) redMsg(I18N.t('web.system.simulated_network_changes'));
     $('#hostname').value = r.hostname;
     const m = (r.ipv4 && r.ipv4.method) || 'auto';
@@ -2112,10 +2111,10 @@ async function loadRed() {
     if (r.ipv4 && r.ipv4.addresses) { const [a, p] = r.ipv4.addresses.split(',')[0].split('/'); $('#ip-address').value = a; $('#ip-prefix').value = p || 24; }
     $('#ip-gateway').value = (r.ipv4 && r.ipv4.gateway) || r.gateway || '';
     $('#ip-dns').value = (r.ipv4 && r.ipv4.dns) || '';
-  } catch (e) { redMsg('No se pudo leer la red: ' + e.message, false); }
+  } catch (e) { redMsg(I18N.t('web.system.network_error_prefix') + e.message, false); }
 }
 $('#wifi-buscar').onclick = async () => {
-  redMsg('Buscando redes WiFi…');
+  redMsg(I18N.t('web.system.scanning_wifi'));
   try {
     const nets = await api('POST', '/api/red/escanear');
     $('#wifi-list').replaceChildren(...nets.map((n) => {
@@ -2126,7 +2125,7 @@ $('#wifi-buscar').onclick = async () => {
         $('#wifi-ssid').textContent = n.ssid; $('#wifi-pass').classList.toggle('hidden', !n.secure); $('#wifi-form').classList.remove('hidden'); };
       return b;
     }));
-    redMsg(nets.length ? `${nets.length} redes encontradas. Toca una para conectarte.` : 'No se ha encontrado ninguna red.');
+    redMsg(nets.length ? `${nets.length} redes encontradas. Toca una para conectarte.` : I18N.t('web.system.no_networks'));
   } catch (e) { redMsg(e.message, false); }
 };
 $('#wifi-ok').onclick = async () => {
@@ -2138,7 +2137,7 @@ document.querySelectorAll('input[name=ipm]').forEach((r) => (r.onchange = () => 
 $('#ip-ok').onclick = async () => {
   const method = document.querySelector('input[name=ipm]:checked').value;
   const body = { method, address: $('#ip-address').value.trim(), prefix: +$('#ip-prefix').value || 24, gateway: $('#ip-gateway').value.trim(), dns: $('#ip-dns').value.trim() };
-  const txt = method === 'manual' ? `¿Poner la IP fija ${body.address}? Después tendrás que entrar en http://${body.address}:8080` : '¿Volver a la IP automática? La dirección puede cambiar.';
+  const txt = method === 'manual' ? `¿Poner la IP fija ${body.address}? Después tendrás que entrar en http://${body.address}:8080` : I18N.t('web.system.back_to_dhcp');
   if (!confirm(txt)) return;
   try { const r = await api('POST', '/api/red/ip', body); redMsg(r.mensaje, true); } catch (e) { redMsg(e.message, false); }
 };
@@ -2162,7 +2161,7 @@ function spkFill(r) {
   $('#spk-name').value = s.name; $('#spk-name').placeholder = r.defaultName;
   const sel = $('#spk-device');
   const outs = r.outputs.slice();
-  if (s.device && !outs.some((o) => o.id === s.device)) outs.push({ id: s.device, name: s.device + ' (no está conectada)' });
+  if (s.device && !outs.some((o) => o.id === s.device)) outs.push({ id: s.device, name: s.device + I18N.t('web.sound.not_connected_f') });
   sel.replaceChildren(...outs.map((o) => { const op = document.createElement('option'); op.value = o.id; op.textContent = o.name; return op; }));
   sel.value = s.device; sel.dispatchEvent(new Event('change'));
   spkEntity = s.entity; npSpk = (s.npSpeakers || []).slice(); spkEntities();
@@ -2184,7 +2183,7 @@ function spkEntities() {
   sel.value = spkEntity; sel.dispatchEvent(new Event('change'));
 }
 async function loadSpk() {
-  try { spkFill(await api('GET', '/api/altavoz')); } catch (e) { spkMsg('No se pudo leer el altavoz: ' + e.message, false); }
+  try { spkFill(await api('GET', '/api/altavoz')); } catch (e) { spkMsg(I18N.t('web.sound.speaker_error_prefix') + e.message, false); }
 }
 /* ---------- sonido: respuestas del asistente y micro (se aplican al soltar) ---------- */
 function sndFill(r) {
@@ -2204,7 +2203,7 @@ function sndFill(r) {
   EXTRA.sonido.snap = JSON.stringify(EXTRA.sonido.get());
 }
 async function loadSnd() {
-  try { sndFill(await api('GET', '/api/sonido')); } catch (e) { $('#snd-msg').textContent = 'No se pudo leer el sonido: ' + e.message; }
+  try { sndFill(await api('GET', '/api/sonido')); } catch (e) { $('#snd-msg').textContent = I18N.t('web.sound.sound_error_prefix') + e.message; }
 }
 ['snd-music-vol', 'snd-master-vol', 'snd-voice-vol', 'snd-mic'].forEach(bindRange);
 
@@ -2234,7 +2233,7 @@ function vozFill(r) {
   EXTRA.voz.snap = JSON.stringify(EXTRA.voz.get());
 }
 async function loadVoz() {
-  try { vozFill(await api('GET', '/api/voz')); } catch (e) { vozMsg('No se pudo leer el asistente de voz: ' + e.message, false); }
+  try { vozFill(await api('GET', '/api/voz')); } catch (e) { vozMsg(I18N.t('web.beta.voice_error_prefix') + e.message, false); }
 }
 
 /* ---------- actualizaciones ---------- */
@@ -2271,19 +2270,19 @@ async function loadUpd() {
   try { const r = await api('GET', '/api/actualizaciones'); if (r_applying && r.error) r_applying = false; updFill(r); }
   catch (e) {
     if (r_applying && e.message === 'Inicia sesión') { r_applying = false; showLogin('Panel actualizado ✓ Vuelve a entrar.'); }   // tras reiniciar hay que entrar otra vez
-    else if (r_applying) { updMsg('Reiniciando el panel con la versión nueva…'); clearTimeout(updTimer); updTimer = setTimeout(loadUpd, 3000); }   // el ayudante se reinicia
-    else updMsg('No se pudieron leer las actualizaciones: ' + e.message, false);
+    else if (r_applying) { updMsg(I18N.t('web.system.restarting_new')); clearTimeout(updTimer); updTimer = setTimeout(loadUpd, 3000); }   // el ayudante se reinicia
+    else updMsg(I18N.t('web.system.updates_error_prefix') + e.message, false);
   }
 }
 let r_applying = false;
 $('#upd-mode').addEventListener('change', () => $('#upd-hour-box').classList.toggle('hidden', $('#upd-mode').value !== 'auto'));
 $('#upd-check').onclick = async () => {
   updMsg(I18N.t('web.system.checking'));
-  try { const r = await api('POST', '/api/actualizaciones', { accion: 'comprobar' }); updFill(r.info); if (!r.info.error) updMsg(r.info.available.length ? 'Hay versión nueva.' : 'Ya está al día ✓', true); }
+  try { const r = await api('POST', '/api/actualizaciones', { accion: 'comprobar' }); updFill(r.info); if (!r.info.error) updMsg(r.info.available.length ? I18N.t('web.system.new_version') : I18N.t('panel.settings.already_up_to_date'), true); }
   catch (e) { updMsg(e.message, false); }
 };
 $('#upd-apply').onclick = async () => {
-  if (!confirm('¿Actualizar ahora? El panel se reiniciará unos segundos.')) return;
+  if (!confirm(I18N.t('web.system.update_confirm'))) return;
   updMsg(I18N.t('web.system.updating')); r_applying = true;
   try { const r = await api('POST', '/api/actualizaciones', { accion: 'actualizar' }); updMsg(r.mensaje, true); updFill(r.info); updTimer = setTimeout(loadUpd, 2000); }
   catch (e) { updMsg(e.message, false); r_applying = false; }
@@ -2295,7 +2294,7 @@ $('#login-form').addEventListener('submit', async (e) => {
   try { await api('POST', '/api/login', { password: $('#pw').value }); $('#pw').value = ''; await load(); }
   catch (err) { $('#login-msg').textContent = err.message; }
 });
-$('#logout').onclick = async () => { await api('POST', '/api/logout').catch(() => {}); showLogin('Sesión cerrada'); };
+$('#logout').onclick = async () => { await api('POST', '/api/logout').catch(() => {}); showLogin(I18N.t('web.login.logged_out')); };
 $('#guardar').onclick = async () => {
   msg(I18N.t('web.login.saving'));
   try {
@@ -2336,8 +2335,8 @@ window.addEventListener('beforeunload', (e) => { if (isDirty) e.preventDefault()
     const st = await (await fetch('/api/estado', { credentials: 'same-origin' })).json();
     $('#sim-banner').classList.toggle('hidden', !st.simulated);
     if (st.session) await load();
-    else showLogin(st.password ? '' : 'Aún no hay contraseña. En la Pi ejecuta: python3 ~/ha-panel/panel-helper.py --set-password');
-  } catch (e) { showLogin('No se pudo conectar con el panel'); }
+    else showLogin(st.password ? '' : I18N.t('web.login.no_password_yet'));
+  } catch (e) { showLogin(I18N.t('web.login.could_not_connect')); }
 })();
 
 /* ---------- desplegables con estilo y buscador ----------
@@ -2374,7 +2373,7 @@ function fancySelect(sel) {
 function fsShow(sel, btn) {
   fsClose();
   const opts = [...sel.options];
-  const search = opts.length > 7 ? el('input', { type: 'search', class: 'fs-search', placeholder: 'Buscar…' }) : null;
+  const search = opts.length > 7 ? el('input', { type: 'search', class: 'fs-search', placeholder: I18N.t('web.editor.search') }) : null;
   const list = el('div', { class: 'fs-list' });
   const pop = el('div', { class: 'fs-pop' }, search, list);
   let shown = [], active = 0;

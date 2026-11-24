@@ -84,7 +84,7 @@ class HAConn {
     ws.onclose = () => {
       clearInterval(this.ping);
       this.onstatus(false);
-      for (const p of this.pending.values()) p.reject(new Error('Conexión perdida'));
+      for (const p of this.pending.values()) p.reject(new Error(I18N.t('panel.status.connection_lost')));
       this.pending.clear(); this.subs.clear();
       setTimeout(() => this.connect(), this.backoff);
       this.backoff = Math.min(this.backoff * 2, 30000);
@@ -99,7 +99,7 @@ class HAConn {
       this.ping = setInterval(() => this.send({ type: 'ping' }).catch(() => {}), 30000);
       this.onready();
     } else if (m.type === 'auth_invalid') {
-      this.onstatus(false, 'Token no válido: revisa config.js');
+      this.onstatus(false, I18N.t('panel.status.invalid_token'));
     } else if (m.type === 'result' || m.type === 'pong') {
       const p = this.pending.get(m.id);
       if (!p) return;
@@ -113,7 +113,7 @@ class HAConn {
   }
   send(msg) {
     return new Promise((resolve, reject) => {
-      if (!this.ws || this.ws.readyState !== 1) return reject(new Error('Sin conexión'));
+      if (!this.ws || this.ws.readyState !== 1) return reject(new Error(I18N.t('panel.status.offline')));
       const id = this.id++;
       this.pending.set(id, { resolve, reject });
       this.ws.send(JSON.stringify(Object.assign({}, msg, { id })));
@@ -148,7 +148,7 @@ const api = {
 /** Llama a un servicio; si falla avisa y repinta el estado real. */
 function call(dom, service, data, id, returnResponse) {
   return api.callService(dom, service, data, id, returnResponse).catch((e) => {
-    toast('Error: ' + e.message, true);
+    toast(I18N.t('panel.status.error_prefix') + e.message, true);
     if (id) fire(id);
     return null;
   });
@@ -290,10 +290,10 @@ const T = new Proxy(T_ES, { get: (o, k) => (o[k] != null ? t(o[k]) : undefined) 
 const BIN = {
   door: ['panel.states.closed_f', 'panel.states.open_f'], window: ['panel.states.closed_f', 'panel.states.open_f'], garage_door: ['panel.states.closed_f', 'panel.states.open_f'],
   opening: ['panel.states.closed', 'panel.states.open'], motion: ['panel.settings.no_motion', 'panel.settings.motion'], occupancy: ['panel.states.clear', 'panel.states.occupied'],
-  presence: ['panel.states.away', 'Presente'], moisture: ['Seco', 'Fuga de agua'], smoke: ['panel.states.ok', 'Humo'],
-  gas: ['panel.states.ok', 'panel.states.gas'], connectivity: ['Desconectado', 'panel.settings.connected'], battery_charging: ['panel.states.not_charging', 'panel.states.loading'],
-  plug: ['Desenchufado', 'Enchufado'], lock: ['panel.states.closed', 'panel.states.open'], moving: ['panel.states.stopped', 'En movimiento'],
-  power: ['panel.states.off', 'panel.states.on'], problem: ['panel.states.ok', 'Problema'], battery: ['Normal', 'Batería baja'],
+  presence: ['panel.states.away', 'panel.states.present'], moisture: ['panel.states.dry_state', 'panel.states.leak'], smoke: ['panel.states.ok', 'panel.states.smoke'],
+  gas: ['panel.states.ok', 'panel.states.gas'], connectivity: ['panel.states.disconnected', 'panel.settings.connected'], battery_charging: ['panel.states.not_charging', 'panel.states.loading'],
+  plug: ['panel.states.unplugged', 'panel.states.plugged_in'], lock: ['panel.states.closed', 'panel.states.open'], moving: ['panel.states.stopped', 'panel.states.moving'],
+  power: ['panel.states.off', 'panel.states.on'], problem: ['panel.states.ok', 'panel.states.problem'], battery: ['panel.states.normal', 'panel.states.battery_low'],
 };
 const ALERT_BIN = ['moisture', 'smoke', 'gas', 'problem', 'safety', 'carbon_monoxide'];
 const DOMAIN_ICON = {
@@ -659,14 +659,14 @@ const SHEETS = {
       const sel = new Set();
       const go = h('button', { class: 'big-action primary' }, icon('mdi-play'), h('span'));
       const paint = () => {
-        go.lastChild.textContent = sel.size ? `Limpiar ${sel.size} habitaci${sel.size > 1 ? 'ones' : 'ón'}` : 'Elige habitaciones';
+        go.lastChild.textContent = sel.size ? `Limpiar ${sel.size} habitaci${sel.size > 1 ? 'ones' : 'ón'}` : I18N.t('panel.sheets.choose_rooms');
         go.classList.toggle('disabled', !sel.size);
       };
       go.addEventListener('click', () => {
-        if (!sel.size) return toast('Elige al menos una habitación');
+        if (!sel.size) return toast(I18N.t('panel.sheets.choose_one_room'));
         const names = rooms.filter((r) => sel.has(r.id)).map((r) => r.name);
         call('dreame_vacuum', 'vacuum_clean_segment', { segments: [...sel] }, id)
-          .then((r) => { if (r !== null) { toast('Limpiando: ' + names.join(', ')); closeSheet(); } });
+          .then((r) => { if (r !== null) { toast(I18N.t('panel.sheets.cleaning_prefix') + names.join(', ')); closeSheet(); } });
       });
       const chips = h('div', { class: 'room-chips' }, rooms.map((r) => {
         const c = h('button', { class: 'room-chip' }, icon(mdi(r.icon) || 'mdi-home-outline'), h('span', null, r.name));
@@ -674,8 +674,8 @@ const SHEETS = {
         return c;
       }));
       paint();
-      parts.push(h('div', { class: 'vac-title' }, '¿Qué habitaciones limpio?'), chips,
-        h('div', { class: 'btn-row' }, go, b('mdi-home-city-outline', 'Toda la casa', 'start')));
+      parts.push(h('div', { class: 'vac-title' }, I18N.t('panel.sheets.which_rooms')), chips,
+        h('div', { class: 'btn-row' }, go, b('mdi-home-city-outline', I18N.t('panel.sheets.whole_house'), 'start')));
     } else {
       parts.push(h('div', { class: 'btn-row' }, b('mdi-play', I18N.t('panel.sheets.clean'), 'start', 'primary')));
     }
@@ -685,7 +685,7 @@ const SHEETS = {
     if (shortcuts.length) {
       parts.push(h('div', { class: 'vac-title' }, I18N.t('panel.sheets.app_shortcuts')), h('div', { class: 'chips vac-shortcuts' }, shortcuts.map((s) =>
         h('button', { class: 'chip', onclick: () => call('dreame_vacuum', 'vacuum_start_shortcut', { shortcut_id: s.id }, id)
-          .then((r) => { if (r !== null) { toast('En marcha: ' + s.name); closeSheet(); } }) }, icon('mdi-flash'), s.name))));
+          .then((r) => { if (r !== null) { toast(I18N.t('panel.sheets.running_prefix') + s.name); closeSheet(); } }) }, icon('mdi-flash'), s.name))));
     }
     parts.push(h('div', { class: 'btn-row' }, b('mdi-pause', I18N.t('panel.sheets.pause'), 'pause'), b('mdi-home-import-outline', I18N.t('panel.sheets.return_base'), 'return_to_base')));
     return parts;
@@ -732,9 +732,9 @@ function historyChart(id) {
     } else {
       const fake = (s) => fmtState({ entity_id: id, state: s, attributes: st.attributes });
       const rows = pts.slice(-8).reverse().map((p) => h('div', null, h('span', null, fake(p.s)), h('span', { class: 'muted' }, relTime(new Date(p.t).toISOString()))));
-      box.replaceChildren(h('div', { class: 'history-list' }, rows.length ? rows : h('div', null, 'Sin cambios en 24 h')));
+      box.replaceChildren(h('div', { class: 'history-list' }, rows.length ? rows : h('div', null, I18N.t('panel.sheets.no_changes_24h'))));
     }
-  }).catch(() => box.replaceChildren(h('div', { class: 'muted' }, 'Historial no disponible')));
+  }).catch(() => box.replaceChildren(h('div', { class: 'muted' }, I18N.t('panel.sheets.history_unavailable'))));
   return box;
 }
 
@@ -1130,7 +1130,7 @@ function printers() {
     }
     list.push({ dev, platform, name, e, nozzles });
   }
-  return (printersCache = list.sort((a, b) => a.name.localeCompare(b.name, 'es')));
+  return (printersCache = list.sort((a, b) => a.name.localeCompare(b.name, I18N.locale())));
 }
 const pState = (p) => (p.e.plug && S.states[p.e.plug] && S.states[p.e.plug].state === 'off') ? 'off'
   : PSTATUS[(S.states[p.e.status] || { state: 'unavailable' }).state] || 'idle';
@@ -1418,7 +1418,7 @@ function saveSettings(quiet) {   // quiet: sin el aviso «Ajustes guardados»
         try { localStorage.setItem(SETTINGS_KEY, JSON.stringify(SET)); } catch (e) { /* sin almacenamiento */ }
       }
       if (!quiet) toast(I18N.t('panel.settings.settings_saved'));
-    } catch (e) { toast('No se pudieron guardar: ' + e.message, true); }
+    } catch (e) { toast(I18N.t('panel.settings.could_not_save_prefix') + e.message, true); }
   }, 600);
 }
 function applySettings() { setLanguage(); applyTheme(); resetIdle(); screenTick(); try { COMPILED.forEach((m) => (m.cache = {})); } catch (e) { /* aún no cargado */ } }
@@ -1430,9 +1430,11 @@ function setLanguage() {
   const want = I18N.resolve(SET.language, HA_LANG || navigator.language);
   if (want === I18N.lang) return;
   I18N.set(want);
+  I18N.page(document.body);   // the fixed texts of index.html (titles…)
   try { renderRail(); render(); } catch (e) { /* aún arrancando */ }
 }
 I18N.set(I18N.resolve(((window.PANEL_HELPER || {}).ajustes || {}).language, navigator.language));
+I18N.page(document.body);
 
 function themeIsLight() {
   if (SET.theme === 'claro') return true;
@@ -1610,18 +1612,18 @@ async function openConfigQR() {
   const net = await fetchNet();
   const body = h('div', { class: 'sheet-body qr-body' });
   if (!net) {
-    body.append(h('div', { class: 'muted' }, 'La configuración desde el móvil funciona en la Raspberry Pi, con el ayudante (panel-helper.py) en marcha.'));
+    body.append(h('div', { class: 'muted' }, I18N.t('panel.settings.phone_setup_needs_pi')));
   } else {
     const url = net.urls[0];
     const svg = qrSvg(url);
     body.append(
       svg ? h('div', { class: 'qr', html: svg }) : null,
       h('div', { class: 'qr-url' }, url),
-      h('div', { class: 'muted small' }, 'También: ' + net.urls.slice(1).join(' · ')),
+      h('div', { class: 'muted small' }, I18N.t('panel.settings.also_prefix') + net.urls.slice(1).join(' · ')),
       h('div', { class: 'qr-steps' },
-        h('div', null, icon('mdi-numeric-1-circle'), 'Escanea el código con la cámara del móvil (conectado a la misma WiFi)'),
-        h('div', null, icon('mdi-numeric-2-circle'), 'Entra con la contraseña que pusiste al instalar el panel'),
-        h('div', null, icon('mdi-numeric-3-circle'), 'Cambia lo que quieras y pulsa Guardar: el panel se actualiza solo')));
+        h('div', null, icon('mdi-numeric-1-circle'), I18N.t('panel.settings.scan_code')),
+        h('div', null, icon('mdi-numeric-2-circle'), I18N.t('panel.settings.log_in_with_password')),
+        h('div', null, icon('mdi-numeric-3-circle'), I18N.t('panel.settings.change_and_save'))));
   }
   $('#sheet-card').replaceChildren(
     h('div', { class: 'sheet-head' }, h('div', { class: 'tile-icon' }, icon('mdi-qrcode')), h('div', { class: 'sheet-title' }, I18N.t('panel.settings.set_up_from')),
@@ -1632,14 +1634,14 @@ async function openConfigQR() {
 function netCard() {
   const rows = h('div', { class: 'set-net' }, h('div', { class: 'muted small' }, I18N.t('panel.settings.reading_network')));
   fetchNet().then((net) => {
-    if (!net) { rows.replaceChildren(h('div', { class: 'muted small' }, 'Disponible en la Raspberry Pi (con el ayudante panel-helper.py).')); return; }
+    if (!net) { rows.replaceChildren(h('div', { class: 'muted small' }, I18N.t('panel.settings.available_on_pi'))); return; }
     const r = (label, val) => setRow(label, null, h('span', { class: 'net-val' }, val));
     rows.replaceChildren(...[
       r(I18N.t('panel.sheets.name'), net.hostname),
       r(I18N.t('panel.settings.ip'), net.ipv4 ? I18N.t(net.ipv4.method === 'manual' ? 'panel.settings.ip_static' : 'panel.settings.ip_auto', { ip: net.ip }) : net.ip),
-      net.wifi ? r(I18N.t('panel.settings.wifi'), `${net.wifi.ssid} · ${net.wifi.signal} %`) : net.connection ? r('Conexión', net.connection.type === 'ethernet' ? 'Cable de red' : net.connection.name) : null,
+      net.wifi ? r(I18N.t('panel.settings.wifi'), `${net.wifi.ssid} · ${net.wifi.signal} %`) : net.connection ? r(I18N.t('panel.settings.connection'), net.connection.type === 'ethernet' ? I18N.t('panel.settings.ethernet') : net.connection.name) : null,
       r(I18N.t('panel.settings.configuration_web'), net.urls[0]),
-      net.simulated ? h('div', { class: 'muted small' }, '🧪 Red simulada (modo pruebas en el ordenador)') : null].filter(Boolean));
+      net.simulated ? h('div', { class: 'muted small' }, I18N.t('panel.settings.simulated_network')) : null].filter(Boolean));
   });
   return h('div', { class: 'card set-card' }, h('div', { class: 'set-title' }, icon('mdi-wifi'), I18N.t('panel.settings.network_setup_from')),
     rows,
@@ -1659,7 +1661,7 @@ function updatesCard() {
   let timer = null;
   const fill = (u) => {
     clearTimeout(timer);
-    if (!u) { body.replaceChildren(h('div', { class: 'muted small' }, 'Disponible en la Raspberry Pi (con el ayudante panel-helper.py).')); return; }
+    if (!u) { body.replaceChildren(h('div', { class: 'muted small' }, I18N.t('panel.settings.available_on_pi'))); return; }
     const n = u.available.length;
     const estado = u.applying ? I18N.t('web.system.updating') : u.checking ? I18N.t('web.system.checking') : n ? I18N.t(n > 1 ? 'panel.settings.new_updates' : 'panel.settings.new_updates_one', { n }) : I18N.t('panel.settings.up_date');
     const val = (t) => h('span', { class: 'net-val', style: 'white-space: nowrap' }, t);
@@ -1673,19 +1675,19 @@ function updatesCard() {
       setRow(I18N.t('panel.sheets.version'), u.current ? u.current.subject : null, val(u.current ? u.current.hash : '¿?')),
       setRow(I18N.t('panel.sheets.status'), u.error || null, h('span', { class: 'pill' + (n || u.error ? '' : ' ok') }, estado)),
       n ? h('div', { class: 'upd-list muted small' }, ...u.available.slice(0, 6).map((c) => h('div', null, '• ' + c.subject))) : null,
-      setBlock(I18N.t('panel.settings.when_there_new'), u.settings.mode === 'auto' ? 'Se actualiza sola cada día a esa hora (el panel se reinicia unos segundos)' : I18N.t('panel.settings.tells_update_button'),
+      setBlock(I18N.t('panel.settings.when_there_new'), u.settings.mode === 'auto' ? I18N.t('panel.settings.auto_update_hint') : I18N.t('panel.settings.tells_update_button'),
         segmented([['avisar', I18N.t('panel.settings.notify_me')], ['auto', I18N.t('panel.settings.automatic')]], u.settings.mode,
           (v) => updApi({ accion: 'ajustes', mode: v }).then(fill).catch((e) => toast(e.message, true)))),
       u.settings.mode === 'auto' ? setRow(I18N.t('web.system.time'), null, h('div', { class: 'stepper' },
         h('button', { class: 'round-btn', onclick: () => stepHour(-1) }, icon('mdi-minus')), hourLab,
         h('button', { class: 'round-btn', onclick: () => stepHour(1) }, icon('mdi-plus')))) : null,
-      !u.sudo ? h('div', { class: 'muted small' }, 'Para instalar paquetes nuevos sin pedir contraseña, lanza una vez scripts/setup-kiosk.sh en la Pi.') : null,
+      !u.sudo ? h('div', { class: 'muted small' }, I18N.t('panel.settings.sudo_hint')) : null,
       h('div', { class: 'btn-row' },
-        h('button', { class: 'big-action', onclick: () => { toast(I18N.t('web.system.checking')); updApi({ accion: 'comprobar' }).then((i) => { fill(i); toast(i.error ? i.error : i.available.length ? 'Hay una versión nueva' : 'Ya está al día ✓', !!i.error); }).catch((e) => toast(e.message, true)); } },
+        h('button', { class: 'big-action', onclick: () => { toast(I18N.t('web.system.checking')); updApi({ accion: 'comprobar' }).then((i) => { fill(i); toast(i.error ? i.error : i.available.length ? I18N.t('panel.settings.new_version') : I18N.t('panel.settings.already_up_to_date'), !!i.error); }).catch((e) => toast(e.message, true)); } },
           icon('mdi-cloud-search'), I18N.t('panel.settings.check')),
-        n && !u.applying ? h('button', { class: 'big-action primary', onclick: () => { toast('Actualizando… el panel se reiniciará solo'); updApi({ accion: 'actualizar' }).then(fill).catch((e) => toast(e.message, true)); } },
-          icon('mdi-download'), 'Actualizar ahora') : null),
-      u.simulated ? h('div', { class: 'muted small' }, '🧪 En el ordenador no se actualiza de verdad') : null].filter(Boolean));
+        n && !u.applying ? h('button', { class: 'big-action primary', onclick: () => { toast(I18N.t('panel.settings.updating_restart')); updApi({ accion: 'actualizar' }).then(fill).catch((e) => toast(e.message, true)); } },
+          icon('mdi-download'), I18N.t('panel.settings.update_now')) : null),
+      u.simulated ? h('div', { class: 'muted small' }, I18N.t('panel.settings.no_real_update')) : null].filter(Boolean));
     if (u.applying || u.checking) timer = setTimeout(() => updApi().then(fill).catch(() => {}), 2000);
   };
   updApi().then(fill).catch(() => fill(null));
@@ -1700,9 +1702,9 @@ function renderSettings() {
   nightBright.set(SET.night.brightness);
 
   const hw = SCREEN.helper;
-  const helperText = !hw ? 'No detectado: el brillo y el apagado se hacen oscureciendo la imagen'
+  const helperText = !hw ? I18N.t('panel.settings.backlight_none')
     : hw.simulated ? I18N.t('panel.settings.simulated_computer_image')
-    : hw.backlight ? 'Brillo real y apagado de la pantalla' : hw.power ? 'Apagado real de la pantalla; brillo por software' : 'Detectado, pero esta pantalla no se puede controlar';
+    : hw.backlight ? I18N.t('panel.settings.backlight_full') : hw.power ? I18N.t('panel.settings.backlight_power') : I18N.t('panel.settings.backlight_no_control');
 
   return [h('div', { class: 'settings' },
     h('div', { class: 'card set-card' }, h('div', { class: 'set-title' }, icon('mdi-monitor'), I18N.t('panel.settings.screen')),
@@ -1726,7 +1728,7 @@ function renderSettings() {
 
     h('div', { class: 'card set-card' }, h('div', { class: 'set-title' }, icon('mdi-image-multiple'), I18N.t('panel.settings.ambient_mode_photos')),
       setRow(I18N.t('panel.settings.show_photos'),
-        PHOTOS.length ? I18N.t('panel.settings.photos_loaded', { n: PHOTOS.length }) : photoSources().length ? I18N.t('panel.ambient.could_not_load') : 'Añade fuentes de fotos desde la web de configuración',
+        PHOTOS.length ? I18N.t('panel.settings.photos_loaded', { n: PHOTOS.length }) : photoSources().length ? I18N.t('panel.ambient.could_not_load') : I18N.t('panel.settings.add_photo_sources'),
         switchBtn(SET.photos.enabled, (v) => { SET.photos.enabled = v; saveSettings(); nextBackground(); })),
       setBlock(I18N.t('panel.settings.how_photos_are'), I18N.t('panel.settings.each_source_can'),
         segmented([['cover', I18N.t('panel.settings.fill')], ['blur', I18N.t('panel.settings.whole_blurred')], ['contain', I18N.t('panel.settings.whole')]],
@@ -1734,10 +1736,10 @@ function renderSettings() {
       setBlock(I18N.t('panel.settings.change_photo_every'), null,
         segmented([[15, '15 s'], [30, '30 s'], [60, '1 min'], [300, '5 min'], [900, '15 min']],
           SET.photos.seconds, (v) => { SET.photos.seconds = v; saveSettings(); nextBackground(); })),
-      ...PHOTO_STATS.map((st) => setRow(st.label, st.error ? 'Error: ' + st.error : null,
+      ...PHOTO_STATS.map((st) => setRow(st.label, st.error ? I18N.t('panel.status.error_prefix') + st.error : null,
         h('span', { class: 'pill' + (st.error ? '' : ' ok') }, st.error ? I18N.t('panel.states.error') : I18N.t('panel.settings.photos_count', { n: st.count })))),
       photoSources().length ? h('div', { class: 'btn-row' },
-        h('button', { class: 'big-action', onclick: async () => { toast('Recargando fotos…'); await loadPhotos(); render(); } }, icon('mdi-image-refresh'), I18N.t('panel.settings.reload_album')),
+        h('button', { class: 'big-action', onclick: async () => { toast(I18N.t('panel.settings.reloading_photos')); await loadPhotos(); render(); } }, icon('mdi-image-refresh'), I18N.t('panel.settings.reload_album')),
         h('button', { class: 'big-action', onclick: () => showAmbient() }, icon('mdi-image-filter-hdr'), I18N.t('panel.sheets.watch_now'))) : null),
 
     h('div', { class: 'card set-card' }, h('div', { class: 'set-title' }, icon('mdi-weather-night'), I18N.t('panel.settings.night_mode')),
@@ -1751,7 +1753,7 @@ function renderSettings() {
     h('div', { class: 'card set-card' }, h('div', { class: 'set-title' }, icon('mdi-bell-ring'), I18N.t('panel.quick.notifications')),
       setRow(I18N.t('panel.settings.sound'), I18N.t('panel.settings.chime_notifications_beeps'), switchBtn(SET.sound.enabled, (v) => { SET.sound.enabled = v; saveSettings(); })),
       h('div', { class: 'btn-row' },
-        h('button', { class: 'big-action', onclick: () => onNotif({ data: { id: 'prueba_ajustes', title: I18N.t('panel.notices.test_notification'), message: 'Así se ven los avisos que lances desde Home Assistant', level: 'warning', icon: 'mdi:bell-ring', timeout: 15 } }) },
+        h('button', { class: 'big-action', onclick: () => onNotif({ data: { id: 'prueba_ajustes', title: I18N.t('panel.notices.test_notification'), message: I18N.t('panel.notices.test_message'), level: 'warning', icon: 'mdi:bell-ring', timeout: 15 } }) },
           icon('mdi-bell-badge'), I18N.t('panel.notices.send_test_notification')))),
 
     alarmsCard(),
@@ -1768,8 +1770,8 @@ function renderSettings() {
 
     h('div', { class: 'card set-card' }, h('div', { class: 'set-title' }, icon('mdi-information-outline'), 'Panel'),
       setRow(I18N.t('web.general.home_assistant'), CFG.haUrl,
-        h('span', { class: 'pill' + (S.connected ? ' ok' : '') }, S.connected ? I18N.t('panel.settings.connected') : 'Desconectado')),
-      setRow(I18N.t('panel.settings.screen_control'), helperText, h('span', { class: 'pill' + (hw ? ' ok' : '') }, hw ? (hw.simulated ? I18N.t('panel.settings.simulated') : 'Ayudante') : 'Software')),
+        h('span', { class: 'pill' + (S.connected ? ' ok' : '') }, S.connected ? I18N.t('panel.settings.connected') : I18N.t('panel.states.disconnected'))),
+      setRow(I18N.t('panel.settings.screen_control'), helperText, h('span', { class: 'pill' + (hw ? ' ok' : '') }, hw ? (hw.simulated ? I18N.t('panel.settings.simulated') : I18N.t('panel.settings.helper')) : I18N.t('panel.settings.software'))),
       h('div', { class: 'btn-row' },
         h('button', { class: 'big-action', onclick: () => location.reload() }, icon('mdi-refresh'), I18N.t('panel.settings.reload_panel')))))];
 }
@@ -1793,16 +1795,16 @@ function nextOccurrence(al, from = new Date()) {
 }
 function whenText(d) {
   const now = new Date(), tom = new Date(now.getFullYear(), now.getMonth(), now.getDate() + 1);
-  const day = d.toDateString() === now.toDateString() ? 'Hoy' : d.toDateString() === tom.toDateString() ? 'Mañana'
+  const day = d.toDateString() === now.toDateString() ? I18N.t('panel.time.today') : d.toDateString() === tom.toDateString() ? I18N.t('panel.time.tomorrow')
     : cap(d.toLocaleDateString(I18N.locale(), { weekday: 'long' }));
   return `${day} ${hhmm(d)}`;
 }
 function daysText(days) {
   const s = [...(days || [])].sort().join('');
   if (!s) return I18N.t('panel.settings.once');
-  if (s === '0123456') return 'Todos los días';
+  if (s === '0123456') return I18N.t('panel.time.every_day');
   if (s === '01234') return I18N.t('panel.settings.monday_friday');
-  if (s === '56') return 'Fines de semana';
+  if (s === '56') return I18N.t('panel.time.weekends');
   return [...days].sort().map((i) => DAY_LETTERS[i]).join(' ');
 }
 /** La próxima alarma de las próximas 24 h, para Inicio y el modo ambiente. */
@@ -1837,7 +1839,7 @@ function ringAlarm(al) {
     icon('mdi-alarm', 'ring-icon'), time,
     h('div', { class: 'ring-label' }, al.name || I18N.t('panel.settings.alarm')),
     h('div', { class: 'ring-actions' },
-      h('button', { class: 'big-action', onclick: () => stopAlarm(true) }, icon('mdi-sleep'), 'Posponer 9 min'),
+      h('button', { class: 'big-action', onclick: () => stopAlarm(true) }, icon('mdi-sleep'), I18N.t('panel.settings.snooze_9')),
       h('button', { class: 'big-action primary', onclick: () => stopAlarm(false) }, icon('mdi-alarm-off'), I18N.t('panel.sheets.stop')))));
   $('#ring').classList.remove('hidden');
   // Melodía que va subiendo de volumen durante el primer minuto
@@ -1913,7 +1915,7 @@ function openAlarmEditor(existing) {
   const del = () => { SET.alarms = (SET.alarms || []).filter((x) => x.id !== al.id); saveSettings(); closeSheet(); render(); toast(I18N.t('panel.settings.alarm_deleted')); };
   paint();
   $('#sheet-card').replaceChildren(
-    h('div', { class: 'sheet-head' }, h('div', { class: 'tile-icon' }, icon('mdi-alarm')), h('div', { class: 'sheet-title' }, existing ? 'Editar alarma' : I18N.t('panel.settings.new_alarm')),
+    h('div', { class: 'sheet-head' }, h('div', { class: 'tile-icon' }, icon('mdi-alarm')), h('div', { class: 'sheet-title' }, existing ? I18N.t('panel.settings.edit_alarm') : I18N.t('panel.settings.new_alarm')),
       h('button', { class: 'icon-btn', onclick: closeSheet }, icon('mdi-close'))),
     h('div', { class: 'sheet-body' },
       h('div', { class: 'alarm-editor' },
@@ -2046,7 +2048,7 @@ function runAction(a, id, el) {
   if (a.action === 'navigate') { if (a.go) go(a.go); return; }
   if (a.action === 'call') {
     const [d, sv] = String(a.service || '').split('.');
-    if (!d || !sv) { toast('Acción sin servicio', true); return; }
+    if (!d || !sv) { toast(I18N.t('panel.status.action_without_service'), true); return; }
     call(d, sv, a.data || {}, target);
   }
 }
@@ -2055,7 +2057,7 @@ const hasAction = (a) => { a = PM.actionOf(a); return !!a && a.action !== 'none'
 function componentCard(c, title) {
   const name = c.component, m = moduleOf(name);
   if (m.err) return [title, codeError(name, m.err)];
-  if (m.mod.type !== 'card') return [title, codeError(name, "no es un componente (le falta type: 'card')")];
+  if (m.mod.type !== 'card') return [title, codeError(name, I18N.t("web.editor.not_a_component"))];
   const host = h('div', { class: 'comp' });
   // Los de dentro (<slot>) se crean una vez y se quedan en su sitio en cada repintado
   const kids = m.mod.children ? layout(c.cards) : null;
@@ -2135,19 +2137,19 @@ const VIEW_DIRTY = new Set();
 async function showSetup() {
   $('#rail').replaceChildren();
   $('#view-title').textContent = I18N.t('panel.nav.set_up_panel');
-  const box = h('div', { class: 'setup' }, icon('mdi-home-assistant', 'setup-icon'), h('h2', null, 'Conecta el panel con Home Assistant'));
+  const box = h('div', { class: 'setup' }, icon('mdi-home-assistant', 'setup-icon'), h('h2', null, I18N.t('panel.setup.title')));
   $('#view').replaceChildren(box);
   const net = await fetchNet();
   const svg = net && qrSvg(net.urls[0]);
   if (net) {
-    box.append(h('p', { class: 'muted' }, 'Escanea el código con el móvil (en la misma WiFi), entra con la contraseña del panel y pon la dirección de Home Assistant y un token de larga duración.'),
+    box.append(h('p', { class: 'muted' }, I18N.t('panel.setup.scan')),
       svg ? h('div', { class: 'qr', html: svg }) : null, h('div', { class: 'qr-url' }, net.urls[0]));
   } else {
-    box.append(h('p', { class: 'muted' }, 'Abre config.js y rellena haUrl (la dirección de tu Home Assistant) y token.'),
+    box.append(h('p', { class: 'muted' }, I18N.t('panel.setup.config_js')),
       h('p', { class: 'muted small' }, 'El token se crea en Home Assistant → tu perfil → Seguridad → Tokens de acceso de larga duración. ' +
-        'Con el ayudante (panel-helper.py) en marcha también puedes configurarlo desde el móvil.'));
+        I18N.t('panel.setup.also_phone')));
   }
-  box.append(h('p', { class: 'muted small' }, net ? 'En cuanto lo guardes, el panel se pondrá en marcha solo.' : 'Después recarga el panel (o reinicia la Pi).'));
+  box.append(h('p', { class: 'muted small' }, net ? I18N.t('panel.setup.starts_by_itself') : I18N.t('panel.setup.then_reload')));
 }
 
 function render() {
@@ -2174,7 +2176,7 @@ function go(view) {
  * elegido en Ajustes escucha, piensa o contesta. El texto (lo que has dicho y la respuesta) se lee de la
  * depuración de Assist en Home Assistant (solo lectura). También se puede mover desde fuera: panelVoice(fase, {heard, reply}). */
 const VOICE = { stage: 'idle', heard: '', reply: '', hideT: null, run: null };
-const VOICE_TEXT = { listening: 'Te escucho…', processing: 'Un momento…', responding: '', error: 'No te he entendido' };
+const VOICE_TEXT = { listening: 'panel.voice.listening', processing: 'panel.voice.one_moment', responding: '', error: 'panel.voice.not_understood' };
 function panelVoice(stage, data = {}) {
   const box = $('#voice');
   clearTimeout(VOICE.hideT);
@@ -2292,14 +2294,14 @@ async function voiceText() {
 /** Ajustes: qué satélite de voz se muestra en la pantalla. */
 function voiceCard() {
   const sats = Object.keys(S.states).filter((id) => domain(id) === 'assist_satellite')
-    .sort((x, y) => nameOf(x, false).localeCompare(nameOf(y, false), 'es'));
+    .sort((x, y) => nameOf(x, false).localeCompare(nameOf(y, false), I18N.locale()));
   const list = pickList([['', I18N.t('panel.settings.none'), 'mdi-microphone-off', '']].concat(sats.map((id) => [id,
     (deviceOf(id) || {}).name_by_user || (deviceOf(id) || {}).name || nameOf(id, false), 'mdi-microphone-message',
     S.states[id].state === 'unavailable' ? I18N.t('panel.states.unavailable') : (S.areaById[areaOf(id)] || {}).name || ''])),
     SET.voiceSatellite, (id) => { SET.voiceSatellite = id; saveSettings(); panelVoice('idle'); });
   return h('div', { class: 'card set-card' }, h('div', { class: 'set-title' }, icon('mdi-microphone'), I18N.t('panel.settings.voice_assistant')),
     h('div', { class: 'muted small' }, sats.length
-      ? 'Cuando le hables a este satélite de Assist, lo que dices y su respuesta salen abajo, encima de cualquier pantalla.'
+      ? I18N.t('panel.voice.hint')
       : I18N.t('panel.settings.there_no_assist')), list,
     setBlock(I18N.t('panel.settings.animation'), null, segmented([['onda', I18N.t('panel.settings.wave')], ['micro', I18N.t('panel.settings.microphone')], ['luz', I18N.t('panel.settings.light_line')], ['eq', I18N.t('panel.settings.equaliser')]],
       SET.voiceStyle || 'onda', (v) => { SET.voiceStyle = v; saveSettings(); voiceDemo(); })),
@@ -2315,7 +2317,7 @@ function soundCard() {
     try {
       const r = await (await fetch(HELPER + '/sonido', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) })).json();
       if (r.error) throw new Error(r.error);
-    } catch (e) { toast('No se pudo cambiar: ' + e.message); }
+    } catch (e) { toast(I18N.t('panel.status.could_not_change_prefix') + e.message); }
   };
   // El volumen principal es el de la música y lo multimedia (el altavoz del panel en Music Assistant).
   // Sin altavoz, el de la salida de la Pi.
@@ -2354,11 +2356,11 @@ function voiceMicBlock() {
       const r = await (await fetch(HELPER + '/voz', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(patch) })).json();
       if (r.error) throw new Error(r.error);
       toast(r.mensaje); paint(r.info);
-    } catch (e) { toast('No se pudo guardar: ' + e.message); }
+    } catch (e) { toast(I18N.t('panel.status.could_not_save_prefix') + e.message); }
   };
   const paint = (r) => {
     const s = r.settings;
-    const estado = !r.installed ? 'Sin instalar: bash ~/ha-panel/scripts/setup-voz.sh' : r.active ? I18N.t('web.sound.listening') : s.enabled ? I18N.t('panel.settings.not_working_see') : I18N.t('panel.states.off');
+    const estado = !r.installed ? I18N.t('panel.voice.not_installed') : r.active ? I18N.t('web.sound.listening') : s.enabled ? I18N.t('panel.settings.not_working_see') : I18N.t('panel.states.off');
     const opts = (list, ic) => list.map((o) => [o.id, o.name, ic, '']);
     box.replaceChildren(
       setBlock(I18N.t('panel.settings.listen_panel_s'), estado, switchBtn(s.enabled, (v) => save({ enabled: v }))),
@@ -2367,7 +2369,7 @@ function voiceMicBlock() {
       setBlock(I18N.t('panel.settings.wake_word'), null, segmented(r.wakeWords.map((w) => [w.id, w.name]), s.wake, (v) => save({ wake: v }))));
   };
   fetch(HELPER + '/voz', { cache: 'no-store' }).then((r) => r.json()).then(paint)
-    .catch(() => box.replaceChildren(h('div', { class: 'muted small' }, 'No se pudo leer el micro de este panel.')));
+    .catch(() => box.replaceChildren(h('div', { class: 'muted small' }, I18N.t('panel.voice.mic_error'))));
   return box;
 }
 /** Ejemplo de la barra de voz, sin hablar con Home Assistant. */
@@ -2377,8 +2379,8 @@ function voiceDemo() {
   DEMO_T.splice(0).forEach(clearTimeout);
   VOICE.run = null; VOICE.stage = 'idle';
   panelVoice('listening');
-  at(1800, () => panelVoice('processing', { heard: 'Enciende la luz del salón' }));
-  at(3000, () => panelVoice('responding', { reply: 'Hecho, he encendido la luz del salón' }));
+  at(1800, () => panelVoice('processing', { heard: I18N.t('panel.voice.demo_heard') }));
+  at(3000, () => panelVoice('responding', { reply: I18N.t('panel.voice.demo_reply') }));
   at(5200, () => panelVoice('idle'));
 }
 
@@ -2487,7 +2489,7 @@ function shadeTabs(main) {
     const all = Object.keys(S.states).filter((id) => QUICK_KINDS[domain(id)] && visible(id));
     const kinds = [...new Set(all.map((id) => QUICK_KINDS[domain(id)]))];
     if (!kinds.includes(kind)) kind = kinds[0];
-    const rows = all.filter((id) => QUICK_KINDS[domain(id)] === kind).sort((a, b) => nameOf(a).localeCompare(nameOf(b), 'es')).map((id) => {
+    const rows = all.filter((id) => QUICK_KINDS[domain(id)] === kind).sort((a, b) => nameOf(a).localeCompare(nameOf(b), I18N.locale())).map((id) => {
       const on = () => (SET.quick || []).includes(id);
       const chk = icon(on() ? 'mdi-check-circle' : 'mdi-plus-circle-outline', 'sht-chk');
       const row = h('button', { class: 'sht-pick' + (on() ? ' on' : '') }, icon(iconOf(S.states[id])), h('span', null, nameOf(id)), chk);
@@ -2711,7 +2713,7 @@ const HA_OPTS = {
   name: (id) => (S.states[id] ? nameOf(id) : id), info: entInfo,
   format: (id) => (S.states[id] ? fmtState(S.states[id]) : '—'),
   mediaOrder: (list) => dedupeMedia((list || Object.keys(S.states).filter((id) => domain(id) === 'media_player')).filter((id) => S.states[id]))
-    .sort((a, b) => (mediaRank(S.states[a]) - mediaRank(S.states[b])) || nameOf(a).localeCompare(nameOf(b), 'es')),
+    .sort((a, b) => (mediaRank(S.states[a]) - mediaRank(S.states[b])) || nameOf(a).localeCompare(nameOf(b), I18N.locale())),
   printers: () => [...printers()].sort((a, b) => pActive(b) - pActive(a)).map((p) => ({
     device: p.dev, name: p.name, platform: p.platform, state: pState(p), active: pActive(p), e: Object.assign({}, p.e), nozzles: p.nozzles.map((n) => Object.assign({}, n)) })),
   picture(id, width) {
@@ -2735,7 +2737,7 @@ const HA = PM.makeHA(() => S.states, HA_OPTS);
 const HA_TAP = PM.makeHA(() => S.states, Object.assign({}, HA_OPTS, {
   call(service, data = {}) {
     const [d, sv] = String(service).split('.');
-    if (!d || !sv) throw new Error('Servicio no válido: ' + service);
+    if (!d || !sv) throw new Error(I18N.t('panel.status.invalid_service_prefix') + service);
     return call(d, sv, data);
   },
 }));
@@ -2784,7 +2786,7 @@ function moduleOf(name) {
   let m = COMPILED.get(name);
   if (!m) {
     m = { cache: {}, watch: {} };
-    if (!(name in MODULES)) m.err = 'no existe el script ' + name;
+    if (!(name in MODULES)) m.err = I18N.t('panel.status.no_script_prefix') + name;
     else try { m.mod = PM.compile(MODULES[name]); } catch (e) { m.err = e.message; }
     COMPILED.set(name, m);
   }
@@ -2908,7 +2910,7 @@ function ambientPlayerAction(act) {
 /** Ajustes: elegir el altavoz por defecto. */
 function speakerCard() {
   const players = dedupeMedia(ids((id) => domain(id) === 'media_player'))
-    .sort((x, y) => (S.states[x].state === 'unavailable') - (S.states[y].state === 'unavailable') || nameOf(x).localeCompare(nameOf(y), 'es'));
+    .sort((x, y) => (S.states[x].state === 'unavailable') - (S.states[y].state === 'unavailable') || nameOf(x).localeCompare(nameOf(y), I18N.locale()));
   // «Este panel» sale siempre que el altavoz esté activado (web → Sonido → Altavoz), aunque Music Assistant
   // aún no haya creado su reproductor en Home Assistant. Se guarda como '@panel'.
   const own = speakerEntity();
@@ -2924,7 +2926,7 @@ function speakerCard() {
   const paint = () => {
     const list = cur();
     const rows = list.map((x, i) => {
-      const o = options.find((op) => op[0] === x) || [x, nameOf(x), 'mdi-speaker', 'No existe'];
+      const o = options.find((op) => op[0] === x) || [x, nameOf(x), 'mdi-speaker', I18N.t('panel.status.does_not_exist')];
       const mv = (d) => { const a = list.slice(); [a[i], a[i + d]] = [a[i + d], a[i]]; save(a); };
       return h('div', { class: 'amb-item prio-row' }, h('span', { class: 'prio-n' }, i + 1), icon(o[2]),
         h('div', { class: 'amb-item-label' }, h('div', null, o[1]), o[3] ? h('div', { class: 'muted small' }, o[3]) : null),
@@ -2988,7 +2990,7 @@ async function getJSON(url, headers) {
   catch (e) {
     const h2 = headers && headers['x-api-key'] ? { 'x-api-key': headers['x-api-key'] } : undefined;
     try { r = await fetch(`${HELPER}/proxy?url=${encodeURIComponent(url)}`, { headers: h2 }); }
-    catch (e2) { throw new Error('tu servidor no deja leer el álbum desde el navegador (CORS) y el ayudante de la Pi no está en marcha'); }
+    catch (e2) { throw new Error(I18N.t('panel.photos.cors')); }
   }
   if (!r.ok) throw new Error(`HTTP ${r.status} en ${new URL(url).pathname}`);
   return r.json();
@@ -3055,9 +3057,9 @@ const CONNECTORS = {
         return { photos: (link.assets || []).filter((a) => a.type === 'IMAGE').map((a) => ({ url: immichUrl(base, a.id, a.thumbhash, auth), caption: monthYear(a.localDateTime || a.fileCreatedAt) })) };
       }
       const m = u.match(IMMICH_ALBUM);
-      if (!m) throw new Error('no es un enlace de Immich');
+      if (!m) throw new Error(I18N.t('panel.photos.not_immich'));
       const key = src.apiKey || CFG.immichApiKey;
-      if (!key) throw new Error('para un álbum privado hace falta la clave API, o usa un enlace compartido');
+      if (!key) throw new Error(I18N.t('panel.photos.needs_key'));
       const list = await immichAlbumPhotos(m[1], m[2], 'apiKey=' + encodeURIComponent(key), { 'x-api-key': key });
       return { photos: list, name: list.albumName };
     },
@@ -3067,7 +3069,7 @@ const CONNECTORS = {
     async load(src) {
       let r;
       try { r = await fetch(`${HELPER}/gphotos?url=${encodeURIComponent(src.url || '')}`, { cache: 'no-store' }); }
-      catch (e) { throw new Error('Google Fotos necesita el ayudante de la Pi (panel-helper.py)'); }
+      catch (e) { throw new Error(I18N.t('panel.photos.google_needs_helper')); }
       const j = await r.json();
       if (!r.ok) throw new Error(j.error || 'HTTP ' + r.status);
       // =w1920-h1080: Google sirve la foto ya reducida al tamaño de pantalla
@@ -3088,11 +3090,11 @@ const CONNECTORS = {
         }
       };
       await walk(root, 0);
-      return { photos: out, name: folder || 'Medios' };
+      return { photos: out, name: folder || I18N.t('panel.photos.media') };
     },
   },
   urls: {
-    label: 'Fotos',
+    label: I18N.t('panel.photos.photos'),
     async load(src) { return { photos: (src.urls || []).filter(Boolean).map((u) => ({ url: u, caption: '' })) }; },
   },
 };
@@ -3109,9 +3111,9 @@ async function loadPhotos() {
       out.push(...photos);
       stats.push({ label, count: photos.length });
     } catch (e) {
-      console.warn('Fotos', src, e);
+      console.warn(I18N.t('panel.photos.photos'), src, e);
       stats.push({ label: src.name || I18N.t(c.label), error: e.message });
-      toast(`${I18N.t(c.label)}: ` + (e.message === 'Failed to fetch' ? 'no se pudo conectar' : e.message), true);
+      toast(`${I18N.t(c.label)}: ` + (e.message === 'Failed to fetch' ? I18N.t('panel.photos.could_not_connect') : e.message), true);
     }
   }
   for (let i = out.length - 1; i > 0; i--) { const j = Math.floor(Math.random() * (i + 1)); [out[i], out[j]] = [out[j], out[i]]; }
@@ -3345,10 +3347,10 @@ function start() {
     $('#conn').classList.toggle('ok', ok);
     if (msg) toast(msg, true);
   };
-  conn.onready = () => loadAll().catch((e) => toast('Error cargando datos: ' + e.message, true));
+  conn.onready = () => loadAll().catch((e) => toast(I18N.t('panel.status.loading_error_prefix') + e.message, true));
   if (NEEDS_SETUP) showSetup(); else conn.connect();
 
-  $('#view').replaceChildren(empty('mdi-home-assistant', 'Conectando con Home Assistant…'));
+  $('#view').replaceChildren(empty('mdi-home-assistant', I18N.t('panel.status.connecting')));
   $('#sheet').addEventListener('click', (e) => { if (e.target.id === 'sheet') closeSheet(); });
   $('#bell').addEventListener('click', () => shade(true, 0));   // el panel de acceso rápido, en los avisos
   shadeGestures();
