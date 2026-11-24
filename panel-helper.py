@@ -76,17 +76,94 @@ SESSIONS = {}                        # cookie -> caducidad
 COMMAND = {'id': 0, 'type': None, 'value': None}    # orden para el panel (recargar, apagar pantalla, brillo…)
 
 
-# ---------------------------------------------------------------- configuración
+# ---------------------------------------------------------------- configuration
+# Names from older versions (in Spanish) → the current ones. load_config() and migrate_old_names() update them.
+OLD_SCRIPTS = {
+    'tarjeta.js': 'card.js',
+    'boton.js': 'button.js',
+    'tarjeta-vehiculo.js': 'vehicle-card.js',
+    'informacion.js': 'info.js',
+    'impresora.js': 'printer.js',
+    'vehiculo.js': 'vehicle.js',
+    'tiempo.js': 'weather.js',
+    'tarjeta-tiempo.js': 'weather-card.js',
+    'luces.js': 'lights.js',
+    'alarma.js': 'alarm.js',
+    'aberturas.js': 'openings.js',
+    'saludo.js': 'greeting.js',
+    'reproductor.js': 'player.js',
+    'musica.js': 'music.js',
+    'lista.js': 'list.js',
+    'impresoras-klipper.js': 'printers-klipper.js',
+    'impresoras-bambu.js': 'printers-bambu.js',
+    'escenas.js': 'scenes.js',
+    'deslizador.js': 'slider.js',
+    'camara.js': 'camera.js',
+    'avisos.js': 'notices.js',
+    'resumen-ejemplo.js': 'summary-example.js',
+}
+OLD_VALUES = {'theme': {'oscuro': 'dark', 'claro': 'light'},
+              'accent': {'azul': 'blue', 'turquesa': 'teal', 'verde': 'green', 'amarillo': 'yellow', 'naranja': 'orange',
+                         'rosa': 'pink', 'morado': 'purple'},
+              'voiceStyle': {'onda': 'wave', 'micro': 'mic', 'luz': 'light'}}
+OLD_FILES = {'voz.json': 'voice.json', 'sonido.json': 'sound.json', 'actualizaciones.json': 'updates.json'}
+
+
+def _rename_scripts(x):
+    """Script names inside the saved settings (bubbles, tabs, cards…), at any depth."""
+    if isinstance(x, list):
+        return [_rename_scripts(v) for v in x]
+    if isinstance(x, dict):
+        return {k: (OLD_SCRIPTS.get(v, v) if k in ('script', 'component') and isinstance(v, str) else _rename_scripts(v))
+                for k, v in x.items()}
+    return x
+
+
+def migrate_config(cfg):
+    """Settings saved by an older version → current names. Returns True if something changed."""
+    before = json.dumps(cfg, sort_keys=True)
+    if 'ajustes' in cfg:
+        cfg['settings'] = {**cfg.pop('ajustes'), **(cfg.get('settings') or {})}
+    s = cfg.get('settings') or {}
+    for key, values in OLD_VALUES.items():
+        if s.get(key) in values:
+            s[key] = values[s[key]]
+    cfg['settings'] = _rename_scripts(s)
+    return json.dumps(cfg, sort_keys=True) != before
+
+
 def load_config():
     try:
         with open(CONFIG_FILE, encoding='utf-8') as f:
             cfg = json.load(f)
     except (OSError, ValueError):
         cfg = {}
+    migrate_config(cfg)
     cfg.setdefault('panel', {})
-    cfg.setdefault('ajustes', {})
+    cfg.setdefault('settings', {})
     cfg.setdefault('version', 0)
     return cfg
+
+
+def migrate_old_names():
+    """At start: files and settings with the names of older versions (in Spanish) get the current names."""
+    for old, new in OLD_FILES.items():
+        if (DATA / old).exists() and not (DATA / new).exists():
+            (DATA / old).rename(DATA / new)
+    share = Path.home() / '.local' / 'share' / 'panel-hogar'
+    if (share / 'voz').is_dir() and not (share / 'voice').exists():
+        (share / 'voz').rename(share / 'voice')
+    for old, new in OLD_SCRIPTS.items():   # your own copies of the built-in scripts
+        if (SCRIPTS_DIR / old).exists() and not (SCRIPTS_DIR / new).exists():
+            (SCRIPTS_DIR / old).rename(SCRIPTS_DIR / new)
+    try:
+        with open(CONFIG_FILE, encoding='utf-8') as f:
+            cfg = json.load(f)
+    except (OSError, ValueError):
+        return
+    if migrate_config(cfg):
+        save_config(cfg)
+        print('Settings updated to the new names.', flush=True)
 
 
 def save_config(cfg, reload=True):
@@ -449,11 +526,11 @@ def run_speaker():
 
 
 # ---------------------------------------------------------------- asistente de voz (satélite Wyoming)
-# setup-voz.sh instala wyoming-satellite + microWakeWord y el servicio de usuario panel-voz, que arranca
+# setup-voice.sh instala wyoming-satellite + microWakeWord y el servicio de usuario panel-voice, que arranca
 # «panel-helper.py --voz» (lee voz.json y lanza el satélite). Micro, salida y palabra se eligen en la web o el panel.
-VOICE_FILE = DATA / 'voz.json'
-VOICE_PY = Path.home() / '.local' / 'share' / 'panel-hogar' / 'voz' / 'bin' / 'python'
-VOICE_UNIT = 'panel-voz.service'
+VOICE_FILE = DATA / 'voice.json'
+VOICE_PY = Path.home() / '.local' / 'share' / 'panel-hogar' / 'voice' / 'bin' / 'python'
+VOICE_UNIT = 'panel-voice.service'
 VOICE_PORT = 10700
 WAKE_WORDS = [('okay_nabu', 'Okay Nabu'), ('hey_jarvis', 'Hey Jarvis'), ('hey_mycroft', 'Hey Mycroft'), ('alexa', 'Alexa')]
 SIM_VOICE = {'active': False}
@@ -534,7 +611,7 @@ def set_voice(body):
         SIM_VOICE['active'] = new['enabled']
         return '[Simulación] Guardado (en el PC no se escucha nada).'
     if not VOICE_PY.exists():
-        return 'Guardado. Falta instalarlo en la Pi: bash ~/ha-panel/scripts/setup-voz.sh'
+        return 'Guardado. Falta instalarlo en la Pi: bash ~/ha-panel/scripts/setup-voice.sh'
     if new['enabled']:
         _user_ctl('enable', VOICE_UNIT)
         code, _, err = _user_ctl('restart', VOICE_UNIT)
@@ -546,7 +623,7 @@ def set_voice(body):
 
 
 def run_voice():
-    # Lo arranca el servicio panel-voz: lanza el satélite con los ajustes de la web
+    # Lo arranca el servicio panel-voice: lanza el satélite con los ajustes de la web
     s = voice_settings()
     if not s['enabled']:
         print('Asistente de voz desactivado (Ajustes → Asistente de voz).', flush=True)
@@ -574,7 +651,7 @@ def run_voice():
 # ---------------------------------------------------------------- sonido (volumen general)
 # El volumen general es el de la salida de audio de la Pi (jack, USB…): afecta a todo lo que suena en ella.
 # Se guarda en sonido.json y se vuelve a poner al arrancar (ALSA no lo recuerda sin sudo).
-SOUND_FILE = DATA / 'sonido.json'
+SOUND_FILE = DATA / 'sound.json'
 MIXER_CTLS = ('Master', 'PCM', 'Speaker', 'Headphone', 'Digital')
 SIM_SOUND = {'master': 70, 'music': 40}
 
@@ -696,7 +773,7 @@ def set_sound(body):
 # Se comprueba cada 3 h si hay versión nueva en GitHub (misma rama). Según la web (Ajustes → Actualizaciones):
 # solo avisar (botón «Actualizar») o actualizar sola cada día a una hora. Tras actualizar se lanza update-hook.sh
 # (paquetes nuevos del sistema, etc.) y se reinician el kiosko (panel + este ayudante) y el altavoz.
-UPDATES_FILE = DATA / 'actualizaciones.json'
+UPDATES_FILE = DATA / 'updates.json'
 UPDATE_HOOK = HERE / 'scripts' / 'update-hook.sh'
 UPDATE_EVERY = 3 * 3600
 UPD = {'checking': False, 'applying': False, 'lastCheck': 0, 'available': [], 'error': '', 'log': '', 'lastAuto': ''}
@@ -714,13 +791,14 @@ def update_settings():
         hour = max(0, min(23, int(s.get('hour', 4))))
     except (TypeError, ValueError):
         hour = 4
-    return {'mode': s.get('mode') if s.get('mode') in ('avisar', 'auto') else 'avisar', 'hour': hour}
+    mode = {'avisar': 'notify'}.get(s.get('mode'), s.get('mode'))   # «avisar»: the old name
+    return {'mode': mode if mode in ('notify', 'auto') else 'notify', 'hour': hour}
 
 
 def set_update_settings(body):
     cur = update_settings()
     new = {'mode': body.get('mode', cur['mode']), 'hour': body.get('hour', cur['hour'])}
-    if new['mode'] not in ('avisar', 'auto'):
+    if new['mode'] not in ('notify', 'auto'):
         raise ValueError('modo desconocido')
     DATA.mkdir(parents=True, exist_ok=True)
     UPDATES_FILE.write_text(json.dumps(new), encoding='utf-8')
@@ -838,8 +916,8 @@ def apply_update():
 # Brillo, Volumen de salida, Volumen de la música, Modo ambiente, Último toque y Recargar. Temas: panel_hogar/<id>/… y homeassistant/<tipo>/panel_hogar_<id>/<cosa>/config
 HA_EXPOSE = ('screen', 'brightness', 'volume', 'music_volume', 'ambient', 'last_touch', 'reload')
 PANEL_STATE = {'screen_on': None, 'brightness': None, 'ambient': None, 'last_touch': None}
-HA_COMMANDS = {'screen_on': 'pantalla_on', 'screen_off': 'pantalla_off', 'ambient_on': 'ambiente', 'ambient_off': 'inicio',
-               'reload': 'recargar', 'brightness': 'brillo'}
+HA_COMMANDS = {'screen_on': 'screen_on', 'screen_off': 'screen_off', 'ambient_on': 'ambient', 'ambient_off': 'home',
+               'reload': 'reload', 'brightness': 'brightness'}
 MQTT = {'client': None, 'status': 'off', 'error': ''}
 MQTT_LOG = []          # lo último que ha pasado (web → General → MQTT → Registro)
 
@@ -866,7 +944,7 @@ def panel_id():
 
 def ha_expose():
     """Lo que se ve en Home Assistant (web → General); por defecto, todo."""
-    chosen = load_config()['ajustes'].get('haExpose') or {}
+    chosen = load_config()['settings'].get('haExpose') or {}
     return [k for k in HA_EXPOSE if chosen.get(k) is not False]
 
 
@@ -1047,7 +1125,7 @@ def _mqtt_device():
 
 def _mqtt_names():
     """Nombres de las entidades en el idioma del panel (translations/<idioma>.json → panel.mqtt)."""
-    lang = load_config()['ajustes'].get('language') or 'es'
+    lang = load_config()['settings'].get('language') or 'es'
     names = {}
     for code in ('es', lang):
         data = read_translation(f'/translations/{code}.json') if re.fullmatch(r'[a-z]{2,3}', code) else None
@@ -1233,18 +1311,18 @@ def update_info():
 
 def update_action(body):
     """Web y panel: comprobar, actualizar ya, o modo (avisar / automático) y hora. Devuelve (código, respuesta)."""
-    accion = body.get('accion')
+    action = body.get('action')
     try:
-        if accion == 'ajustes':
+        if action == 'settings':
             set_update_settings(body)
-            return 200, {'ok': True, 'mensaje': 'Guardado.', 'info': update_info()}
-        if accion == 'comprobar':
+            return 200, {'ok': True, 'message': 'Guardado.', 'info': update_info()}
+        if action == 'check':
             check_updates()
             return 200, {'ok': not UPD['error'], 'info': update_info()}
-        if accion == 'actualizar':
+        if action == 'update':
             threading.Thread(target=apply_update, daemon=True).start()
             time.sleep(0.2)
-            return 200, {'ok': True, 'mensaje': 'Actualizando… el panel se reiniciará solo.', 'info': update_info()}
+            return 200, {'ok': True, 'message': 'Actualizando… el panel se reiniciará solo.', 'info': update_info()}
     except ValueError as e:
         return 400, {'error': str(e)}
     return 400, {'error': 'acción desconocida'}
@@ -1526,19 +1604,19 @@ class LocalHandler(Base):
         if re.fullmatch(r'/translations/[a-z0-9_-]+\.json', u.path):
             return self._translations(u.path)
         if u.path == '/config':
-            return self._json(200, dict(load_config(), modulos=list_scripts(), altavoz=speaker_panel()))
-        if u.path == '/red':
+            return self._json(200, dict(load_config(), scripts=list_scripts(), speaker=speaker_panel()))
+        if u.path == '/network':
             return self._json(200, net_info())
-        if u.path == '/voz':
+        if u.path == '/voice':
             return self._json(200, voice_info())
-        if u.path == '/sonido':
+        if u.path == '/sound':
             return self._json(200, sound_info())
-        if u.path == '/actualizaciones':
+        if u.path == '/updates':
             return self._json(200, update_info())
         if u.path == '/poll':
             cfg = load_config()
             return self._json(200, {'version': cfg['version'], 'reload': cfg.get('reload', 0), 'command': COMMAND, 'pin': speaker_pin(),
-                                    'update': len(UPD['available']) if update_settings()['mode'] == 'avisar' else 0})
+                                    'update': len(UPD['available']) if update_settings()['mode'] == 'notify' else 0})
         if u.path == '/proxy':
             return self._proxy(parse_qs(u.query).get('url', [''])[0])
         if u.path == '/gphotos':
@@ -1554,25 +1632,25 @@ class LocalHandler(Base):
         u = urlparse(self.path)
         q = parse_qs(u.query)
         try:
-            if u.path == '/estado':     # el panel cuenta cómo está (para Home Assistant por MQTT)
+            if u.path == '/state':     # el panel cuenta cómo está (para Home Assistant por MQTT)
                 return self._json(200, {'rev': set_panel_state(self._body())})
             if u.path == '/brightness':
                 return self._json(200, {'ok': set_brightness(int(q.get('value', ['100'])[0]))})
             if u.path == '/power':
                 return self._json(200, {'ok': set_power(q.get('on', ['1'])[0] == '1')})
-            if u.path == '/actualizaciones':
+            if u.path == '/updates':
                 return self._json(*update_action(self._body()))
-            if u.path == '/voz':
+            if u.path == '/voice':
                 try:
-                    return self._json(200, {'ok': True, 'mensaje': set_voice(self._body()), 'info': voice_info()})
+                    return self._json(200, {'ok': True, 'message': set_voice(self._body()), 'info': voice_info()})
                 except (ValueError, RuntimeError) as e:
                     return self._json(400, {'error': str(e)})
-            if u.path == '/sonido':
+            if u.path == '/sound':
                 try:
                     return self._json(200, set_sound(self._body()))
                 except (ValueError, RuntimeError) as e:
                     return self._json(400, {'error': str(e)})
-            if u.path == '/datos':  # el panel manda screen e info de entidades para probar burbujas en la web
+            if u.path == '/data':  # el panel manda screen e info de entidades para probar burbujas en la web
                 body = self._body()
                 PANEL_DATA.update(body if isinstance(body, dict) else {})
                 PANEL_DATA['t'] = time.time()
@@ -1585,8 +1663,8 @@ class LocalHandler(Base):
                     if not cfg['panel'].get('haUrl') and body.get('panel'):
                         cfg['panel'] = clean_panel(body['panel'], keep_secret_if_empty=False)
                         changed = True
-                    if not cfg['ajustes'] and body.get('ajustes'):
-                        cfg['ajustes'] = body['ajustes']
+                    if not cfg['settings'] and body.get('settings'):
+                        cfg['settings'] = body['settings']
                         changed = True
                     return self._json(200, {'version': save_config(cfg) if changed else cfg['version']})
         except ValueError:
@@ -1594,14 +1672,14 @@ class LocalHandler(Base):
         self._json(404)
 
     def do_PUT(self):
-        if urlparse(self.path).path == '/ajustes':   # el panel guarda sus Ajustes
+        if urlparse(self.path).path == '/settings':   # el panel guarda sus Ajustes
             try:
                 body = self._body()
             except ValueError:
                 return self._json(400)
             with LOCK:
                 cfg = load_config()
-                cfg['ajustes'] = body
+                cfg['settings'] = body
                 return self._json(200, {'version': save_config(cfg, reload=False)})
         self._json(404)
 
@@ -1627,7 +1705,7 @@ class WebHandler(Base):
 
     def do_GET(self):
         u = urlparse(self.path)
-        if u.path == '/api/pantalla.png':   # la pantalla de la Pi en directo
+        if u.path == '/api/screen.png':   # la pantalla de la Pi en directo
             if not self._guard():
                 return
             png = screen_capture()
@@ -1659,7 +1737,7 @@ class WebHandler(Base):
         # mismo código que usa el panel, para probar burbujas y componentes en la web
         if re.fullmatch(r'/translations/[a-z0-9_-]+\.json', u.path):
             return self._translations(u.path)
-        if u.path in ('/lib/modulos.js', '/lib/componentes.js', '/translations/i18n.js'):
+        if u.path in ('/lib/modules.js', '/lib/components.js', '/translations/i18n.js'):
             data = (HERE / u.path.lstrip('/')).read_bytes()
             self.send_response(200)
             self.send_header('Content-Type', ('text/css' if u.path.endswith('.css') else 'text/javascript') + '; charset=utf-8')
@@ -1668,20 +1746,20 @@ class WebHandler(Base):
             self.end_headers()
             self.wfile.write(data)
             return
-        if u.path == '/api/estado':
+        if u.path == '/api/state':
             return self._json(200, {'password': PASS_FILE.exists(), 'session': bool(self._session()), 'simulated': SIMULATE})
         if u.path == '/api/scripts':
             if not self._guard():
                 return
             return self._json(200, list_scripts())
-        if u.path == '/api/estados':        # estados actuales (solo lectura) para probar scripts en la web
+        if u.path == '/api/states':        # estados actuales (solo lectura) para probar scripts en la web
             if not self._guard():
                 return
             code, states = ha_request('GET', '/api/states')
             if code != 200:
                 return self._json(502, states)
             return self._json(200, {st['entity_id']: st for st in states})
-        if u.path == '/api/datos-panel':    # screen e info de entidades del panel, para probar burbujas en la web
+        if u.path == '/api/panel-data':    # screen e info de entidades del panel, para probar burbujas en la web
             if not self._guard():
                 return
             return self._json(200, PANEL_DATA)
@@ -1696,28 +1774,28 @@ class WebHandler(Base):
             if isinstance(panel.get('photoSources'), list):   # sin configurar: la web las crea desde ambientPhotos
                 panel['photoSources'] = [dict({k: v for k, v in src.items() if k != 'apiKey'}, hasApiKey=bool(src.get('apiKey')))
                                          for src in panel['photoSources'] if isinstance(src, dict)]
-            return self._json(200, {'panel': panel, 'ajustes': cfg['ajustes'], 'version': cfg['version']})
-        if u.path == '/api/red':
+            return self._json(200, {'panel': panel, 'settings': cfg['settings'], 'version': cfg['version']})
+        if u.path == '/api/network':
             if not self._guard():
                 return
             return self._json(200, net_info())
-        if u.path == '/api/altavoz':
+        if u.path == '/api/speaker':
             if not self._guard():
                 return
             return self._json(200, speaker_info())
-        if u.path == '/api/voz':
+        if u.path == '/api/voice':
             if not self._guard():
                 return
             return self._json(200, voice_info())
-        if u.path == '/api/sonido':
+        if u.path == '/api/sound':
             if not self._guard():
                 return
             return self._json(200, dict(sound_info(), music=music_get()))
-        if u.path == '/api/actualizaciones':
+        if u.path == '/api/updates':
             if not self._guard():
                 return
             return self._json(200, update_info())
-        if u.path == '/api/entidades':
+        if u.path == '/api/entities':
             if not self._guard():
                 return
             code, states = ha_request('GET', '/api/states')
@@ -1749,7 +1827,7 @@ class WebHandler(Base):
             return self._json(200, {'ok': True}, {'Set-Cookie': 'panel_sesion=; Path=/; Max-Age=0'})
         if not self._guard(mutating=True):
             return
-        if u.path == '/api/scripts/importar':
+        if u.path == '/api/scripts/import':
             try:
                 code = download_script(body.get('url'))
                 name = save_script(body.get('name') or os.path.basename(urlparse(body.get('url')).path), code)
@@ -1758,61 +1836,61 @@ class WebHandler(Base):
             except (urllib.error.URLError, OSError) as e:
                 return self._json(502, {'error': f'no se pudo descargar: {getattr(e, "reason", e)}'})
             return self._json(200, {'ok': True, 'name': name, 'code': code, 'version': bump_version()})
-        if u.path == '/api/probar':        # probar la conexión con lo escrito en el formulario (o lo guardado)
+        if u.path == '/api/test':        # probar la conexión con lo escrito en el formulario (o lo guardado)
             code, res = ha_request('GET', '/api/', ha_url=body.get('haUrl') or None, token=body.get('token') or None)
-            return self._json(200, {'ok': code == 200, 'mensaje': 'Conectado con Home Assistant' if code == 200 else res.get('error')})
-        if u.path == '/api/aviso':
+            return self._json(200, {'ok': code == 200, 'message': 'Conectado con Home Assistant' if code == 200 else res.get('error')})
+        if u.path == '/api/notify':
             code, res = ha_request('POST', '/api/events/panel_notification', {
                 'id': 'prueba_web', 'title': 'Aviso de prueba', 'message': 'Enviado desde la web de configuración',
                 'level': 'warning', 'icon': 'mdi:bell-ring', 'timeout': 20})
-            return self._json(200, {'ok': code == 200, 'mensaje': 'Aviso enviado al panel' if code == 200 else res.get('error')})
-        if u.path.startswith('/api/red/'):
+            return self._json(200, {'ok': code == 200, 'message': 'Aviso enviado al panel' if code == 200 else res.get('error')})
+        if u.path.startswith('/api/network/'):
             try:
-                if u.path == '/api/red/escanear':
+                if u.path == '/api/network/scan':
                     return self._json(200, wifi_scan())
-                if u.path == '/api/red/wifi':
+                if u.path == '/api/network/wifi':
                     ssid = str(body.get('ssid', '')).strip()
                     if not ssid:
                         return self._json(400, {'error': 'elige una red'})
                     wifi_connect(ssid, str(body.get('password', '')))
-                    return self._json(200, {'ok': True, 'mensaje': (f'[Simulación] Conectado a «{ssid}» (la red del PC no cambia).' if SIMULATE else
+                    return self._json(200, {'ok': True, 'message': (f'[Simulación] Conectado a «{ssid}» (la red del PC no cambia).' if SIMULATE else
                                                                      f'Conectando a «{ssid}»… Si cambia la IP, entra con la nueva (la verás en la pantalla del panel).')})
-                if u.path == '/api/red/ip':
+                if u.path == '/api/network/ip':
                     set_ipv4(body.get('method', 'auto'), str(body.get('address', '')).strip(), body.get('prefix', 24),
                              str(body.get('gateway', '')).strip(), str(body.get('dns', '')).strip())
-                    return self._json(200, {'ok': True, 'mensaje': '[Simulación] IP cambiada (la del PC no cambia).' if SIMULATE else 'Aplicando la nueva IP… vuelve a entrar con la dirección nueva.'})
-                if u.path == '/api/red/nombre':
+                    return self._json(200, {'ok': True, 'message': '[Simulación] IP cambiada (la del PC no cambia).' if SIMULATE else 'Aplicando la nueva IP… vuelve a entrar con la dirección nueva.'})
+                if u.path == '/api/network/hostname':
                     set_hostname(str(body.get('hostname', '')).strip())
-                    return self._json(200, {'ok': True, 'mensaje': '[Simulación] Nombre cambiado (el del PC no cambia).' if SIMULATE else 'Nombre cambiado. La dirección .local nueva funciona tras reiniciar la Pi.'})
+                    return self._json(200, {'ok': True, 'message': '[Simulación] Nombre cambiado (el del PC no cambia).' if SIMULATE else 'Nombre cambiado. La dirección .local nueva funciona tras reiniciar la Pi.'})
             except (ValueError, RuntimeError) as e:
                 return self._json(400, {'error': str(e)})
             return self._json(404)
-        if u.path == '/api/altavoz':       # activar / desactivar, nombre y salida del altavoz Sendspin
+        if u.path == '/api/speaker':       # activar / desactivar, nombre y salida del altavoz Sendspin
             try:
-                return self._json(200, {'ok': True, 'mensaje': set_speaker(body), 'info': speaker_info()})
+                return self._json(200, {'ok': True, 'message': set_speaker(body), 'info': speaker_info()})
             except (ValueError, RuntimeError) as e:
                 return self._json(400, {'error': str(e)})
-        if u.path == '/api/sonido':        # música, límite de salida, respuestas y ganancia del micro
+        if u.path == '/api/sound':        # música, límite de salida, respuestas y ganancia del micro
             try:
                 if 'music' in body:
                     music_set(body['music'])
                 return self._json(200, dict(set_sound(body), music=music_get()))
             except (ValueError, RuntimeError) as e:
                 return self._json(400, {'error': str(e)})
-        if u.path == '/api/voz':           # micro, salida y palabra del asistente de voz
+        if u.path == '/api/voice':           # micro, salida y palabra del asistente de voz
             try:
-                return self._json(200, {'ok': True, 'mensaje': set_voice(body), 'info': voice_info()})
+                return self._json(200, {'ok': True, 'message': set_voice(body), 'info': voice_info()})
             except (ValueError, RuntimeError) as e:
                 return self._json(400, {'error': str(e)})
-        if u.path == '/api/actualizaciones':   # comprobar, actualizar ya, o modo (avisar / automático) y hora
+        if u.path == '/api/updates':   # comprobar, actualizar ya, o modo (avisar / automático) y hora
             return self._json(*update_action(body))
-        if u.path == '/api/orden':         # recargar, apagar/encender pantalla, modo ambiente, inicio
-            tipo = body.get('tipo')
-            if tipo not in ('recargar', 'pantalla_off', 'pantalla_on', 'ambiente', 'inicio'):
+        if u.path == '/api/command':         # recargar, apagar/encender pantalla, modo ambiente, inicio
+            kind = body.get('type')
+            if kind not in ('reload', 'screen_off', 'screen_on', 'ambient', 'home'):
                 return self._json(400, {'error': 'orden desconocida'})
             with LOCK:
                 COMMAND['id'] += 1
-                COMMAND['type'] = tipo
+                COMMAND['type'] = kind
             return self._json(200, {'ok': True})
         self._json(404)
 
@@ -1855,8 +1933,8 @@ class WebHandler(Base):
             old_panel = json.dumps(cfg['panel'], sort_keys=True)
             if isinstance(body.get('panel'), dict):
                 cfg['panel'] = clean_panel(body['panel'], current=cfg['panel'])
-            if isinstance(body.get('ajustes'), dict):
-                cfg['ajustes'] = body['ajustes']
+            if isinstance(body.get('settings'), dict):
+                cfg['settings'] = body['settings']
             # Conexión, entidades, fotos…: el panel tiene que arrancar de nuevo. Solo ajustes: los aplica al momento.
             reload = json.dumps(cfg['panel'], sort_keys=True) != old_panel
             version = save_config(cfg, reload)
@@ -1875,11 +1953,15 @@ def main():
     ap = argparse.ArgumentParser(description='Ayudante del Panel Hogar')
     ap.add_argument('--set-password', action='store_true', help='poner o cambiar la contraseña de la web')
     ap.add_argument('--sendspin', action='store_true', help='arrancar el altavoz Sendspin (lo usa el servicio panel-sendspin)')
-    ap.add_argument('--voz', action='store_true', help='arrancar el asistente de voz (lo usa el servicio panel-voz)')
+    ap.add_argument('--voice', '--voz', dest='voice', action='store_true', help='start the voice assistant (used by the panel-voice service)')
     args = ap.parse_args()
+    try:
+        migrate_old_names()
+    except OSError as e:
+        print('Could not rename old files:', e, flush=True)
     if args.sendspin:
         return run_speaker()
-    if args.voz:
+    if args.voice:
         return run_voice()
     if args.set_password:
         if sys.stdin.isatty():

@@ -313,17 +313,17 @@
     </header>
     <nav class="pages">
       <button type="button" data-page="general" class="on">🏠 General</button>
-      <button type="button" data-page="pantalla">🖥️ Screen</button>
-      <button type="button" data-page="ambiente">🖼️ Ambient mode</button>
-      <button type="button" data-page="sonido">🔊 Sound</button>
-      <button type="button" data-page="pantallas">🗂️ Tabs</button>
-      <button type="button" data-page="componentes">🧩 Components</button>
-      <button type="button" data-page="sistema">🛠️ System</button>
+      <button type="button" data-page="screen">🖥️ Screen</button>
+      <button type="button" data-page="ambient">🖼️ Ambient mode</button>
+      <button type="button" data-page="sound">🔊 Sound</button>
+      <button type="button" data-page="tabs">🗂️ Tabs</button>
+      <button type="button" data-page="components">🧩 Components</button>
+      <button type="button" data-page="system">🛠️ System</button>
       <button type="button" data-page="beta">🧪 Beta</button>
     </nav>
     <div class="card sim hidden" id="sim-banner">🧪 <b data-i18n="web.tabs.simulation_mode_computer">Simulation mode (computer).</b> Brightness, screen off and the network are simulated: you can try everything without changing anything on this computer.</div>
 
-    <div data-pg="componentes" class="hidden">
+    <div data-pg="components" class="hidden">
     <div class="card">
       <h2>🧩 Components</h2>
       <div class="hint" data-i18n="web.editor.what_goes_tabs">What goes in the tabs (buttons, cards, weather…). Each one is code: it declares its fields, what it watches and what it draws. Place them in 🗂️ Tabs.</div>
@@ -343,7 +343,7 @@
     </div>
     </div>
 
-    <div data-pg="pantallas" class="hidden">
+    <div data-pg="tabs" class="hidden">
     <div class="card">
       <h2>🗂️ Panel tabs</h2>
       <div class="hint" data-i18n="web.editor.each_tab_side">Each tab of the side bar with its cards, laid out as on the panel. Tap one to change it.</div>
@@ -354,7 +354,7 @@
     </div>
     </div>
 
-    <div data-pg="ambiente" class="hidden">
+    <div data-pg="ambient" class="hidden">
     <div class="card">
       <h2>🎵 Ambient mode player</h2>
       <div class="field">
@@ -442,11 +442,11 @@ go = 'home' | 'rooms' | 'sensors' | 'media' | 'printers' | 'scooter' | 'settings
     <div class="card">
       <h2>📱 Remote control</h2>
       <div class="btns">
-        <button class="btn" data-orden="recargar">🔄 Reload panel</button>
-        <button class="btn" data-orden="inicio">🏠 Go to Home</button>
-        <button class="btn" data-orden="ambiente">🖼️ Ambient mode</button>
-        <button class="btn" data-orden="pantalla_on">💡 Turn on screen</button>
-        <button class="btn" data-orden="pantalla_off">🌙 Turn off screen</button>
+        <button class="btn" data-command="reload">🔄 Reload panel</button>
+        <button class="btn" data-command="home">🏠 Go to Home</button>
+        <button class="btn" data-command="ambient">🖼️ Ambient mode</button>
+        <button class="btn" data-command="screen_on">💡 Turn on screen</button>
+        <button class="btn" data-command="screen_off">🌙 Turn off screen</button>
         <button class="btn" id="aviso">🔔 Test notification</button>
       </div>
     </div>
@@ -528,7 +528,7 @@ go = 'home' | 'rooms' | 'sensors' | 'media' | 'printers' | 'scooter' | 'settings
     </div>
     </div>
 
-    <div data-pg="pantalla" class="hidden">
+    <div data-pg="screen" class="hidden">
     <div class="card">
       <h2>🖥️ Screen</h2>
       <div class="field">
@@ -542,7 +542,7 @@ go = 'home' | 'rooms' | 'sensors' | 'media' | 'printers' | 'scooter' | 'settings
       <div class="row"><label for="language">Language <span class="hint" data-i18n="web.screen.automatic_home_assistant">(automatic: Home Assistant's)</span></label>
         <select id="language"><option value="auto">Automatic</option></select></div>
       <div class="row"><label for="theme">Theme <span class="hint" data-i18n="web.screen.automatic_light_by">(automatic: light by day, dark at night)</span></label>
-        <select id="theme"><option value="oscuro">Dark</option><option value="claro">Light</option><option value="auto">Automatic</option></select></div>
+        <select id="theme"><option value="dark">Dark</option><option value="light">Light</option><option value="auto">Automatic</option></select></div>
       <div class="field">
         <label>Colour <span class="hint" data-i18n="web.screen.buttons_sliders_volume">(buttons, sliders and volume bubble)</span></label>
         <div class="accents" id="accent"></div>
@@ -562,7 +562,7 @@ go = 'home' | 'rooms' | 'sensors' | 'media' | 'printers' | 'scooter' | 'settings
     </div>
     </div>
 
-    <div data-pg="sonido" class="hidden">
+    <div data-pg="sound" class="hidden">
     <div class="card">
       <h2>🔈 Output speaker</h2>
       <div class="field">
@@ -652,7 +652,7 @@ go = 'home' | 'rooms' | 'sensors' | 'media' | 'printers' | 'scooter' | 'settings
       </div>
       <div class="field">
         <label for="voiceStyle" data-i18n="web.sound.voice_animation">Voice animation</label>
-        <select id="voiceStyle"><option value="onda">Wave</option><option value="micro">Microphone</option><option value="luz">Light line</option><option value="eq">Equaliser</option></select>
+        <select id="voiceStyle"><option value="wave">Wave</option><option value="mic">Microphone</option><option value="light">Light line</option><option value="eq">Equaliser</option></select>
       </div>
     </div>
 
@@ -664,7 +664,7 @@ go = 'home' | 'rooms' | 'sensors' | 'media' | 'printers' | 'scooter' | 'settings
     <div class="card">
       <h2>🎙️ Voice assistant (Pi microphone)</h2>
       <dl class="info" id="voz-info"><dt data-i18n="panel.sheets.status">Status</dt><dd data-i18n="web.login.loading">Loading…</dd></dl>
-      <div id="voz-install" class="hint hidden">Falta instalarlo una vez en la Pi: <code>bash ~/ha-panel/scripts/setup-voz.sh</code></div>
+      <div id="voz-install" class="hint hidden">Falta instalarlo una vez en la Pi: <code>bash ~/ha-panel/scripts/setup-voice.sh</code></div>
       <div class="row"><label for="voz-enabled" data-i18n="web.beta.listen_pi_microphone">Listen with the Pi microphone</label><label class="switch"><input id="voz-enabled" type="checkbox"><span></span></label></div>
       <div class="field">
         <label for="voz-name" data-i18n="web.beta.name_home_assistant">Name in Home Assistant</label>
@@ -688,7 +688,7 @@ go = 'home' | 'rooms' | 'sensors' | 'media' | 'printers' | 'scooter' | 'settings
     </div>
     </div>
 
-    <div data-pg="sistema" class="hidden">
+    <div data-pg="system" class="hidden">
     <div class="card">
       <h2>📶 Pi network</h2>
       <dl class="info" id="red-info"><dt data-i18n="panel.sheets.status">Status</dt><dd data-i18n="web.login.loading">Loading…</dd></dl>
@@ -734,7 +734,7 @@ go = 'home' | 'rooms' | 'sensors' | 'media' | 'printers' | 'scooter' | 'settings
       <div class="field">
         <label for="upd-mode" data-i18n="panel.settings.when_there_new">When there is a new version</label>
         <select id="upd-mode">
-          <option value="avisar">Notify me (I update with the button)</option>
+          <option value="notify">Notify me (I update with the button)</option>
           <option value="auto">Update by itself every day at a time</option>
         </select>
       </div>
@@ -762,8 +762,8 @@ go = 'home' | 'rooms' | 'sensors' | 'media' | 'printers' | 'scooter' | 'settings
 </div>
 
 <script src="/translations/i18n.js"></script>
-<script src="/lib/modulos.js"></script>
-<script src="/lib/componentes.js"></script>
+<script src="/lib/modules.js"></script>
+<script src="/lib/components.js"></script>
 <script>
 'use strict';
 (() => { let l = null; try { l = localStorage.getItem('panel_lang'); } catch (e) { /* */ } I18N.set(l || I18N.resolve('auto', navigator.language)); })();
@@ -777,14 +777,14 @@ const DEF = {   // mismos valores por defecto que el panel
 };
 const lists = { favorites: [], hiddenEntities: [], excludePlatforms: [], quick: [] };
 // colores de acento del panel (el tono de tema oscuro, como esta web)
-const ACCENTS = { azul: ['panel.settings.blue', '#8ab4f8'], turquesa: ['panel.settings.teal', '#78d9ec'], verde: ['panel.settings.green', '#81c995'], amarillo: ['panel.settings.yellow', '#fdd663'],
-  naranja: ['panel.settings.orange', '#fcad70'], rosa: ['panel.settings.pink', '#ff8bcb'], morado: ['panel.settings.purple', '#c58af9'] };
-let accent = 'azul';
+const ACCENTS = { blue: ['panel.settings.blue', '#8ab4f8'], teal: ['panel.settings.teal', '#78d9ec'], green: ['panel.settings.green', '#81c995'], yellow: ['panel.settings.yellow', '#fdd663'],
+  orange: ['panel.settings.orange', '#fcad70'], pink: ['panel.settings.pink', '#ff8bcb'], purple: ['panel.settings.purple', '#c58af9'] };
+let accent = 'blue';
 function renderAccents() {
   $('#accent').replaceChildren(...Object.entries(ACCENTS).map(([k, [label, c]]) => el('button', { type: 'button', class: 'accent-sw' + (k === accent ? ' on' : ''), title: label,
     style: `background:${c};color:#111`, onclick: () => { accent = k; renderAccents(); dirty(); } }, k === accent ? el('i', { class: 'mdi mdi-check' }) : null)));
 }
-const PM = window.PanelModulos;
+const PM = window.PanelModules;
 /** Una opción de un desplegable, con el texto traducido. */
 const tOption = (text, value) => new Option(typeof text === 'string' ? t(text) : text, value);
 const el = (tag, props = {}, ...kids) => {
@@ -819,7 +819,7 @@ const moveBtns = (arr, i, after) => [-1, 1].map((d) => el('button', { type: 'but
 
 /* ---------- páginas de la web ---------- */
 function showPage(p) {
-  document.body.classList.toggle('wide', p === 'pantallas');
+  document.body.classList.toggle('wide', p === 'tabs');
   document.querySelectorAll('[data-pg]').forEach((x) => x.classList.toggle('hidden', x.dataset.pg !== p));
   document.querySelectorAll('.pages button').forEach((x) => x.classList.toggle('on', x.dataset.page === p));
   const on = document.querySelector(`.pages button[data-page="${p}"]`);   // en el móvil, la pestaña elegida a la vista
@@ -829,7 +829,8 @@ document.querySelectorAll('.pages button').forEach((x) => (x.onclick = () => {
   history.replaceState(null, '', '#' + x.dataset.page); showPage(x.dataset.page); scrollTo(0, 0);
 }));
 const PAGES = [...document.querySelectorAll('.pages button')].map((b) => b.dataset.page);
-const OLD_PAGES = { burbujas: 'ambiente', ajustes: 'general' };   // enlaces de antes
+const OLD_PAGES = { burbujas: 'ambient', ajustes: 'general', pantalla: 'screen', ambiente: 'ambient', sonido: 'sound', pantallas: 'tabs',
+  componentes: 'components', sistema: 'system' };   // enlaces de antes
 const want = location.hash.slice(1);
 showPage(PAGES.includes(want) ? want : OLD_PAGES[want] || 'general');
 
@@ -842,7 +843,7 @@ function webLanguage(choice) {
   if (want !== I18N.lang && saved !== want) location.reload();
 }
 
-/* ---------- código (archivos .js guardados en la Pi; los de serie vienen en lib/modulos.js) ---------- */
+/* ---------- código (archivos .js guardados en la Pi; los de serie vienen en lib/modules.js) ---------- */
 let scripts = {}, files = {}, states = null, panelData = null;
 /** Para probar: ha con los estados reales de Home Assistant y el registro de entidades que manda el panel;
  *  screen con los datos de la pantalla que manda el panel (cada 15 s). Aquí ha.call no hace nada. */
@@ -881,7 +882,7 @@ const isDefault = (name) => name in PM.DEFAULT_SCRIPTS;
 async function loadScripts() {
   files = await api('GET', '/api/scripts'); scripts = PM.allScripts(files);
   // Para los Ajustes de las burbujas: estados (device_class) y aparatos (los manda el panel)
-  [states, panelData] = await Promise.all([api('GET', '/api/estados').catch(() => states), api('GET', '/api/datos-panel').catch(() => panelData)]);
+  [states, panelData] = await Promise.all([api('GET', '/api/states').catch(() => states), api('GET', '/api/panel-data').catch(() => panelData)]);
   renderBullets(); renderCardScripts(); renderTabs();
 }
 const slug = (t) => String(t || '').normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase()
@@ -1103,7 +1104,7 @@ function codeEditor(name, say, getValues = () => ({})) {
   const test = async () => {
     out.classList.remove('hidden'); out.replaceChildren(el('span', { class: 'hint', textContent: I18N.t('web.ambient.testing_current_states') }));
     try {
-      [states, panelData] = await Promise.all([api('GET', '/api/estados'), api('GET', '/api/datos-panel').catch(() => ({}))]);
+      [states, panelData] = await Promise.all([api('GET', '/api/states'), api('GET', '/api/panel-data').catch(() => ({}))]);
       const mod = PM.compile(ta.value), bound = mod.bind(getValues(), testHA());
       const card = mod.type === 'card';
       const t0 = performance.now(), res = mod.render(testHA(), testScreen(card ? 'card' : 'ambient'), bound.cfg, PanelComp.makeHtml([])), ms = performance.now() - t0;
@@ -1387,7 +1388,7 @@ async function addBullet(title, code, viaUrl) {
   title = String(title || '').trim();
   if (!title) throw new Error(I18N.t('web.editor.give_title'));
   let name = freeName(title);
-  if (viaUrl) { const r = await api('POST', '/api/scripts/importar', { url: viaUrl, name }); name = r.name; scripts[name] = files[name] = r.code; }
+  if (viaUrl) { const r = await api('POST', '/api/scripts/import', { url: viaUrl, name }); name = r.name; scripts[name] = files[name] = r.code; }
   else await saveCode(name, code);
   const id = 'b-' + Date.now().toString(36);
   bullets.push({ id, type: 'script', script: name, name: title, ambient: true });
@@ -1476,7 +1477,7 @@ async function addComp(title, code, viaUrl) {
   title = String(title || '').trim();
   if (!title) throw new Error(I18N.t('web.editor.give_name'));
   let name = freeName(title);
-  if (viaUrl) { const r = await api('POST', '/api/scripts/importar', { url: viaUrl, name }); name = r.name; scripts[name] = files[name] = r.code; }
+  if (viaUrl) { const r = await api('POST', '/api/scripts/import', { url: viaUrl, name }); name = r.name; scripts[name] = files[name] = r.code; }
   else await saveCode(name, code);
   openCard = name; renderAll();
   cmsg(I18N.t(isCard(name) ? 'web.editor.created_component' : 'web.editor.saved_not_component', { name: title }), isCard(name) ? 'ok' : 'err');
@@ -1687,7 +1688,7 @@ function bubbleItems(c) {
     return el('div', { class: 'bub' }, el('div', { class: 'bub-head' }, s, el('div', { class: 'cols' }, ...moveBtns(c.items, i, renderTabs),
       el('button', { type: 'button', class: 'btn danger mv', textContent: '×', onclick: () => { c.items.splice(i, 1); renderTabs(); dirty(); } }))),
       Object.keys(schema).length ? el('div', { class: 'bub-body' }, ...fieldsForm(schema, () => it.config || {}, (k, v) => { it.config = Object.assign({}, it.config, { [k]: v }); dirty(); })) : null);
-  }), el('button', { type: 'button', class: 'btn mini', textContent: I18N.t('web.editor.bubble'), onclick: () => { c.items.push({ script: 'tiempo.js', config: {} }); renderTabs(); dirty(); } }));
+  }), el('button', { type: 'button', class: 'btn mini', textContent: I18N.t('web.editor.bubble'), onclick: () => { c.items.push({ script: 'weather.js', config: {} }); renderTabs(); dirty(); } }));
 }
 /** Panel de la tarjeta elegida: ancho, ajustes y mover / duplicar / borrar */
 function edCardPanel() {
@@ -1843,10 +1844,10 @@ function addChip(key) {
   inp.value = ''; renderChips(key); dirty();
 }
 function fill(cfg) {
-  const p = cfg.panel || {}, a = { ...DEF, ...(cfg.ajustes || {}) };
-  a.night = { ...DEF.night, ...((cfg.ajustes || {}).night || {}) };
-  a.sound = { ...DEF.sound, ...((cfg.ajustes || {}).sound || {}) };
-  a.photos = { ...DEF.photos, ...((cfg.ajustes || {}).photos || {}) };
+  const p = cfg.panel || {}, a = { ...DEF, ...(cfg.settings || {}) };
+  a.night = { ...DEF.night, ...((cfg.settings || {}).night || {}) };
+  a.sound = { ...DEF.sound, ...((cfg.settings || {}).sound || {}) };
+  a.photos = { ...DEF.photos, ...((cfg.settings || {}).photos || {}) };
   $('#haUrl').value = p.haUrl || '';
   $('#mqttEnabled').checked = !!p.mqttEnabled; $('#mqttHost').value = p.mqttHost || ''; $('#mqttPort').value = p.mqttPort || '';
   $('#mqttUser').value = p.mqttUser || ''; $('#mqttPassword').value = '';
@@ -1874,12 +1875,12 @@ function fill(cfg) {
   lists.quick = [...(a.quick || [])];
   for (const k of EXPOSE_KEYS) $('#expose-' + k).checked = !a.haExpose || a.haExpose[k] !== false;
   Object.keys(lists).forEach(renderChips);
-  $('#theme').value = a.theme || 'oscuro';
+  $('#theme').value = a.theme || 'dark';
   const ls = $('#language');
   if (ls.options.length === 1) for (const [code, name] of Object.entries(I18N.langs)) ls.append(new Option(name, code));   // translations/languages.json
   ls.value = a.language || 'auto';
   webLanguage(a.language);
-  accent = a.accent || 'azul'; renderAccents();
+  accent = a.accent || 'blue'; renderAccents();
   $('#weatherEntity').dataset.value = p.weatherEntity || '';
   $('#weatherEntity').value = p.weatherEntity || '';
   ['brightness', 'night-brightness', 'sound-volume'].forEach(bindRange);
@@ -1891,8 +1892,8 @@ function fill(cfg) {
   $('#voiceSatellite').dataset.value = a.voiceSatellite || '';
   if (![...$('#voiceSatellite').options].some((o) => o.value === (a.voiceSatellite || ''))) $('#voiceSatellite').append(tOption(a.voiceSatellite, a.voiceSatellite));
   $('#voiceSatellite').value = a.voiceSatellite || '';
-  $('#voiceStyle').value = a.voiceStyle || 'onda';
-  window.__ajustes = cfg.ajustes || {};
+  $('#voiceStyle').value = a.voiceStyle || 'wave';
+  window.__settings = cfg.settings || {};
 }
 function collect() {
   const plugs = {};
@@ -1909,8 +1910,8 @@ function collect() {
     favorites: lists.favorites, hiddenEntities: lists.hiddenEntities, excludePlatforms: lists.excludePlatforms,
     weatherEntity: $('#weatherEntity').value, printerPlugs: plugs,
   };
-  const ajustes = {
-    ...window.__ajustes,
+  const settings = {
+    ...window.__settings,
     brightness: +$('#brightness').value, idleSeconds: +$('#idleSeconds').value, screenOffMinutes: +$('#screenOffMinutes').value,
     night: { enabled: $('#night-enabled').checked, start: $('#night-start').value || '23:00', end: $('#night-end').value || '07:00',
       brightness: +$('#night-brightness').value, screenOff: $('#night-screenOff').checked },
@@ -1923,32 +1924,32 @@ function collect() {
     theme: $('#theme').value, language: $('#language').value, accent, quick: lists.quick,
     haExpose: Object.fromEntries(EXPOSE_KEYS.map((k) => [k, $('#expose-' + k).checked])),
   };
-  return { panel, ajustes };
+  return { panel, settings };
 }
 let isDirty = false;
 let FILLING = 0;   // mientras se rellenan los campos con lo de la Pi no cuenta como cambio
 /* Lo que no va en la configuración del panel sino en servicios de la Pi (sonido, altavoz, voz, actualizaciones).
  * snap = cómo estaba al cargar: al pulsar Guardar solo se manda lo que ha cambiado. */
 const EXTRA = {
-  sonido: { label: 'panel.settings.sound', snap: null,
+  sound: { label: 'panel.settings.sound', snap: null,
     get: () => ({ music: +$('#snd-music-vol').value, master: +$('#snd-master-vol').value, voiceVolume: +$('#snd-voice-vol').value, micGain: +$('#snd-mic').value }),
-    save: async (cur, old) => { const d = {}; for (const k in cur) if (cur[k] !== old[k]) d[k] = cur[k]; await api('POST', '/api/sonido', d); } },
-  altavoz: { label: I18N.t('web.sound.speaker'), snap: null,
+    save: async (cur, old) => { const d = {}; for (const k in cur) if (cur[k] !== old[k]) d[k] = cur[k]; await api('POST', '/api/sound', d); } },
+  speaker: { label: I18N.t('web.sound.speaker'), snap: null,
     get: () => ({ enabled: $('#spk-enabled').checked, name: $('#spk-name').value.trim(), device: $('#spk-device').value, entity: $('#spk-entity').value,
       closeAfter: +$('#spk-close').value, npSpeakers: npSpk.slice() }),
-    save: async (cur) => { const r = await api('POST', '/api/altavoz', cur); spkMsg(r.mensaje, true); } },
-  voz: { label: I18N.t('panel.settings.voice_assistant'), snap: null,
+    save: async (cur) => { const r = await api('POST', '/api/speaker', cur); spkMsg(r.message, true); } },
+  voice: { label: I18N.t('panel.settings.voice_assistant'), snap: null,
     get: () => ({ enabled: $('#voz-enabled').checked, name: $('#voz-name').value.trim(), mic: $('#voz-mic').value, output: $('#voz-out').value, wake: $('#voz-wake').value }),
-    save: async (cur) => { const r = await api('POST', '/api/voz', cur); vozMsg(r.mensaje, true); } },
+    save: async (cur) => { const r = await api('POST', '/api/voice', cur); vozMsg(r.message, true); } },
   upd: { label: I18N.t('panel.settings.updates'), snap: null,
     get: () => ({ mode: $('#upd-mode').value, hour: +$('#upd-hour').value }),
-    save: async (cur) => { await api('POST', '/api/actualizaciones', { accion: 'ajustes', ...cur }); } },
+    save: async (cur) => { await api('POST', '/api/updates', { action: 'settings', ...cur }); } },
 };
 function dirty() { isDirty = true; msg(I18N.t('web.login.unsaved_changes')); }
 
 async function loadEntities() {
   try {
-    const ents = await api('GET', '/api/entidades');
+    const ents = await api('GET', '/api/entities');
     names = Object.fromEntries(ents.map((e) => [e.id, e.name]));
     $('#entidades').replaceChildren(...ents.map((e) => { const o = document.createElement('option'); o.value = e.id; o.label = e.name; return o; }));
     const sel = $('#weatherEntity'), cur = sel.dataset.value;
@@ -1978,7 +1979,7 @@ function liveTick() {
     $('#live-msg').textContent = t('web.general.screen_cannot_shown');
     LIVE.on = false; $('#live-btn').textContent = t('web.general.view');
   };
-  img.src = '/api/pantalla.png?t=' + Date.now();
+  img.src = '/api/screen.png?t=' + Date.now();
 }
 $('#live-btn').onclick = () => {
   LIVE.on = !LIVE.on;
@@ -2093,7 +2094,7 @@ let wifiSel = null;
 function redMsg(t, ok) { const m = $('#red-msg'); m.textContent = I18N.t(t); m.style.color = ok === false ? 'var(--danger)' : ok ? 'var(--ok)' : ''; }
 async function loadRed() {
   try {
-    const r = await api('GET', '/api/red');
+    const r = await api('GET', '/api/network');
     const rows = [[I18N.t('panel.sheets.name'), r.hostname], [I18N.t('panel.settings.ip'), r.ipv4 ? I18N.t(r.ipv4.method === 'manual' ? 'web.system.ip_static' : 'web.system.ip_auto', { ip: r.ip }) : r.ip]];
     if (r.wifi) rows.push([I18N.t('panel.settings.wifi'), I18N.t('web.system.wifi_signal', { ssid: r.wifi.ssid, n: r.wifi.signal })]);
     else if (r.connection) rows.push([I18N.t('panel.settings.connection'), r.connection.type === 'ethernet' ? I18N.t('panel.settings.ethernet') : r.connection.name]);
@@ -2116,7 +2117,7 @@ async function loadRed() {
 $('#wifi-buscar').onclick = async () => {
   redMsg(I18N.t('web.system.scanning_wifi'));
   try {
-    const nets = await api('POST', '/api/red/escanear');
+    const nets = await api('POST', '/api/network/scan');
     $('#wifi-list').replaceChildren(...nets.map((n) => {
       const b = document.createElement('button'); b.type = 'button'; b.className = 'wifi' + (n.inUse ? ' use' : '');
       b.innerHTML = `<span></span><span class="hint">${n.secure ? '🔒 ' : ''}${n.signal} %${n.inUse ? ' · conectada' : ''}</span>`;
@@ -2130,7 +2131,7 @@ $('#wifi-buscar').onclick = async () => {
 };
 $('#wifi-ok').onclick = async () => {
   if (!wifiSel || !confirm(`¿Conectar la Pi a «${wifiSel.ssid}»? Si la contraseña está mal, la Pi puede quedarse sin red hasta volver a conectarla a mano.`)) return;
-  try { const r = await api('POST', '/api/red/wifi', { ssid: wifiSel.ssid, password: $('#wifi-pass').value }); redMsg(r.mensaje, true); $('#wifi-pass').value = ''; }
+  try { const r = await api('POST', '/api/network/wifi', { ssid: wifiSel.ssid, password: $('#wifi-pass').value }); redMsg(r.message, true); $('#wifi-pass').value = ''; }
   catch (e) { redMsg(e.message, false); }
 };
 document.querySelectorAll('input[name=ipm]').forEach((r) => (r.onchange = () => $('#ip-manual').classList.toggle('hidden', r.value !== 'manual' || !r.checked)));
@@ -2139,12 +2140,12 @@ $('#ip-ok').onclick = async () => {
   const body = { method, address: $('#ip-address').value.trim(), prefix: +$('#ip-prefix').value || 24, gateway: $('#ip-gateway').value.trim(), dns: $('#ip-dns').value.trim() };
   const txt = method === 'manual' ? `¿Poner la IP fija ${body.address}? Después tendrás que entrar en http://${body.address}:8080` : I18N.t('web.system.back_to_dhcp');
   if (!confirm(txt)) return;
-  try { const r = await api('POST', '/api/red/ip', body); redMsg(r.mensaje, true); } catch (e) { redMsg(e.message, false); }
+  try { const r = await api('POST', '/api/network/ip', body); redMsg(r.message, true); } catch (e) { redMsg(e.message, false); }
 };
 $('#host-ok').onclick = async () => {
   const name = $('#hostname').value.trim();
   if (!confirm(`¿Cambiar el nombre de la Pi a «${name}»?`)) return;
-  try { const r = await api('POST', '/api/red/nombre', { hostname: name }); redMsg(r.mensaje, true); } catch (e) { redMsg(e.message, false); }
+  try { const r = await api('POST', '/api/network/hostname', { hostname: name }); redMsg(r.message, true); } catch (e) { redMsg(e.message, false); }
 };
 
 /* ---------- altavoz (Sendspin) ---------- */
@@ -2171,7 +2172,7 @@ function spkFill(r) {
   $('#spk-log').textContent = r.log || '';
   $('#spk-log-box').classList.toggle('hidden', !r.log);
   FILLING--;
-  EXTRA.altavoz.snap = JSON.stringify(EXTRA.altavoz.get());
+  EXTRA.speaker.snap = JSON.stringify(EXTRA.speaker.get());
 }
 let spkEntity = '';
 function spkEntities() {
@@ -2183,7 +2184,7 @@ function spkEntities() {
   sel.value = spkEntity; sel.dispatchEvent(new Event('change'));
 }
 async function loadSpk() {
-  try { spkFill(await api('GET', '/api/altavoz')); } catch (e) { spkMsg(I18N.t('web.sound.speaker_error_prefix') + e.message, false); }
+  try { spkFill(await api('GET', '/api/speaker')); } catch (e) { spkMsg(I18N.t('web.sound.speaker_error_prefix') + e.message, false); }
 }
 /* ---------- sonido: respuestas del asistente y micro (se aplican al soltar) ---------- */
 function sndFill(r) {
@@ -2200,10 +2201,10 @@ function sndFill(r) {
   if (r.master.available && r.master.value != null) set('snd-master-vol', r.master.value);
   set('snd-voice-vol', r.voice.volume); set('snd-mic', r.voice.micGain);
   FILLING--;
-  EXTRA.sonido.snap = JSON.stringify(EXTRA.sonido.get());
+  EXTRA.sound.snap = JSON.stringify(EXTRA.sound.get());
 }
 async function loadSnd() {
-  try { sndFill(await api('GET', '/api/sonido')); } catch (e) { $('#snd-msg').textContent = I18N.t('web.sound.sound_error_prefix') + e.message; }
+  try { sndFill(await api('GET', '/api/sound')); } catch (e) { $('#snd-msg').textContent = I18N.t('web.sound.sound_error_prefix') + e.message; }
 }
 ['snd-music-vol', 'snd-master-vol', 'snd-voice-vol', 'snd-mic'].forEach(bindRange);
 
@@ -2230,10 +2231,10 @@ function vozFill(r) {
   $('#voz-log').textContent = r.log || '';
   $('#voz-log-box').classList.toggle('hidden', !r.log);
   FILLING--;
-  EXTRA.voz.snap = JSON.stringify(EXTRA.voz.get());
+  EXTRA.voice.snap = JSON.stringify(EXTRA.voice.get());
 }
 async function loadVoz() {
-  try { vozFill(await api('GET', '/api/voz')); } catch (e) { vozMsg(I18N.t('web.beta.voice_error_prefix') + e.message, false); }
+  try { vozFill(await api('GET', '/api/voice')); } catch (e) { vozMsg(I18N.t('web.beta.voice_error_prefix') + e.message, false); }
 }
 
 /* ---------- actualizaciones ---------- */
@@ -2267,7 +2268,7 @@ function updFill(r) {
   if (r.applying || r.checking) updTimer = setTimeout(loadUpd, 2000);   // mientras trabaja, se va mirando
 }
 async function loadUpd() {
-  try { const r = await api('GET', '/api/actualizaciones'); if (r_applying && r.error) r_applying = false; updFill(r); }
+  try { const r = await api('GET', '/api/updates'); if (r_applying && r.error) r_applying = false; updFill(r); }
   catch (e) {
     if (r_applying && e.message === 'Inicia sesión') { r_applying = false; showLogin('Panel actualizado ✓ Vuelve a entrar.'); }   // tras reiniciar hay que entrar otra vez
     else if (r_applying) { updMsg(I18N.t('web.system.restarting_new')); clearTimeout(updTimer); updTimer = setTimeout(loadUpd, 3000); }   // el ayudante se reinicia
@@ -2278,13 +2279,13 @@ let r_applying = false;
 $('#upd-mode').addEventListener('change', () => $('#upd-hour-box').classList.toggle('hidden', $('#upd-mode').value !== 'auto'));
 $('#upd-check').onclick = async () => {
   updMsg(I18N.t('web.system.checking'));
-  try { const r = await api('POST', '/api/actualizaciones', { accion: 'comprobar' }); updFill(r.info); if (!r.info.error) updMsg(r.info.available.length ? I18N.t('web.system.new_version') : I18N.t('panel.settings.already_up_to_date'), true); }
+  try { const r = await api('POST', '/api/updates', { action: 'check' }); updFill(r.info); if (!r.info.error) updMsg(r.info.available.length ? I18N.t('web.system.new_version') : I18N.t('panel.settings.already_up_to_date'), true); }
   catch (e) { updMsg(e.message, false); }
 };
 $('#upd-apply').onclick = async () => {
   if (!confirm(I18N.t('web.system.update_confirm'))) return;
   updMsg(I18N.t('web.system.updating')); r_applying = true;
-  try { const r = await api('POST', '/api/actualizaciones', { accion: 'actualizar' }); updMsg(r.mensaje, true); updFill(r.info); updTimer = setTimeout(loadUpd, 2000); }
+  try { const r = await api('POST', '/api/updates', { action: 'update' }); updMsg(r.message, true); updFill(r.info); updTimer = setTimeout(loadUpd, 2000); }
   catch (e) { updMsg(e.message, false); r_applying = false; }
 };
 
@@ -2313,14 +2314,14 @@ $('#guardar').onclick = async () => {
 };
 $('#probar').onclick = async () => {
   const m = $('#probar-msg'); m.textContent = I18N.t('web.general.testing');
-  try { const r = await api('POST', '/api/probar', { haUrl: $('#haUrl').value.trim(), token: $('#token').value.trim() }); m.textContent = (r.ok ? '✓ ' : '✗ ') + r.mensaje; }
+  try { const r = await api('POST', '/api/test', { haUrl: $('#haUrl').value.trim(), token: $('#token').value.trim() }); m.textContent = (r.ok ? '✓ ' : '✗ ') + r.message; }
   catch (e) { m.textContent = '✗ ' + e.message; }
 };
 $('#aviso').onclick = async () => {
-  try { const r = await api('POST', '/api/aviso'); msg(r.mensaje, r.ok ? 'ok' : 'err'); } catch (e) { msg(e.message, 'err'); }
+  try { const r = await api('POST', '/api/notify'); msg(r.message, r.ok ? 'ok' : 'err'); } catch (e) { msg(e.message, 'err'); }
 };
-document.querySelectorAll('[data-orden]').forEach((b) => (b.onclick = async () => {
-  try { await api('POST', '/api/orden', { tipo: b.dataset.orden }); msg(`Enviado: ${b.textContent.trim()}`, 'ok'); } catch (e) { msg(e.message, 'err'); }
+document.querySelectorAll('[data-command]').forEach((b) => (b.onclick = async () => {
+  try { await api('POST', '/api/command', { type: b.dataset.command }); msg(`Enviado: ${b.textContent.trim()}`, 'ok'); } catch (e) { msg(e.message, 'err'); }
 }));
 document.querySelectorAll('[data-add-btn]').forEach((b) => (b.onclick = () => addChip(b.dataset.addBtn)));
 document.querySelectorAll('[data-add]').forEach((i) => i.addEventListener('keydown', (e) => { if (e.key === 'Enter') { e.preventDefault(); addChip(i.dataset.add); } }));
@@ -2332,7 +2333,7 @@ window.addEventListener('beforeunload', (e) => { if (isDirty) e.preventDefault()
 /* ---------- arranque ---------- */
 (async () => {
   try {
-    const st = await (await fetch('/api/estado', { credentials: 'same-origin' })).json();
+    const st = await (await fetch('/api/state', { credentials: 'same-origin' })).json();
     $('#sim-banner').classList.toggle('hidden', !st.simulated);
     if (st.session) await load();
     else showLogin(st.password ? '' : I18N.t('web.login.no_password_yet'));

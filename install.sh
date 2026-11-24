@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # Instalador completo del Panel Hogar: instala el panel (setup-kiosk.sh) y pregunta si quieres el altavoz
-# de Music Assistant (setup-sendspin.sh) y el asistente de voz (setup-voz.sh). Al final ofrece reiniciar.
+# de Music Assistant (setup-sendspin.sh) y el asistente de voz (setup-voice.sh). Al final ofrece reiniciar.
 # Uso (como tu usuario, no con sudo delante):  bash ~/ha-panel/install.sh
 set -euo pipefail
 
@@ -41,9 +41,9 @@ echo "=============== Asistente de voz (opcional, en BETA) ==============="
 echo "Con un micro USB, la Pi escucha «Okay Nabu» y habla con Assist de Home Assistant."
 echo "Está en pruebas: funciona, pero puede fallar o cambiar en próximas versiones."
 if arecord -l 2>/dev/null | grep -q '^card' && ask "¿Instalar el asistente de voz (beta)?" n; then
-  bash "$PANEL_DIR/scripts/setup-voz.sh"
+  bash "$PANEL_DIR/scripts/setup-voice.sh"
 else
-  echo "==> Sin asistente de voz. Si lo quieres más adelante:  bash $PANEL_DIR/scripts/setup-voz.sh"
+  echo "==> Sin asistente de voz. Si lo quieres más adelante:  bash $PANEL_DIR/scripts/setup-voice.sh"
 fi
 
 echo

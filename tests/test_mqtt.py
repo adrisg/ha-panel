@@ -102,7 +102,7 @@ def _start(helper, broker, password='secret', expose=None):
     cfg = helper.load_config()
     cfg['panel'].update(mqttEnabled=True, mqttHost='127.0.0.1', mqttPort=broker.port, mqttUser='panel', mqttPassword=password)
     if expose is not None:
-        cfg['ajustes']['haExpose'] = expose
+        cfg['settings']['haExpose'] = expose
     helper.save_config(cfg)
     helper.mqtt_restart()
     assert wait(lambda: helper.MQTT['status'] in ('connected', 'error')), helper.MQTT
@@ -128,13 +128,13 @@ def test_discovery_states_and_commands(helper):
     assert broker.published[base + '/last_touch'] == '2026-11-24T10:00:00Z'
 
     broker.send(base + '/brightness/set', '40')
-    assert wait(lambda: helper.COMMAND['type'] == 'brillo' and helper.COMMAND['value'] == 40)
+    assert wait(lambda: helper.COMMAND['type'] == 'brightness' and helper.COMMAND['value'] == 40)
     broker.send(base + '/screen/set', 'OFF')
-    assert wait(lambda: helper.COMMAND['type'] == 'pantalla_off')
+    assert wait(lambda: helper.COMMAND['type'] == 'screen_off')
     broker.send(base + '/ambient/set', 'ON')
-    assert wait(lambda: helper.COMMAND['type'] == 'ambiente')
+    assert wait(lambda: helper.COMMAND['type'] == 'ambient')
     broker.send(base + '/reload/press', 'PRESS')
-    assert wait(lambda: helper.COMMAND['type'] == 'recargar')
+    assert wait(lambda: helper.COMMAND['type'] == 'reload')
     log = ' | '.join(helper.MQTT_LOG)
     assert 'Conectado' in log and '← ' + base + '/brightness/set: 40' in log and '→ ' + base + '/screen/state: ON' in log
     helper.MQTT['client'].stop()
@@ -185,6 +185,6 @@ def test_off_when_disabled(helper):
 
 def test_commands_for_the_panel(helper):
     helper.send_command('brightness', 250)
-    assert helper.COMMAND['type'] == 'brillo' and helper.COMMAND['value'] == 100
+    assert helper.COMMAND['type'] == 'brightness' and helper.COMMAND['value'] == 100
     with pytest.raises(ValueError):
         helper.send_command('format_disk')

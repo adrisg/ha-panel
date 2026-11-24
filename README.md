@@ -12,7 +12,7 @@ Una pantalla bonita para el escritorio que decora con tus fotos y desde la que v
 
 - 🖼️ **Decora con tus fotos** mientras ves lo importante: la hora, el tiempo, la música… Fotos de **Immich**, **Google Fotos**, una carpeta de **Home Assistant** o enlaces.
 - 🔊 **También es un altavoz** de Music Assistant, con la carátula a pantalla completa.
-- 🔔 **Avisos con botones**: «llaman al telefonillo → Abrir puerta» ([cómo](AVISOS.md)).
+- 🔔 **Avisos con botones**: «llaman al telefonillo → Abrir puerta» ([cómo](NOTIFICATIONS.md)).
 - 🫧 **Toda la información de un solo golpe**: burbujas en la pantalla de inicio y en el modo ambiente con el tiempo, las luces encendidas, el coche cargando, la impresora… Eliges cuáles salen y en qué orden, y puedes crear las tuyas ([cómo configurarlas](SCRIPTS.md)).
 - 🧩 **Pestañas a tu gusto**, con componentes que puedes crear tú ([cómo](SCRIPTS.md#componentes)).
 - ⬇️ **Panel de acceso rápido como en Android**: desliza desde arriba para la música, el volumen, el brillo, los avisos y tus accesos rápidos.
@@ -82,7 +82,7 @@ La campana de la barra de arriba abre el panel de acceso rápido directamente en
    bash ~/ha-panel/install.sh
    ```
    Te pide una contraseña para la web de configuración, si quieres el **altavoz** de Music Assistant y si reiniciar al acabar.
-   (Por partes, en `scripts/`: `setup-kiosk.sh` instala el panel, `setup-sendspin.sh` el altavoz y `setup-voz.sh` el asistente de voz.)
+   (Por partes, en `scripts/`: `setup-kiosk.sh` instala el panel, `setup-sendspin.sh` el altavoz y `setup-voice.sh` el asistente de voz.)
 3. Al arrancar, la pantalla muestra un **QR**. Escanéalo con el móvil, entra con la contraseña y pon la dirección de tu Home Assistant y el token.
 4. ¡Listo! Todo se guarda con el botón **Guardar**. El panel aplica los ajustes al momento; solo se recarga si cambias la conexión, las entidades, las fotos o el código.
 
@@ -109,7 +109,7 @@ Todo se guarda con **Guardar**, abajo.
 - **Modo ambiente:** sale el primero de la lista que esté sonando; si no suena ninguno, el primero en pausa y, si no, el primero.
 - **«Sonando»:** se abre al empezar a sonar uno de la lista. Si ya se ve otro, cambia solo si el nuevo está más arriba o si el que se ve no suena. Al parar, pasa al siguiente que siga sonando o se cierra sola (tiempo a elegir).
 
-**Asistente de voz (beta):** con un micro USB, `bash ~/ha-panel/scripts/setup-voz.sh` convierte la Pi en satélite de Assist («Okay Nabu»). En Home Assistant necesitas un motor de voz a texto (Speech-to-Phrase o Whisper) y añadir la Pi en la integración **Wyoming**. Se configura en la web → 🧪 Beta. Luego elígela en Ajustes → Asistente de voz (o en la web → Sonido → Voz en la pantalla) y saldrá una barra encima de la pantalla mientras escucha y contesta.
+**Asistente de voz (beta):** con un micro USB, `bash ~/ha-panel/scripts/setup-voice.sh` convierte la Pi en satélite de Assist («Okay Nabu»). En Home Assistant necesitas un motor de voz a texto (Speech-to-Phrase o Whisper) y añadir la Pi en la integración **Wyoming**. Se configura en la web → 🧪 Beta. Luego elígela en Ajustes → Asistente de voz (o en la web → Sonido → Voz en la pantalla) y saldrá una barra encima de la pantalla mientras escucha y contesta.
 
 **Altavoz:** si no lo instalaste con `install.sh`, lanza `bash ~/ha-panel/scripts/setup-sendspin.sh` y actívalo en la web → Sonido → Altavoz.
 
@@ -140,4 +140,4 @@ Con Python instalado: `python dev.py`. El panel se abre en el navegador y la web
 ## Documentación
 
 - [Burbujas y componentes](SCRIPTS.md): cómo funcionan, cómo crear los tuyos y ejemplos.
-- [Avisos](AVISOS.md): cómo lanzarlos desde Home Assistant, con botones.
+- [Avisos](NOTIFICATIONS.md): cómo lanzarlos desde Home Assistant, con botones.
