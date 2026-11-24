@@ -926,7 +926,7 @@ function showNowPlaying(id) {
     h('div', { class: 'np-main' }, art, h('div', { class: 'np-info' }, title, sub,
       h('div', { class: 'np-ctrls' }, h('button', { onclick: svc('media_previous_track') }, icon('mdi-skip-previous')), play,
         h('button', { onclick: svc('media_next_track') }, icon('mdi-skip-next'))))),
-    vol ? vol.el : null,
+    ...(vol ? [vol.el] : []),   // replaceChildren pintaría «null» como texto
     // progreso: abajo del todo, de lado a lado
     h('div', { class: 'np-prog' }, h('div', { class: 'np-times' }, cur, dur), seek));
   // Si una palabra no cabe, la letra se hace más pequeña (hasta un 60 %); si aun así no cabe, se parte
@@ -2869,7 +2869,7 @@ function renderAmbientPlayer() {
       btn('vol-', 'mdi-volume-minus', 'small'),
       btn('prev', 'mdi-skip-previous'), btn('play', playing ? 'mdi-pause' : 'mdi-play', 'main'), btn('next', 'mdi-skip-next'),
       btn('vol+', 'mdi-volume-plus', 'small')),
-    vol ? h('div', { class: 'amb-pvol' }, vol) : null);
+    ...(vol ? [h('div', { class: 'amb-pvol' }, vol)] : []));
 }
 function ambientPlayerAction(act) {
   const id = ambientSpeaker(), st = id && S.states[id];

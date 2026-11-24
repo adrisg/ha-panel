@@ -45,6 +45,10 @@ Una pantalla bonita para el escritorio que decora con tus fotos y desde la que v
 
 Desliza hacia abajo desde el borde de arriba, en cualquier pantalla (también en el modo ambiente y en «Sonando»). Tiene tres ventanas que se cambian deslizando de lado o con sus pestañas:
 
+<p align="center">
+  <img src="docs/acceso-avisos.png" width="32%"> <img src="docs/acceso-controles.png" width="32%"> <img src="docs/acceso-rapidos.png" width="32%">
+</p>
+
 | ← Avisos | Controles (sale al abrir) | Accesos rápidos → |
 |---|---|---|
 | Los últimos avisos. Tocar uno lo vuelve a abrir; la × lo quita. Un puntito en la campana marca los que no has visto. | Hora, apagar la pantalla, ⚙ Ajustes, la música que suena y las barras de volumen, avisos y brillo. | Luces, enchufes, escenas… los que elijas («Editar»). Un toque los enciende o apaga; mantener abre su detalle. |
