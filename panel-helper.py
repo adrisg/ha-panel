@@ -1028,11 +1028,21 @@ def _mqtt_base():
     return f'panel_hogar/{panel_id()}'
 
 
+def _lan_ip():
+    """La IP de la Pi en la red de casa (para el enlace «Visitar» de Home Assistant)."""
+    try:
+        with socket.socket(socket.AF_INET, socket.SOCK_DGRAM) as u:
+            u.connect(('192.0.2.1', 9))      # no se envía nada: solo elige la interfaz de salida
+            return u.getsockname()[0]
+    except OSError:
+        return socket.gethostname().split('.')[0] + '.local'
+
+
 def _mqtt_device():
     code, out, _ = _git('rev-parse', '--short', 'HEAD', timeout=5)
     host = socket.gethostname().split('.')[0]
     return {'identifiers': [f'panel_hogar_{panel_id()}'], 'name': f'Panel {host}', 'manufacturer': 'Panel Hogar',
-            'model': 'Raspberry Pi', 'sw_version': out.strip() if code == 0 else '', 'configuration_url': f'http://{host}.local:{WEB_PORT}'}
+            'model': 'Raspberry Pi', 'sw_version': out.strip() if code == 0 else '', 'configuration_url': f'http://{_lan_ip()}:{WEB_PORT}'}
 
 
 def _mqtt_names():
