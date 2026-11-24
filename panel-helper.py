@@ -1027,6 +1027,28 @@ def bridge_poll(since, timeout):
                 'online': time.time() - BRIDGE['seen'] < 45}
 
 
+# Pantalla en directo (web → General): una captura de lo que se ve en la pantalla de la Pi (grim, dentro de cage).
+SCREEN_CAP = {'at': 0.0, 'png': None}
+
+
+def screen_capture():
+    """PNG de la pantalla ahora mismo (como mucho una captura cada medio segundo), o None si no se puede."""
+    if SIMULATE or not shutil.which('grim'):
+        return None
+    with LOCK:
+        if time.time() - SCREEN_CAP['at'] < 0.5 and SCREEN_CAP['png']:
+            return SCREEN_CAP['png']
+    code, out = 1, b''
+    try:
+        r = subprocess.run(['grim', '-l', '3', '-'], capture_output=True, timeout=5)
+        code, out = r.returncode, r.stdout
+    except (OSError, subprocess.SubprocessError):
+        pass
+    with LOCK:
+        SCREEN_CAP.update(at=time.time(), png=out if code == 0 and out else None)
+        return SCREEN_CAP['png']
+
+
 def update_info():
     # ¿puede instalar paquetes sin contraseña? (permiso que da setup-kiosk.sh)
     # («sudo -l apt-get» no vale: también dice que sí cuando se puede con contraseña)
@@ -1523,6 +1545,19 @@ class WebHandler(Base):
                     return self._json(400, {'error': 'bad rev or timeout'})
                 return self._json(200, dict(wait_panel_state(rev, timeout), expose=ha_expose()))
             return self._json(404)
+        if u.path == '/api/pantalla.png':   # la pantalla de la Pi en directo
+            if not self._guard():
+                return
+            png = screen_capture()
+            if not png:
+                return self._json(503, {'error': 'solo en la Pi (hace falta grim)'})
+            self.send_response(200)
+            self.send_header('Content-Type', 'image/png')
+            self.send_header('Content-Length', str(len(png)))
+            self.send_header('Cache-Control', 'no-store')
+            self.end_headers()
+            self.wfile.write(png)
+            return
         if u.path == '/api/ha-key':      # la clave para la integración, en la web
             if not self._guard():
                 return

@@ -8,7 +8,7 @@ PANEL_DIR="$(cd "$(dirname "$0")/.." && pwd)"   # la carpeta del panel (estos sc
 SENDSPIN_VENV="$HOME/.local/share/panel-hogar/sendspin"
 
 # Paquetes del sistema que necesita el panel (y el altavoz, si está instalado)
-need=(cage curl fonts-noto-core wlr-randr avahi-utils)
+need=(cage curl fonts-noto-core wlr-randr avahi-utils grim)
 [ -x "$SENDSPIN_VENV/bin/pip" ] && need+=(libportaudio2 alsa-utils python3-venv)
 
 missing=()

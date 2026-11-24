@@ -79,6 +79,9 @@
   .btn { border: 0; border-radius: 12px; padding: 10px 16px; background: var(--surface-3); cursor: pointer; font-weight: 600; }
   .btn:hover { filter: brightness(1.15); }
   a.btn { display: inline-flex; align-items: center; text-decoration: none; color: inherit; }
+  .live { position: relative; aspect-ratio: 1024 / 600; border-radius: 14px; overflow: hidden; background: #000; display: grid; place-items: center; margin: 8px 0; }
+  .live img { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: contain; }
+  .live img[src] + div { display: none; }
   .btn.primary { background: var(--accent); color: #0b1d3a; }
   .btn.danger { background: #4a1d1a; color: var(--danger); }
   .btns { display: flex; flex-wrap: wrap; gap: 8px; }
@@ -430,6 +433,13 @@ go = 'home' | 'rooms' | 'sensors' | 'media' | 'printers' | 'scooter' | 'settings
     </div>
     </div>
     <div data-pg="general">
+    <div class="card">
+      <h2>📺 Pantalla en directo</h2>
+      <span class="hint">Lo que se ve ahora mismo en la pantalla de la Pi.</span>
+      <div class="live" id="live"><img id="live-img" alt=""><div id="live-msg" class="hint">Toca «Ver» para empezar.</div></div>
+      <div class="btns"><button class="btn primary" type="button" id="live-btn">Ver</button></div>
+    </div>
+
     <div class="card">
       <h2>📱 Mando a distancia</h2>
       <div class="btns">
@@ -1960,6 +1970,26 @@ function connPaint() {
     : 'El panel ve y maneja todo Home Assistant con un token de larga duración.');
 }
 $('#connection').addEventListener('change', connPaint);
+/* ---------- pantalla en directo: una captura cada segundo mientras se mira ---------- */
+const LIVE = { on: false, timer: null };
+function liveTick() {
+  if (!LIVE.on) return;
+  if (document.hidden || $('#live').closest('[data-pg]').classList.contains('hidden')) { LIVE.timer = setTimeout(liveTick, 1000); return; }
+  const img = new Image();
+  img.onload = () => { $('#live-img').src = img.src; LIVE.timer = setTimeout(liveTick, 1000); };
+  img.onerror = () => {
+    $('#live-img').removeAttribute('src');
+    $('#live-msg').textContent = t('No se puede ver la pantalla (solo funciona en la Pi).');
+    LIVE.on = false; $('#live-btn').textContent = t('Ver');
+  };
+  img.src = '/api/pantalla.png?t=' + Date.now();
+}
+$('#live-btn').onclick = () => {
+  LIVE.on = !LIVE.on;
+  $('#live-btn').textContent = t(LIVE.on ? 'Parar' : 'Ver');
+  clearTimeout(LIVE.timer);
+  if (LIVE.on) liveTick();
+};
 async function loadHaKey() {
   let estado;
   try {
