@@ -804,6 +804,34 @@ function dragOn(el, { start, move, end }) {
 }
 /* Símbolo del altavoz según el volumen (para la burbuja). */
 const volIconOf = (v) => v <= 0 ? 'mdi-volume-off' : v < 34 ? 'mdi-volume-low' : v < 67 ? 'mdi-volume-medium' : 'mdi-volume-high';
+/* Volumen en «Sonando» para OTROS altavoces (el del panel se cambia en la cortina): un botón con el altavoz
+ * abajo a la derecha que despliega una barra vertical con el número. Solo sale si ese altavoz deja cambiar el volumen. */
+const canSetVolume = (st) => !!st && st.attributes.volume_level != null && ((st.attributes.supported_features || 0) & 4) !== 0;
+function npVolume(id) {
+  const fill = h('i'), val = h('span', { class: 'vb-val' });
+  const track = h('div', { class: 'np-vtrack' }, fill, h('span', { class: 'vb-ic' }, icon('mdi-speaker')), val);
+  const btn = h('button', { class: 'np-vbtn' }, icon('mdi-speaker'));
+  const el = h('div', { class: 'np-vol' }, h('div', { class: 'np-vpanel' }, track), btn);
+  const W = { v: 0, drag: false, sent: -1, sentAt: 0, timer: null, live: null, el };
+  const set = (v) => { W.v = v; fill.style.height = v + '%'; val.textContent = v; };
+  const send = () => { if (W.v === W.sent) return; W.sent = W.v; W.sentAt = Date.now(); call('media_player', 'volume_set', { volume_level: W.v / 100 }, id); };
+  const close = () => el.classList.remove('open');
+  const hideLater = () => { clearTimeout(W.timer); W.timer = setTimeout(() => !W.drag && close(), 4000); };
+  btn.onclick = () => { if (el.classList.toggle('open')) hideLater(); };
+  const at = (y) => { const r = track.getBoundingClientRect(); set(Math.round(Math.max(0, Math.min(1, (r.bottom - y) / r.height)) * 100)); };
+  dragOn(track, {
+    start: (x, y) => { W.drag = true; clearTimeout(W.timer); at(y); send(); clearInterval(W.live); W.live = setInterval(send, 250); },
+    move: (x, y) => at(y),
+    end: () => { W.drag = false; clearInterval(W.live); send(); hideLater(); },
+  });
+  // lo que llega de Home Assistant (lo que llega tarde de un arrastre propio no hace saltar la barra)
+  W.update = (st) => {
+    el.classList.toggle('hidden', !canSetVolume(st));
+    if (!canSetVolume(st) || W.drag || Date.now() - W.sentAt < 3000) return;
+    set(Math.round(st.attributes.volume_level * 100));
+  };
+  return W;
+}
 /* Burbuja de volumen: si cambia el volumen del altavoz del panel desde otro sitio (Home Assistant, Music Assistant,
    el móvil…), sale arriba en el centro una burbuja con el número nuevo, en cualquier pantalla. Se va sola a los 2 s.
    Lo que cambias desde el propio panel no la saca. */
@@ -878,13 +906,17 @@ function showNowPlaying(id) {
   const clock = h('span', { class: 'np-clock' });
   const svc = (s) => () => call('media_player', s, {}, id);
   const play = h('button', { class: 'np-play', onclick: svc('media_play_pause') });
+  // si es otro altavoz (no el del panel), su volumen aquí mismo; el del panel está en la cortina
+  const vol = id !== speakerEntity() ? npVolume(id) : null;
   const root = $('#np');
+  root.classList.toggle('has-vol', !!vol);
   root.replaceChildren(bg,
     h('div', { class: 'np-top' }, icon('mdi-speaker'), h('span', { class: 'np-spk' }, nameOf(id, false)), clock,
       h('button', { class: 'np-close', onclick: () => { if (NP.fromAmbient && !alertOpen()) npToAmbient(); else hideNowPlaying(); } }, icon('mdi-close'))),
     h('div', { class: 'np-main' }, art, h('div', { class: 'np-info' }, title, sub,
       h('div', { class: 'np-ctrls' }, h('button', { onclick: svc('media_previous_track') }, icon('mdi-skip-previous')), play,
         h('button', { onclick: svc('media_next_track') }, icon('mdi-skip-next'))))),
+    vol ? vol.el : null,
     // progreso: abajo del todo, de lado a lado
     h('div', { class: 'np-prog' }, h('div', { class: 'np-times' }, cur, dur), seek));
   // Si una palabra no cabe, la letra se hace más pequeña (hasta un 60 %); si aun así no cabe, se parte
@@ -902,6 +934,7 @@ function showNowPlaying(id) {
     if (title.textContent !== ttl) { title.textContent = ttl; requestAnimationFrame(fitTitle); }
     sub.textContent = [a.media_artist, a.media_album_name].filter(Boolean).join(' · ');
     play.replaceChildren(icon(st.state === 'playing' ? 'mdi-pause' : 'mdi-play'));
+    if (vol) vol.update(st);
     if (a.entity_picture !== pic) {
       pic = a.entity_picture;
       const url = pic ? `url("${absUrl(pic)}")` : '';
