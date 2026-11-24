@@ -78,6 +78,7 @@
   .ac-opt small { flex: none; color: var(--muted); font-size: 12px; max-width: 45%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
   .btn { border: 0; border-radius: 12px; padding: 10px 16px; background: var(--surface-3); cursor: pointer; font-weight: 600; }
   .btn:hover { filter: brightness(1.15); }
+  pre.log { max-height: 320px; overflow: auto; margin: 8px 0; padding: 10px 12px; border-radius: 12px; background: var(--bg, #0e1014); font-size: 12px; line-height: 1.45; white-space: pre-wrap; word-break: break-all; }
   a.btn { display: inline-flex; align-items: center; text-decoration: none; color: inherit; }
   .live { position: relative; aspect-ratio: 1024 / 600; border-radius: 14px; overflow: hidden; background: #000; display: grid; place-items: center; margin: 8px 0; }
   .live img { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: contain; }
@@ -505,6 +506,8 @@ go = 'home' | 'rooms' | 'sensors' | 'media' | 'printers' | 'scooter' | 'settings
       <div class="field"><label for="mqttPassword">Contraseña <span id="mqtt-pass-pill" class="pill">sin contraseña</span></label>
         <input id="mqttPassword" type="password" autocomplete="off" placeholder="Escribe una nueva solo si quieres cambiarla"></div>
       <dl class="info" id="mqtt-info"><dt>Estado</dt><dd>Cargando…</dd></dl>
+      <details id="mqtt-log-box" data-nodirty><summary>Registro</summary><pre id="mqtt-log" class="log"></pre>
+        <div class="btns"><button class="btn mini" type="button" id="mqtt-log-copy">Copiar</button></div></details>
       <div class="field">
         <label>Qué ve Home Assistant</label>
       <div class="row"><label for="expose-screen">Pantalla <span class="hint">(encendida y brillo)</span></label><label class="switch"><input id="expose-screen" type="checkbox"><span></span></label></div>
@@ -1985,9 +1988,16 @@ async function loadMqtt() {
   try {
     const r = await api('GET', '/api/mqtt');
     estado = { connected: 'Conectado', connecting: 'Conectando…', off: 'Desactivado' }[r.status] || ('Error: ' + (r.error || r.status));
+    const pre = $('#mqtt-log'), atEnd = pre.scrollTop + pre.clientHeight >= pre.scrollHeight - 4;
+    pre.textContent = (r.log || []).join(String.fromCharCode(10)) || t('Aún no ha pasado nada.');
+    if (atEnd) pre.scrollTop = pre.scrollHeight;
   } catch (e) { estado = 'Error: ' + e.message; }
   $('#mqtt-info').replaceChildren(el('dt', { textContent: 'Estado' }), el('dd', { textContent: estado }));
 }
+// con el registro abierto se va actualizando (cada 3 s)
+setInterval(() => { if ($('#mqtt-log-box').open && !document.hidden && !$('#app').classList.contains('hidden')) loadMqtt(); }, 3000);
+$('#mqtt-log-box').addEventListener('toggle', () => { if ($('#mqtt-log-box').open) loadMqtt(); });
+$('#mqtt-log-copy').onclick = () => { navigator.clipboard && navigator.clipboard.writeText($('#mqtt-log').textContent); msg('Registro copiado', 'ok'); };
 async function load() {
   const cfg = await api('GET', '/api/config');
   fill(cfg); isDirty = false; msg('');

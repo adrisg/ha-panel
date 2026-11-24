@@ -837,6 +837,18 @@ PANEL_STATE = {'screen_on': None, 'brightness': None, 'ambient': None, 'last_tou
 HA_COMMANDS = {'screen_on': 'pantalla_on', 'screen_off': 'pantalla_off', 'ambient_on': 'ambiente', 'ambient_off': 'inicio',
                'reload': 'recargar', 'brightness': 'brillo'}
 MQTT = {'client': None, 'status': 'off', 'error': ''}
+MQTT_LOG = []          # lo último que ha pasado (web → General → MQTT → Registro)
+
+
+def mqtt_log(text):
+    line = time.strftime('%H:%M:%S ') + text
+    with LOCK:
+        MQTT_LOG.append(line)
+        del MQTT_LOG[:-300]
+    try:
+        print('mqtt:', text, flush=True)
+    except (OSError, UnicodeError):   # una consola rara no tumba la conexión
+        pass
 
 
 def panel_id():
@@ -928,6 +940,8 @@ class MqttClient:
     def publish(self, topic, payload, retain=False):
         if isinstance(payload, (dict, list)):
             payload = json.dumps(payload, ensure_ascii=False)
+        shown = payload if isinstance(payload, str) else (payload or b'').decode(errors='replace')
+        mqtt_log(f'→ {topic}: ' + (shown[:120] + '…' if len(shown) > 120 else shown or '(vacío: se quita)'))
         body = self._str(topic) + (payload.encode() if isinstance(payload, str) else payload or b'')
         try:
             self._send(self._packet(0x30 | (1 if retain else 0), body))
@@ -935,6 +949,7 @@ class MqttClient:
             pass
 
     def subscribe(self, topics):
+        mqtt_log('Escuchando: ' + ', '.join(topics))
         body = (1).to_bytes(2, 'big') + b''.join(self._str(t) + b'\x00' for t in topics)
         self._send(self._packet(0x82, body))
 
@@ -949,6 +964,7 @@ class MqttClient:
     def run(self):
         while not self.stopped:
             try:
+                mqtt_log(f'Conectando a {self.host}:{self.port}' + (f' como «{self.user}»' if self.user else ' sin usuario') + '…')
                 self.sock = socket.create_connection((self.host, self.port), timeout=10)
                 flags = 0x02 | 0x04 | 0x20          # sesión limpia, testamento (retenido)
                 body = self._str('MQTT') + bytes([4])
@@ -965,6 +981,7 @@ class MqttClient:
                     reason = {4: 'usuario o contraseña incorrectos', 5: 'sin permiso'}.get(data[1] if len(data) > 1 else 0, 'rechazado')
                     raise ConnectionError(reason)
                 MQTT.update(status='connected', error='')
+                mqtt_log('Conectado')
                 self.on_connect(self)
                 self.sock.settimeout(1)
                 last_ping = time.time()
@@ -984,12 +1001,15 @@ class MqttClient:
                         if qos:
                             self._send(self._packet(0x40, rest[:2]))   # PUBACK
                             rest = rest[2:]
+                        mqtt_log(f'← {topic}: {rest.decode(errors="replace")[:200]}')
                         try:
                             self.on_message(topic, rest.decode(errors='replace'))
                         except Exception as e:   # noqa: BLE001 — una orden rara no tumba la conexión
-                            print('mqtt: orden con error:', e, flush=True)
+                            mqtt_log(f'Orden con error: {e}')
             except (OSError, ConnectionError, ValueError) as e:
                 MQTT.update(status='error', error=str(e) or type(e).__name__)
+                if not self.stopped:
+                    mqtt_log(f'Error: {MQTT["error"]}. Se reintenta en 10 s')
             finally:
                 try:
                     self.sock.close()
@@ -1092,9 +1112,12 @@ def mqtt_restart():
     old = MQTT['client']
     if old:
         old.stop()
+        mqtt_log('Desconectado')
     MQTT.update(client=None, status='off', error='')
     p = load_config()['panel']
     if not p.get('mqttEnabled') or not p.get('mqttHost'):
+        if old or p.get('mqttEnabled'):
+            mqtt_log('Desactivado' if not p.get('mqttEnabled') else 'Falta el servidor MQTT')
         return
     base = _mqtt_base()
     client = MqttClient(p['mqttHost'], p.get('mqttPort') or 1883, p.get('mqttUser') or '', p.get('mqttPassword') or '',
@@ -1532,7 +1555,7 @@ class WebHandler(Base):
         if u.path == '/api/mqtt':        # estado de la conexión con Home Assistant por MQTT
             if not self._guard():
                 return
-            return self._json(200, {'status': MQTT['status'], 'error': MQTT['error']})
+            return self._json(200, {'status': MQTT['status'], 'error': MQTT['error'], 'log': MQTT_LOG[-200:]})
         if u.path in ('/', '/index.html'):
             try:
                 data = (HERE / 'config.html').read_bytes()
