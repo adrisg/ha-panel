@@ -520,16 +520,26 @@ go = 'home' | 'rooms' | 'sensors' | 'media' | 'printers' | 'scooter' | 'settings
     </div>
 
     <div data-pg="sonido" class="hidden">
+    <div class="card" data-nodirty>
+      <h2>🔈 Altavoz de salida</h2>
+      <div class="field">
+        <label for="spk-device">Por dónde suena la Pi</label>
+        <select id="spk-device"></select>
+        <span class="hint">Jack, HDMI o un altavoz USB. Se aplica al elegirla (la música se corta un momento).</span>
+      </div>
+      <div id="snd-master" class="field hidden" data-nodirty>
+        <div class="row" style="padding:0"><label for="snd-master-vol">Volumen de la salida <span class="hint" id="snd-master-card"></span></label><span class="val" id="snd-master-vol-v"></span></div>
+        <input id="snd-master-vol" type="range" min="0" max="100" step="1">
+        <span class="hint">Es el límite: la música, los avisos y la voz nunca suenan más fuerte. Si distorsiona, bájalo.</span>
+      </div>
+      <div id="out-msg" class="hint"></div>
+    </div>
+
     <div class="card">
       <h2>🔊 Sonido</h2>
       <div id="snd-music" class="field hidden" data-nodirty>
         <div class="row" style="padding:0"><label for="snd-music-vol">Música <span class="hint" id="snd-music-name"></span></label><span class="val" id="snd-music-vol-v"></span></div>
         <input id="snd-music-vol" type="range" min="0" max="100" step="1">
-      </div>
-      <div id="snd-master" class="field hidden" data-nodirty>
-        <div class="row" style="padding:0"><label for="snd-master-vol">Límite de salida <span class="hint" id="snd-master-card"></span></label><span class="val" id="snd-master-vol-v"></span></div>
-        <input id="snd-master-vol" type="range" min="0" max="100" step="1">
-        <span class="hint">El volumen de la Pi por esa salida: la música, los avisos y la voz nunca suenan más fuerte. Si distorsiona, bájalo.</span>
       </div>
       <div class="field">
         <div class="row" style="padding:0"><label for="sound-volume">Avisos y alarmas</label><span class="val" id="sound-volume-v"></span></div>
@@ -561,10 +571,6 @@ go = 'home' | 'rooms' | 'sensors' | 'media' | 'printers' | 'scooter' | 'settings
       <div class="field">
         <label for="spk-name">Nombre en Music Assistant</label>
         <input id="spk-name" type="text" maxlength="60">
-      </div>
-      <div class="field">
-        <label for="spk-device">Salida de audio</label>
-        <select id="spk-device"></select>
       </div>
       <div class="field">
         <label for="spk-entity">Su reproductor en Home Assistant</label>
@@ -2040,6 +2046,15 @@ $('#spk-ok').onclick = async () => {
   } catch (e) { spkMsg(e.message, false); }
 };
 
+// Altavoz de salida: se aplica al elegirla (reinicia el altavoz) y el volumen pasa a ser el de esa salida
+$('#spk-device').addEventListener('input', async () => {   // «input» solo al elegirla a mano (al rellenarla llega «change»)
+  const m = $('#out-msg'); m.textContent = 'Cambiando de salida…'; m.style.color = '';
+  try {
+    const r = await api('POST', '/api/altavoz', { device: $('#spk-device').value });
+    spkFill(r.info); m.textContent = r.mensaje || 'Guardado ✓'; m.style.color = 'var(--ok)';
+    loadSnd();
+  } catch (err) { m.textContent = err.message; m.style.color = 'var(--danger)'; }
+});
 // «Sonando»: solo sus opciones (no reinicia el altavoz ni corta la música)
 $('#np-ok').onclick = async () => {
   const m = $('#np-msg'); m.textContent = 'Aplicando…'; m.style.color = '';
