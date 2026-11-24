@@ -87,8 +87,11 @@ def load_config():
     return cfg
 
 
-def save_config(cfg):
+def save_config(cfg, reload=True):
+    """Guarda y sube la versión. reload=False: solo cambiaron ajustes que el panel aplica sin recargarse."""
     cfg['version'] = int(time.time() * 1000)
+    if reload:
+        cfg['reload'] = cfg['version']
     DATA.mkdir(parents=True, exist_ok=True)
     tmp = CONFIG_FILE.with_suffix('.tmp')
     with open(tmp, 'w', encoding='utf-8') as f:
@@ -136,11 +139,11 @@ def save_script(name, code):
     return name
 
 
-def bump_version():
-    """Los scripts cambiaron: el panel lo ve en /poll y se recarga."""
+def bump_version(reload=True):
+    """Algo cambió: el panel lo ve en /poll y se recarga (reload) o solo vuelve a leer sus ajustes."""
     with LOCK:
         cfg = load_config()
-        return save_config(cfg)
+        return save_config(cfg, reload)
 
 
 def download_script(url):
@@ -399,7 +402,7 @@ def set_speaker(body):
     DATA.mkdir(parents=True, exist_ok=True)
     SENDSPIN_FILE.write_text(json.dumps(new, ensure_ascii=False, indent=2), encoding='utf-8')
     new = speaker_settings()
-    bump_version()      # el panel se recarga con los ajustes nuevos (reproductor, abrir al sonar)
+    bump_version(reload=False)   # el panel vuelve a leer el altavoz (reproductor, abrir al sonar) sin recargarse
     if not body.get('restart') and all(new[k] == cur[k] for k in ('enabled', 'name', 'device')):
         return 'Guardado.'   # solo opciones del panel («Sonando», reproductor): el altavoz sigue sonando sin reiniciarse
     if SIMULATE:
@@ -1115,7 +1118,8 @@ class LocalHandler(Base):
         if u.path == '/actualizaciones':
             return self._json(200, update_info())
         if u.path == '/poll':
-            return self._json(200, {'version': load_config()['version'], 'command': COMMAND, 'pin': speaker_pin(),
+            cfg = load_config()
+            return self._json(200, {'version': cfg['version'], 'reload': cfg.get('reload', 0), 'command': COMMAND, 'pin': speaker_pin(),
                                     'update': len(UPD['available']) if update_settings()['mode'] == 'avisar' else 0})
         if u.path == '/proxy':
             return self._proxy(parse_qs(u.query).get('url', [''])[0])
@@ -1178,7 +1182,7 @@ class LocalHandler(Base):
             with LOCK:
                 cfg = load_config()
                 cfg['ajustes'] = body
-                return self._json(200, {'version': save_config(cfg)})
+                return self._json(200, {'version': save_config(cfg, reload=False)})
         self._json(404)
 
 
@@ -1408,11 +1412,14 @@ class WebHandler(Base):
             return self._json(400)
         with LOCK:
             cfg = load_config()
+            old_panel = json.dumps(cfg['panel'], sort_keys=True)
             if isinstance(body.get('panel'), dict):
                 cfg['panel'] = clean_panel(body['panel'], current=cfg['panel'])
             if isinstance(body.get('ajustes'), dict):
                 cfg['ajustes'] = body['ajustes']
-            return self._json(200, {'ok': True, 'version': save_config(cfg)})
+            # Conexión, entidades, fotos…: el panel tiene que arrancar de nuevo. Solo ajustes: los aplica al momento.
+            reload = json.dumps(cfg['panel'], sort_keys=True) != old_panel
+            return self._json(200, {'ok': True, 'version': save_config(cfg, reload), 'reload': reload})
 
 
 def serve(port, handler, host):

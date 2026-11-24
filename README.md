@@ -65,7 +65,7 @@ Una pantalla bonita para el escritorio que decora con tus fotos y desde la que v
    Te pide una contraseña para la web de configuración, si quieres el **altavoz** de Music Assistant y si reiniciar al acabar.
    (Por partes: `setup-kiosk.sh` instala el panel y `setup-sendspin.sh` el altavoz.)
 3. Al arrancar, la pantalla muestra un **QR**. Escanéalo con el móvil, entra con la contraseña y pon la dirección de tu Home Assistant y el token.
-4. ¡Listo! El panel se recarga solo cada vez que guardas cambios.
+4. ¡Listo! Todo se guarda con el botón **Guardar**. El panel aplica los ajustes al momento; solo se recarga si cambias la conexión, las entidades, las fotos o el código.
 
 ## Ajustes
 

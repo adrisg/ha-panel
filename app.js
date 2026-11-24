@@ -3104,7 +3104,8 @@ function tick() {
 /* ====================== Web de configuración (ayudante de la Pi) ======================
  * La web http://<pi>.local:8080 guarda la configuración en el ayudante. El panel le pregunta cada 5 s:
  * si la versión cambia se recarga, y ejecuta las órdenes del «mando a distancia». */
-const REMOTE = { version: window.PANEL_HELPER ? window.PANEL_HELPER.version : null, command: null, seeded: false };
+const REMOTE = { version: window.PANEL_HELPER ? window.PANEL_HELPER.version : null, reload: window.PANEL_HELPER ? window.PANEL_HELPER.reload || 0 : 0,
+  command: null, seeded: false };
 const SEED_KEYS = ['haUrl', 'token', 'ambientPhotos', 'immichApiKey', 'favorites', 'hiddenEntities', 'weatherEntity',
   'excludePlatforms', 'printerPlugs'];
 async function seedHelper() {
@@ -3118,6 +3119,21 @@ async function seedHelper() {
     const r = await fetch(HELPER + '/seed', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ panel, ajustes: SET }) });
     REMOTE.version = (await r.json()).version;
   } catch (e) { /* sin ayudante */ }
+}
+/** Ajustes nuevos guardados desde la web: se aplican y se repinta lo que se ve, sin recargar el panel. */
+async function applyRemoteSettings() {
+  let j;
+  try { j = await (await fetch(HELPER + '/config', { cache: 'no-store' })).json(); } catch (e) { return; }
+  if (j.altavoz && !SPK) { location.reload(); return; }        // el altavoz se acaba de activar: hay que arrancar con él
+  if (SPK && j.altavoz) Object.assign(SPK, j.altavoz);
+  const oldPhotos = JSON.stringify(SET.photos);
+  SET = mergeSettings(j.ajustes || {});
+  applySettings();
+  if (JSON.stringify(SET.photos) !== oldPhotos) { refitPhotos(); nextBackground(); }
+  renderRail();
+  if (!S.sheetId) render();
+  renderAmbientChips();
+  if (SH.open) { SH.open = false; shade(true); }   // la cortina, con los accesos y colores nuevos
 }
 function runRemote(type) {
   if (type === 'recargar') location.reload();
@@ -3137,8 +3153,13 @@ async function pollHelper() {
     const r = await (await fetch(HELPER + '/poll', { cache: 'no-store' })).json();
     if (REMOTE.command === null) REMOTE.command = r.command.id;          // al arrancar no se repiten órdenes viejas
     else if (r.command.id !== REMOTE.command) { REMOTE.command = r.command.id; runRemote(r.command.type); }
-    if (REMOTE.version !== null && r.version !== REMOTE.version) location.reload();   // cambiaron la config desde la web
-    REMOTE.version = r.version;
+    // Cambiaron algo desde la web: si fue la conexión, las entidades, las fotos o el código, se recarga;
+    // si solo fueron ajustes (brillo, tema, sonido, burbujas, pestañas…), se aplican al momento sin recargar
+    if (REMOTE.version !== null && r.version !== REMOTE.version) {
+      if ((r.reload || 0) !== REMOTE.reload) { location.reload(); return; }
+      applyRemoteSettings();
+    }
+    REMOTE.version = r.version; REMOTE.reload = r.reload || 0;
     showPin(r.pin || null);
     if (r.update && r.update !== UPDATE_SEEN) toast(`Hay una actualización del panel: web de configuración → Actualizaciones`);
     UPDATE_SEEN = r.update || 0;
