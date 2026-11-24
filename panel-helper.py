@@ -615,12 +615,14 @@ def master_set(v):
     SOUND_FILE.write_text(json.dumps({'master': v}), encoding='utf-8')
     if SIMULATE:
         SIM_SOUND['master'] = v
+        mqtt_publish_volumes()
         return
     card = output_card()
     ctl = master_control(card) if card else ''
     if not ctl:
         raise RuntimeError('esta salida de audio no tiene volumen propio')
     _run(['amixer', '-q', '-M', '-c', card, 'sset', ctl, f'{v}%', 'unmute'], timeout=5)
+    mqtt_publish_volumes()
 
 
 def master_restore():
@@ -670,6 +672,7 @@ def music_set(v):
     v = _int(v, 0, 100, 40)
     if SIMULATE:
         SIM_SOUND['music'] = v
+        mqtt_publish_volumes()
         return
     ent = music_entity()
     if not ent:
@@ -677,6 +680,7 @@ def music_set(v):
     code, res = ha_request('POST', '/api/services/media_player/volume_set', {'entity_id': ent, 'volume_level': v / 100})
     if code != 200:
         raise RuntimeError('Home Assistant no lo aceptó: ' + str((res or {}).get('error', code)))
+    mqtt_publish_volumes()
 
 
 def set_sound(body):
@@ -831,8 +835,8 @@ def apply_update():
 # ---------------------------------------------------------------- Home Assistant por MQTT
 # El panel aparece en Home Assistant como un dispositivo, por el descubrimiento de MQTT (Mosquitto): no hay que
 # instalar nada en Home Assistant. Entidades (las que se elijan en la web → General): Pantalla (encendida y brillo),
-# Modo ambiente, Último toque y Recargar. Temas: panel_hogar/<id>/… y homeassistant/<tipo>/panel_hogar_<id>/<cosa>/config
-HA_EXPOSE = ('screen', 'ambient', 'last_touch', 'reload')
+# Brillo, Volumen de salida, Volumen de la música, Modo ambiente, Último toque y Recargar. Temas: panel_hogar/<id>/… y homeassistant/<tipo>/panel_hogar_<id>/<cosa>/config
+HA_EXPOSE = ('screen', 'brightness', 'volume', 'music_volume', 'ambient', 'last_touch', 'reload')
 PANEL_STATE = {'screen_on': None, 'brightness': None, 'ambient': None, 'last_touch': None}
 HA_COMMANDS = {'screen_on': 'pantalla_on', 'screen_off': 'pantalla_off', 'ambient_on': 'ambiente', 'ambient_off': 'inicio',
                'reload': 'recargar', 'brightness': 'brillo'}
@@ -1033,8 +1037,10 @@ def _mqtt_device():
 
 def _mqtt_names():
     en = load_config()['ajustes'].get('language') == 'en'
-    return ({'screen': 'Screen', 'ambient': 'Ambient mode', 'last_touch': 'Last touched', 'reload': 'Reload'} if en else
-            {'screen': 'Pantalla', 'ambient': 'Modo ambiente', 'last_touch': 'Último toque', 'reload': 'Recargar'})
+    return ({'screen': 'Screen', 'brightness': 'Brightness', 'volume': 'Output volume', 'music_volume': 'Music volume',
+             'ambient': 'Ambient mode', 'last_touch': 'Last touched', 'reload': 'Reload'} if en else
+            {'screen': 'Pantalla', 'brightness': 'Brillo', 'volume': 'Volumen de salida', 'music_volume': 'Volumen de la música',
+             'ambient': 'Modo ambiente', 'last_touch': 'Último toque', 'reload': 'Recargar'})
 
 
 def mqtt_discovery(client=None):
@@ -1049,6 +1055,15 @@ def mqtt_discovery(client=None):
                                  command_topic=base + '/screen/set', state_topic=base + '/screen/state',
                                  brightness_command_topic=base + '/brightness/set', brightness_state_topic=base + '/brightness/state',
                                  brightness_scale=100, payload_on='ON', payload_off='OFF')),
+        'brightness': ('number', dict(common, name=names['brightness'], unique_id=f'{pid}_brightness', icon='mdi:brightness-6',
+                                      command_topic=base + '/brightness/set', state_topic=base + '/brightness/state',
+                                      min=5, max=100, step=1, unit_of_measurement='%', mode='slider')),
+        'volume': ('number', dict(common, name=names['volume'], unique_id=f'{pid}_volume', icon='mdi:volume-high',
+                                  command_topic=base + '/volume/set', state_topic=base + '/volume/state',
+                                  min=0, max=100, step=1, unit_of_measurement='%', mode='slider')),
+        'music_volume': ('number', dict(common, name=names['music_volume'], unique_id=f'{pid}_music_volume', icon='mdi:music',
+                                        command_topic=base + '/music_volume/set', state_topic=base + '/music_volume/state',
+                                        min=0, max=100, step=1, unit_of_measurement='%', mode='slider')),
         'ambient': ('switch', dict(common, name=names['ambient'], unique_id=f'{pid}_ambient', icon='mdi:image-filter-hdr',
                                    command_topic=base + '/ambient/set', state_topic=base + '/ambient/state', payload_on='ON', payload_off='OFF')),
         'last_touch': ('sensor', dict(common, name=names['last_touch'], unique_id=f'{pid}_last_touch', device_class='timestamp',
@@ -1081,13 +1096,54 @@ def mqtt_publish_state(changed=None):
             client.publish(base + '/last_touch', v, retain=True)
 
 
+VOLUMES = {'volume': None, 'music_volume': None}   # lo último enviado (para no repetir)
+
+
+def mqtt_publish_volumes(force=False):
+    """Volumen de salida (el de la Pi) y de la música (el altavoz en Home Assistant), si cambian."""
+    client = MQTT['client']
+    if not client or MQTT['status'] != 'connected':
+        return
+    expose, base = ha_expose(), _mqtt_base()
+    now = {}
+    if 'volume' in expose:
+        m = master_get()
+        now['volume'] = m['value'] if m['available'] else None
+    if 'music_volume' in expose:
+        try:
+            m = music_get()
+        except Exception:   # Home Assistant no responde: ya se mirará en la próxima vuelta
+            m = {}
+        now['music_volume'] = m.get('value') if m.get('available') else None
+    for k, v in now.items():
+        if v is not None and (force or v != VOLUMES[k]):
+            VOLUMES[k] = v
+            client.publish(f'{base}/{k}/state', str(v), retain=True)
+
+
+def _mqtt_volume_loop(client):
+    """Los volúmenes también cambian fuera del panel (Music Assistant, amixer…): se miran cada 30 s."""
+    while MQTT['client'] is client and not client.stopped:
+        time.sleep(30)
+        if MQTT['client'] is client:
+            mqtt_publish_volumes()
+
+
+def _set_volume(key, payload):
+    try:
+        (master_set if key == 'volume' else music_set)(round(float(payload)))
+    except (ValueError, RuntimeError) as e:
+        mqtt_log(f'Error: no se pudo cambiar el volumen ({e})')
+
+
 def _mqtt_connected(client):
     base = _mqtt_base()
     client.publish(base + '/status', 'online', retain=True)
-    client.subscribe([base + '/screen/set', base + '/brightness/set', base + '/ambient/set', base + '/reload/press',
-                      'homeassistant/status'])
+    client.subscribe([base + '/screen/set', base + '/brightness/set', base + '/volume/set', base + '/music_volume/set',
+                      base + '/ambient/set', base + '/reload/press', 'homeassistant/status'])
     mqtt_discovery(client)
     mqtt_publish_state()
+    threading.Thread(target=mqtt_publish_volumes, args=(True,), daemon=True).start()
 
 
 def _mqtt_message(topic, payload):
@@ -1096,11 +1152,14 @@ def _mqtt_message(topic, payload):
         if payload == 'online':          # Home Assistant se ha reiniciado: se vuelve a anunciar
             mqtt_discovery()
             mqtt_publish_state()
+            threading.Thread(target=mqtt_publish_volumes, args=(True,), daemon=True).start()
         return
     if topic == base + '/screen/set':
         send_command('screen_on' if payload.upper() == 'ON' else 'screen_off')
     elif topic == base + '/brightness/set':
         send_command('brightness', payload)
+    elif topic in (base + '/volume/set', base + '/music_volume/set'):
+        threading.Thread(target=_set_volume, args=(topic.split('/')[-2], payload), daemon=True).start()
     elif topic == base + '/ambient/set':
         send_command('ambient_on' if payload.upper() == 'ON' else 'ambient_off')
     elif topic == base + '/reload/press':
@@ -1123,7 +1182,9 @@ def mqtt_restart():
     client = MqttClient(p['mqttHost'], p.get('mqttPort') or 1883, p.get('mqttUser') or '', p.get('mqttPassword') or '',
                         f'panel-hogar-{panel_id()}', (base + '/status', 'offline'), _mqtt_connected, _mqtt_message)
     MQTT.update(client=client, status='connecting')
+    VOLUMES.update(volume=None, music_volume=None)
     threading.Thread(target=client.run, daemon=True).start()
+    threading.Thread(target=_mqtt_volume_loop, args=(client,), daemon=True).start()
 
 
 # Pantalla en directo (web → General): una captura de lo que se ve en la pantalla de la Pi (grim, dentro de cage).

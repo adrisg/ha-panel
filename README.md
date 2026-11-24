@@ -120,6 +120,9 @@ Si tienes MQTT (por ejemplo el complemento **Mosquitto**), el panel aparece solo
 | Entidad | Qué hace |
 |---|---|
 | Pantalla | encender, apagar y brillo |
+| Brillo | el brillo de la pantalla, como control aparte |
+| Volumen de salida | el volumen de la Pi (jack, USB…) |
+| Volumen de la música | el del altavoz del panel en Home Assistant |
 | Modo ambiente | entrar o salir |
 | Último toque | cuándo se tocó la pantalla por última vez |
 | Recargar | recarga el panel |

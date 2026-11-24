@@ -140,6 +140,25 @@ def test_discovery_states_and_commands(helper):
     helper.MQTT['client'].stop()
 
 
+def test_brightness_and_volumes(helper):
+    broker = FakeBroker()
+    _start(helper, broker)
+    pid, base = helper.panel_id(), f'panel_hogar/{helper.panel_id()}'
+    assert wait(lambda: f'homeassistant/number/panel_hogar_{pid}/music_volume/config' in broker.published)
+    num = json.loads(broker.published[f'homeassistant/number/panel_hogar_{pid}/brightness/config'])
+    assert num['command_topic'] == base + '/brightness/set' and num['min'] == 5 and num['max'] == 100
+    assert json.loads(broker.published[f'homeassistant/number/panel_hogar_{pid}/volume/config'])['state_topic'] == base + '/volume/state'
+    assert wait(lambda: broker.published.get(base + '/volume/state') == '70')
+    assert wait(lambda: broker.published.get(base + '/music_volume/state') == '40')
+    broker.send(base + '/volume/set', '55')
+    assert wait(lambda: helper.SIM_SOUND['master'] == 55 and broker.published.get(base + '/volume/state') == '55')
+    broker.send(base + '/music_volume/set', '25.0')
+    assert wait(lambda: helper.SIM_SOUND['music'] == 25 and broker.published.get(base + '/music_volume/state') == '25')
+    helper.master_set(30)                                   # desde la web
+    assert wait(lambda: broker.published.get(base + '/volume/state') == '30')
+    helper.MQTT['client'].stop()
+
+
 def test_only_chosen_entities(helper):
     broker = FakeBroker()
     _start(helper, broker, expose={'ambient': False, 'reload': False})

@@ -511,6 +511,9 @@ go = 'home' | 'rooms' | 'sensors' | 'media' | 'printers' | 'scooter' | 'settings
       <div class="field">
         <label>Qué ve Home Assistant</label>
       <div class="row"><label for="expose-screen">Pantalla <span class="hint">(encendida y brillo)</span></label><label class="switch"><input id="expose-screen" type="checkbox"><span></span></label></div>
+      <div class="row"><label for="expose-brightness">Brillo <span class="hint">(control aparte)</span></label><label class="switch"><input id="expose-brightness" type="checkbox"><span></span></label></div>
+      <div class="row"><label for="expose-volume">Volumen de salida</label><label class="switch"><input id="expose-volume" type="checkbox"><span></span></label></div>
+      <div class="row"><label for="expose-music_volume">Volumen de la música</label><label class="switch"><input id="expose-music_volume" type="checkbox"><span></span></label></div>
       <div class="row"><label for="expose-ambient">Modo ambiente</label><label class="switch"><input id="expose-ambient" type="checkbox"><span></span></label></div>
       <div class="row"><label for="expose-last_touch">Última vez que se tocó</label><label class="switch"><input id="expose-last_touch" type="checkbox"><span></span></label></div>
       <div class="row"><label for="expose-reload">Recargar el panel <span class="hint">(botón)</span></label><label class="switch"><input id="expose-reload" type="checkbox"><span></span></label></div>
@@ -1962,7 +1965,7 @@ async function loadEntities() {
   } catch (e) { $('#entidades-msg').textContent = 'No se pudo leer la lista de entidades: ' + e.message; }
 }
 /* ---------- el panel en Home Assistant por MQTT ---------- */
-const EXPOSE_KEYS = ['screen', 'ambient', 'last_touch', 'reload'];
+const EXPOSE_KEYS = ['screen', 'brightness', 'volume', 'music_volume', 'ambient', 'last_touch', 'reload'];
 /* ---------- pantalla en directo: una captura cada segundo mientras se mira ---------- */
 const LIVE = { on: false, timer: null };
 function liveTick() {
