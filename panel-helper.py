@@ -1046,11 +1046,13 @@ def _mqtt_device():
 
 
 def _mqtt_names():
-    en = load_config()['ajustes'].get('language') == 'en'
-    return ({'screen': 'Screen', 'brightness': 'Brightness', 'volume': 'Output volume', 'music_volume': 'Music volume',
-             'ambient': 'Ambient mode', 'last_touch': 'Last touched', 'reload': 'Reload'} if en else
-            {'screen': 'Pantalla', 'brightness': 'Brillo', 'volume': 'Volumen de salida', 'music_volume': 'Volumen de la música',
-             'ambient': 'Modo ambiente', 'last_touch': 'Último toque', 'reload': 'Recargar'})
+    """Nombres de las entidades en el idioma del panel (translations/<idioma>.json → panel.mqtt)."""
+    lang = load_config()['ajustes'].get('language') or 'es'
+    names = {}
+    for code in ('es', lang):
+        data = read_translation(f'/translations/{code}.json') if re.fullmatch(r'[a-z]{2,3}', code) else None
+        names.update(((data or {}).get('texts') or {}).get('panel', {}).get('mqtt', {}))
+    return {k: names.get(k, k) for k in HA_EXPOSE}
 
 
 def mqtt_discovery(client=None):

@@ -48,10 +48,10 @@ function relTime(iso) {
   const t = new Date(iso).getTime();
   if (isNaN(t)) return iso;
   const s = Math.round((Date.now() - t) / 1000);
-  if (s < 60) return 'ahora mismo';
-  if (s < 3600) return `hace ${Math.round(s / 60)} min`;
-  if (s < 86400) return `hace ${Math.round(s / 3600)} h`;
-  return `hace ${Math.round(s / 86400)} d`;
+  if (s < 60) return I18N.t('panel.sheets.just_now');
+  if (s < 3600) return I18N.t('panel.time.minutes_ago', { n: Math.round(s / 60) });
+  if (s < 86400) return I18N.t('panel.time.hours_ago', { n: Math.round(s / 3600) });
+  return I18N.t('panel.time.days_ago', { n: Math.round(s / 86400) });
 }
 function fmtDuration(sec) {
   sec = Math.round(sec);
@@ -105,7 +105,7 @@ class HAConn {
       if (!p) return;
       this.pending.delete(m.id);
       if (m.type === 'pong' || m.success) p.resolve(m.result);
-      else p.reject(new Error((m.error && m.error.message) || 'Error'));
+      else p.reject(new Error((m.error && m.error.message) || I18N.t('panel.states.error')));
     } else if (m.type === 'event') {
       const cb = this.subs.get(m.id);
       if (cb) cb(m.event);
@@ -277,23 +277,23 @@ function dedupeMedia(list) {
 
 /* ====================== Textos e iconos ====================== */
 const T_ES = {
-  on: 'Encendido', off: 'Apagado', unavailable: 'No disponible', unknown: '—', open: 'Abierto',
-  closed: 'Cerrado', opening: 'Abriendo', closing: 'Cerrando', locked: 'Cerrado con llave',
-  unlocked: 'Abierto', locking: 'Cerrando…', unlocking: 'Abriendo…', jammed: 'Atascado',
-  playing: 'Reproduciendo', paused: 'En pausa', idle: 'Inactivo', standby: 'En espera',
-  buffering: 'Cargando', home: 'En casa', not_home: 'Fuera', heat: 'Calor', cool: 'Frío',
-  auto: 'Auto', heat_cool: 'Calor/Frío', dry: 'Deshumidificar', fan_only: 'Ventilador',
-  cleaning: 'Limpiando', docked: 'En la base', returning: 'Volviendo', error: 'Error',
+  on: 'panel.states.on', off: 'panel.states.off', unavailable: 'panel.states.unavailable', unknown: '—', open: 'panel.states.open',
+  closed: 'panel.states.closed', opening: 'panel.states.opening', closing: 'panel.states.closing', locked: 'panel.states.locked',
+  unlocked: 'panel.states.open', locking: 'panel.states.locking', unlocking: 'panel.states.unlocking', jammed: 'panel.states.jammed',
+  playing: 'panel.states.playing', paused: 'panel.states.paused', idle: 'panel.states.idle', standby: 'panel.states.standby',
+  buffering: 'panel.states.loading', home: 'panel.states.home', not_home: 'panel.states.away', heat: 'panel.states.heat', cool: 'panel.states.cool',
+  auto: 'panel.states.auto', heat_cool: 'panel.states.heat_cool', dry: 'panel.states.dry', fan_only: 'panel.states.fan',
+  cleaning: 'panel.states.cleaning', docked: 'panel.states.docked', returning: 'panel.states.returning', error: 'panel.states.error',
 };
 /** Estados en el idioma del panel (T.on → «Encendido» / «On»). */
 const T = new Proxy(T_ES, { get: (o, k) => (o[k] != null ? t(o[k]) : undefined) });
 const BIN = {
-  door: ['Cerrada', 'Abierta'], window: ['Cerrada', 'Abierta'], garage_door: ['Cerrada', 'Abierta'],
-  opening: ['Cerrado', 'Abierto'], motion: ['Sin movimiento', 'Movimiento'], occupancy: ['Libre', 'Ocupado'],
-  presence: ['Fuera', 'Presente'], moisture: ['Seco', 'Fuga de agua'], smoke: ['OK', 'Humo'],
-  gas: ['OK', 'Gas'], connectivity: ['Desconectado', 'Conectado'], battery_charging: ['No carga', 'Cargando'],
-  plug: ['Desenchufado', 'Enchufado'], lock: ['Cerrado', 'Abierto'], moving: ['Parado', 'En movimiento'],
-  power: ['Apagado', 'Encendido'], problem: ['OK', 'Problema'], battery: ['Normal', 'Batería baja'],
+  door: ['panel.states.closed_f', 'panel.states.open_f'], window: ['panel.states.closed_f', 'panel.states.open_f'], garage_door: ['panel.states.closed_f', 'panel.states.open_f'],
+  opening: ['panel.states.closed', 'panel.states.open'], motion: ['panel.settings.no_motion', 'panel.settings.motion'], occupancy: ['panel.states.clear', 'panel.states.occupied'],
+  presence: ['panel.states.away', 'Presente'], moisture: ['Seco', 'Fuga de agua'], smoke: ['panel.states.ok', 'Humo'],
+  gas: ['panel.states.ok', 'panel.states.gas'], connectivity: ['Desconectado', 'panel.settings.connected'], battery_charging: ['panel.states.not_charging', 'panel.states.loading'],
+  plug: ['Desenchufado', 'Enchufado'], lock: ['panel.states.closed', 'panel.states.open'], moving: ['panel.states.stopped', 'En movimiento'],
+  power: ['panel.states.off', 'panel.states.on'], problem: ['panel.states.ok', 'Problema'], battery: ['Normal', 'Batería baja'],
 };
 const ALERT_BIN = ['moisture', 'smoke', 'gas', 'problem', 'safety', 'carbon_monoxide'];
 const DOMAIN_ICON = {
@@ -333,7 +333,9 @@ function iconOf(st) {
   if (d === 'media_player' && a.device_class === 'tv') return 'mdi-television';
   return DC_ICON[a.device_class] || DOMAIN_ICON[d] || 'mdi-help-circle-outline';
 }
-function fmtState(st) {
+/** Texto del estado de una entidad, ya traducido. */
+const fmtState = (st) => I18N.t(fmtStateRaw(st));
+function fmtStateRaw(st) {
   if (!st) return '—';
   const s = st.state, a = st.attributes, d = domain(st.entity_id);
   if (s === 'unavailable' || s === 'unknown') return T[s];
@@ -352,17 +354,17 @@ function fmtState(st) {
   if (d === 'climate') {
     const parts = [];
     if (a.current_temperature != null) parts.push(fmtNum(a.current_temperature) + '°');
-    parts.push(s === 'off' ? 'Apagado' : (T[s] || s) + (a.temperature != null ? ' → ' + fmtNum(a.temperature) + '°' : ''));
+    parts.push(s === 'off' ? I18N.t('panel.states.off') : (T[s] || s) + (a.temperature != null ? ' → ' + fmtNum(a.temperature) + '°' : ''));
     return parts.join(' · ');
   }
-  if (d === 'cover' && s === 'open' && a.current_position != null) return `Abierto ${a.current_position} %`;
+  if (d === 'cover' && s === 'open' && a.current_position != null) return I18N.t('panel.states.open_percent', { n: a.current_position });
   if (d === 'media_player' && (s === 'playing' || s === 'paused') && a.media_title) return a.media_title;
   if (d === 'vacuum') {
     const b = a.battery_level ?? a.battery;
-    if (a.charging) return `Cargando${b != null ? ' · ' + b + ' %' : ''}`;
+    if (a.charging) return b != null ? I18N.t('panel.states.charging_percent', { n: b }) : I18N.t('panel.states.charging');
     return (T[s] || cap(s)) + (b != null ? ` · ${b} %` : '');
   }
-  if (['scene', 'script', 'button', 'input_button'].includes(d)) return 'Toca para activar';
+  if (['scene', 'script', 'button', 'input_button'].includes(d)) return I18N.t('panel.states.tap_run');
   return T[s] || cap(s);
 }
 const ACTIVE = ['on', 'open', 'opening', 'closing', 'playing', 'unlocked', 'heat', 'cool', 'heat_cool', 'auto', 'dry', 'fan_only', 'cleaning', 'returning'];
@@ -371,17 +373,17 @@ const KIND = { light: 'light', climate: 'climate', media_player: 'media', cover:
 const kindOf = (d) => KIND[d] || 'default';
 
 const W = {
-  'clear-night': ['mdi-weather-night', 'Despejado'], cloudy: ['mdi-weather-cloudy', 'Nublado'],
-  exceptional: ['mdi-alert-circle-outline', 'Excepcional'], fog: ['mdi-weather-fog', 'Niebla'],
-  hail: ['mdi-weather-hail', 'Granizo'], lightning: ['mdi-weather-lightning', 'Tormenta'],
-  'lightning-rainy': ['mdi-weather-lightning-rainy', 'Tormenta con lluvia'],
-  partlycloudy: ['mdi-weather-partly-cloudy', 'Parcialmente nublado'], pouring: ['mdi-weather-pouring', 'Lluvia fuerte'],
-  rainy: ['mdi-weather-rainy', 'Lluvia'], snowy: ['mdi-weather-snowy', 'Nieve'],
-  'snowy-rainy': ['mdi-weather-snowy-rainy', 'Aguanieve'], sunny: ['mdi-weather-sunny', 'Soleado'],
-  windy: ['mdi-weather-windy', 'Viento'], 'windy-variant': ['mdi-weather-windy-variant', 'Viento y nubes'],
+  'clear-night': ['mdi-weather-night', 'panel.weather.clear'], cloudy: ['mdi-weather-cloudy', 'panel.weather.cloudy'],
+  exceptional: ['mdi-alert-circle-outline', 'panel.weather.exceptional'], fog: ['mdi-weather-fog', 'panel.weather.fog'],
+  hail: ['mdi-weather-hail', 'panel.weather.hail'], lightning: ['mdi-weather-lightning', 'panel.weather.thunderstorm'],
+  'lightning-rainy': ['mdi-weather-lightning-rainy', 'panel.weather.thunderstorm_rain'],
+  partlycloudy: ['mdi-weather-partly-cloudy', 'panel.weather.partly_cloudy'], pouring: ['mdi-weather-pouring', 'panel.weather.heavy_rain'],
+  rainy: ['mdi-weather-rainy', 'panel.weather.rain'], snowy: ['mdi-weather-snowy', 'panel.weather.snow'],
+  'snowy-rainy': ['mdi-weather-snowy-rainy', 'panel.weather.sleet'], sunny: ['mdi-weather-sunny', 'panel.weather.sunny'],
+  windy: ['mdi-weather-windy', 'panel.weather.windy'], 'windy-variant': ['mdi-weather-windy-variant', 'panel.weather.windy_cloudy'],
 };
 const wIcon = (c) => (W[c] || ['mdi-weather-partly-cloudy'])[0];
-const wText = (c) => (W[c] || [0, cap(c || '')])[1];
+const wText = (c) => I18N.t((W[c] || [0, cap(c || '')])[1]);
 const weatherId = () => (CFG.weatherEntity && S.states[CFG.weatherEntity]) ? CFG.weatherEntity
   : Object.keys(S.states).find((id) => domain(id) === 'weather');
 
@@ -435,9 +437,9 @@ function tap(id, el) {
     call(d, 'toggle', {}, id);
     return;
   }
-  if (d === 'scene') return call('scene', 'turn_on', {}, id).then((r) => r !== null && toast('Escena activada'));
-  if (d === 'script') return call('script', 'turn_on', {}, id).then((r) => r !== null && toast('En marcha'));
-  if (d === 'button' || d === 'input_button') return call(d, 'press', {}, id).then((r) => r !== null && toast('Hecho'));
+  if (d === 'scene') return call('scene', 'turn_on', {}, id).then((r) => r !== null && toast(I18N.t('panel.states.scene_activated')));
+  if (d === 'script') return call('script', 'turn_on', {}, id).then((r) => r !== null && toast(I18N.t('panel.states.running')));
+  if (d === 'button' || d === 'input_button') return call(d, 'press', {}, id).then((r) => r !== null && toast(I18N.t('panel.states.done')));
   openSheet(id);
 }
 
@@ -537,7 +539,7 @@ function mediaCard(id, scope) {
   const art = h('div', { class: 'mc-art' }), title = h('div', { class: 'mc-title' }), sub = h('div', { class: 'mc-sub' });
   const play = h('button', { class: 'round-btn big', onclick: () => call('media_player', 'media_play_pause', {}, id) });
   const rb = (ic, svc) => h('button', { class: 'round-btn', onclick: () => call('media_player', svc, {}, id) }, icon(ic));
-  const vol = slider({ label: 'Volumen', fmt: (v) => v + ' %', onchange: (v) => call('media_player', 'volume_set', { volume_level: v / 100 }, id) });
+  const vol = slider({ label: I18N.t('panel.sheets.volume'), fmt: (v) => v + ' %', onchange: (v) => call('media_player', 'volume_set', { volume_level: v / 100 }, id) });
   const card = h('div', { class: 'media-card' }, art, h('div', { class: 'mc-info' },
     h('div', { class: 'mc-name' }, nameOf(id)), title, sub,
     h('div', { class: 'mc-ctrls' }, rb('mdi-skip-previous', 'media_previous_track'), play, rb('mdi-skip-next', 'media_next_track'), rb('mdi-power', 'toggle')),
@@ -575,13 +577,13 @@ const SHEETS = {
     const a = S.states[id].attributes, modes = a.supported_color_modes || [];
     const parts = [bigToggle(id)];
     if (modes.some((m) => m !== 'onoff')) {
-      const s = slider({ min: 1, label: 'Brillo', fmt: (v) => v + ' %', onchange: (v) => call('light', 'turn_on', { brightness_pct: v }, id) });
+      const s = slider({ min: 1, label: I18N.t('panel.sheets.brightness'), fmt: (v) => v + ' %', onchange: (v) => call('light', 'turn_on', { brightness_pct: v }, id) });
       bind('sheet', id, (st) => s.set(st.state === 'on' && st.attributes.brightness ? Math.max(1, Math.round(st.attributes.brightness / 2.55)) : 1));
       parts.push(s);
     }
     if (modes.includes('color_temp')) {
       const mn = a.min_color_temp_kelvin || 2000, mx = a.max_color_temp_kelvin || 6500;
-      const s = slider({ min: mn, max: mx, step: 50, label: 'Tono', cls: 'warm', fmt: (v) => v + ' K', onchange: (v) => call('light', 'turn_on', { color_temp_kelvin: v }, id) });
+      const s = slider({ min: mn, max: mx, step: 50, label: I18N.t('panel.sheets.colour_temperature'), cls: 'warm', fmt: (v) => v + ' K', onchange: (v) => call('light', 'turn_on', { color_temp_kelvin: v }, id) });
       bind('sheet', id, (st) => s.set(st.attributes.color_temp_kelvin || mn));
       parts.push(s);
     }
@@ -592,15 +594,15 @@ const SHEETS = {
     return parts;
   },
   fan(id) {
-    const s = slider({ label: 'Velocidad', fmt: (v) => v + ' %', onchange: (v) => call('fan', 'set_percentage', { percentage: v }, id) });
+    const s = slider({ label: I18N.t('panel.sheets.speed'), fmt: (v) => v + ' %', onchange: (v) => call('fan', 'set_percentage', { percentage: v }, id) });
     bind('sheet', id, (st) => s.set(st.attributes.percentage || 0));
     return [bigToggle(id), s];
   },
   cover(id) {
     const btn = (ic, label, svc) => h('button', { class: 'big-action', onclick: () => call('cover', svc, {}, id) }, icon(ic), label);
-    const parts = [h('div', { class: 'btn-row' }, btn('mdi-arrow-up', 'Abrir', 'open_cover'), btn('mdi-stop', 'Parar', 'stop_cover'), btn('mdi-arrow-down', 'Cerrar', 'close_cover'))];
+    const parts = [h('div', { class: 'btn-row' }, btn('mdi-arrow-up', I18N.t('panel.sheets.open'), 'open_cover'), btn('mdi-stop', I18N.t('panel.sheets.stop'), 'stop_cover'), btn('mdi-arrow-down', I18N.t('panel.sheets.close'), 'close_cover'))];
     if (S.states[id].attributes.current_position != null) {
-      const s = slider({ label: 'Posición', fmt: (v) => v + ' %', onchange: (v) => call('cover', 'set_cover_position', { position: v }, id) });
+      const s = slider({ label: I18N.t('panel.sheets.position'), fmt: (v) => v + ' %', onchange: (v) => call('cover', 'set_cover_position', { position: v }, id) });
       bind('sheet', id, (st) => s.set(st.attributes.current_position));
       parts.unshift(s);
     }
@@ -622,8 +624,8 @@ const SHEETS = {
     bind('sheet', id, (st) => {
       const a = st.attributes;
       if (!editing) { target = a.temperature; paint(); }
-      cur.textContent = (a.current_temperature != null ? `Ahora ${fmtNum(a.current_temperature)}°` : '') +
-        (a.current_humidity != null ? ` · ${a.current_humidity} % humedad` : '');
+      cur.textContent = (a.current_temperature != null ? I18N.t('panel.sheets.now_value', { value: fmtNum(a.current_temperature) + '°' }) : '') +
+        (a.current_humidity != null ? ' · ' + I18N.t('panel.sheets.humidity_percent', { n: a.current_humidity }) : '');
       modes.replaceChildren(...(a.hvac_modes || []).map((m) =>
         h('button', { class: 'big-action' + (st.state === m ? ' active' : ''), onclick: () => call('climate', 'set_hvac_mode', { hvac_mode: m }, id) }, T[m] || m)));
     });
@@ -637,8 +639,8 @@ const SHEETS = {
     bind('sheet', id, (st) => { status.replaceChildren(icon(iconOf(st)), h('span', null, fmtState(st))); status.classList.toggle('on', st.state === 'unlocked' || st.state === 'open'); });
     status.dataset.kind = 'cover';
     return [status, h('div', { class: 'btn-row' },
-      h('button', { class: 'big-action', onclick: () => call('lock', 'lock', {}, id) }, icon('mdi-lock'), 'Cerrar'),
-      h('button', { class: 'big-action', onclick: () => call('lock', 'unlock', {}, id) }, icon('mdi-lock-open-variant'), 'Abrir'))];
+      h('button', { class: 'big-action', onclick: () => call('lock', 'lock', {}, id) }, icon('mdi-lock'), I18N.t('panel.sheets.close')),
+      h('button', { class: 'big-action', onclick: () => call('lock', 'unlock', {}, id) }, icon('mdi-lock-open-variant'), I18N.t('panel.sheets.open')))];
   },
   vacuum(id) {
     const status = h('div', { class: 'big-toggle' });
@@ -675,17 +677,17 @@ const SHEETS = {
       parts.push(h('div', { class: 'vac-title' }, '¿Qué habitaciones limpio?'), chips,
         h('div', { class: 'btn-row' }, go, b('mdi-home-city-outline', 'Toda la casa', 'start')));
     } else {
-      parts.push(h('div', { class: 'btn-row' }, b('mdi-play', 'Limpiar', 'start', 'primary')));
+      parts.push(h('div', { class: 'btn-row' }, b('mdi-play', I18N.t('panel.sheets.clean'), 'start', 'primary')));
     }
 
     // Atajos guardados en la app de Dreame
     const shortcuts = dreame && a.shortcuts ? Object.values(a.shortcuts).filter((s) => s && s.name) : [];
     if (shortcuts.length) {
-      parts.push(h('div', { class: 'vac-title' }, 'Atajos de la app'), h('div', { class: 'chips vac-shortcuts' }, shortcuts.map((s) =>
+      parts.push(h('div', { class: 'vac-title' }, I18N.t('panel.sheets.app_shortcuts')), h('div', { class: 'chips vac-shortcuts' }, shortcuts.map((s) =>
         h('button', { class: 'chip', onclick: () => call('dreame_vacuum', 'vacuum_start_shortcut', { shortcut_id: s.id }, id)
           .then((r) => { if (r !== null) { toast('En marcha: ' + s.name); closeSheet(); } }) }, icon('mdi-flash'), s.name))));
     }
-    parts.push(h('div', { class: 'btn-row' }, b('mdi-pause', 'Pausa', 'pause'), b('mdi-home-import-outline', 'A la base', 'return_to_base')));
+    parts.push(h('div', { class: 'btn-row' }, b('mdi-pause', I18N.t('panel.sheets.pause'), 'pause'), b('mdi-home-import-outline', I18N.t('panel.sheets.return_base'), 'return_to_base')));
     return parts;
   },
   camera(id) { return [cameraImg(id, 'sheet', 2)]; },
@@ -707,7 +709,7 @@ function genericSheet(id) {
 }
 
 function historyChart(id) {
-  const box = h('div', { class: 'chart' }, h('div', { class: 'muted' }, 'Cargando últimas 24 h…'));
+  const box = h('div', { class: 'chart' }, h('div', { class: 'muted' }, I18N.t('panel.sheets.loading_last_24')));
   api.history(id, 24).then((pts) => {
     const st = S.states[id];
     const nums = pts.map((p) => ({ t: p.t, v: parseFloat(p.s) })).filter((p) => !isNaN(p.v));
@@ -725,8 +727,8 @@ function historyChart(id) {
       const unit = st.attributes.unit_of_measurement || '';
       box.replaceChildren(
         h('div', { html: `<svg viewBox="0 0 600 180" preserveAspectRatio="none"><path class="chart-area" d="${area}"/><path class="chart-line" d="${d}"/></svg>` }),
-        h('div', { class: 'chart-meta' }, h('span', null, 'Hace 24 h'),
-          h('span', null, `mín ${fmtNum(Math.min(...vs))} ${unit} · máx ${fmtNum(Math.max(...vs))} ${unit}`), h('span', null, 'Ahora')));
+        h('div', { class: 'chart-meta' }, h('span', null, I18N.t('panel.sheets.24_h_ago')),
+          h('span', null, I18N.t('panel.sheets.min_max', { min: `${fmtNum(Math.min(...vs))} ${unit}`, max: `${fmtNum(Math.max(...vs))} ${unit}` })), h('span', null, I18N.t('panel.sheets.now'))));
     } else {
       const fake = (s) => fmtState({ entity_id: id, state: s, attributes: st.attributes });
       const rows = pts.slice(-8).reverse().map((p) => h('div', null, h('span', null, fake(p.s)), h('span', { class: 'muted' }, relTime(new Date(p.t).toISOString()))));
@@ -1010,7 +1012,7 @@ function openSheet(id) {
     h('button', { class: 'icon-btn', onclick: closeSheet }, icon('mdi-close')));
   bind('sheet', id, (s) => head.firstChild.replaceChildren(icon(iconOf(s))));
   const notice = h('div', { class: 'unavail-notice hidden' }, icon('mdi-lan-disconnect'),
-    h('span', null, 'Este dispositivo no está disponible ahora mismo. Los controles se activarán cuando vuelva a conectarse.'));
+    h('span', null, I18N.t('panel.sheets.device_not_available')));
   const body = h('div', { class: 'sheet-body' }, builder(id));
   $('#sheet-card').replaceChildren(head, notice, body);
   // Sin conexión con el dispositivo: los controles se desactivan (y se reactivan solos si vuelve)
@@ -1046,7 +1048,7 @@ const isOn = (id) => !!id && S.states[id] && S.states[id].state === 'on';
 const chargeMode = (k) => isOn(k.charged) ? 'charged' : isOn(k.charging_any) ? 'charging' : false;
 
 /** La pantalla de Ajustes del panel (la ruedecita) */
-const VIEWS = { settings: { title: 'Ajustes', icon: 'mdi-cog', render: () => renderSettings() } };
+const VIEWS = { settings: { title: 'panel.nav.settings', icon: 'mdi-cog', render: () => renderSettings() } };
 /** Pestañas de serie que no salen si no hay de qué (p. ej. Patinete sin patinete) */
 const VIEW_VISIBLE = {
   media: () => ids((id) => ['media_player', 'camera'].includes(domain(id))).length > 0,
@@ -1098,8 +1100,8 @@ function printers() {
     }
     if (!e.status) continue;               // p. ej. la bobina externa o MakerWorld de Bambu
     const d = S.devs[dev] || {};
-    const name = d.name_by_user || d.name || 'Impresora';
-    let nozzles = [{ label: 'Boquilla', cur: e.nozzle, tgt: e.nozzleTarget }];
+    const name = d.name_by_user || d.name || I18N.t('panel.sheets.printer');
+    let nozzles = [{ label: I18N.t('panel.sheets.nozzle'), cur: e.nozzle, tgt: e.nozzleTarget }];
     if (platform === 'moonraker') {
       const cams = ids.filter((id) => domain(id) === 'camera');
       e.camera = cams.find((id) => !/thumbnail|gui|screen/.test(id)) || cams[0];
@@ -1112,7 +1114,7 @@ function printers() {
       const ext = ids.filter((id) => /^sensor\..*_extruder\d*_temperature$/.test(id))
         .map((id) => ({ id, n: +(id.match(/_extruder(\d*)_temperature$/)[1] || 0) })).sort((a, b) => a.n - b.n);
       if (ext.length) nozzles = ext.map(({ id, n }) => ({
-        label: ext.length > 1 ? `T${n + 1}` : 'Boquilla', cur: id,
+        label: ext.length > 1 ? `T${n + 1}` : I18N.t('panel.sheets.nozzle'), cur: id,
         tgt: ids.find((x) => x.endsWith(`_extruder${n || ''}_target`) && domain(x) === 'number'),
         fil: ids.find((x) => x.endsWith(`_e${n}_filament`)),
       }));
@@ -1133,7 +1135,7 @@ function printers() {
 const pState = (p) => (p.e.plug && S.states[p.e.plug] && S.states[p.e.plug].state === 'off') ? 'off'
   : PSTATUS[(S.states[p.e.status] || { state: 'unavailable' }).state] || 'idle';
 const pActive = (p) => ACTIVE_P.includes(pState(p));
-function confirmBtn(ic, label, fn, ask = '¿Seguro? Toca otra vez') {
+function confirmBtn(ic, label, fn, ask = I18N.t('panel.notices.sure_tap_again')) {
   let armed = null;
   const b = h('button', { class: 'big-action' }, icon(ic), label);
   b.addEventListener('click', () => {
@@ -1162,8 +1164,8 @@ function weatherCard(id, days = 5) {
   bind('view', id, (st) => {
     if (!st) return;
     const a = st.attributes;
-    const extra = [a.humidity != null ? `Humedad ${fmtNum(a.humidity)} %` : null,
-      a.wind_speed != null ? `Viento ${fmtNum(a.wind_speed)} ${a.wind_speed_unit || ''}` : null].filter(Boolean).join(' · ');
+    const extra = [a.humidity != null ? I18N.t('panel.weather.humidity', { value: fmtNum(a.humidity) + ' %' }) : null,
+      a.wind_speed != null ? I18N.t('panel.weather.wind', { value: `${fmtNum(a.wind_speed)} ${a.wind_speed_unit || ''}`.trim() }) : null].filter(Boolean).join(' · ');
     now.replaceChildren(icon(wIcon(st.state), 'w-icon'), h('div', null,
       h('div', { class: 'w-temp' }, fmtNum(a.temperature) + '°'), h('div', { class: 'w-cond' }, wText(st.state)), h('div', { class: 'muted small' }, extra)));
   });
@@ -1194,7 +1196,7 @@ function normNotif(d) {
   const def = { info: 10, warning: 120, critical: 0 }[level];
   return {
     id: String(d.id || 'n' + Date.now()),
-    title: d.title || 'Aviso',
+    title: d.title || I18N.t('panel.notices.notification'),
     message: d.message || '',
     level,
     icon: mdi(d.icon) || (level === 'critical' ? 'mdi-alert' : 'mdi-bell-ring'),
@@ -1202,7 +1204,7 @@ function normNotif(d) {
     timeout: Number(d.timeout ?? def) || 0,
     sound: d.sound ?? level !== 'info',
     actions: (d.actions || []).map((x) => ({
-      title: x.title || 'OK', icon: mdi(x.icon), service: x.service,
+      title: x.title || I18N.t('panel.states.ok'), icon: mdi(x.icon), service: x.service,
       entity: x.entity_id, data: x.data || {}, confirm: !!x.confirm, style: x.style || '',
     })),
     at: new Date(),
@@ -1276,7 +1278,7 @@ function showNotif() {
     if (S.states[top.image] && domain(top.image) === 'camera') N.imgTimer = setInterval(src, 2000);
     parts.push(img);
   }
-  const acts = top.actions.length ? top.actions : [{ title: 'Entendido', icon: 'mdi-check' }];
+  const acts = top.actions.length ? top.actions : [{ title: I18N.t('panel.notices.ok'), icon: 'mdi-check' }];
   parts.push(h('div', { class: 'alert-actions' }, acts.map((a, i) => {
     const run = () => runNotifAction(top, a);
     const cls = 'big-action ' + (a.style === 'danger' ? 'danger' : (a.style === 'primary' || i === 0) ? 'primary' : '');
@@ -1415,7 +1417,7 @@ function saveSettings(quiet) {   // quiet: sin el aviso «Ajustes guardados»
       } else {                          // sin ayudante: en este navegador (nunca se escribe nada en Home Assistant)
         try { localStorage.setItem(SETTINGS_KEY, JSON.stringify(SET)); } catch (e) { /* sin almacenamiento */ }
       }
-      if (!quiet) toast('Ajustes guardados');
+      if (!quiet) toast(I18N.t('panel.settings.settings_saved'));
     } catch (e) { toast('No se pudieron guardar: ' + e.message, true); }
   }, 600);
 }
@@ -1442,13 +1444,13 @@ function themeIsLight() {
 }
 /* Colores de acento: [nombre, en oscuro (color, letra encima, fondo suave), en claro (lo mismo)] */
 const ACCENTS = {
-  azul:     ['Azul',     ['#8ab4f8', '#0b1d3a', '#1d3354'], ['#1a66d6', '#ffffff', '#d5e3fa']],
-  turquesa: ['Turquesa', ['#78d9ec', '#00363f', '#1b3d45'], ['#00838f', '#ffffff', '#d0f0f3']],
-  verde:    ['Verde',    ['#81c995', '#0d2a17', '#1f3b2a'], ['#1e8e3e', '#ffffff', '#d6f0dd']],
-  amarillo: ['Amarillo', ['#fdd663', '#3b2a06', '#4a3f1a'], ['#b58100', '#ffffff', '#fdf0c8']],
-  naranja:  ['Naranja',  ['#fcad70', '#3d1c00', '#4a3020'], ['#d96a00', '#ffffff', '#ffe5cc']],
-  rosa:     ['Rosa',     ['#ff8bcb', '#4a0a2c', '#4a2238'], ['#c2185b', '#ffffff', '#fbdbe8']],
-  morado:   ['Morado',   ['#c58af9', '#2a0a47', '#3a2554'], ['#8430ce', '#ffffff', '#ecdcfb']],
+  azul:     ['panel.settings.blue',     ['#8ab4f8', '#0b1d3a', '#1d3354'], ['#1a66d6', '#ffffff', '#d5e3fa']],
+  turquesa: ['panel.settings.teal', ['#78d9ec', '#00363f', '#1b3d45'], ['#00838f', '#ffffff', '#d0f0f3']],
+  verde:    ['panel.settings.green',    ['#81c995', '#0d2a17', '#1f3b2a'], ['#1e8e3e', '#ffffff', '#d6f0dd']],
+  amarillo: ['panel.settings.yellow', ['#fdd663', '#3b2a06', '#4a3f1a'], ['#b58100', '#ffffff', '#fdf0c8']],
+  naranja:  ['panel.settings.orange',  ['#fcad70', '#3d1c00', '#4a3020'], ['#d96a00', '#ffffff', '#ffe5cc']],
+  rosa:     ['panel.settings.pink',     ['#ff8bcb', '#4a0a2c', '#4a2238'], ['#c2185b', '#ffffff', '#fbdbe8']],
+  morado:   ['panel.settings.purple',   ['#c58af9', '#2a0a47', '#3a2554'], ['#8430ce', '#ffffff', '#ecdcfb']],
 };
 let accentApplied = '';
 function applyTheme() {
@@ -1622,27 +1624,27 @@ async function openConfigQR() {
         h('div', null, icon('mdi-numeric-3-circle'), 'Cambia lo que quieras y pulsa Guardar: el panel se actualiza solo')));
   }
   $('#sheet-card').replaceChildren(
-    h('div', { class: 'sheet-head' }, h('div', { class: 'tile-icon' }, icon('mdi-qrcode')), h('div', { class: 'sheet-title' }, 'Configurar desde el móvil'),
+    h('div', { class: 'sheet-head' }, h('div', { class: 'tile-icon' }, icon('mdi-qrcode')), h('div', { class: 'sheet-title' }, I18N.t('panel.settings.set_up_from')),
       h('button', { class: 'icon-btn', onclick: closeSheet }, icon('mdi-close'))), body);
   $('#sheet').classList.remove('hidden');
   S.sheetId = 'qr';
 }
 function netCard() {
-  const rows = h('div', { class: 'set-net' }, h('div', { class: 'muted small' }, 'Leyendo la red…'));
+  const rows = h('div', { class: 'set-net' }, h('div', { class: 'muted small' }, I18N.t('panel.settings.reading_network')));
   fetchNet().then((net) => {
     if (!net) { rows.replaceChildren(h('div', { class: 'muted small' }, 'Disponible en la Raspberry Pi (con el ayudante panel-helper.py).')); return; }
     const r = (label, val) => setRow(label, null, h('span', { class: 'net-val' }, val));
     rows.replaceChildren(...[
-      r('Nombre', net.hostname),
-      r('IP', net.ip + (net.ipv4 ? (net.ipv4.method === 'manual' ? ' · fija' : ' · automática') : '')),
-      net.wifi ? r('WiFi', `${net.wifi.ssid} · ${net.wifi.signal} %`) : net.connection ? r('Conexión', net.connection.type === 'ethernet' ? 'Cable de red' : net.connection.name) : null,
-      r('Web de configuración', net.urls[0]),
+      r(I18N.t('panel.sheets.name'), net.hostname),
+      r(I18N.t('panel.settings.ip'), net.ipv4 ? I18N.t(net.ipv4.method === 'manual' ? 'panel.settings.ip_static' : 'panel.settings.ip_auto', { ip: net.ip }) : net.ip),
+      net.wifi ? r(I18N.t('panel.settings.wifi'), `${net.wifi.ssid} · ${net.wifi.signal} %`) : net.connection ? r('Conexión', net.connection.type === 'ethernet' ? 'Cable de red' : net.connection.name) : null,
+      r(I18N.t('panel.settings.configuration_web'), net.urls[0]),
       net.simulated ? h('div', { class: 'muted small' }, '🧪 Red simulada (modo pruebas en el ordenador)') : null].filter(Boolean));
   });
-  return h('div', { class: 'card set-card' }, h('div', { class: 'set-title' }, icon('mdi-wifi'), 'Red y configuración desde el móvil'),
+  return h('div', { class: 'card set-card' }, h('div', { class: 'set-title' }, icon('mdi-wifi'), I18N.t('panel.settings.network_setup_from')),
     rows,
-    h('div', { class: 'btn-row' }, h('button', { class: 'big-action primary', onclick: openConfigQR }, icon('mdi-qrcode'), 'Configurar desde el móvil')),
-    h('div', { class: 'muted small' }, 'La WiFi, la IP y el nombre de la Pi se cambian desde esa web, en el apartado «Red de la Pi».'));
+    h('div', { class: 'btn-row' }, h('button', { class: 'big-action primary', onclick: openConfigQR }, icon('mdi-qrcode'), I18N.t('panel.settings.set_up_from'))),
+    h('div', { class: 'muted small' }, I18N.t('panel.settings.pi_s_wifi')));
 }
 
 /* ---------- Actualizaciones (las hace el ayudante con git; también desde la web) ---------- */
@@ -1653,13 +1655,13 @@ async function updApi(body) {
   return body ? d.info : d;
 }
 function updatesCard() {
-  const body = h('div', { class: 'set-body' }, h('div', { class: 'muted small' }, 'Leyendo…'));   // sus filas van como las del resto de tarjetas
+  const body = h('div', { class: 'set-body' }, h('div', { class: 'muted small' }, I18N.t('panel.settings.reading')));   // sus filas van como las del resto de tarjetas
   let timer = null;
   const fill = (u) => {
     clearTimeout(timer);
     if (!u) { body.replaceChildren(h('div', { class: 'muted small' }, 'Disponible en la Raspberry Pi (con el ayudante panel-helper.py).')); return; }
     const n = u.available.length;
-    const estado = u.applying ? 'Actualizando…' : u.checking ? 'Comprobando…' : n ? `${n} novedad${n > 1 ? 'es' : ''}` : 'Al día';
+    const estado = u.applying ? I18N.t('web.system.updating') : u.checking ? I18N.t('web.system.checking') : n ? I18N.t(n > 1 ? 'panel.settings.new_updates' : 'panel.settings.new_updates_one', { n }) : I18N.t('panel.settings.up_date');
     const val = (t) => h('span', { class: 'net-val', style: 'white-space: nowrap' }, t);
     let hour = u.settings.hour;
     const hourLab = h('span', { class: 'time-val' }, String(hour).padStart(2, '0') + ':00');
@@ -1668,89 +1670,89 @@ function updatesCard() {
       updApi({ accion: 'ajustes', hour }).catch((e) => toast(e.message, true));
     };
     body.replaceChildren(...[
-      setRow('Versión', u.current ? u.current.subject : null, val(u.current ? u.current.hash : '¿?')),
-      setRow('Estado', u.error || null, h('span', { class: 'pill' + (n || u.error ? '' : ' ok') }, estado)),
+      setRow(I18N.t('panel.sheets.version'), u.current ? u.current.subject : null, val(u.current ? u.current.hash : '¿?')),
+      setRow(I18N.t('panel.sheets.status'), u.error || null, h('span', { class: 'pill' + (n || u.error ? '' : ' ok') }, estado)),
       n ? h('div', { class: 'upd-list muted small' }, ...u.available.slice(0, 6).map((c) => h('div', null, '• ' + c.subject))) : null,
-      setBlock('Cuando haya una versión nueva', u.settings.mode === 'auto' ? 'Se actualiza sola cada día a esa hora (el panel se reinicia unos segundos)' : 'Te avisa y actualizas con el botón',
-        segmented([['avisar', 'Avisarme'], ['auto', 'Automático']], u.settings.mode,
+      setBlock(I18N.t('panel.settings.when_there_new'), u.settings.mode === 'auto' ? 'Se actualiza sola cada día a esa hora (el panel se reinicia unos segundos)' : I18N.t('panel.settings.tells_update_button'),
+        segmented([['avisar', I18N.t('panel.settings.notify_me')], ['auto', I18N.t('panel.settings.automatic')]], u.settings.mode,
           (v) => updApi({ accion: 'ajustes', mode: v }).then(fill).catch((e) => toast(e.message, true)))),
-      u.settings.mode === 'auto' ? setRow('Hora', null, h('div', { class: 'stepper' },
+      u.settings.mode === 'auto' ? setRow(I18N.t('web.system.time'), null, h('div', { class: 'stepper' },
         h('button', { class: 'round-btn', onclick: () => stepHour(-1) }, icon('mdi-minus')), hourLab,
         h('button', { class: 'round-btn', onclick: () => stepHour(1) }, icon('mdi-plus')))) : null,
       !u.sudo ? h('div', { class: 'muted small' }, 'Para instalar paquetes nuevos sin pedir contraseña, lanza una vez scripts/setup-kiosk.sh en la Pi.') : null,
       h('div', { class: 'btn-row' },
-        h('button', { class: 'big-action', onclick: () => { toast('Comprobando…'); updApi({ accion: 'comprobar' }).then((i) => { fill(i); toast(i.error ? i.error : i.available.length ? 'Hay una versión nueva' : 'Ya está al día ✓', !!i.error); }).catch((e) => toast(e.message, true)); } },
-          icon('mdi-cloud-search'), 'Comprobar'),
+        h('button', { class: 'big-action', onclick: () => { toast(I18N.t('web.system.checking')); updApi({ accion: 'comprobar' }).then((i) => { fill(i); toast(i.error ? i.error : i.available.length ? 'Hay una versión nueva' : 'Ya está al día ✓', !!i.error); }).catch((e) => toast(e.message, true)); } },
+          icon('mdi-cloud-search'), I18N.t('panel.settings.check')),
         n && !u.applying ? h('button', { class: 'big-action primary', onclick: () => { toast('Actualizando… el panel se reiniciará solo'); updApi({ accion: 'actualizar' }).then(fill).catch((e) => toast(e.message, true)); } },
           icon('mdi-download'), 'Actualizar ahora') : null),
       u.simulated ? h('div', { class: 'muted small' }, '🧪 En el ordenador no se actualiza de verdad') : null].filter(Boolean));
     if (u.applying || u.checking) timer = setTimeout(() => updApi().then(fill).catch(() => {}), 2000);
   };
   updApi().then(fill).catch(() => fill(null));
-  return h('div', { class: 'card set-card' }, h('div', { class: 'set-title' }, icon('mdi-update'), 'Actualizaciones'), body);
+  return h('div', { class: 'card set-card' }, h('div', { class: 'set-title' }, icon('mdi-update'), I18N.t('panel.settings.updates')), body);
 }
 
 function renderSettings() {
   const pct = (v) => v + ' %';
-  const bright = slider({ min: 5, max: 100, step: 5, label: 'Brillo', fmt: pct, onchange: (v) => { SET.brightness = v; saveSettings(); } });
+  const bright = slider({ min: 5, max: 100, step: 5, label: I18N.t('panel.sheets.brightness'), fmt: pct, onchange: (v) => { SET.brightness = v; saveSettings(); } });
   bright.set(SET.brightness);
-  const nightBright = slider({ min: 5, max: 100, step: 5, label: 'Brillo de noche', fmt: pct, onchange: (v) => { SET.night.brightness = v; saveSettings(); } });
+  const nightBright = slider({ min: 5, max: 100, step: 5, label: I18N.t('panel.settings.night_brightness'), fmt: pct, onchange: (v) => { SET.night.brightness = v; saveSettings(); } });
   nightBright.set(SET.night.brightness);
 
   const hw = SCREEN.helper;
   const helperText = !hw ? 'No detectado: el brillo y el apagado se hacen oscureciendo la imagen'
-    : hw.simulated ? 'Simulado en el ordenador: se oscurece la imagen y no se toca el hardware'
+    : hw.simulated ? I18N.t('panel.settings.simulated_computer_image')
     : hw.backlight ? 'Brillo real y apagado de la pantalla' : hw.power ? 'Apagado real de la pantalla; brillo por software' : 'Detectado, pero esta pantalla no se puede controlar';
 
   return [h('div', { class: 'settings' },
-    h('div', { class: 'card set-card' }, h('div', { class: 'set-title' }, icon('mdi-monitor'), 'Pantalla'),
+    h('div', { class: 'card set-card' }, h('div', { class: 'set-title' }, icon('mdi-monitor'), I18N.t('panel.settings.screen')),
       bright,
-      setBlock('Idioma', null, segmented([['auto', 'Automático'], ...Object.entries(I18N.langs)], SET.language || 'auto',
+      setBlock(I18N.t('panel.settings.language'), null, segmented([['auto', I18N.t('panel.settings.automatic')], ...Object.entries(I18N.langs)], SET.language || 'auto',
         (v) => { SET.language = v; saveSettings(); })),
-      setBlock('Tema', 'Automático: claro de día y oscuro de noche (con la salida y la puesta del sol)',
-        segmented([['oscuro', 'Oscuro'], ['claro', 'Claro'], ['auto', 'Automático']], SET.theme || 'oscuro', (v) => { SET.theme = v; saveSettings(); if (accentPicker.paint) accentPicker.paint(); })),   // los círculos, en el tono del tema
-      setBlock('Color', 'El de los botones, las barras y la burbuja del volumen', accentPicker()),
-      setBlock('Modo ambiente', 'Tiempo sin tocar la pantalla hasta mostrar el reloj',
-        segmented([[0, 'Nunca'], [30, '30 s'], [60, '1 min'], [90, '1,5 min'], [180, '3 min'], [300, '5 min'], [600, '10 min']],
+      setBlock(I18N.t('panel.settings.theme'), I18N.t('panel.settings.automatic_light_by'),
+        segmented([['oscuro', I18N.t('panel.settings.dark')], ['claro', I18N.t('panel.settings.theme_light')], ['auto', I18N.t('panel.settings.automatic')]], SET.theme || 'oscuro', (v) => { SET.theme = v; saveSettings(); if (accentPicker.paint) accentPicker.paint(); })),   // los círculos, en el tono del tema
+      setBlock(I18N.t('panel.settings.colour'), I18N.t('panel.settings.buttons_sliders_volume'), accentPicker()),
+      setBlock(I18N.t('panel.settings.ambient_mode'), I18N.t('panel.settings.time_without_touching'),
+        segmented([[0, I18N.t('panel.settings.never')], [30, '30 s'], [60, '1 min'], [90, I18N.t('panel.settings.1_5_min')], [180, '3 min'], [300, '5 min'], [600, '10 min']],
           SET.idleSeconds, (v) => { SET.idleSeconds = v; saveSettings(); })),
-      setBlock('Apagar la pantalla', 'Tiempo en modo ambiente hasta apagarla. Se enciende al tocarla o si llega un aviso',
-        segmented([[0, 'Nunca'], [5, '5 min'], [15, '15 min'], [30, '30 min'], [60, '1 h'], [120, '2 h']],
+      setBlock(I18N.t('panel.quick.turn_off_screen'), I18N.t('panel.settings.time_ambient_mode'),
+        segmented([[0, I18N.t('panel.settings.never')], [5, '5 min'], [15, '15 min'], [30, '30 min'], [60, '1 h'], [120, '2 h']],
           SET.screenOffMinutes, (v) => { SET.screenOffMinutes = v; saveSettings(); })),
       h('div', { class: 'btn-row' },
-        h('button', { class: 'big-action', onclick: () => showAmbient() }, icon('mdi-image-filter-hdr'), 'Modo ambiente'),
-        h('button', { class: 'big-action', onclick: () => { screenOffNow(); } }, icon('mdi-monitor-off'), 'Apagar ahora'))),
+        h('button', { class: 'big-action', onclick: () => showAmbient() }, icon('mdi-image-filter-hdr'), I18N.t('panel.settings.ambient_mode')),
+        h('button', { class: 'big-action', onclick: () => { screenOffNow(); } }, icon('mdi-monitor-off'), I18N.t('panel.settings.turn_off_now')))),
 
     soundCard(),
 
-    h('div', { class: 'card set-card' }, h('div', { class: 'set-title' }, icon('mdi-image-multiple'), 'Fotos del modo ambiente'),
-      setRow('Mostrar fotos',
-        PHOTOS.length ? `${PHOTOS.length} fotos cargadas` : photoSources().length ? 'No se han podido cargar las fotos' : 'Añade fuentes de fotos desde la web de configuración',
+    h('div', { class: 'card set-card' }, h('div', { class: 'set-title' }, icon('mdi-image-multiple'), I18N.t('panel.settings.ambient_mode_photos')),
+      setRow(I18N.t('panel.settings.show_photos'),
+        PHOTOS.length ? I18N.t('panel.settings.photos_loaded', { n: PHOTOS.length }) : photoSources().length ? I18N.t('panel.ambient.could_not_load') : 'Añade fuentes de fotos desde la web de configuración',
         switchBtn(SET.photos.enabled, (v) => { SET.photos.enabled = v; saveSettings(); nextBackground(); })),
-      setBlock('Cómo se ve la foto (por defecto)', 'Cada fuente puede tener el suyo en la web de configuración. Entera + difuminado: sin recortar, con la misma foto desenfocada detrás',
-        segmented([['cover', 'Rellenar'], ['blur', 'Entera + difuminado'], ['contain', 'Entera']],
+      setBlock(I18N.t('panel.settings.how_photos_are'), I18N.t('panel.settings.each_source_can'),
+        segmented([['cover', I18N.t('panel.settings.fill')], ['blur', I18N.t('panel.settings.whole_blurred')], ['contain', I18N.t('panel.settings.whole')]],
           SET.photos.fit || 'blur', (v) => { SET.photos.fit = v; saveSettings(); refitPhotos(); })),
-      setBlock('Cambiar de foto cada', null,
+      setBlock(I18N.t('panel.settings.change_photo_every'), null,
         segmented([[15, '15 s'], [30, '30 s'], [60, '1 min'], [300, '5 min'], [900, '15 min']],
           SET.photos.seconds, (v) => { SET.photos.seconds = v; saveSettings(); nextBackground(); })),
       ...PHOTO_STATS.map((st) => setRow(st.label, st.error ? 'Error: ' + st.error : null,
-        h('span', { class: 'pill' + (st.error ? '' : ' ok') }, st.error ? 'Error' : `${st.count} fotos`))),
+        h('span', { class: 'pill' + (st.error ? '' : ' ok') }, st.error ? I18N.t('panel.states.error') : I18N.t('panel.settings.photos_count', { n: st.count })))),
       photoSources().length ? h('div', { class: 'btn-row' },
-        h('button', { class: 'big-action', onclick: async () => { toast('Recargando fotos…'); await loadPhotos(); render(); } }, icon('mdi-image-refresh'), 'Recargar álbum'),
-        h('button', { class: 'big-action', onclick: () => showAmbient() }, icon('mdi-image-filter-hdr'), 'Ver ahora')) : null),
+        h('button', { class: 'big-action', onclick: async () => { toast('Recargando fotos…'); await loadPhotos(); render(); } }, icon('mdi-image-refresh'), I18N.t('panel.settings.reload_album')),
+        h('button', { class: 'big-action', onclick: () => showAmbient() }, icon('mdi-image-filter-hdr'), I18N.t('panel.sheets.watch_now'))) : null),
 
-    h('div', { class: 'card set-card' }, h('div', { class: 'set-title' }, icon('mdi-weather-night'), 'Modo noche'),
-      setRow('Activado', 'Baja el brillo por la noche', switchBtn(SET.night.enabled, (v) => { SET.night.enabled = v; saveSettings(); })),
-      setRow('Desde', null, timeStepper(SET.night.start, (v) => { SET.night.start = v; saveSettings(); })),
-      setRow('Hasta', null, timeStepper(SET.night.end, (v) => { SET.night.end = v; saveSettings(); })),
+    h('div', { class: 'card set-card' }, h('div', { class: 'set-title' }, icon('mdi-weather-night'), I18N.t('panel.settings.night_mode')),
+      setRow(I18N.t('panel.settings.enabled'), I18N.t('panel.settings.dims_screen_at'), switchBtn(SET.night.enabled, (v) => { SET.night.enabled = v; saveSettings(); })),
+      setRow(I18N.t('panel.settings.from'), null, timeStepper(SET.night.start, (v) => { SET.night.start = v; saveSettings(); })),
+      setRow(I18N.t('panel.settings.until'), null, timeStepper(SET.night.end, (v) => { SET.night.end = v; saveSettings(); })),
       nightBright,
-      setRow('Apagar la pantalla de noche', 'Si no la estás usando (al minuto de dejar de tocarla)',
+      setRow(I18N.t('panel.settings.turn_off_screen'), I18N.t('panel.settings.when_not_use'),
         switchBtn(SET.night.screenOff, (v) => { SET.night.screenOff = v; saveSettings(); }))),
 
-    h('div', { class: 'card set-card' }, h('div', { class: 'set-title' }, icon('mdi-bell-ring'), 'Avisos'),
-      setRow('Sonido', 'Ding-dong en los avisos y pitido en los críticos (su volumen, en Sonido)', switchBtn(SET.sound.enabled, (v) => { SET.sound.enabled = v; saveSettings(); })),
+    h('div', { class: 'card set-card' }, h('div', { class: 'set-title' }, icon('mdi-bell-ring'), I18N.t('panel.quick.notifications')),
+      setRow(I18N.t('panel.settings.sound'), I18N.t('panel.settings.chime_notifications_beeps'), switchBtn(SET.sound.enabled, (v) => { SET.sound.enabled = v; saveSettings(); })),
       h('div', { class: 'btn-row' },
-        h('button', { class: 'big-action', onclick: () => onNotif({ data: { id: 'prueba_ajustes', title: 'Aviso de prueba', message: 'Así se ven los avisos que lances desde Home Assistant', level: 'warning', icon: 'mdi:bell-ring', timeout: 15 } }) },
-          icon('mdi-bell-badge'), 'Probar aviso'))),
+        h('button', { class: 'big-action', onclick: () => onNotif({ data: { id: 'prueba_ajustes', title: I18N.t('panel.notices.test_notification'), message: 'Así se ven los avisos que lances desde Home Assistant', level: 'warning', icon: 'mdi:bell-ring', timeout: 15 } }) },
+          icon('mdi-bell-badge'), I18N.t('panel.notices.send_test_notification')))),
 
     alarmsCard(),
 
@@ -1765,11 +1767,11 @@ function renderSettings() {
     updatesCard(),
 
     h('div', { class: 'card set-card' }, h('div', { class: 'set-title' }, icon('mdi-information-outline'), 'Panel'),
-      setRow('Home Assistant', CFG.haUrl,
-        h('span', { class: 'pill' + (S.connected ? ' ok' : '') }, S.connected ? 'Conectado' : 'Desconectado')),
-      setRow('Control de pantalla', helperText, h('span', { class: 'pill' + (hw ? ' ok' : '') }, hw ? (hw.simulated ? 'Simulado' : 'Ayudante') : 'Software')),
+      setRow(I18N.t('web.general.home_assistant'), CFG.haUrl,
+        h('span', { class: 'pill' + (S.connected ? ' ok' : '') }, S.connected ? I18N.t('panel.settings.connected') : 'Desconectado')),
+      setRow(I18N.t('panel.settings.screen_control'), helperText, h('span', { class: 'pill' + (hw ? ' ok' : '') }, hw ? (hw.simulated ? I18N.t('panel.settings.simulated') : 'Ayudante') : 'Software')),
       h('div', { class: 'btn-row' },
-        h('button', { class: 'big-action', onclick: () => location.reload() }, icon('mdi-refresh'), 'Recargar panel'))))];
+        h('button', { class: 'big-action', onclick: () => location.reload() }, icon('mdi-refresh'), I18N.t('panel.settings.reload_panel')))))];
 }
 
 /* ====================== Alarmas (despertador) ======================
@@ -1797,9 +1799,9 @@ function whenText(d) {
 }
 function daysText(days) {
   const s = [...(days || [])].sort().join('');
-  if (!s) return 'Una vez';
+  if (!s) return I18N.t('panel.settings.once');
   if (s === '0123456') return 'Todos los días';
-  if (s === '01234') return 'De lunes a viernes';
+  if (s === '01234') return I18N.t('panel.settings.monday_friday');
   if (s === '56') return 'Fines de semana';
   return [...days].sort().map((i) => DAY_LETTERS[i]).join(' ');
 }
@@ -1833,10 +1835,10 @@ function ringAlarm(al) {
   const time = h('div', { class: 'ring-time' }, hhmm(new Date()));
   $('#ring').replaceChildren(h('div', { class: 'ring-box' },
     icon('mdi-alarm', 'ring-icon'), time,
-    h('div', { class: 'ring-label' }, al.name || 'Alarma'),
+    h('div', { class: 'ring-label' }, al.name || I18N.t('panel.settings.alarm')),
     h('div', { class: 'ring-actions' },
       h('button', { class: 'big-action', onclick: () => stopAlarm(true) }, icon('mdi-sleep'), 'Posponer 9 min'),
-      h('button', { class: 'big-action primary', onclick: () => stopAlarm(false) }, icon('mdi-alarm-off'), 'Parar'))));
+      h('button', { class: 'big-action primary', onclick: () => stopAlarm(false) }, icon('mdi-alarm-off'), I18N.t('panel.sheets.stop')))));
   $('#ring').classList.remove('hidden');
   // Melodía que va subiendo de volumen durante el primer minuto
   const play = () => {
@@ -1887,15 +1889,15 @@ function openAlarmEditor(existing) {
     return b;
   }));
   const hint = h('div', { class: 'muted small', style: 'text-align:center' }, daysText(al.days));
-  const presets = h('div', { class: 'chips', style: 'justify-content:center' }, [['Diario', [0, 1, 2, 3, 4, 5, 6]], ['L a V', [0, 1, 2, 3, 4]], ['Finde', [5, 6]], ['Una vez', []]]
+  const presets = h('div', { class: 'chips', style: 'justify-content:center' }, [[I18N.t('panel.settings.every_day'), [0, 1, 2, 3, 4, 5, 6]], ['L a V', [0, 1, 2, 3, 4]], [I18N.t('panel.settings.weekend'), [5, 6]], [I18N.t('panel.settings.once'), []]]
     .map(([label, d]) => h('button', { class: 'chip', onclick: () => {
       al.days = [...d];
       days.querySelectorAll('.day-btn').forEach((b, i) => b.classList.toggle('on', d.includes(i)));
       hint.textContent = daysText(al.days);
     } }, label)));
-  const names = ['Alarma', 'Despertador', 'Trabajo', 'Siesta', 'Medicinas'];
+  const names = ['panel.settings.alarm', 'panel.settings.wake_up', 'panel.sheets.job', 'panel.settings.nap', 'panel.settings.medicines'];
   const nameRow = h('div', { class: 'chips', style: 'justify-content:center' }, names.map((n) => {
-    const c = h('button', { class: 'chip' + ((al.name || 'Alarma') === n ? ' sel' : '') }, n);
+    const c = h('button', { class: 'chip' + ((al.name || 'panel.settings.alarm') === n ? ' sel' : '') }, n);
     c.addEventListener('click', () => { al.name = n; nameRow.querySelectorAll('.chip').forEach((x) => x.classList.toggle('sel', x === c)); });
     return c;
   }));
@@ -1908,10 +1910,10 @@ function openAlarmEditor(existing) {
     const n = nextOccurrence(al);
     if (n) toast(`Sonará ${whenText(n).toLowerCase()}`);
   };
-  const del = () => { SET.alarms = (SET.alarms || []).filter((x) => x.id !== al.id); saveSettings(); closeSheet(); render(); toast('Alarma borrada'); };
+  const del = () => { SET.alarms = (SET.alarms || []).filter((x) => x.id !== al.id); saveSettings(); closeSheet(); render(); toast(I18N.t('panel.settings.alarm_deleted')); };
   paint();
   $('#sheet-card').replaceChildren(
-    h('div', { class: 'sheet-head' }, h('div', { class: 'tile-icon' }, icon('mdi-alarm')), h('div', { class: 'sheet-title' }, existing ? 'Editar alarma' : 'Nueva alarma'),
+    h('div', { class: 'sheet-head' }, h('div', { class: 'tile-icon' }, icon('mdi-alarm')), h('div', { class: 'sheet-title' }, existing ? 'Editar alarma' : I18N.t('panel.settings.new_alarm')),
       h('button', { class: 'icon-btn', onclick: closeSheet }, icon('mdi-close'))),
     h('div', { class: 'sheet-body' },
       h('div', { class: 'alarm-editor' },
@@ -1919,8 +1921,8 @@ function openAlarmEditor(existing) {
         timeEl,
         h('div', { class: 'alarm-col' }, rb('mdi-chevron-up', () => step(0, 5)), rb('mdi-chevron-down', () => step(0, -5)))),
       days, hint, presets, nameRow,
-      h('div', { class: 'btn-row' }, existing ? h('button', { class: 'big-action danger-soft', onclick: del }, icon('mdi-delete'), 'Borrar') : null,
-        h('button', { class: 'big-action primary', onclick: save }, icon('mdi-check'), 'Guardar'))));
+      h('div', { class: 'btn-row' }, existing ? h('button', { class: 'big-action danger-soft', onclick: del }, icon('mdi-delete'), I18N.t('panel.settings.delete')) : null,
+        h('button', { class: 'big-action primary', onclick: save }, icon('mdi-check'), I18N.t('panel.settings.save')))));
   $('#sheet').classList.remove('hidden');
   S.sheetId = 'alarma';
 }
@@ -1931,16 +1933,16 @@ function alarmsCard() {
     const next = al.enabled ? nextOccurrence(al) : null;
     const row = h('div', { class: 'alarm-row' + (al.enabled ? '' : ' off') },
       h('div', { class: 'alarm-row-time' }, al.time),
-      h('div', { class: 'alarm-row-text' }, h('div', null, al.name || 'Alarma'),
+      h('div', { class: 'alarm-row-text' }, h('div', null, al.name || I18N.t('panel.settings.alarm')),
         h('div', { class: 'muted small' }, daysText(al.days) + (next ? ' · ' + whenText(next).toLowerCase() : ''))),
       switchBtn(al.enabled, (v) => { al.enabled = v; delete RING.snooze[al.id]; saveSettings(); render(); }));
     row.firstChild.addEventListener('click', () => openAlarmEditor(al));
     row.children[1].addEventListener('click', () => openAlarmEditor(al));
     return row;
   });
-  return h('div', { class: 'card set-card' }, h('div', { class: 'set-title' }, icon('mdi-alarm'), 'Alarmas'),
-    list.length ? list : h('div', { class: 'muted small' }, 'No hay alarmas. El panel encenderá la pantalla y sonará a la hora que elijas.'),
-    h('div', { class: 'btn-row' }, h('button', { class: 'big-action primary', onclick: () => openAlarmEditor(null) }, icon('mdi-alarm-plus'), 'Añadir alarma')));
+  return h('div', { class: 'card set-card' }, h('div', { class: 'set-title' }, icon('mdi-alarm'), I18N.t('panel.settings.alarms')),
+    list.length ? list : h('div', { class: 'muted small' }, I18N.t('panel.settings.no_alarms_panel')),
+    h('div', { class: 'btn-row' }, h('button', { class: 'big-action primary', onclick: () => openAlarmEditor(null) }, icon('mdi-alarm-plus'), I18N.t('panel.settings.add_alarm'))));
 }
 
 /* ====================== Navegación y renderizado ====================== */
@@ -1977,7 +1979,7 @@ function renderRail() {
     return btn;
   }),
     h('div', { class: 'rail-spacer' }),
-    h('button', { class: 'rail-btn', onclick: showAmbient }, icon('mdi-image-filter-hdr'), 'Ambiente'));
+    h('button', { class: 'rail-btn', onclick: showAmbient }, icon('mdi-image-filter-hdr'), I18N.t('panel.nav.ambient')));
 }
 
 /** Contenido de una pestaña: una rejilla de 12 columnas; cada tarjeta ocupa su ancho (c.width). */
@@ -1986,7 +1988,7 @@ function renderTab(t) { return [layout(t.cards)]; }
 function layout(cards) {
   return h('div', { class: 'layout' }, (cards || []).map((c) => {
     let kids;
-    try { kids = renderCard(c); } catch (e) { console.error(e); kids = [codeError(c.title || 'Tarjeta', e.message)]; }
+    try { kids = renderCard(c); } catch (e) { console.error(e); kids = [codeError(c.title || I18N.t('web.editor.card'), e.message)]; }
     kids = [].concat(kids || []).filter(Boolean);
     if (!kids.length) return null;
     const slot = h('div', { class: 'slot w-' + String(c.width || 'full').replace('/', '-') }, kids);
@@ -2132,7 +2134,7 @@ const VIEW_DIRTY = new Set();
 /** Sin conexión configurada/** Sin conexión configurada: QR de la web de configuración (si hay ayudante) o instrucciones. */
 async function showSetup() {
   $('#rail').replaceChildren();
-  $('#view-title').textContent = I18N.t('Configurar el panel');
+  $('#view-title').textContent = I18N.t('panel.nav.set_up_panel');
   const box = h('div', { class: 'setup' }, icon('mdi-home-assistant', 'setup-icon'), h('h2', null, 'Conecta el panel con Home Assistant'));
   $('#view').replaceChildren(box);
   const net = await fetchNet();
@@ -2291,24 +2293,24 @@ async function voiceText() {
 function voiceCard() {
   const sats = Object.keys(S.states).filter((id) => domain(id) === 'assist_satellite')
     .sort((x, y) => nameOf(x, false).localeCompare(nameOf(y, false), 'es'));
-  const list = pickList([['', 'Ninguno', 'mdi-microphone-off', '']].concat(sats.map((id) => [id,
+  const list = pickList([['', I18N.t('panel.settings.none'), 'mdi-microphone-off', '']].concat(sats.map((id) => [id,
     (deviceOf(id) || {}).name_by_user || (deviceOf(id) || {}).name || nameOf(id, false), 'mdi-microphone-message',
-    S.states[id].state === 'unavailable' ? 'No disponible' : (S.areaById[areaOf(id)] || {}).name || ''])),
+    S.states[id].state === 'unavailable' ? I18N.t('panel.states.unavailable') : (S.areaById[areaOf(id)] || {}).name || ''])),
     SET.voiceSatellite, (id) => { SET.voiceSatellite = id; saveSettings(); panelVoice('idle'); });
-  return h('div', { class: 'card set-card' }, h('div', { class: 'set-title' }, icon('mdi-microphone'), 'Asistente de voz'),
+  return h('div', { class: 'card set-card' }, h('div', { class: 'set-title' }, icon('mdi-microphone'), I18N.t('panel.settings.voice_assistant')),
     h('div', { class: 'muted small' }, sats.length
       ? 'Cuando le hables a este satélite de Assist, lo que dices y su respuesta salen abajo, encima de cualquier pantalla.'
-      : 'No hay ningún satélite de Assist en Home Assistant (p. ej. un Home Assistant Voice).'), list,
-    setBlock('Animación', null, segmented([['onda', 'Onda'], ['micro', 'Micrófono'], ['luz', 'Línea de luz'], ['eq', 'Ecualizador']],
+      : I18N.t('panel.settings.there_no_assist')), list,
+    setBlock(I18N.t('panel.settings.animation'), null, segmented([['onda', I18N.t('panel.settings.wave')], ['micro', I18N.t('panel.settings.microphone')], ['luz', I18N.t('panel.settings.light_line')], ['eq', I18N.t('panel.settings.equaliser')]],
       SET.voiceStyle || 'onda', (v) => { SET.voiceStyle = v; saveSettings(); voiceDemo(); })),
     h('div', { class: 'btn-row' },
-      h('button', { class: 'big-action', onclick: voiceDemo }, icon('mdi-play'), 'Ver cómo queda')),
+      h('button', { class: 'big-action', onclick: voiceDemo }, icon('mdi-play'), I18N.t('panel.settings.preview'))),
     window.PANEL_HELPER ? voiceMicBlock() : null);
 }
 /** Todos los volúmenes juntos: el general (la salida de la Pi) y, dentro de él, cada cosa que suena. */
 function soundCard() {
   const pct = (v) => v + ' %';
-  const card = h('div', { class: 'card set-card' }, h('div', { class: 'set-title' }, icon('mdi-volume-high'), 'Sonido'));
+  const card = h('div', { class: 'card set-card' }, h('div', { class: 'set-title' }, icon('mdi-volume-high'), I18N.t('panel.settings.sound')));
   const post = async (body) => {
     try {
       const r = await (await fetch(HELPER + '/sonido', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) })).json();
@@ -2320,24 +2322,24 @@ function soundCard() {
   const music = speakerEntity();
   const main = h('div', { style: 'display:contents' });
   if (music && S.states[music]) {
-    const m = slider({ min: 0, max: 100, step: 1, label: 'Volumen (música y multimedia)', fmt: pct,
+    const m = slider({ min: 0, max: 100, step: 1, label: I18N.t('panel.settings.volume_music_media'), fmt: pct,
       // cambiado desde aquí: no sale la barra flotante (ya lo estás viendo)
       onchange: (v) => { volMarkSent(v); call('media_player', 'volume_set', { volume_level: v / 100 }, music); } });
     // Sigue al volumen real: si se cambia en Music Assistant, se mueve aquí también
     bind('view', music, (st) => st && st.attributes.volume_level != null && m.set(Math.round(st.attributes.volume_level * 100)));
     main.append(m);
   }
-  const avisos = slider({ min: 10, max: 100, step: 10, label: 'Avisos y alarmas', fmt: pct, onchange: (v) => { SET.sound.volume = v; saveSettings(); tone([784, 622], 0.4); } });
+  const avisos = slider({ min: 10, max: 100, step: 10, label: I18N.t('panel.settings.notifications_alarms'), fmt: pct, onchange: (v) => { SET.sound.volume = v; saveSettings(); tone([784, 622], 0.4); } });
   avisos.set(SET.sound.volume);
   card.append(main, avisos);
   if (!window.PANEL_HELPER) return card;
   fetch(HELPER + '/sonido', { cache: 'no-store' }).then((r) => r.json()).then((r) => {
     if (!main.childNodes.length && r.master.available) {
-      const m = slider({ min: 0, max: 100, step: 1, label: 'Volumen', fmt: pct, onchange: (v) => post({ master: v }) });
+      const m = slider({ min: 0, max: 100, step: 1, label: I18N.t('panel.sheets.volume'), fmt: pct, onchange: (v) => post({ master: v }) });
       m.set(r.master.value); main.append(m);
     }
     if (r.voice.installed) {
-      const vv = slider({ min: 10, max: 100, step: 10, label: 'Respuestas del asistente de voz', fmt: pct, onchange: (v) => post({ voiceVolume: v }) });
+      const vv = slider({ min: 10, max: 100, step: 10, label: I18N.t('panel.settings.voice_assistant_answers'), fmt: pct, onchange: (v) => post({ voiceVolume: v }) });
       vv.set(r.voice.volume);
       card.append(vv);
     }
@@ -2346,7 +2348,7 @@ function soundCard() {
 }
 /** El micro de la propia Pi (servicio panel-voz): micro, por dónde contesta y palabra para despertarlo. */
 function voiceMicBlock() {
-  const box = h('div', null, h('div', { class: 'muted small' }, 'Cargando el micro de este panel…'));
+  const box = h('div', null, h('div', { class: 'muted small' }, I18N.t('panel.settings.loading_panel_s')));
   const save = async (patch) => {
     try {
       const r = await (await fetch(HELPER + '/voz', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(patch) })).json();
@@ -2356,13 +2358,13 @@ function voiceMicBlock() {
   };
   const paint = (r) => {
     const s = r.settings;
-    const estado = !r.installed ? 'Sin instalar: bash ~/ha-panel/scripts/setup-voz.sh' : r.active ? 'Escuchando' : s.enabled ? 'No está funcionando (mira el registro en la web)' : 'Apagado';
+    const estado = !r.installed ? 'Sin instalar: bash ~/ha-panel/scripts/setup-voz.sh' : r.active ? I18N.t('web.sound.listening') : s.enabled ? I18N.t('panel.settings.not_working_see') : I18N.t('panel.states.off');
     const opts = (list, ic) => list.map((o) => [o.id, o.name, ic, '']);
     box.replaceChildren(
-      setBlock('Escuchar con el micro de este panel (beta)', estado, switchBtn(s.enabled, (v) => save({ enabled: v }))),
-      setBlock('Micrófono', null, pickList(opts(r.inputs, 'mdi-microphone'), s.mic, (v) => save({ mic: v }))),
-      setBlock('Por dónde contesta', null, pickList(opts(r.outputs, 'mdi-speaker'), s.output, (v) => save({ output: v }))),
-      setBlock('Palabra para despertarlo', null, segmented(r.wakeWords.map((w) => [w.id, w.name]), s.wake, (v) => save({ wake: v }))));
+      setBlock(I18N.t('panel.settings.listen_panel_s'), estado, switchBtn(s.enabled, (v) => save({ enabled: v }))),
+      setBlock(I18N.t('panel.settings.microphone'), null, pickList(opts(r.inputs, 'mdi-microphone'), s.mic, (v) => save({ mic: v }))),
+      setBlock(I18N.t('panel.settings.answers_through'), null, pickList(opts(r.outputs, 'mdi-speaker'), s.output, (v) => save({ output: v }))),
+      setBlock(I18N.t('panel.settings.wake_word'), null, segmented(r.wakeWords.map((w) => [w.id, w.name]), s.wake, (v) => save({ wake: v }))));
   };
   fetch(HELPER + '/voz', { cache: 'no-store' }).then((r) => r.json()).then(paint)
     .catch(() => box.replaceChildren(h('div', { class: 'muted small' }, 'No se pudo leer el micro de este panel.')));
@@ -2448,14 +2450,14 @@ function pill(ic, { min = 0, max = 100, step = 1, value = 0, onLive, onEnd } = {
 }
 /* Ventanas del panel de acceso rápido que se deslizan de lado: avisos (izquierda) · controles (centro, la que sale al abrir)
  * · accesos rápidos (derecha, SET.quick). Se cambia deslizando el dedo o tocando las pestañas de arriba. */
-const QUICK_KINDS = { light: 'Luces', switch: 'Enchufes', input_boolean: 'Interruptores', fan: 'Ventiladores', cover: 'Persianas',
-  lock: 'Cerraduras', climate: 'Clima', scene: 'Escenas', script: 'Scripts', button: 'Botones', input_button: 'Botones' };
+const QUICK_KINDS = { light: 'panel.quick.lights', switch: 'panel.quick.plugs', input_boolean: 'panel.quick.switches', fan: 'panel.quick.fans', cover: 'panel.quick.covers',
+  lock: 'panel.quick.locks', climate: 'panel.quick.climate', scene: 'panel.nav.scenes', script: 'panel.quick.scripts', button: 'panel.quick.buttons', input_button: 'panel.quick.buttons' };
 function shadeTabs(main) {
   const track = h('div', { class: 'sht-track' });
   const pages = h('div', { class: 'sht-pages' }, track);
   const badge = h('span', { class: 'sht-badge' });
-  const btns = [h('button', { class: 'sht-tab' }, h('span', { class: 'sht-bell' }, icon('mdi-bell'), badge), 'Avisos'), h('button', { class: 'sht-tab' }, icon('mdi-tune-variant'), 'Controles'),
-    h('button', { class: 'sht-tab' }, icon('mdi-lightning-bolt'), 'Accesos rápidos')];
+  const btns = [h('button', { class: 'sht-tab' }, h('span', { class: 'sht-bell' }, icon('mdi-bell'), badge), I18N.t('panel.quick.notifications')), h('button', { class: 'sht-tab' }, icon('mdi-tune-variant'), I18N.t('panel.quick.controls')),
+    h('button', { class: 'sht-tab' }, icon('mdi-lightning-bolt'), I18N.t('panel.quick.quick_access'))];
   const bar = h('div', { class: 'sht-bar' }, btns);
   // las listas no cuentan para el alto: el panel de acceso rápido mide lo que miden los controles y ellas se desplazan dentro
   const notif = h('div', { class: 'sht-scroll' }), quick = h('div', { class: 'sht-scroll' });
@@ -2464,13 +2466,13 @@ function shadeTabs(main) {
   const paintNotif = () => {
     if (SH.tab === 0) { N.unread = 0; renderBell(); }
     badge.classList.toggle('on', N.unread > 0);
-    if (!N.history.length) { notif.replaceChildren(h('div', { class: 'sht-empty' }, icon('mdi-bell-check-outline'), 'No hay avisos')); return; }
+    if (!N.history.length) { notif.replaceChildren(h('div', { class: 'sht-empty' }, icon('mdi-bell-check-outline'), I18N.t('panel.quick.no_notifications'))); return; }
     // tocar un aviso lo vuelve a abrir entero (con su imagen y sus botones); la × lo quita de la lista
     notif.replaceChildren(...N.history.map((n) => h('div', { class: 'hist-row tappable ' + n.level, onclick: () => { shade(false); reopenNotif(n); } }, icon(n.icono),
       h('div', { class: 'hist-text' }, h('b', null, n.title), n.message ? h('div', { class: 'muted small' }, n.message) : null),
       h('span', { class: 'muted small' }, hhmm(n.at)),
-      h('button', { class: 'hist-x', title: 'Quitar', onclick: (e) => { e.stopPropagation(); N.history = N.history.filter((x) => x !== n); renderBell(); paintNotif(); } }, icon('mdi-close')))),
-    h('button', { class: 'sht-clear', onclick: () => { N.history = []; N.unread = 0; renderBell(); paintNotif(); } }, icon('mdi-delete-sweep'), 'Borrar todos'));
+      h('button', { class: 'hist-x', title: I18N.t('panel.quick.remove'), onclick: (e) => { e.stopPropagation(); N.history = N.history.filter((x) => x !== n); renderBell(); paintNotif(); } }, icon('mdi-close')))),
+    h('button', { class: 'sht-clear', onclick: () => { N.history = []; N.unread = 0; renderBell(); paintNotif(); } }, icon('mdi-delete-sweep'), I18N.t('panel.quick.clear_all')));
   };
   // Accesos rápidos: los elegidos como baldosas y, al final, una para añadir o quitar
   let editing = false, kind = null;
@@ -2478,7 +2480,7 @@ function shadeTabs(main) {
     B.shade.clear();
     const ids = (SET.quick || []).filter((id) => S.states[id]);
     if (!editing) {
-      const add = h('button', { class: 'tile sht-add', onclick: () => { editing = true; paintQuick(); } }, icon('mdi-plus'), ids.length ? 'Editar' : 'Añadir');
+      const add = h('button', { class: 'tile sht-add', onclick: () => { editing = true; paintQuick(); } }, icon('mdi-plus'), ids.length ? I18N.t('panel.quick.edit') : I18N.t('panel.quick.add'));
       quick.replaceChildren(h('div', { class: 'sht-grid' }, ...ids.map((id) => tile(id, 'shade')), add));
       return;
     }
@@ -2499,8 +2501,8 @@ function shadeTabs(main) {
     quick.replaceChildren(
       h('div', { class: 'sht-edit-head' },
         h('div', { class: 'sht-kinds' }, kinds.map((k) => h('button', { class: 'sht-kind' + (k === kind ? ' on' : ''), onclick: () => { kind = k; paintQuick(); quick.scrollTop = 0; } }, k))),
-        h('button', { class: 'sht-done', onclick: () => { editing = false; paintQuick(); } }, icon('mdi-check'), 'Listo')),
-      h('div', { class: 'sht-list' }, rows.length ? rows : h('div', { class: 'sht-empty' }, 'Nada que añadir')));
+        h('button', { class: 'sht-done', onclick: () => { editing = false; paintQuick(); } }, icon('mdi-check'), I18N.t('panel.quick.done'))),
+      h('div', { class: 'sht-list' }, rows.length ? rows : h('div', { class: 'sht-empty' }, I18N.t('panel.quick.nothing_add'))));
   };
 
   const goTab = (i, anim = true) => {
@@ -2569,7 +2571,7 @@ function shadeFill() {
   const av = pill('mdi-bell-ring', { min: 10, step: 10, value: SET.sound.volume, onEnd: (v) => { SET.sound.volume = v; saveSettings(true); tone([784, 622], 0.4); } });
   const br = pill('mdi-brightness-6', { min: 5, step: 5, value: SET.brightness, onEnd: (v) => { SET.brightness = v; saveSettings(true); } });
   pills.append(av.el, br.el);
-  const player = tmPlayer() || h('div', { class: 'tm-player sh-noplayer' }, icon('mdi-music-off'), 'Nada sonando');
+  const player = tmPlayer() || h('div', { class: 'tm-player sh-noplayer' }, icon('mdi-music-off'), I18N.t('panel.quick.nothing_playing'));
   // lo que cambie mientras está abierta (la canción, el volumen desde el móvil…) se ve al momento
   SH.sync = (sid) => {
     if (sid === TM.id && TM.paint) TM.paint();
@@ -2583,8 +2585,8 @@ function shadeFill() {
       h('div', { class: 'sh-when' }, h('b', null, now.toLocaleTimeString(I18N.locale(), { hour: '2-digit', minute: '2-digit' })),
         h('span', null, cap(now.toLocaleDateString(I18N.locale(), { weekday: 'long', day: 'numeric', month: 'long' })))),
       h('div', { class: 'sh-ibtns' },
-        iconBtn('mdi-monitor-off', 'Apagar la pantalla', () => { screenOffNow(); }),
-        iconBtn('mdi-cog', 'Ajustes', () => {   // desde el modo ambiente o «Sonando» también
+        iconBtn('mdi-monitor-off', I18N.t('panel.quick.turn_off_screen'), () => { screenOffNow(); }),
+        iconBtn('mdi-cog', I18N.t('panel.nav.settings'), () => {   // desde el modo ambiente o «Sonando» también
           if ($('#np').classList.contains('show')) hideNowPlaying(true);
           if (S.ambient) hideAmbient('settings'); else go('settings');
         }))),
@@ -2745,7 +2747,7 @@ function screenData(place) {
     alarms: (SET.alarms || []).map((a) => {
       const sn = RING.snooze[a.id];
       const when = sn && sn > Date.now() ? new Date(sn) : a.enabled ? nextOccurrence(a) : null;
-      return { name: a.name || 'Alarma', time: a.time, days: a.days || [], enabled: !!a.enabled, when, text: when ? whenText(when) : null };
+      return { name: I18N.t(a.name || 'panel.settings.alarm'), time: a.time, days: a.days || [], enabled: !!a.enabled, when, text: when ? whenText(when) : null };
     }),
   };
 }
@@ -2877,7 +2879,7 @@ function renderAmbientPlayer() {
   const a = st.attributes, playing = st.state === 'playing';
   const pic = a.entity_picture ? absUrl(a.entity_picture) : '';
   const own = id === speakerEntity();
-  const title = a.media_title || (own ? 'Este panel' : nameOf(id));
+  const title = a.media_title || (own ? I18N.t('panel.ambient.panel') : nameOf(id));
   const sub = a.media_title ? (a.media_artist || a.app_name || nameOf(id)) : (T[st.state] || cap(st.state));
   box.classList.add('own');   // tocar la carátula o el título abre «Sonando»
   const vol = a.volume_level != null ? Math.round(a.volume_level * 100) + ' %' : '';
@@ -2911,10 +2913,10 @@ function speakerCard() {
   // aún no haya creado su reproductor en Home Assistant. Se guarda como '@panel'.
   const own = speakerEntity();
   if (own && players.includes(own)) players.splice(players.indexOf(own), 1);
-  const ownSub = !own ? 'Aún no está en Music Assistant' : S.states[own].state === 'unavailable' ? 'No disponible' : 'El altavoz de esta pantalla';
-  const ownRow = SPK && SPK.enabled ? [['@panel', 'Este panel', 'mdi-tablet', ownSub]] : [];
+  const ownSub = !own ? I18N.t('panel.ambient.not_music_assistant') : S.states[own].state === 'unavailable' ? I18N.t('panel.states.unavailable') : I18N.t('panel.ambient.screen_s_speaker');
+  const ownRow = SPK && SPK.enabled ? [['@panel', I18N.t('panel.ambient.panel'), 'mdi-tablet', ownSub]] : [];
   const options = ownRow.concat(players.map((id) => [id,
-    nameOf(id), iconOf(S.states[id]), S.states[id].state === 'unavailable' ? 'No disponible' : (S.areaById[areaOf(id)] || {}).name || '']));
+    nameOf(id), iconOf(S.states[id]), S.states[id].state === 'unavailable' ? I18N.t('panel.states.unavailable') : (S.areaById[areaOf(id)] || {}).name || '']));
   const box = h('div', { class: 'amb-list' });
   // Lista con prioridad: sale el primero que esté sonando; si no suena ninguno, el primero en pausa; si no, el primero
   const cur = () => (SET.ambientSpeakers || (SET.defaultSpeaker ? [SET.defaultSpeaker] : [])).map((x) => (x === own && own ? '@panel' : x));
@@ -2932,12 +2934,12 @@ function speakerCard() {
     });
     const rest = options.filter((o) => !list.includes(o[0]));
     box.replaceChildren(...[...rows,
-      rows.length ? null : h('div', { class: 'muted small' }, 'Ninguno: sale el que esté sonando de los que abren «Sonando».'),
-      rest.length ? pickList([['', 'Añadir un altavoz…', 'mdi-plus', '']].concat(rest), '', (id) => { if (id) save([...list, id]); }) : null].filter(Boolean));
+      rows.length ? null : h('div', { class: 'muted small' }, I18N.t('panel.settings.none_one_playing')),
+      rest.length ? pickList([['', I18N.t('panel.settings.add_speaker'), 'mdi-plus', '']].concat(rest), '', (id) => { if (id) save([...list, id]); }) : null].filter(Boolean));
   };
   paint();
-  return h('div', { class: 'card set-card' }, h('div', { class: 'set-title' }, icon('mdi-speaker'), 'Altavoces del modo ambiente'),
-    h('div', { class: 'muted small' }, 'Sus controles salen abajo a la derecha. Manda el primero de la lista que esté sonando; si no suena ninguno, el primero en pausa y, si no, el primero.'),
+  return h('div', { class: 'card set-card' }, h('div', { class: 'set-title' }, icon('mdi-speaker'), I18N.t('panel.settings.ambient_mode_speakers')),
+    h('div', { class: 'muted small' }, I18N.t('panel.settings.its_controls_appear')),
     box);
 }
 /** Ajustes: qué burbujas salen en el modo ambiente y en Inicio, y en qué orden. */
@@ -2946,23 +2948,23 @@ function bulletsCard() {
   const save = (arr) => { SET.bullets = arr; saveSettings(); paint(); };
   const paint = () => {
     const items = bulletList();
-    list.replaceChildren(h('div', { class: 'amb-item amb-head' }, h('span', { class: 'amb-item-label' }), h('span', { class: 'amb-col' }, 'Ambiente')),
+    list.replaceChildren(h('div', { class: 'amb-item amb-head' }, h('span', { class: 'amb-item-label' }), h('span', { class: 'amb-col' }, I18N.t('panel.nav.ambient'))),
       ...items.map((b, i) => {
         const x = PM.BUILTINS.find((y) => y.script === b.script);
         const meta = { label: b.name || b.script, icon: x ? x.icon : 'mdi-script-text-outline' };
         const move = (d) => { const arr = bulletList(), j = i + d; if (j < 0 || j >= arr.length) return; [arr[i], arr[j]] = [arr[j], arr[i]]; save(arr); };
         const flag = (k) => h('span', { class: 'amb-col' }, switchBtn(!!b[k], (v) => { const arr = bulletList(); arr[i][k] = v; save(arr); }));
         return h('div', { class: 'amb-item' + (b.ambient ? '' : ' off') }, icon(meta.icon), h('span', { class: 'amb-item-label' }, meta.label),
-          h('button', { class: 'round-btn small', disabled: i === 0, onclick: () => move(-1), title: 'Subir' }, icon('mdi-chevron-up')),
-          h('button', { class: 'round-btn small', disabled: i === items.length - 1, onclick: () => move(1), title: 'Bajar' }, icon('mdi-chevron-down')),
+          h('button', { class: 'round-btn small', disabled: i === 0, onclick: () => move(-1), title: I18N.t('panel.sheets.up') }, icon('mdi-chevron-up')),
+          h('button', { class: 'round-btn small', disabled: i === items.length - 1, onclick: () => move(1), title: I18N.t('panel.sheets.down') }, icon('mdi-chevron-down')),
           flag('ambient'));
       }));
   };
   paint();
-  return h('div', { class: 'card set-card' }, h('div', { class: 'set-title' }, icon('mdi-format-list-bulleted'), 'Burbujas'),
-    h('div', { class: 'muted small' }, 'Elige cuáles salen debajo del reloj (modo ambiente). Solo aparecen cuando tienen algo que contar. En las pestañas se ponen con una «Fila de burbujas». Se editan y se crean nuevas en la web de configuración.'),
+  return h('div', { class: 'card set-card' }, h('div', { class: 'set-title' }, icon('mdi-format-list-bulleted'), I18N.t('panel.settings.bubbles')),
+    h('div', { class: 'muted small' }, I18N.t('panel.settings.choose_which_ones')),
     list,
-    h('div', { class: 'btn-row' }, h('button', { class: 'big-action', onclick: () => showAmbient() }, icon('mdi-image-filter-hdr'), 'Ver el modo ambiente')));
+    h('div', { class: 'btn-row' }, h('button', { class: 'big-action', onclick: () => showAmbient() }, icon('mdi-image-filter-hdr'), I18N.t('panel.settings.show_ambient_mode'))));
 }
 
 // Fondo: fotos (sueltas o de un álbum de Immich) o degradado según la hora del día
@@ -3038,7 +3040,7 @@ function photoSources() {
 }
 const CONNECTORS = {
   immich: {
-    label: 'Immich',
+    label: 'web.ambient.immich',
     async load(src) {
       const u = String(src.url || '').trim();
       for (const [re, param] of IMMICH_SHARED) {
@@ -3061,7 +3063,7 @@ const CONNECTORS = {
     },
   },
   google: {
-    label: 'Google Fotos',
+    label: I18N.t('web.ambient.google_photos'),
     async load(src) {
       let r;
       try { r = await fetch(`${HELPER}/gphotos?url=${encodeURIComponent(src.url || '')}`, { cache: 'no-store' }); }
@@ -3073,7 +3075,7 @@ const CONNECTORS = {
     },
   },
   ha_media: {
-    label: 'Home Assistant',
+    label: I18N.t('web.general.home_assistant'),
     async load(src) {
       const folder = String(src.folder || '').replace(/^\/+|\/+$/g, '');
       const root = 'media-source://media_source/local' + (folder ? '/' + folder : '');
@@ -3102,14 +3104,14 @@ async function loadPhotos() {
     if (!c) continue;
     try {
       const { photos, name } = await c.load(src);
-      const label = src.name || [c.label, name].filter(Boolean).join(' · ');
+      const label = src.name || [I18N.t(c.label), name].filter(Boolean).join(' · ');
       photos.forEach((p) => { p.source = label; p.fit = src.fit || ''; });
       out.push(...photos);
       stats.push({ label, count: photos.length });
     } catch (e) {
       console.warn('Fotos', src, e);
-      stats.push({ label: src.name || c.label, error: e.message });
-      toast(`${c.label}: ` + (e.message === 'Failed to fetch' ? 'no se pudo conectar' : e.message), true);
+      stats.push({ label: src.name || I18N.t(c.label), error: e.message });
+      toast(`${I18N.t(c.label)}: ` + (e.message === 'Failed to fetch' ? 'no se pudo conectar' : e.message), true);
     }
   }
   for (let i = out.length - 1; i > 0; i--) { const j = Math.floor(Math.random() * (i + 1)); [out[i], out[j]] = [out[j], out[i]]; }
@@ -3297,8 +3299,8 @@ function showPin(code) {
     box.replaceChildren(h('div', { class: 'pin-card' },
       h('button', { class: 'icon-btn', onclick: () => { PIN.hidden = code; box.classList.remove('show'); } }, icon('mdi-close')),
       icon('mdi-link-variant'),
-      h('div', { class: 'pin-title' }, 'Emparejar con Music Assistant'),
-      h('div', { class: 'pin-hint' }, 'Escribe este código en Music Assistant para añadir el altavoz'),
+      h('div', { class: 'pin-title' }, I18N.t('panel.notices.pair_music_assistant')),
+      h('div', { class: 'pin-hint' }, I18N.t('panel.notices.type_code_music')),
       h('div', { class: 'pin-code' }, code),
       h('div', { class: 'pin-name' }, SPK && SPK.name ? SPK.name : '')));
   }

@@ -296,9 +296,9 @@
   <div class="card">
     <h2>🔒 Panel Hogar</h2>
     <form id="login-form" class="field">
-      <label for="pw">Contraseña</label>
+      <label for="pw" data-i18n="web.login.password">Contraseña</label>
       <input id="pw" type="password" autocomplete="current-password" autofocus>
-      <button class="btn primary" type="submit" style="margin-top:8px">Entrar</button>
+      <button class="btn primary" type="submit" style="margin-top:8px" data-i18n="web.login.log_in">Entrar</button>
       <div id="login-msg" class="hint"></div>
     </form>
   </div>
@@ -308,8 +308,8 @@
 <div id="app" class="hidden">
   <div class="wrap">
     <header>
-      <h1>Panel Hogar <small>Configuración del panel de la Raspberry Pi</small></h1>
-      <button class="btn" id="logout">Salir</button>
+      <h1>Panel Hogar <small data-i18n="web.login.raspberry_pi_panel">Configuración del panel de la Raspberry Pi</small></h1>
+      <button class="btn" id="logout" data-i18n="web.login.log_out">Salir</button>
     </header>
     <nav class="pages">
       <button type="button" data-page="general" class="on">🏠 General</button>
@@ -321,23 +321,23 @@
       <button type="button" data-page="sistema">🛠️ Sistema</button>
       <button type="button" data-page="beta">🧪 Beta</button>
     </nav>
-    <div class="card sim hidden" id="sim-banner">🧪 <b>Modo simulación (ordenador).</b> El brillo, el apagado de pantalla y la red se simulan: puedes probarlo todo sin que cambie nada de este equipo.</div>
+    <div class="card sim hidden" id="sim-banner">🧪 <b data-i18n="web.tabs.simulation_mode_computer">Modo simulación (ordenador).</b> El brillo, el apagado de pantalla y la red se simulan: puedes probarlo todo sin que cambie nada de este equipo.</div>
 
     <div data-pg="componentes" class="hidden">
     <div class="card">
       <h2>🧩 Componentes</h2>
-      <div class="hint">Lo que se coloca en las pestañas (botones, tarjetas, tiempo…). Cada uno es código: declara sus campos,
+      <div class="hint" data-i18n="web.editor.what_goes_tabs">Lo que se coloca en las pestañas (botones, tarjetas, tiempo…). Cada uno es código: declara sus campos,
         qué vigila y qué pinta. Se colocan en 🗂️ Pestañas.</div>
       <div id="cscripts" class="bubs"></div>
-      <div class="sub" style="margin-top:14px;font-weight:600">Nuevo componente</div>
+      <div class="sub" style="margin-top:14px;font-weight:600" data-i18n="web.editor.new_component">Nuevo componente</div>
       <div class="add" style="margin-top:6px">
         <input id="cscript-title" type="text" placeholder="Nombre (p. ej. Termostato)">
         <select id="cscript-tpl" style="width:auto"></select>
-        <button class="btn primary" id="cscript-add" type="button">Crear</button>
+        <button class="btn primary" id="cscript-add" type="button" data-i18n="web.ambient.create">Crear</button>
       </div>
       <div class="add" style="margin-top:8px">
         <input id="cscript-url" type="url" placeholder="Importar de una dirección (https://…/componente.js)">
-        <button class="btn" id="cscript-import" type="button">Traer</button>
+        <button class="btn" id="cscript-import" type="button" data-i18n="web.ambient.get">Traer</button>
         <label class="btn" style="display:inline-flex;align-items:center">Subir archivo<input id="cscript-file" type="file" accept=".js,text/javascript" hidden></label>
       </div>
       <div id="cscript-msg" class="hint" style="margin-top:6px"></div>
@@ -347,11 +347,11 @@
     <div data-pg="pantallas" class="hidden">
     <div class="card">
       <h2>🗂️ Pestañas del panel</h2>
-      <div class="hint">Cada pestaña de la barra lateral con sus tarjetas, como se colocan en el panel. Toca una para cambiarla.</div>
+      <div class="hint" data-i18n="web.editor.each_tab_side">Cada pestaña de la barra lateral con sus tarjetas, como se colocan en el panel. Toca una para cambiarla.</div>
       <div id="ed-tabs" class="ed-tabs"></div>
       <div id="ed-tab"></div>
       <div class="ed-main"><div id="ed-grid"></div><div id="ed-panel"></div></div>
-      <div class="btns" style="margin-top:14px"><button class="btn" id="tab-reset" type="button">Volver a las pestañas de siempre</button></div>
+      <div class="btns" style="margin-top:14px"><button class="btn" id="tab-reset" type="button" data-i18n="web.editor.back_default_tabs">Volver a las pestañas de siempre</button></div>
     </div>
     </div>
 
@@ -359,21 +359,21 @@
     <div class="card">
       <h2>🎵 Reproductor del modo ambiente</h2>
       <div class="field">
-        <label>Altavoces, por prioridad <span class="hint">(sus controles salen en el modo ambiente)</span></label>
+        <label>Altavoces, por prioridad <span class="hint" data-i18n="web.ambient.their_controls_appear">(sus controles salen en el modo ambiente)</span></label>
         <div id="ambientSpeakers"></div>
-        <span class="hint">Manda el primero de la lista que esté sonando; si no suena ninguno, el primero en pausa y, si no, el primero.</span>
+        <span class="hint" data-i18n="web.ambient.first_one_list">Manda el primero de la lista que esté sonando; si no suena ninguno, el primero en pausa y, si no, el primero.</span>
       </div>
     </div>
 
     <div class="card">
       <h2>🖼️ Fotos del modo ambiente</h2>
-      <div class="row"><label for="photos-enabled">Mostrar fotos</label><label class="switch"><input id="photos-enabled" type="checkbox"><span></span></label></div>
-      <div class="row"><label for="photos-fit">Cómo se ve la foto <span class="hint">(por defecto)</span></label>
+      <div class="row"><label for="photos-enabled" data-i18n="panel.settings.show_photos">Mostrar fotos</label><label class="switch"><input id="photos-enabled" type="checkbox"><span></span></label></div>
+      <div class="row"><label for="photos-fit">Cómo se ve la foto <span class="hint" data-i18n="web.ambient.default">(por defecto)</span></label>
         <select id="photos-fit"><option value="cover">Rellenar la pantalla</option><option value="blur">Entera + fondo difuminado</option><option value="contain">Entera (fondo negro)</option></select></div>
-      <div class="row"><label for="photos-seconds">Cambiar de foto cada</label>
+      <div class="row"><label for="photos-seconds" data-i18n="panel.settings.change_photo_every">Cambiar de foto cada</label>
         <select id="photos-seconds"><option value="15">15 s</option><option value="30">30 s</option><option value="60">1 min</option><option value="300">5 min</option><option value="900">15 min</option></select></div>
       <div class="field">
-        <label>Fuentes de fotos <span class="hint">(se mezclan todas)</span></label>
+        <label>Fuentes de fotos <span class="hint" data-i18n="web.ambient.all_are_mixed">(se mezclan todas)</span></label>
         <div id="sources" class="sources"></div>
         <div class="add">
           <select id="src-type">
@@ -382,28 +382,28 @@
             <option value="ha_media">Carpeta de Home Assistant (Medios)</option>
             <option value="urls">Fotos por URL</option>
           </select>
-          <button class="btn" id="src-add" type="button">Añadir fuente</button>
+          <button class="btn" id="src-add" type="button" data-i18n="web.ambient.add_source">Añadir fuente</button>
         </div>
       </div>
     </div>
 
     <div class="card">
       <h2>🫧 Burbujas</h2>
-      <div class="hint">Las marcadas con «Ambiente» salen debajo del reloj, en este orden, solo cuando tienen algo que contar.
+      <div class="hint" data-i18n="web.ambient.those_marked_ambient">Las marcadas con «Ambiente» salen debajo del reloj, en este orden, solo cuando tienen algo que contar.
         En las pestañas se ponen con una «Fila de burbujas» (🗂️ Pantallas). Toca una para cambiar su título y su funcionamiento.</div>
       <div id="bullets" class="bubs amb-web"></div>
       <div class="add" style="margin-top:12px">
         <input id="bullet-title" type="text" placeholder="Título de la nueva burbuja (p. ej. Temperatura del salón)">
         <select id="bullet-tpl"><option value="burbuja">Que muestre algo</option><option value="luces">Que haga algo al tocarla</option><option value="">Vacía</option></select>
-        <button class="btn" id="bullet-add" type="button">Crear</button>
+        <button class="btn" id="bullet-add" type="button" data-i18n="web.ambient.create">Crear</button>
       </div>
       <div class="add" style="margin-top:8px">
         <input id="bullet-url" type="text" placeholder="https://… (traer una burbuja de internet)">
-        <button class="btn" id="bullet-import" type="button">Traer</button>
+        <button class="btn" id="bullet-import" type="button" data-i18n="web.ambient.get">Traer</button>
         <label class="btn" style="text-align:center">Subir archivo<input id="bullet-file" type="file" accept=".js,text/javascript" hidden></label>
       </div>
       <div id="bullet-msg" class="hint" style="margin-top:6px"></div>
-      <details class="help"><summary>Cómo se escribe el funcionamiento</summary>
+      <details class="help"><summary data-i18n="web.ambient.how_write_how">Cómo se escribe el funcionamiento</summary>
 <pre>render(ha, screen, config) → lo que se pinta
 
 config (ajustes que se rellenan aquí, en «Ajustes» de la burbuja)
@@ -436,9 +436,9 @@ go = 'home' | 'rooms' | 'sensors' | 'media' | 'printers' | 'scooter' | 'settings
     <div data-pg="general">
     <div class="card">
       <h2>📺 Pantalla en directo</h2>
-      <span class="hint">Lo que se ve ahora mismo en la pantalla de la Pi.</span>
-      <div class="live" id="live"><img id="live-img" alt=""><div id="live-msg" class="hint">Toca «Ver» para empezar.</div></div>
-      <div class="btns"><button class="btn primary" type="button" id="live-btn">Ver</button></div>
+      <span class="hint" data-i18n="web.general.what_pi_screen">Lo que se ve ahora mismo en la pantalla de la Pi.</span>
+      <div class="live" id="live"><img id="live-img" alt=""><div id="live-msg" class="hint" data-i18n="web.general.tap_view_start">Toca «Ver» para empezar.</div></div>
+      <div class="btns"><button class="btn primary" type="button" id="live-btn" data-i18n="web.general.view">Ver</button></div>
     </div>
 
     <div class="card">
@@ -456,41 +456,41 @@ go = 'home' | 'rooms' | 'sensors' | 'media' | 'printers' | 'scooter' | 'settings
     <div class="card">
       <h2>🏠 Home Assistant</h2>
       <div class="field">
-        <label for="haUrl">Dirección</label>
+        <label for="haUrl" data-i18n="web.general.address">Dirección</label>
         <input id="haUrl" type="url" placeholder="http://homeassistant.local:8123">
       </div>
       <div class="field">
-        <label for="token">Token de larga duración <span id="token-pill" class="pill">sin token</span></label>
+        <label for="token">Token de larga duración <span id="token-pill" class="pill" data-i18n="web.general.no_token">sin token</span></label>
         <input id="token" type="password" autocomplete="off" placeholder="Escribe uno nuevo solo si quieres cambiarlo">
-        <span class="hint">Por seguridad el token guardado nunca se muestra. Se crea en Home Assistant → tu perfil → Seguridad.</span>
+        <span class="hint" data-i18n="web.general.security_saved_token">Por seguridad el token guardado nunca se muestra. Se crea en Home Assistant → tu perfil → Seguridad.</span>
       </div>
-      <div class="btns"><button class="btn" id="probar">Probar conexión</button><span id="probar-msg" class="hint" style="align-self:center"></span></div>
+      <div class="btns"><button class="btn" id="probar" data-i18n="web.general.test_connection">Probar conexión</button><span id="probar-msg" class="hint" style="align-self:center"></span></div>
     </div>
 
     <div class="card">
       <h2>⭐ Inicio y entidades</h2>
       <datalist id="entidades"></datalist>
       <div class="field">
-        <label>Favoritos en Inicio <span class="hint">(vacío = se eligen solos)</span></label>
+        <label>Favoritos en Inicio <span class="hint" data-i18n="web.general.empty_picked_automatically">(vacío = se eligen solos)</span></label>
         <div class="chips" id="favorites"></div>
-        <div class="add"><input list="entidades" placeholder="light.salon…" data-add="favorites"><button class="btn" data-add-btn="favorites">Añadir</button></div>
+        <div class="add"><input list="entidades" placeholder="light.salon…" data-add="favorites"><button class="btn" data-add-btn="favorites" data-i18n="panel.quick.add">Añadir</button></div>
       </div>
       <div class="field">
-        <label for="weatherEntity">Entidad del tiempo</label>
+        <label for="weatherEntity" data-i18n="web.general.weather_entity">Entidad del tiempo</label>
         <select id="weatherEntity"><option value="">Automática (la primera que haya)</option></select>
       </div>
       <div class="field">
-        <label>Entidades ocultas</label>
+        <label data-i18n="web.general.hidden_entities">Entidades ocultas</label>
         <div class="chips" id="hiddenEntities"></div>
-        <div class="add"><input list="entidades" placeholder="camera.lava_gui…" data-add="hiddenEntities"><button class="btn" data-add-btn="hiddenEntities">Añadir</button></div>
+        <div class="add"><input list="entidades" placeholder="camera.lava_gui…" data-add="hiddenEntities"><button class="btn" data-add-btn="hiddenEntities" data-i18n="panel.quick.add">Añadir</button></div>
       </div>
       <div class="field">
-        <label>Integraciones que no salen en el panel <span class="hint">(sus cámaras sí)</span></label>
+        <label>Integraciones que no salen en el panel <span class="hint" data-i18n="web.general.their_cameras_are">(sus cámaras sí)</span></label>
         <div class="chips" id="excludePlatforms"></div>
-        <div class="add"><input placeholder="bambu_lab, moonraker…" data-add="excludePlatforms"><button class="btn" data-add-btn="excludePlatforms">Añadir</button></div>
+        <div class="add"><input placeholder="bambu_lab, moonraker…" data-add="excludePlatforms"><button class="btn" data-add-btn="excludePlatforms" data-i18n="panel.quick.add">Añadir</button></div>
       </div>
       <div class="field">
-        <label for="printerPlugs">Enchufes de las impresoras <span class="hint">(solo si no se detectan solos; «Nombre = switch.x», uno por línea)</span></label>
+        <label for="printerPlugs">Enchufes de las impresoras <span class="hint" data-i18n="web.general.only_if_not">(solo si no se detectan solos; «Nombre = switch.x», uno por línea)</span></label>
         <textarea id="printerPlugs" placeholder="Bambu P1S = switch.enchufe_bambu"></textarea>
       </div>
       <div id="entidades-msg" class="hint"></div>
@@ -498,34 +498,34 @@ go = 'home' | 'rooms' | 'sensors' | 'media' | 'printers' | 'scooter' | 'settings
 
     <div class="card">
       <h2>📡 El panel en Home Assistant (MQTT)</h2>
-      <span class="hint">El panel aparece solo en Home Assistant como un dispositivo, por MQTT (por ejemplo con el complemento Mosquitto). No hay que instalar nada más.</span>
-      <div class="row"><label for="mqttEnabled">Activado</label><label class="switch"><input id="mqttEnabled" type="checkbox"><span></span></label></div>
-      <div class="field"><label for="mqttHost">Servidor MQTT</label><input id="mqttHost" type="text" placeholder="homeassistant.local"></div>
-      <div class="field"><label for="mqttPort">Puerto</label><input id="mqttPort" type="number" min="1" max="65535" placeholder="1883"></div>
-      <div class="field"><label for="mqttUser">Usuario</label><input id="mqttUser" type="text" autocomplete="off"></div>
-      <div class="field"><label for="mqttPassword">Contraseña <span id="mqtt-pass-pill" class="pill">sin contraseña</span></label>
+      <span class="hint" data-i18n="web.general.panel_shows_up">El panel aparece solo en Home Assistant como un dispositivo, por MQTT (por ejemplo con el complemento Mosquitto). No hay que instalar nada más.</span>
+      <div class="row"><label for="mqttEnabled" data-i18n="panel.settings.enabled">Activado</label><label class="switch"><input id="mqttEnabled" type="checkbox"><span></span></label></div>
+      <div class="field"><label for="mqttHost" data-i18n="web.general.mqtt_server">Servidor MQTT</label><input id="mqttHost" type="text" placeholder="homeassistant.local"></div>
+      <div class="field"><label for="mqttPort" data-i18n="web.general.port">Puerto</label><input id="mqttPort" type="number" min="1" max="65535" placeholder="1883"></div>
+      <div class="field"><label for="mqttUser" data-i18n="web.general.user">Usuario</label><input id="mqttUser" type="text" autocomplete="off"></div>
+      <div class="field"><label for="mqttPassword">Contraseña <span id="mqtt-pass-pill" class="pill" data-i18n="web.general.no_password">sin contraseña</span></label>
         <input id="mqttPassword" type="password" autocomplete="off" placeholder="Escribe una nueva solo si quieres cambiarla"></div>
-      <dl class="info" id="mqtt-info"><dt>Estado</dt><dd>Cargando…</dd></dl>
-      <details id="mqtt-log-box" data-nodirty><summary>Registro</summary><pre id="mqtt-log" class="log"></pre>
-        <div class="btns"><button class="btn mini" type="button" id="mqtt-log-copy">Copiar</button></div></details>
+      <dl class="info" id="mqtt-info"><dt data-i18n="panel.sheets.status">Estado</dt><dd data-i18n="web.login.loading">Cargando…</dd></dl>
+      <details id="mqtt-log-box" data-nodirty><summary data-i18n="web.sound.log">Registro</summary><pre id="mqtt-log" class="log"></pre>
+        <div class="btns"><button class="btn mini" type="button" id="mqtt-log-copy" data-i18n="web.general.copy">Copiar</button></div></details>
       <div class="field">
-        <label>Qué ve Home Assistant</label>
-      <div class="row"><label for="expose-screen">Pantalla <span class="hint">(encendida y brillo)</span></label><label class="switch"><input id="expose-screen" type="checkbox"><span></span></label></div>
-      <div class="row"><label for="expose-brightness">Brillo <span class="hint">(control aparte)</span></label><label class="switch"><input id="expose-brightness" type="checkbox"><span></span></label></div>
-      <div class="row"><label for="expose-volume">Volumen de salida</label><label class="switch"><input id="expose-volume" type="checkbox"><span></span></label></div>
-      <div class="row"><label for="expose-music_volume">Volumen de la música</label><label class="switch"><input id="expose-music_volume" type="checkbox"><span></span></label></div>
-      <div class="row"><label for="expose-ambient">Modo ambiente</label><label class="switch"><input id="expose-ambient" type="checkbox"><span></span></label></div>
-      <div class="row"><label for="expose-last_touch">Última vez que se tocó</label><label class="switch"><input id="expose-last_touch" type="checkbox"><span></span></label></div>
-      <div class="row"><label for="expose-reload">Recargar el panel <span class="hint">(botón)</span></label><label class="switch"><input id="expose-reload" type="checkbox"><span></span></label></div>
+        <label data-i18n="web.general.what_home_assistant">Qué ve Home Assistant</label>
+      <div class="row"><label for="expose-screen">Pantalla <span class="hint" data-i18n="web.general.off_brightness">(encendida y brillo)</span></label><label class="switch"><input id="expose-screen" type="checkbox"><span></span></label></div>
+      <div class="row"><label for="expose-brightness">Brillo <span class="hint" data-i18n="web.general.separate_control">(control aparte)</span></label><label class="switch"><input id="expose-brightness" type="checkbox"><span></span></label></div>
+      <div class="row"><label for="expose-volume" data-i18n="web.general.output_volume">Volumen de salida</label><label class="switch"><input id="expose-volume" type="checkbox"><span></span></label></div>
+      <div class="row"><label for="expose-music_volume" data-i18n="web.general.music_volume">Volumen de la música</label><label class="switch"><input id="expose-music_volume" type="checkbox"><span></span></label></div>
+      <div class="row"><label for="expose-ambient" data-i18n="panel.settings.ambient_mode">Modo ambiente</label><label class="switch"><input id="expose-ambient" type="checkbox"><span></span></label></div>
+      <div class="row"><label for="expose-last_touch" data-i18n="web.general.last_touched">Última vez que se tocó</label><label class="switch"><input id="expose-last_touch" type="checkbox"><span></span></label></div>
+      <div class="row"><label for="expose-reload">Recargar el panel <span class="hint" data-i18n="web.general.button">(botón)</span></label><label class="switch"><input id="expose-reload" type="checkbox"><span></span></label></div>
       </div>
     </div>
 
     <div class="card">
       <h2>⚡ Accesos rápidos</h2>
-      <div class="hint">Salen en el panel de acceso rápido (desliza hacia abajo desde arriba → ventana de la derecha). Un toque los enciende o apaga.</div>
+      <div class="hint" data-i18n="web.general.they_appear_quick">Salen en el panel de acceso rápido (desliza hacia abajo desde arriba → ventana de la derecha). Un toque los enciende o apaga.</div>
       <div class="field">
         <div class="chips" id="quick"></div>
-        <div class="add"><input list="entidades" placeholder="light.salon…" data-add="quick"><button class="btn" data-add-btn="quick">Añadir</button></div>
+        <div class="add"><input list="entidades" placeholder="light.salon…" data-add="quick"><button class="btn" data-add-btn="quick" data-i18n="panel.quick.add">Añadir</button></div>
       </div>
     </div>
     </div>
@@ -534,33 +534,33 @@ go = 'home' | 'rooms' | 'sensors' | 'media' | 'printers' | 'scooter' | 'settings
     <div class="card">
       <h2>🖥️ Pantalla</h2>
       <div class="field">
-        <div class="row" style="padding:0"><label for="brightness">Brillo</label><span class="val" id="brightness-v"></span></div>
+        <div class="row" style="padding:0"><label for="brightness" data-i18n="panel.sheets.brightness">Brillo</label><span class="val" id="brightness-v"></span></div>
         <input id="brightness" type="range" min="5" max="100" step="5">
       </div>
-      <div class="row"><label for="idleSeconds">Modo ambiente tras</label>
+      <div class="row"><label for="idleSeconds" data-i18n="web.screen.ambient_mode_after">Modo ambiente tras</label>
         <select id="idleSeconds"><option value="0">Nunca</option><option value="30">30 s</option><option value="60">1 min</option><option value="90">1,5 min</option><option value="180">3 min</option><option value="300">5 min</option><option value="600">10 min</option></select></div>
-      <div class="row"><label for="screenOffMinutes">Apagar la pantalla tras <span class="hint">(en modo ambiente)</span></label>
+      <div class="row"><label for="screenOffMinutes">Apagar la pantalla tras <span class="hint" data-i18n="web.screen.ambient_mode">(en modo ambiente)</span></label>
         <select id="screenOffMinutes"><option value="0">Nunca</option><option value="5">5 min</option><option value="15">15 min</option><option value="30">30 min</option><option value="60">1 h</option><option value="120">2 h</option></select></div>
-      <div class="row"><label for="language">Idioma <span class="hint">(automático: el de Home Assistant)</span></label>
+      <div class="row"><label for="language">Idioma <span class="hint" data-i18n="web.screen.automatic_home_assistant">(automático: el de Home Assistant)</span></label>
         <select id="language"><option value="auto">Automático</option></select></div>
-      <div class="row"><label for="theme">Tema <span class="hint">(automático: claro de día, oscuro de noche)</span></label>
+      <div class="row"><label for="theme">Tema <span class="hint" data-i18n="web.screen.automatic_light_by">(automático: claro de día, oscuro de noche)</span></label>
         <select id="theme"><option value="oscuro">Oscuro</option><option value="claro">Claro</option><option value="auto">Automático</option></select></div>
       <div class="field">
-        <label>Color <span class="hint">(botones, barras y burbuja del volumen)</span></label>
+        <label>Color <span class="hint" data-i18n="web.screen.buttons_sliders_volume">(botones, barras y burbuja del volumen)</span></label>
         <div class="accents" id="accent"></div>
       </div>
     </div>
 
     <div class="card">
       <h2>🌙 Modo noche</h2>
-      <div class="row"><label for="night-enabled">Activado</label><label class="switch"><input id="night-enabled" type="checkbox"><span></span></label></div>
-      <div class="row"><label for="night-start">Desde</label><input id="night-start" type="time" step="1800"></div>
-      <div class="row"><label for="night-end">Hasta</label><input id="night-end" type="time" step="1800"></div>
+      <div class="row"><label for="night-enabled" data-i18n="panel.settings.enabled">Activado</label><label class="switch"><input id="night-enabled" type="checkbox"><span></span></label></div>
+      <div class="row"><label for="night-start" data-i18n="panel.settings.from">Desde</label><input id="night-start" type="time" step="1800"></div>
+      <div class="row"><label for="night-end" data-i18n="panel.settings.until">Hasta</label><input id="night-end" type="time" step="1800"></div>
       <div class="field">
-        <div class="row" style="padding:0"><label for="night-brightness">Brillo de noche</label><span class="val" id="night-brightness-v"></span></div>
+        <div class="row" style="padding:0"><label for="night-brightness" data-i18n="panel.settings.night_brightness">Brillo de noche</label><span class="val" id="night-brightness-v"></span></div>
         <input id="night-brightness" type="range" min="5" max="100" step="5">
       </div>
-      <div class="row"><label for="night-screenOff">Apagar la pantalla de noche <span class="hint">(si no se usa)</span></label><label class="switch"><input id="night-screenOff" type="checkbox"><span></span></label></div>
+      <div class="row"><label for="night-screenOff">Apagar la pantalla de noche <span class="hint" data-i18n="web.screen.when_not_use">(si no se usa)</span></label><label class="switch"><input id="night-screenOff" type="checkbox"><span></span></label></div>
     </div>
     </div>
 
@@ -568,14 +568,14 @@ go = 'home' | 'rooms' | 'sensors' | 'media' | 'printers' | 'scooter' | 'settings
     <div class="card">
       <h2>🔈 Altavoz de salida</h2>
       <div class="field">
-        <label for="spk-device">Por dónde suena la Pi</label>
+        <label for="spk-device" data-i18n="web.sound.where_pi_plays">Por dónde suena la Pi</label>
         <select id="spk-device"></select>
-        <span class="hint">Jack, HDMI o un altavoz USB.</span>
+        <span class="hint" data-i18n="web.sound.jack_hdmi_or">Jack, HDMI o un altavoz USB.</span>
       </div>
       <div id="snd-master" class="field hidden">
         <div class="row" style="padding:0"><label for="snd-master-vol">Volumen de la salida <span class="hint" id="snd-master-card"></span></label><span class="val" id="snd-master-vol-v"></span></div>
         <input id="snd-master-vol" type="range" min="0" max="100" step="1">
-        <span class="hint">Es el límite: la música, los avisos y la voz nunca suenan más fuerte. Si distorsiona, bájalo.</span>
+        <span class="hint" data-i18n="web.sound.limit_music_notifications">Es el límite: la música, los avisos y la voz nunca suenan más fuerte. Si distorsiona, bájalo.</span>
       </div>
     </div>
 
@@ -586,16 +586,16 @@ go = 'home' | 'rooms' | 'sensors' | 'media' | 'printers' | 'scooter' | 'settings
         <input id="snd-music-vol" type="range" min="0" max="100" step="1">
       </div>
       <div class="field">
-        <div class="row" style="padding:0"><label for="sound-volume">Avisos y alarmas</label><span class="val" id="sound-volume-v"></span></div>
+        <div class="row" style="padding:0"><label for="sound-volume" data-i18n="panel.settings.notifications_alarms">Avisos y alarmas</label><span class="val" id="sound-volume-v"></span></div>
         <input id="sound-volume" type="range" min="10" max="100" step="10">
       </div>
       <div id="snd-voice" class="hidden">
         <div class="field">
-          <div class="row" style="padding:0"><label for="snd-voice-vol">Respuestas del asistente de voz</label><span class="val" id="snd-voice-vol-v"></span></div>
+          <div class="row" style="padding:0"><label for="snd-voice-vol" data-i18n="panel.settings.voice_assistant_answers">Respuestas del asistente de voz</label><span class="val" id="snd-voice-vol-v"></span></div>
           <input id="snd-voice-vol" type="range" min="10" max="100" step="10">
         </div>
         <div class="field">
-          <div class="row" style="padding:0"><label for="snd-mic">Sensibilidad del micro</label><span class="val" id="snd-mic-v"></span></div>
+          <div class="row" style="padding:0"><label for="snd-mic" data-i18n="web.sound.microphone_sensitivity">Sensibilidad del micro</label><span class="val" id="snd-mic-v"></span></div>
           <input id="snd-mic" type="range" min="20" max="100" step="5">
         </div>
       </div>
@@ -604,56 +604,56 @@ go = 'home' | 'rooms' | 'sensors' | 'media' | 'printers' | 'scooter' | 'settings
 
     <div class="card">
       <h2>🔔 Avisos</h2>
-      <div class="row"><label for="sound-enabled">Sonido <span class="hint">(su volumen, en 🔊 Sonido)</span></label><label class="switch"><input id="sound-enabled" type="checkbox"><span></span></label></div>
+      <div class="row"><label for="sound-enabled">Sonido <span class="hint" data-i18n="web.sound.its_volume_sound">(su volumen, en 🔊 Sonido)</span></label><label class="switch"><input id="sound-enabled" type="checkbox"><span></span></label></div>
     </div>
 
     <div class="card">
       <h2>🔊 Altavoz (Music Assistant)</h2>
-      <dl class="info" id="spk-info"><dt>Estado</dt><dd>Cargando…</dd></dl>
+      <dl class="info" id="spk-info"><dt data-i18n="panel.sheets.status">Estado</dt><dd data-i18n="web.login.loading">Cargando…</dd></dl>
       <div id="spk-install" class="hint hidden">Falta instalarlo una vez en la Pi: <code>bash ~/ha-panel/scripts/setup-sendspin.sh</code></div>
-      <div class="row"><label for="spk-enabled">Usar la Pi como altavoz</label><label class="switch"><input id="spk-enabled" type="checkbox"><span></span></label></div>
+      <div class="row"><label for="spk-enabled" data-i18n="web.sound.use_pi_as">Usar la Pi como altavoz</label><label class="switch"><input id="spk-enabled" type="checkbox"><span></span></label></div>
       <div class="field">
-        <label for="spk-name">Nombre en Music Assistant</label>
+        <label for="spk-name" data-i18n="web.sound.name_music_assistant">Nombre en Music Assistant</label>
         <input id="spk-name" type="text" maxlength="60">
       </div>
       <div class="field">
-        <label for="spk-entity">Su reproductor en Home Assistant</label>
+        <label for="spk-entity" data-i18n="web.sound.its_player_home">Su reproductor en Home Assistant</label>
         <select id="spk-entity"></select>
-        <span class="hint">El de Music Assistant que se crea con el altavoz. En automático se busca por el nombre.</span>
+        <span class="hint" data-i18n="web.sound.music_assistant_one">El de Music Assistant que se crea con el altavoz. En automático se busca por el nombre.</span>
       </div>
       <div class="field">
-        <label>Desfase con otros altavoces</label>
-        <span class="hint">Se ajusta en Music Assistant: ajustes del reproductor de este altavoz → retraso.</span>
+        <label data-i18n="web.sound.delay_other_speakers">Desfase con otros altavoces</label>
+        <span class="hint" data-i18n="web.sound.set_music_assistant">Se ajusta en Music Assistant: ajustes del reproductor de este altavoz → retraso.</span>
       </div>
       <div id="spk-msg" class="hint"></div>
-      <details id="spk-log-box" class="hidden"><summary>Registro</summary><pre id="spk-log"></pre></details>
+      <details id="spk-log-box" class="hidden"><summary data-i18n="web.sound.log">Registro</summary><pre id="spk-log"></pre></details>
     </div>
 
     <div class="card">
       <h2>▶️ Sonando</h2>
-      <span class="hint">La pantalla con la carátula grande que sale cuando suena música.</span>
+      <span class="hint" data-i18n="web.sound.screen_large_cover">La pantalla con la carátula grande que sale cuando suena música.</span>
       <div class="field">
-        <label for="spk-close">Al pausar o parar, cerrar «Sonando»</label>
+        <label for="spk-close" data-i18n="web.sound.when_paused_or">Al pausar o parar, cerrar «Sonando»</label>
         <select id="spk-close">
           <option value="0">Al momento</option><option value="30">A los 30 segundos</option><option value="60">Al minuto</option>
           <option value="120">A los 2 minutos</option><option value="300">A los 5 minutos</option><option value="-1">Nunca (se cierra con la ✕)</option>
         </select>
       </div>
       <div class="field">
-        <label>Altavoces que la abren, por prioridad</label>
+        <label data-i18n="web.sound.speakers_open_by">Altavoces que la abren, por prioridad</label>
         <div id="np-speakers"></div>
-        <span class="hint">Al empezar a sonar uno, sale su «Sonando». Si ya se ve otro, solo cambia si el nuevo está más arriba o si el que se ve no está sonando; al parar, pasa al siguiente que siga sonando.</span>
+        <span class="hint" data-i18n="web.sound.when_one_starts">Al empezar a sonar uno, sale su «Sonando». Si ya se ve otro, solo cambia si el nuevo está más arriba o si el que se ve no está sonando; al parar, pasa al siguiente que siga sonando.</span>
       </div>
     </div>
 
     <div class="card">
       <h2>🗣️ Voz en la pantalla</h2>
       <div class="field">
-        <label for="voiceSatellite">Asistente de voz <span class="hint">(satélite de Assist: lo que dices y su respuesta salen encima de la pantalla)</span></label>
+        <label for="voiceSatellite">Asistente de voz <span class="hint" data-i18n="web.sound.assist_satellite_what">(satélite de Assist: lo que dices y su respuesta salen encima de la pantalla)</span></label>
         <select id="voiceSatellite"><option value="">Ninguno</option></select>
       </div>
       <div class="field">
-        <label for="voiceStyle">Animación de la voz</label>
+        <label for="voiceStyle" data-i18n="web.sound.voice_animation">Animación de la voz</label>
         <select id="voiceStyle"><option value="onda">Onda</option><option value="micro">Micrófono</option><option value="luz">Línea de luz</option><option value="eq">Ecualizador</option></select>
       </div>
     </div>
@@ -661,52 +661,52 @@ go = 'home' | 'rooms' | 'sensors' | 'media' | 'printers' | 'scooter' | 'settings
     </div>
 
     <div data-pg="beta" class="hidden">
-    <div class="card sim">🧪 <b>En pruebas.</b> Funciona, pero puede fallar o cambiar en próximas versiones.</div>
+    <div class="card sim">🧪 <b data-i18n="web.beta.testing">En pruebas.</b> Funciona, pero puede fallar o cambiar en próximas versiones.</div>
 
     <div class="card">
       <h2>🎙️ Asistente de voz (micro de la Pi)</h2>
-      <dl class="info" id="voz-info"><dt>Estado</dt><dd>Cargando…</dd></dl>
+      <dl class="info" id="voz-info"><dt data-i18n="panel.sheets.status">Estado</dt><dd data-i18n="web.login.loading">Cargando…</dd></dl>
       <div id="voz-install" class="hint hidden">Falta instalarlo una vez en la Pi: <code>bash ~/ha-panel/scripts/setup-voz.sh</code></div>
-      <div class="row"><label for="voz-enabled">Escuchar con el micro de la Pi</label><label class="switch"><input id="voz-enabled" type="checkbox"><span></span></label></div>
+      <div class="row"><label for="voz-enabled" data-i18n="web.beta.listen_pi_microphone">Escuchar con el micro de la Pi</label><label class="switch"><input id="voz-enabled" type="checkbox"><span></span></label></div>
       <div class="field">
-        <label for="voz-name">Nombre en Home Assistant</label>
+        <label for="voz-name" data-i18n="web.beta.name_home_assistant">Nombre en Home Assistant</label>
         <input id="voz-name" type="text" maxlength="60">
       </div>
       <div class="field">
-        <label for="voz-mic">Micrófono</label>
+        <label for="voz-mic" data-i18n="panel.settings.microphone">Micrófono</label>
         <select id="voz-mic"></select>
       </div>
       <div class="field">
-        <label for="voz-out">Por dónde contesta</label>
+        <label for="voz-out" data-i18n="panel.settings.answers_through">Por dónde contesta</label>
         <select id="voz-out"></select>
       </div>
       <div class="field">
-        <label for="voz-wake">Palabra para despertarlo</label>
+        <label for="voz-wake" data-i18n="panel.settings.wake_word">Palabra para despertarlo</label>
         <select id="voz-wake"></select>
       </div>
       <span class="hint">En Home Assistant se añade con la integración <b>Wyoming</b> (suele aparecer sola en «Descubiertos»).</span>
       <div id="voz-msg" class="hint"></div>
-      <details id="voz-log-box" class="hidden"><summary>Registro</summary><pre id="voz-log"></pre></details>
+      <details id="voz-log-box" class="hidden"><summary data-i18n="web.sound.log">Registro</summary><pre id="voz-log"></pre></details>
     </div>
     </div>
 
     <div data-pg="sistema" class="hidden">
     <div class="card">
       <h2>📶 Red de la Pi</h2>
-      <dl class="info" id="red-info"><dt>Estado</dt><dd>Cargando…</dd></dl>
+      <dl class="info" id="red-info"><dt data-i18n="panel.sheets.status">Estado</dt><dd data-i18n="web.login.loading">Cargando…</dd></dl>
       <div id="red-controles">
         <div class="field">
-          <label>WiFi</label>
-          <div class="btns"><button class="btn" id="wifi-buscar">Buscar redes</button></div>
+          <label data-i18n="panel.settings.wifi">WiFi</label>
+          <div class="btns"><button class="btn" id="wifi-buscar" data-i18n="web.system.find_networks">Buscar redes</button></div>
           <div class="wifi-list" id="wifi-list"></div>
           <div id="wifi-form" class="field hidden">
             <div>Conectar a <b id="wifi-ssid"></b></div>
             <input id="wifi-pass" type="password" autocomplete="off" placeholder="Contraseña de la WiFi">
-            <div class="btns"><button class="btn primary" id="wifi-ok">Conectar</button></div>
+            <div class="btns"><button class="btn primary" id="wifi-ok" data-i18n="web.system.connect">Conectar</button></div>
           </div>
         </div>
         <div class="field">
-          <label>Dirección IP</label>
+          <label data-i18n="web.system.ip_address">Dirección IP</label>
           <div class="radio"><label><input type="radio" name="ipm" value="auto"> Automática (DHCP)</label><label><input type="radio" name="ipm" value="manual"> Fija</label></div>
           <div id="ip-manual" class="grid2 hidden">
             <input id="ip-address" type="text" placeholder="IP (192.168.1.60)">
@@ -714,12 +714,12 @@ go = 'home' | 'rooms' | 'sensors' | 'media' | 'printers' | 'scooter' | 'settings
             <input id="ip-gateway" type="text" placeholder="Puerta de enlace (192.168.1.1)">
             <input id="ip-dns" type="text" placeholder="DNS (192.168.1.1, 1.1.1.1)">
           </div>
-          <div class="btns"><button class="btn" id="ip-ok">Aplicar IP</button></div>
-          <span class="hint">Pon una IP fija si quieres que la dirección de esta web no cambie nunca.</span>
+          <div class="btns"><button class="btn" id="ip-ok" data-i18n="web.system.apply_ip">Aplicar IP</button></div>
+          <span class="hint" data-i18n="web.system.set_static_ip">Pon una IP fija si quieres que la dirección de esta web no cambie nunca.</span>
         </div>
         <div class="field">
-          <label for="hostname">Nombre del equipo</label>
-          <div class="add"><input id="hostname" type="text"><button class="btn" id="host-ok">Cambiar</button></div>
+          <label for="hostname" data-i18n="web.system.device_name">Nombre del equipo</label>
+          <div class="add"><input id="hostname" type="text"><button class="btn" id="host-ok" data-i18n="web.system.change">Cambiar</button></div>
           <span class="hint">Es el de la dirección http://&lt;nombre&gt;.local:8080</span>
         </div>
       </div>
@@ -728,30 +728,30 @@ go = 'home' | 'rooms' | 'sensors' | 'media' | 'printers' | 'scooter' | 'settings
 
     <div class="card">
       <h2>⬆️ Actualizaciones</h2>
-      <dl class="info" id="upd-info"><dt>Versión</dt><dd>Cargando…</dd></dl>
+      <dl class="info" id="upd-info"><dt data-i18n="panel.sheets.version">Versión</dt><dd data-i18n="web.login.loading">Cargando…</dd></dl>
       <div id="upd-new" class="hidden">
         <p class="hint" id="upd-new-title"></p>
         <ul id="upd-list" class="hint"></ul>
       </div>
       <div class="field">
-        <label for="upd-mode">Cuando haya una versión nueva</label>
+        <label for="upd-mode" data-i18n="panel.settings.when_there_new">Cuando haya una versión nueva</label>
         <select id="upd-mode">
           <option value="avisar">Avisarme (actualizo yo con el botón)</option>
           <option value="auto">Actualizar sola cada día a una hora</option>
         </select>
       </div>
       <div class="field" id="upd-hour-box">
-        <label for="upd-hour">Hora</label>
+        <label for="upd-hour" data-i18n="web.system.time">Hora</label>
         <select id="upd-hour"></select>
-        <span class="hint">Mejor de madrugada: el panel se reinicia unos segundos al actualizar.</span>
+        <span class="hint" data-i18n="web.system.better_at_night">Mejor de madrugada: el panel se reinicia unos segundos al actualizar.</span>
       </div>
       <div id="upd-sudo" class="hint hidden">Para que pueda instalar paquetes del sistema que necesite una versión nueva, vuelve a lanzar una vez <code>bash ~/ha-panel/scripts/setup-kiosk.sh</code> en la Pi.</div>
       <div class="btns">
-        <button class="btn" id="upd-check">Comprobar ahora</button>
-        <button class="btn primary hidden" id="upd-apply">Actualizar</button>
+        <button class="btn" id="upd-check" data-i18n="web.system.check_now">Comprobar ahora</button>
+        <button class="btn primary hidden" id="upd-apply" data-i18n="web.system.update">Actualizar</button>
       </div>
       <div id="upd-msg" class="hint"></div>
-      <details id="upd-log-box" class="hidden"><summary>Última actualización</summary><pre id="upd-log"></pre></details>
+      <details id="upd-log-box" class="hidden"><summary data-i18n="web.system.last_update">Última actualización</summary><pre id="upd-log"></pre></details>
     </div>
     </div>
 
@@ -759,7 +759,7 @@ go = 'home' | 'rooms' | 'sensors' | 'media' | 'printers' | 'scooter' | 'settings
 
   <div class="savebar"><div class="wrap">
     <span id="msg"></span>
-    <button class="btn primary" id="guardar">Guardar</button>
+    <button class="btn primary" id="guardar" data-i18n="panel.settings.save">Guardar</button>
   </div></div>
 </div>
 
@@ -778,8 +778,8 @@ const DEF = {   // mismos valores por defecto que el panel
 };
 const lists = { favorites: [], hiddenEntities: [], excludePlatforms: [], quick: [] };
 // colores de acento del panel (el tono de tema oscuro, como esta web)
-const ACCENTS = { azul: ['Azul', '#8ab4f8'], turquesa: ['Turquesa', '#78d9ec'], verde: ['Verde', '#81c995'], amarillo: ['Amarillo', '#fdd663'],
-  naranja: ['Naranja', '#fcad70'], rosa: ['Rosa', '#ff8bcb'], morado: ['Morado', '#c58af9'] };
+const ACCENTS = { azul: ['panel.settings.blue', '#8ab4f8'], turquesa: ['panel.settings.teal', '#78d9ec'], verde: ['panel.settings.green', '#81c995'], amarillo: ['panel.settings.yellow', '#fdd663'],
+  naranja: ['panel.settings.orange', '#fcad70'], rosa: ['panel.settings.pink', '#ff8bcb'], morado: ['panel.settings.purple', '#c58af9'] };
 let accent = 'azul';
 function renderAccents() {
   $('#accent').replaceChildren(...Object.entries(ACCENTS).map(([k, [label, c]]) => el('button', { type: 'button', class: 'accent-sw' + (k === accent ? ' on' : ''), title: label,
@@ -1102,7 +1102,7 @@ function codeEditor(name, say, getValues = () => ({})) {
   });
   const out = el('div', { class: 'preview hidden' });
   const test = async () => {
-    out.classList.remove('hidden'); out.replaceChildren(el('span', { class: 'hint', textContent: 'Probando con los estados actuales…' }));
+    out.classList.remove('hidden'); out.replaceChildren(el('span', { class: 'hint', textContent: I18N.t('web.ambient.testing_current_states') }));
     try {
       [states, panelData] = await Promise.all([api('GET', '/api/estados'), api('GET', '/api/datos-panel').catch(() => ({}))]);
       const mod = PM.compile(ta.value), bound = mod.bind(getValues(), testHA());
@@ -1115,21 +1115,21 @@ function codeEditor(name, say, getValues = () => ({})) {
           let list;
           try { list = PM.bubbles(mod.render(testHA(), testScreen(place), bound.cfg)); } catch (e) { return [el('span', { class: 'hint', textContent: label }), el('div', { class: 'err', textContent: '✗ ' + e.message })]; }
           return [el('span', { class: 'hint', textContent: label }), el('div', { class: 'bprev-row ' + (place === 'ambient' ? 'amb' : 'home') },
-            ...(list.length ? list.map((x) => bubblePreview(x, place)) : [el('span', { class: 'hint', textContent: 'No se muestra (devuelve null)' })]))];
+            ...(list.length ? list.map((x) => bubblePreview(x, place)) : [el('span', { class: 'hint', textContent: I18N.t('web.ambient.not_shown_returns') })]))];
         };
-        preview = el('div', { class: 'bprev' }, ...row('ambient', 'Ambiente'), ...row('home', 'Inicio'));
+        preview = el('div', { class: 'bprev' }, ...row('ambient', I18N.t('panel.nav.ambient')), ...row('home', I18N.t('panel.nav.home')));
       }
       out.replaceChildren(...[
         el('div', { class: 'hint', textContent: `✓ Sin errores · ${ms.toFixed(1)} ms · se actualiza con: ${!bound.watch ? 'cualquier cambio' : bound.watch.length ? bound.watch.join(', ') : 'nada (cada minuto)'}` }),
         panelData && panelData.t ? null : el('div', { class: 'hint', textContent: 'ⓘ El panel no está encendido: screen (alarmas, brillo…) y ha.info vienen vacíos aquí.' }),
         preview,
-        el('details', { style: 'margin-top:8px' }, el('summary', { class: 'hint', style: 'cursor:pointer', textContent: 'Ver lo que devuelve' }),
+        el('details', { style: 'margin-top:8px' }, el('summary', { class: 'hint', style: 'cursor:pointer', textContent: I18N.t('web.ambient.see_what_returns') }),
           el('pre', { textContent: card && res && res.__html != null ? res.__html.trim() : JSON.stringify(res, null, 2) ?? 'null' }))].filter(Boolean));
     } catch (e) { out.replaceChildren(el('div', { class: 'err', textContent: '✗ ' + e.message })); }
   };
   const save = async () => {
     try { PM.compile(ta.value); } catch (e) { if (!confirm('Tiene un error: ' + e.message + '\n¿Guardar igualmente?')) return; }
-    try { await saveCode(name, ta.value); say('Guardado ✓', 'ok'); renderAll(); }
+    try { await saveCode(name, ta.value); say(I18N.t('web.login.saved'), 'ok'); renderAll(); }
     catch (e) { say(e.message, 'err'); }
   };
   const restore = async () => {
@@ -1142,10 +1142,10 @@ function codeEditor(name, say, getValues = () => ({})) {
   };
   queueMicrotask(() => upgradeEditor(ta, (v) => (drafts[name] = v), { save, test }));
   return el('div', { 'data-nodirty': '' }, ta, el('div', { class: 'btns', style: 'margin-top:8px' },
-    el('button', { type: 'button', class: 'btn primary', textContent: 'Guardar funcionamiento', onclick: save }),
-    el('button', { type: 'button', class: 'btn', textContent: 'Probar', onclick: test }),
-    el('button', { type: 'button', class: 'btn', textContent: 'Descargar', onclick: download }),
-    def && name in files ? el('button', { type: 'button', class: 'btn', textContent: 'Restaurar el de serie', onclick: restore }) : null), out);
+    el('button', { type: 'button', class: 'btn primary', textContent: I18N.t('web.ambient.save_code'), onclick: save }),
+    el('button', { type: 'button', class: 'btn', textContent: I18N.t('web.ambient.test'), onclick: test }),
+    el('button', { type: 'button', class: 'btn', textContent: I18N.t('web.ambient.download'), onclick: download }),
+    def && name in files ? el('button', { type: 'button', class: 'btn', textContent: I18N.t('web.ambient.restore_default'), onclick: restore }) : null), out);
 }
 /** Una burbuja dibujada como en el panel. place: 'ambient' | 'home' */
 function bubblePreview(b, place) {
@@ -1172,17 +1172,17 @@ function renderBullets() {
       el('button', { type: 'button', class: 'bub-title', onclick: () => { openBullet = open ? null : b.id; renderBullets(); } },
         el('span', { class: 'bub-arrow', textContent: open ? '▾' : '▸' }), title,
         def ? el('span', { class: 'pill', textContent: isDefault(b.script) && b.script in files ? 'de serie · cambiada' : 'de serie' }) : null),
-      el('div', { class: 'cols' }, ...moveBtns(bullets, i, renderBullets), flag('ambient', 'Ambiente')));
+      el('div', { class: 'cols' }, ...moveBtns(bullets, i, renderBullets), flag('ambient', I18N.t('panel.nav.ambient'))));
     const card = el('div', { class: 'bub' + (b.ambient ? '' : ' off') }, head);
     if (!open) return card;
     const say = (t, kind) => bmsg(`${b.name || b.script}: ${t}`, kind);
     card.append(el('div', { class: 'bub-body' },
-      el('div', { class: 'field' }, el('label', { textContent: 'Título' }),
+      el('div', { class: 'field' }, el('label', { textContent: I18N.t('web.ambient.title') }),
         el('input', { type: 'text', value: b.name || '', oninput: (e) => { b.name = e.target.value; title.textContent = b.name || b.script; dirty(); } })),
       configForm(b),
-      el('details', { class: 'func' }, el('summary', { class: 'sub', textContent: 'Funcionamiento (código)' }),
-        b.script in scripts ? codeEditor(b.script, say, () => b.config || {}) : el('div', { class: 'err', textContent: 'No se encuentra su funcionamiento.' })),
-      def ? null : el('div', { class: 'btns' }, sureBtn({ class: 'btn danger' }, 'Borrar burbuja', '¿Seguro? Toca otra vez', () => delBullet(i)))));
+      el('details', { class: 'func' }, el('summary', { class: 'sub', textContent: I18N.t('web.ambient.how_works_code') }),
+        b.script in scripts ? codeEditor(b.script, say, () => b.config || {}) : el('div', { class: 'err', textContent: I18N.t('web.ambient.its_code_cannot') })),
+      def ? null : el('div', { class: 'btns' }, sureBtn({ class: 'btn danger' }, 'Borrar burbuja', I18N.t('panel.notices.sure_tap_again'), () => delBullet(i)))));
     return card;
   }));
 }
@@ -1200,7 +1200,7 @@ function configForm(b) {
   let schema = {};
   try { schema = PM.compile(drafts[b.script] ?? scripts[b.script]).config; } catch (e) { return null; }
   if (!Object.keys(schema).length) return null;
-  return el('div', { class: 'cfg' }, el('div', { class: 'sub', textContent: 'Ajustes' }),
+  return el('div', { class: 'cfg' }, el('div', { class: 'sub', textContent: I18N.t('panel.nav.settings') }),
     ...fieldsForm(schema, () => b.config || {}, (k, v) => { b.config = Object.assign({}, b.config, { [k]: v }); dirty(); }, 'cfg-' + b.id));
 }
 let fieldSeq = 0;
@@ -1240,10 +1240,10 @@ function fieldsForm(schema, get, set, prefix) {
 /** Elegir entidades o aparatos. Pocas opciones: desplegable / casillas. Muchas: buscador. */
 function entityInput(f, id, v, set) {
   const opts = fieldOptions(f);
-  const auto = f.auto === false ? '— ninguna —' : 'Automática (la primera que haya)';
+  const auto = f.auto === false ? '— ninguna —' : I18N.t('web.general.automatic_first_one');
   if (!opts.length) return el('div', { class: 'hint', textContent: f.type === 'device' ? 'No hay aparatos de ' + ([].concat(f.integration || '?').join(' / ')) + ' (o el panel no está encendido).' : 'No hay entidades que encajen.' });
   // Varias: desplegable de selección múltiple con buscador
-  if (f.multiple) return multiSelect(opts, [].concat(v || []), set, f.auto === false ? 'Ninguna' : f.type === 'device' ? 'Ninguno elegido: todos' : 'Ninguna elegida: todas');
+  if (f.multiple) return multiSelect(opts, [].concat(v || []), set, f.auto === false ? I18N.t('panel.settings.none_f') : f.type === 'device' ? 'Ninguno elegido: todos' : 'Ninguna elegida: todas');
   // Una: desplegable (con buscador si hay muchas)
   const s = el('select', { id, onchange: (e) => set(e.target.value) }, el('option', { value: '', textContent: auto }),
     ...opts.map((o) => el('option', { value: o.value, textContent: o.label })),
@@ -1261,9 +1261,9 @@ function multiSelect(opts, list, set, emptyText) {
   const save = () => { set(list.slice()); paint(); };
   const paint = () => {
     chips.replaceChildren(...list.map((x, i) => el('span', { class: 'chip', title: x }, labelOf(x),
-      el('button', { type: 'button', textContent: '×', title: 'Quitar', onclick: () => { list.splice(i, 1); save(); if (fsOpen && fsOpen.btn === btn) fsOpen.refresh(); } }))));
+      el('button', { type: 'button', textContent: '×', title: I18N.t('panel.quick.remove'), onclick: () => { list.splice(i, 1); save(); if (fsOpen && fsOpen.btn === btn) fsOpen.refresh(); } }))));
     chips.classList.toggle('hidden', !list.length);
-    label.textContent = t(list.length ? `${list.length} elegida${list.length > 1 ? 's' : ''} · añadir o quitar…` : emptyText);
+    label.textContent = list.length ? I18N.t(list.length > 1 ? 'web.editor.chosen' : 'web.editor.chosen_one', { n: list.length }) : I18N.t(emptyText);
     label.classList.toggle('muted', !list.length);
   };
   const toggle = (x) => { const i = list.indexOf(x); if (i >= 0) list.splice(i, 1); else list.push(x); save(); };
@@ -1282,11 +1282,11 @@ function orderSelect(opts, list, set, emptyText) {
   const paint = () => {
     rows.replaceChildren(...list.map((x, i) => el('div', { class: 'ord-row' }, el('span', { class: 'ord-n', textContent: String(i + 1) }),
       el('span', { class: 'ord-label', textContent: labelOf(x), title: x }),
-      el('button', { type: 'button', title: 'Subir', disabled: i === 0, onclick: () => { [list[i - 1], list[i]] = [list[i], list[i - 1]]; save(); } }, el('i', { class: 'mdi mdi-chevron-up' })),
-      el('button', { type: 'button', title: 'Bajar', disabled: i === list.length - 1, onclick: () => { [list[i + 1], list[i]] = [list[i], list[i + 1]]; save(); } }, el('i', { class: 'mdi mdi-chevron-down' })),
-      el('button', { type: 'button', title: 'Quitar', onclick: () => { list.splice(i, 1); save(); } }, el('i', { class: 'mdi mdi-close' })))));
+      el('button', { type: 'button', title: I18N.t('panel.sheets.up'), disabled: i === 0, onclick: () => { [list[i - 1], list[i]] = [list[i], list[i - 1]]; save(); } }, el('i', { class: 'mdi mdi-chevron-up' })),
+      el('button', { type: 'button', title: I18N.t('panel.sheets.down'), disabled: i === list.length - 1, onclick: () => { [list[i + 1], list[i]] = [list[i], list[i + 1]]; save(); } }, el('i', { class: 'mdi mdi-chevron-down' })),
+      el('button', { type: 'button', title: I18N.t('panel.quick.remove'), onclick: () => { list.splice(i, 1); save(); } }, el('i', { class: 'mdi mdi-close' })))));
     rows.classList.toggle('hidden', !list.length);
-    label.textContent = t(list.length ? 'Añadir o quitar…' : emptyText);
+    label.textContent = t(list.length ? I18N.t('web.ambient.add_or_remove') : emptyText);
     label.classList.toggle('muted', !list.length);
   };
   const toggle = (x) => { const i = list.indexOf(x); if (i >= 0) list.splice(i, 1); else list.push(x); save(); };
@@ -1295,11 +1295,11 @@ function orderSelect(opts, list, set, emptyText) {
   return el('div', { class: 'ms' }, rows, btn);
 }
 /** Altavoces para las listas: este panel y los media_player de Home Assistant. */
-const speakerOpts = () => [{ value: '@panel', label: 'Este panel' }]
+const speakerOpts = () => [{ value: '@panel', label: I18N.t('panel.ambient.panel') }]
   .concat(Object.keys(names).filter((id) => id.startsWith('media_player.')).map((id) => ({ value: id, label: names[id] || id })));
 let ambSpk = [], npSpk = [];
-function ambSpkPaint() { $('#ambientSpeakers').replaceChildren(orderSelect(speakerOpts(), ambSpk, (v) => { ambSpk = v; dirty(); }, 'Ninguno: sale el que esté sonando de los que abren «Sonando»')); }
-function npSpkPaint() { $('#np-speakers').replaceChildren(orderSelect(speakerOpts(), npSpk, (v) => { npSpk = v; dirty(); }, 'Ninguno: «Sonando» no se abre sola')); }
+function ambSpkPaint() { $('#ambientSpeakers').replaceChildren(orderSelect(speakerOpts(), ambSpk, (v) => { ambSpk = v; dirty(); }, I18N.t('web.sound.none_one_playing'))); }
+function npSpkPaint() { $('#np-speakers').replaceChildren(orderSelect(speakerOpts(), npSpk, (v) => { npSpk = v; dirty(); }, I18N.t('web.sound.none_now_playing'))); }
 function msShow(btn, opts, getList, toggle) {
   fsClose();
   const search = opts.length > 7 ? el('input', { type: 'search', class: 'fs-search', placeholder: 'Buscar…' }) : null;
@@ -1316,7 +1316,7 @@ function msShow(btn, opts, getList, toggle) {
         onmousedown: (e) => e.preventDefault(), onclick: () => { active = i; toggle(o.value); render(); place(); },
         onmousemove: () => { if (active !== i) { active = i; mark(); } } },
         el('i', { class: 'mdi ' + (on ? 'mdi-checkbox-marked' : 'mdi-checkbox-blank-outline') }), el('span', { textContent: o.label }));
-    }) : [el('div', { class: 'fs-empty', textContent: 'No hay nada con «' + (search ? search.value : '') + '»' })]));
+    }) : [el('div', { class: 'fs-empty', textContent: I18N.t('web.editor.nothing_matches', { q: search ? search.value : '' }) })]));
   };
   const mark = () => [...list.children].forEach((c, i) => c.classList.toggle('fs-act', i === active));
   const key = (e) => {
@@ -1347,8 +1347,8 @@ function actionInput(f, v, set) {
     const extra = [];
     const upd = (k, val) => { a = Object.assign({}, a, { [k]: val }); set(a); };
     if (a.action === 'navigate') {
-      const g = el('select', { onchange: (e) => upd('go', e.target.value) }, el('option', { value: '', textContent: '— elige pestaña —' }),
-        ...tabs.map((t) => el('option', { value: t.id, textContent: t.title || t.id })), el('option', { value: 'settings', textContent: 'Ajustes' }));
+      const g = el('select', { onchange: (e) => upd('go', e.target.value) }, el('option', { value: '', textContent: I18N.t('web.editor.choose_tab') }),
+        ...tabs.map((t) => el('option', { value: t.id, textContent: t.title || t.id })), el('option', { value: 'settings', textContent: I18N.t('panel.nav.settings') }));
       g.value = a.go || ''; extra.push(g);
     }
     if (a.action === 'call') {
@@ -1393,7 +1393,7 @@ async function addBullet(title, code, viaUrl) {
   const id = 'b-' + Date.now().toString(36);
   bullets.push({ id, type: 'script', script: name, name: title, ambient: true });
   openBullet = id; renderAll(); dirty();
-  bmsg(`Creada «${title}».`, 'ok');
+  bmsg(I18N.t('web.editor.created_bubble', { name: title }), 'ok');
 }
 const EMPTY = '{\n  watch: [],\n  render(ha) {\n    return null;\n  },\n}\n';
 $('#bullet-add').onclick = async () => {
@@ -1402,7 +1402,7 @@ $('#bullet-add').onclick = async () => {
 };
 $('#bullet-import').onclick = async () => {
   const url = $('#bullet-url').value.trim();
-  bmsg('Descargando…');
+  bmsg(I18N.t('web.editor.downloading'));
   try { await addBullet(decodeURIComponent(url.split(/[?#]/)[0].split('/').pop() || 'burbuja').replace(/\.js$/i, ''), null, url); $('#bullet-url').value = ''; }
   catch (e) { bmsg(e.message, 'err'); }
 };
@@ -1445,9 +1445,9 @@ function renderCardScripts() {
   const list = PM.componentList(scripts);
   // plantillas para crear: vacío o copiar uno que ya existe
   const tpl = $('#cscript-tpl'), cur = tpl.value;
-  tpl.replaceChildren(el('option', { value: '', textContent: 'Empezar desde cero' }), ...list.map((c) => el('option', { value: c.script, textContent: 'Copiar «' + c.name + '»' })));
+  tpl.replaceChildren(el('option', { value: '', textContent: I18N.t('web.editor.start_from_scratch') }), ...list.map((c) => el('option', { value: c.script, textContent: I18N.t('web.editor.copy_of', { name: I18N.t(c.name) }) })));
   tpl.value = [...tpl.options].some((o) => o.value === cur) ? cur : '';
-  if (!list.length) { $('#cscripts').replaceChildren(el('div', { class: 'hint', textContent: 'Aún no hay ninguno.' })); return; }
+  if (!list.length) { $('#cscripts').replaceChildren(el('div', { class: 'hint', textContent: I18N.t('web.editor.none_yet') })); return; }
   $('#cscripts').replaceChildren(...list.map((c) => {
     const name = c.script, open = openCard === name, uses = usesOf(name);
     const head = el('div', { class: 'bub-head' }, el('button', { type: 'button', class: 'bub-title', onclick: () => { openCard = open ? null : name; renderCardScripts(); } },
@@ -1460,14 +1460,14 @@ function renderCardScripts() {
     const m = compOf(name);
     const prev = el('div', { class: 'comp-prev' });
     const paint = () => { const r = renderComp(name, testVals[name]); prev.replaceChildren(r.node || el('div', { class: 'err', textContent: '✗ ' + r.err })); };
-    const del = async () => { try { await deleteCode(name); openCard = null; renderAll(); cmsg('Borrado', 'ok'); } catch (e) { cmsg(e.message, 'err'); } };
+    const del = async () => { try { await deleteCode(name); openCard = null; renderAll(); cmsg(I18N.t('web.editor.deleted'), 'ok'); } catch (e) { cmsg(e.message, 'err'); } };
     card.append(el('div', { class: 'bub-body' },
       el('div', { class: 'hint', textContent: `${name} · ancho por defecto ${c.width}${c.children ? ' · lleva componentes dentro' : ''}` }),
-      m && Object.keys(m.config).length ? el('details', { class: 'func' }, el('summary', { class: 'sub', textContent: 'Probar con estos ajustes' }),
+      m && Object.keys(m.config).length ? el('details', { class: 'func' }, el('summary', { class: 'sub', textContent: I18N.t('web.editor.try_these_settings') }),
         el('div', { class: 'cfg' }, ...fieldsForm(m.config, () => testVals[name] || {}, (k, v) => { testVals[name] = Object.assign({}, testVals[name], { [k]: v }); paint(); }, 't-' + name))) : null,
-      el('div', { class: 'sub', textContent: 'Así se ve' }), prev,
-      el('details', { class: 'func' }, el('summary', { class: 'sub', textContent: 'Funcionamiento (código)' }), codeEditor(name, say, () => testVals[name] || {})),
-      c.builtin ? null : el('div', { class: 'btns' }, sureBtn({ class: 'btn danger' }, 'Borrar componente', uses ? `¿Seguro? Se usa en ${uses} sitio(s). Toca otra vez` : '¿Seguro? Toca otra vez', del))));
+      el('div', { class: 'sub', textContent: I18N.t('web.editor.how_looks') }), prev,
+      el('details', { class: 'func' }, el('summary', { class: 'sub', textContent: I18N.t('web.ambient.how_works_code') }), codeEditor(name, say, () => testVals[name] || {})),
+      c.builtin ? null : el('div', { class: 'btns' }, sureBtn({ class: 'btn danger' }, 'Borrar componente', uses ? `¿Seguro? Se usa en ${uses} sitio(s). Toca otra vez` : I18N.t('panel.notices.sure_tap_again'), del))));
     paint();
     return card;
   }));
@@ -1480,7 +1480,7 @@ async function addComp(title, code, viaUrl) {
   if (viaUrl) { const r = await api('POST', '/api/scripts/importar', { url: viaUrl, name }); name = r.name; scripts[name] = files[name] = r.code; }
   else await saveCode(name, code);
   openCard = name; renderAll();
-  cmsg(isCard(name) ? `Creado «${title}». Ya lo puedes colocar en 🗂️ Pestañas.` : `Guardado «${title}», pero no es un componente (le falta type: 'card').`, isCard(name) ? 'ok' : 'err');
+  cmsg(I18N.t(isCard(name) ? 'web.editor.created_component' : 'web.editor.saved_not_component', { name: title }), isCard(name) ? 'ok' : 'err');
 }
 $('#cscript-add').onclick = async () => {
   const title = $('#cscript-title').value.trim(), from = $('#cscript-tpl').value;
@@ -1489,7 +1489,7 @@ $('#cscript-add').onclick = async () => {
 };
 $('#cscript-import').onclick = async () => {
   const url = $('#cscript-url').value.trim();
-  cmsg('Descargando…');
+  cmsg(I18N.t('web.editor.downloading'));
   try { await addComp(decodeURIComponent(url.split(/[?#]/)[0].split('/').pop() || 'componente').replace(/\.js$/i, ''), null, url); $('#cscript-url').value = ''; }
   catch (e) { cmsg(e.message, 'err'); }
 };
@@ -1546,8 +1546,8 @@ function cardSummary(c) {
     if (!row.children.length) row.append(el('span', { class: 'hint', textContent: (c.items || []).length ? 'Ahora no muestran nada' : 'Sin burbujas' }));
     return { icon: 'mdi-dots-horizontal-circle-outline', title: c.title || 'Fila de burbujas', sub: '', body: row, kind: 'Fila de burbujas' };
   }
-  const kind = PM.CARD_TYPES[c.type] || c.type;
-  const sub = c.type === 'view' ? (PM.VIEWS.find((v) => v.key === c.view) || {}).title || c.view
+  const kind = I18N.t(PM.CARD_TYPES[c.type] || c.type);
+  const sub = c.type === 'view' ? I18N.t((PM.VIEWS.find((v) => v.key === c.view) || {}).title || c.view)
     : c.type === 'entities' ? (c.entities || []).length + ' entidades' : c.type === 'camera' ? c.entity || '' : '';
   return { icon: TYPE_ICONS[c.type] || 'mdi-card-outline', title: c.title || kind, sub, kind };
 }
@@ -1572,7 +1572,7 @@ function edGrid(list, base) {
     grid.append(box);
   });
   const addSel = samePath(edAdd, base) || (edAdd && !edAdd.length && !base.length);
-  grid.append(el('button', { type: 'button', class: 'ed-slot w-full ed-add' + (addSel ? ' sel' : ''), textContent: base.length ? '+ Añadir dentro' : '+ Añadir',
+  grid.append(el('button', { type: 'button', class: 'ed-slot w-full ed-add' + (addSel ? ' sel' : ''), textContent: base.length ? I18N.t('web.editor.add_inside') : I18N.t('web.editor.add'),
     onclick: (e) => { e.stopPropagation(); if (dragJustEnded()) return; edAdd = base; edSel = null; renderTabs(); }, 'data-list': JSON.stringify(base) }));
   return grid;
 }
@@ -1665,20 +1665,20 @@ function edAddPanel() {
   const pick = (kind) => { const list = listAt(edAdd); list.push(newCard(kind)); edSel = edAdd.concat(list.length - 1); edAdd = null; renderTabs(); dirty(); };
   const opt = (kind, label, ic, hint) => el('button', { type: 'button', class: 'ed-opt', onclick: () => pick(kind) },
     el('i', { class: 'mdi ' + ic }), el('b', { textContent: label }), hint ? el('span', { class: 'hint', textContent: hint }) : null);
-  return el('div', { class: 'ed-panel' }, el('div', { class: 'sub', textContent: 'Añadir un componente' }),
+  return el('div', { class: 'ed-panel' }, el('div', { class: 'sub', textContent: I18N.t('web.editor.add_component') }),
     el('div', { class: 'ed-opts' }, ...PM.componentList(scripts).map((c) => opt(c.script, c.name, PM.mdi(c.icon) || 'mdi-puzzle-outline', c.builtin ? '' : 'Tuyo')),
       opt('bubbles', 'Fila de burbujas', 'mdi-dots-horizontal-circle-outline', 'Burbujas en fila')),
-    el('div', { class: 'hint', textContent: 'Los componentes se crean y se cambian en 🧩 Componentes.' }),
-    el('div', { class: 'sub', textContent: 'Otras' }),
+    el('div', { class: 'hint', textContent: I18N.t('web.editor.components_are_created') }),
+    el('div', { class: 'sub', textContent: I18N.t('web.editor.others') }),
     el('div', { class: 'ed-opts' }, opt('entities', 'Dispositivos', TYPE_ICONS.entities, 'Fichas de varias entidades'),
-      opt('camera', 'Cámara', TYPE_ICONS.camera)),
-    el('div', { class: 'btns' }, el('button', { type: 'button', class: 'btn', textContent: 'Cancelar', onclick: () => { edAdd = null; renderTabs(); } })));
+      opt('camera', I18N.t('web.editor.camera'), TYPE_ICONS.camera)),
+    el('div', { class: 'btns' }, el('button', { type: 'button', class: 'btn', textContent: I18N.t('web.editor.cancel'), onclick: () => { edAdd = null; renderTabs(); } })));
 }
 /** Las burbujas de una fila, cada una con sus ajustes */
 function bubbleItems(c) {
   c.items = c.items || [];
   const names2 = Object.keys(scripts).filter((n) => !isCard(n)).sort();
-  const label = (n) => (PM.BUILTINS.find((x) => x.script === n) || {}).label || n.replace(/\.js$/, '');
+  const label = (n) => I18N.t((PM.BUILTINS.find((x) => x.script === n) || {}).label || n.replace(/\.js$/, ''));
   return el('div', { class: 'bubs' }, ...c.items.map((it, i) => {
     let schema = {};
     try { schema = PM.compile(scripts[it.script]).config; } catch (e) { /* sin ajustes */ }
@@ -1688,7 +1688,7 @@ function bubbleItems(c) {
     return el('div', { class: 'bub' }, el('div', { class: 'bub-head' }, s, el('div', { class: 'cols' }, ...moveBtns(c.items, i, renderTabs),
       el('button', { type: 'button', class: 'btn danger mv', textContent: '×', onclick: () => { c.items.splice(i, 1); renderTabs(); dirty(); } }))),
       Object.keys(schema).length ? el('div', { class: 'bub-body' }, ...fieldsForm(schema, () => it.config || {}, (k, v) => { it.config = Object.assign({}, it.config, { [k]: v }); dirty(); })) : null);
-  }), el('button', { type: 'button', class: 'btn mini', textContent: '+ Burbuja', onclick: () => { c.items.push({ script: 'tiempo.js', config: {} }); renderTabs(); dirty(); } }));
+  }), el('button', { type: 'button', class: 'btn mini', textContent: I18N.t('web.editor.bubble'), onclick: () => { c.items.push({ script: 'tiempo.js', config: {} }); renderTabs(); dirty(); } }));
 }
 /** Panel de la tarjeta elegida: ancho, ajustes y mover / duplicar / borrar */
 function edCardPanel() {
@@ -1704,7 +1704,7 @@ function edCardPanel() {
     if (!m) body = [el('div', { class: 'err', textContent: 'No se encuentra el componente ' + c.component + ' (o tiene un error).' })];
     else {
       body = fieldsForm(m.config, () => c.config || {}, (k, v) => { c.config = Object.assign({}, c.config, { [k]: v }); dirty(); clearTimeout(edTimer); edTimer = setTimeout(paintGrid, 400); }, 'c');
-      if (m.children) body.push(el('div', { class: 'hint', textContent: 'Lo de dentro se edita tocándolo en la rejilla.' }));
+      if (m.children) body.push(el('div', { class: 'hint', textContent: I18N.t('web.editor.what_inside_edited') }));
       body.push(el('div', { class: 'hint', textContent: `Componente ${c.component}: su código está en 🧩 Componentes.` }));
     }
   } else if (c.type === 'bubbles') body = [bubbleItems(c)];
@@ -1713,12 +1713,12 @@ function edCardPanel() {
   return el('div', { class: 'ed-panel' },
     el('div', { class: 'ed-panel-head' }, el('i', { class: 'mdi ' + s.icon }), el('b', { textContent: s.kind }),
       el('div', { class: 'btns' },
-        el('button', { type: 'button', class: 'btn mv', textContent: '←', title: 'Antes', disabled: i === 0, onclick: () => move(-1) }),
-        el('button', { type: 'button', class: 'btn mv', textContent: '→', title: 'Después', disabled: i === list.length - 1, onclick: () => move(1) }),
-        el('button', { type: 'button', class: 'btn', textContent: 'Duplicar', onclick: () => { list.splice(i + 1, 0, JSON.parse(JSON.stringify(c))); edSel = edSel.slice(0, -1).concat(i + 1); renderTabs(); dirty(); } }),
-        sureBtn({ class: 'btn danger' }, 'Borrar', '¿Seguro? Toca otra vez', () => { list.splice(i, 1); edSel = null; renderTabs(); dirty(); }),
-        el('button', { type: 'button', class: 'btn', textContent: 'Cerrar', onclick: () => { edSel = null; renderTabs(); } }))),
-    el('div', { class: 'field' }, el('label', { textContent: 'Ancho' }), widths),
+        el('button', { type: 'button', class: 'btn mv', textContent: '←', title: I18N.t('web.editor.before'), disabled: i === 0, onclick: () => move(-1) }),
+        el('button', { type: 'button', class: 'btn mv', textContent: '→', title: I18N.t('web.editor.after'), disabled: i === list.length - 1, onclick: () => move(1) }),
+        el('button', { type: 'button', class: 'btn', textContent: I18N.t('web.editor.duplicate'), onclick: () => { list.splice(i + 1, 0, JSON.parse(JSON.stringify(c))); edSel = edSel.slice(0, -1).concat(i + 1); renderTabs(); dirty(); } }),
+        sureBtn({ class: 'btn danger' }, I18N.t('panel.settings.delete'), I18N.t('panel.notices.sure_tap_again'), () => { list.splice(i, 1); edSel = null; renderTabs(); dirty(); }),
+        el('button', { type: 'button', class: 'btn', textContent: I18N.t('panel.sheets.close'), onclick: () => { edSel = null; renderTabs(); } }))),
+    el('div', { class: 'field' }, el('label', { textContent: I18N.t('web.editor.width') }), widths),
     c.type === 'component' || c.type === 'bubbles' ? null : el('div', { class: 'hint', textContent: 'Estas tarjetas ocupan el ancho que elijas, pero se ven como antes.' }),
     ...body);
 }
@@ -1734,7 +1734,7 @@ function whenEditor(c) {
     kind.value = r.type || 'state';
     const f = [];
     if (kind.value === 'state') {
-      const ent = el('select', { onchange: (e) => { r.entity = e.target.value; save(true); } }, el('option', { value: '', textContent: '— elige entidad —' }),
+      const ent = el('select', { onchange: (e) => { r.entity = e.target.value; save(true); } }, el('option', { value: '', textContent: I18N.t('web.editor.choose_entity') }),
         ...allEnts().map((o) => el('option', { value: o.value, textContent: o.label })));
       ent.value = r.entity || '';
       const op = el('select', { onchange: (e) => { r.op = e.target.value; save(true); } }, ...Object.entries(PM.WHEN_OPS).map(([k, t]) => el('option', { value: k, textContent: t })));
@@ -1751,7 +1751,7 @@ function whenEditor(c) {
       if (!r.from) { r.from = '07:00'; r.to = '09:00'; }
     } else if (kind.value === 'night') {
       const n = el('select', { onchange: (e) => { r.value = e.target.value === 'true'; save(); } },
-        el('option', { value: 'true', textContent: 'está activo' }), el('option', { value: 'false', textContent: 'no está activo' }));
+        el('option', { value: 'true', textContent: I18N.t('web.editor.active') }), el('option', { value: 'false', textContent: I18N.t('web.editor.not_active') }));
       n.value = String(r.value !== false); r.value = r.value !== false;
       f.push(n);
     } else {
@@ -1762,17 +1762,17 @@ function whenEditor(c) {
     try { ok = PM.checkWhen({ rules: [r] }, testHA(), testScreen('card')); } catch (e) { /* sin datos */ }
     return el('div', { class: 'when-rule' }, el('div', { class: 'when-head' }, kind,
       states ? el('span', { class: 'pill' + (ok ? ' ok' : ''), textContent: ok ? 'ahora sí' : 'ahora no' }) : null,
-      el('button', { type: 'button', class: 'btn danger mv', textContent: '×', title: 'Quitar condición', onclick: () => { w.rules.splice(i, 1); save(true); } })), ...f);
+      el('button', { type: 'button', class: 'btn danger mv', textContent: '×', title: I18N.t('web.editor.remove_condition'), onclick: () => { w.rules.splice(i, 1); save(true); } })), ...f);
   };
   const paint = () => {
     const mode = el('select', { onchange: (e) => { w.mode = e.target.value; save(); } },
-      el('option', { value: 'all', textContent: 'Se cumplen todas' }), el('option', { value: 'any', textContent: 'Se cumple alguna' }));
+      el('option', { value: 'all', textContent: I18N.t('web.editor.all_are_met') }), el('option', { value: 'any', textContent: I18N.t('web.editor.any_met') }));
     mode.value = w.mode || 'all';
-    box.replaceChildren(...[el('div', { class: 'sub', textContent: 'Mostrar solo si…' }),
+    box.replaceChildren(...[el('div', { class: 'sub', textContent: I18N.t('web.editor.show_only_if') }),
       w.rules.length > 1 ? mode : null,
       ...w.rules.map(ruleRow),
-      w.rules.length ? null : el('div', { class: 'hint', textContent: 'Sin condiciones: siempre se ve.' }),
-      el('button', { type: 'button', class: 'btn mini', textContent: '+ Condición', onclick: () => { w.rules.push({ type: 'state', entity: '', op: 'on' }); c.when = w; save(true); } })].filter(Boolean));
+      w.rules.length ? null : el('div', { class: 'hint', textContent: I18N.t('web.editor.no_conditions_always') }),
+      el('button', { type: 'button', class: 'btn mini', textContent: I18N.t('web.editor.condition'), onclick: () => { w.rules.push({ type: 'state', entity: '', op: 'on' }); c.when = w; save(true); } })].filter(Boolean));
   };
   paint();
   return box;
@@ -1795,19 +1795,19 @@ function renderTabs() {
   const t = tabs[edTab];
   $('#ed-tabs').replaceChildren(...tabs.map((x, i) => el('button', { type: 'button', class: 'ed-tab' + (i === edTab ? ' on' : ''),
     onclick: () => { edTab = i; edSel = edAdd = null; renderTabs(); } }, el('i', { class: 'mdi ' + (PM.mdi(x.icon) || 'mdi-tab') }), x.title || 'Sin nombre')),
-    el('button', { type: 'button', class: 'ed-tab', textContent: '+ Pestaña', onclick: () => {
+    el('button', { type: 'button', class: 'ed-tab', textContent: I18N.t('web.editor.tab'), onclick: () => {
       tabs.push({ id: 't-' + Date.now().toString(36), title: 'Nueva', icon: 'mdi:star-outline', cards: [] }); edTab = tabs.length - 1; edSel = edAdd = null; renderTabs(); dirty(); } }));
   if (!t) { $('#ed-tab').replaceChildren(); $('#ed-grid').replaceChildren(); $('#ed-panel').replaceChildren(); return; }
   t.cards = t.cards || [];
   $('#ed-tab').replaceChildren(el('div', { class: 'tab-head' },
-    el('input', { type: 'text', placeholder: 'Nombre', value: t.title || '', oninput: (e) => { t.title = e.target.value; dirty(); $('#ed-tabs .on').lastChild.textContent = t.title; } }),
+    el('input', { type: 'text', placeholder: I18N.t('panel.sheets.name'), value: t.title || '', oninput: (e) => { t.title = e.target.value; dirty(); $('#ed-tabs .on').lastChild.textContent = t.title; } }),
     el('input', { type: 'text', placeholder: 'Icono (mdi:home)', value: t.icon || '', oninput: (e) => { t.icon = e.target.value.trim(); dirty(); } }),
     el('div', { class: 'btns' },
-      el('button', { type: 'button', class: 'btn mv', textContent: '↑', title: 'Subir en la barra', disabled: edTab === 0, onclick: () => { [tabs[edTab - 1], tabs[edTab]] = [tabs[edTab], tabs[edTab - 1]]; edTab--; renderTabs(); dirty(); } }),
-      el('button', { type: 'button', class: 'btn mv', textContent: '↓', title: 'Bajar en la barra', disabled: edTab === tabs.length - 1, onclick: () => { [tabs[edTab + 1], tabs[edTab]] = [tabs[edTab], tabs[edTab + 1]]; edTab++; renderTabs(); dirty(); } }),
+      el('button', { type: 'button', class: 'btn mv', textContent: '↑', title: I18N.t('web.editor.move_up'), disabled: edTab === 0, onclick: () => { [tabs[edTab - 1], tabs[edTab]] = [tabs[edTab], tabs[edTab - 1]]; edTab--; renderTabs(); dirty(); } }),
+      el('button', { type: 'button', class: 'btn mv', textContent: '↓', title: I18N.t('web.editor.move_down'), disabled: edTab === tabs.length - 1, onclick: () => { [tabs[edTab + 1], tabs[edTab]] = [tabs[edTab], tabs[edTab + 1]]; edTab++; renderTabs(); dirty(); } }),
       sureBtn({ class: 'btn danger mv', title: 'Quitar pestaña' }, '×', '¿Quitar?', () => { tabs.splice(edTab, 1); edSel = edAdd = null; renderTabs(); dirty(); }))));
   paintGrid();
-  $('#ed-panel').replaceChildren(...[edAdd ? edAddPanel() : edSel ? edCardPanel() : el('div', { class: 'hint', textContent: 'Toca una tarjeta para cambiarla, o «+ Añadir».' })].filter(Boolean));
+  $('#ed-panel').replaceChildren(...[edAdd ? edAddPanel() : edSel ? edCardPanel() : el('div', { class: 'hint', textContent: I18N.t('web.editor.tap_card_change') })].filter(Boolean));
 }
 { const r = $('#tab-reset'), yes = sureBtn({ class: 'btn', id: 'tab-reset' }, r.textContent, '¿Seguro? Se pierden las tuyas. Toca otra vez',
   () => { tabs = PM.tabList(null); edTab = 0; edSel = edAdd = null; renderTabs(); dirty(); }); r.replaceWith(yes); }
@@ -1832,11 +1832,11 @@ function renderChips(key) {
     const c = document.createElement('span'); c.className = 'chip';
     c.title = names[id] || '';
     c.textContent = names[id] ? `${names[id]} (${id})` : id;
-    const x = document.createElement('button'); x.type = 'button'; x.textContent = '×'; x.title = 'Quitar';
+    const x = document.createElement('button'); x.type = 'button'; x.textContent = '×'; x.title = I18N.t('panel.quick.remove');
     x.onclick = () => { lists[key].splice(i, 1); renderChips(key); dirty(); };
     c.append(x); return c;
   }));
-  if (!lists[key].length) { const e = document.createElement('span'); e.className = 'hint'; e.textContent = 'Ninguna'; box.append(e); }
+  if (!lists[key].length) { const e = document.createElement('span'); e.className = 'hint'; e.textContent = I18N.t('panel.settings.none_f'); box.append(e); }
 }
 function addChip(key) {
   const inp = document.querySelector(`[data-add="${key}"]`);
@@ -1851,9 +1851,9 @@ function fill(cfg) {
   $('#haUrl').value = p.haUrl || '';
   $('#mqttEnabled').checked = !!p.mqttEnabled; $('#mqttHost').value = p.mqttHost || ''; $('#mqttPort').value = p.mqttPort || '';
   $('#mqttUser').value = p.mqttUser || ''; $('#mqttPassword').value = '';
-  $('#mqtt-pass-pill').textContent = t(p.hasMqttPassword ? 'guardada' : 'sin contraseña'); $('#mqtt-pass-pill').className = 'pill' + (p.hasMqttPassword ? ' ok' : '');
+  $('#mqtt-pass-pill').textContent = t(p.hasMqttPassword ? I18N.t('web.general.saved_f') : I18N.t('web.general.no_password')); $('#mqtt-pass-pill').className = 'pill' + (p.hasMqttPassword ? ' ok' : '');
   $('#token').value = '';
-  $('#token-pill').textContent = p.hasToken ? 'guardado' : 'sin token';
+  $('#token-pill').textContent = p.hasToken ? I18N.t('web.general.saved_m') : I18N.t('web.general.no_token');
   $('#token-pill').className = 'pill' + (p.hasToken ? ' ok' : '');
   $('#brightness').value = a.brightness;
   $('#idleSeconds').value = String(a.idleSeconds);
@@ -1931,21 +1931,21 @@ let FILLING = 0;   // mientras se rellenan los campos con lo de la Pi no cuenta 
 /* Lo que no va en la configuración del panel sino en servicios de la Pi (sonido, altavoz, voz, actualizaciones).
  * snap = cómo estaba al cargar: al pulsar Guardar solo se manda lo que ha cambiado. */
 const EXTRA = {
-  sonido: { label: 'Sonido', snap: null,
+  sonido: { label: 'panel.settings.sound', snap: null,
     get: () => ({ music: +$('#snd-music-vol').value, master: +$('#snd-master-vol').value, voiceVolume: +$('#snd-voice-vol').value, micGain: +$('#snd-mic').value }),
     save: async (cur, old) => { const d = {}; for (const k in cur) if (cur[k] !== old[k]) d[k] = cur[k]; await api('POST', '/api/sonido', d); } },
   altavoz: { label: 'Altavoz', snap: null,
     get: () => ({ enabled: $('#spk-enabled').checked, name: $('#spk-name').value.trim(), device: $('#spk-device').value, entity: $('#spk-entity').value,
       closeAfter: +$('#spk-close').value, npSpeakers: npSpk.slice() }),
     save: async (cur) => { const r = await api('POST', '/api/altavoz', cur); spkMsg(r.mensaje, true); } },
-  voz: { label: 'Asistente de voz', snap: null,
+  voz: { label: I18N.t('panel.settings.voice_assistant'), snap: null,
     get: () => ({ enabled: $('#voz-enabled').checked, name: $('#voz-name').value.trim(), mic: $('#voz-mic').value, output: $('#voz-out').value, wake: $('#voz-wake').value }),
     save: async (cur) => { const r = await api('POST', '/api/voz', cur); vozMsg(r.mensaje, true); } },
-  upd: { label: 'Actualizaciones', snap: null,
+  upd: { label: I18N.t('panel.settings.updates'), snap: null,
     get: () => ({ mode: $('#upd-mode').value, hour: +$('#upd-hour').value }),
     save: async (cur) => { await api('POST', '/api/actualizaciones', { accion: 'ajustes', ...cur }); } },
 };
-function dirty() { isDirty = true; msg('Cambios sin guardar'); }
+function dirty() { isDirty = true; msg(I18N.t('web.login.unsaved_changes')); }
 
 async function loadEntities() {
   try {
@@ -1953,12 +1953,12 @@ async function loadEntities() {
     names = Object.fromEntries(ents.map((e) => [e.id, e.name]));
     $('#entidades').replaceChildren(...ents.map((e) => { const o = document.createElement('option'); o.value = e.id; o.label = e.name; return o; }));
     const sel = $('#weatherEntity'), cur = sel.dataset.value;
-    sel.replaceChildren(tOption('Automática (la primera que haya)', ''),
+    sel.replaceChildren(tOption(I18N.t('web.general.automatic_first_one'), ''),
       ...ents.filter((e) => e.id.startsWith('weather.')).map((e) => tOption(`${e.name} (${e.id})`, e.id)));
     sel.value = cur;
     ambSpkPaint(); npSpkPaint();
     const vs = $('#voiceSatellite'), curVs = vs.dataset.value || '';
-    vs.replaceChildren(tOption('Ninguno', ''), ...ents.filter((e) => e.id.startsWith('assist_satellite.')).map((e) => tOption(`${e.name} (${e.id})`, e.id)));
+    vs.replaceChildren(tOption(I18N.t('panel.settings.none'), ''), ...ents.filter((e) => e.id.startsWith('assist_satellite.')).map((e) => tOption(`${e.name} (${e.id})`, e.id)));
     vs.value = curVs;
     spkEntities();
     Object.keys(lists).forEach(renderChips);
@@ -1976,14 +1976,14 @@ function liveTick() {
   img.onload = () => { $('#live-img').src = img.src; LIVE.timer = setTimeout(liveTick, 1000); };
   img.onerror = () => {
     $('#live-img').removeAttribute('src');
-    $('#live-msg').textContent = t('No se puede ver la pantalla (solo funciona en la Pi).');
-    LIVE.on = false; $('#live-btn').textContent = t('Ver');
+    $('#live-msg').textContent = t('web.general.screen_cannot_shown');
+    LIVE.on = false; $('#live-btn').textContent = t('web.general.view');
   };
   img.src = '/api/pantalla.png?t=' + Date.now();
 }
 $('#live-btn').onclick = () => {
   LIVE.on = !LIVE.on;
-  $('#live-btn').textContent = t(LIVE.on ? 'Parar' : 'Ver');
+  $('#live-btn').textContent = t(LIVE.on ? I18N.t('panel.sheets.stop') : I18N.t('web.general.view'));
   clearTimeout(LIVE.timer);
   if (LIVE.on) liveTick();
 };
@@ -1991,17 +1991,17 @@ async function loadMqtt() {
   let estado;
   try {
     const r = await api('GET', '/api/mqtt');
-    estado = { connected: 'Conectado', connecting: 'Conectando…', off: 'Desactivado' }[r.status] || ('Error: ' + (r.error || r.status));
+    estado = { connected: I18N.t('panel.settings.connected'), connecting: I18N.t('web.general.connecting'), off: I18N.t('web.sound.off') }[r.status] || ('Error: ' + (r.error || r.status));
     const pre = $('#mqtt-log'), atEnd = pre.scrollTop + pre.clientHeight >= pre.scrollHeight - 4;
-    pre.textContent = (r.log || []).join(String.fromCharCode(10)) || t('Aún no ha pasado nada.');
+    pre.textContent = (r.log || []).join(String.fromCharCode(10)) || t('web.general.nothing_has_happened');
     if (atEnd) pre.scrollTop = pre.scrollHeight;
   } catch (e) { estado = 'Error: ' + e.message; }
-  $('#mqtt-info').replaceChildren(el('dt', { textContent: 'Estado' }), el('dd', { textContent: estado }));
+  $('#mqtt-info').replaceChildren(el('dt', { textContent: I18N.t('panel.sheets.status') }), el('dd', { textContent: estado }));
 }
 // con el registro abierto se va actualizando (cada 3 s)
 setInterval(() => { if ($('#mqtt-log-box').open && !document.hidden && !$('#app').classList.contains('hidden')) loadMqtt(); }, 3000);
 $('#mqtt-log-box').addEventListener('toggle', () => { if ($('#mqtt-log-box').open) loadMqtt(); });
-$('#mqtt-log-copy').onclick = () => { navigator.clipboard && navigator.clipboard.writeText($('#mqtt-log').textContent); msg('Registro copiado', 'ok'); };
+$('#mqtt-log-copy').onclick = () => { navigator.clipboard && navigator.clipboard.writeText($('#mqtt-log').textContent); msg(I18N.t('web.general.log_copied'), 'ok'); };
 async function load() {
   const cfg = await api('GET', '/api/config');
   fill(cfg); isDirty = false; msg('');
@@ -2016,10 +2016,10 @@ async function load() {
 
 /* ---------- fuentes de fotos (conectores) ---------- */
 const SRC_TYPES = {
-  immich: { icon: '🖼️', label: 'Immich' },
-  google: { icon: '🟦', label: 'Google Fotos' },
+  immich: { icon: '🖼️', label: 'web.ambient.immich' },
+  google: { icon: '🟦', label: 'web.ambient.google_photos' },
   ha_media: { icon: '🏠', label: 'Carpeta de Home Assistant' },
-  urls: { icon: '🔗', label: 'Fotos por URL' },
+  urls: { icon: '🔗', label: 'web.ambient.photos_by_url' },
 };
 let sources = [];
 const newId = () => 's' + Date.now().toString(36) + Math.random().toString(36).slice(2, 5);
@@ -2048,11 +2048,11 @@ function renderSources() {
     const t = SRC_TYPES[src.type] || { icon: '❔', label: src.type };
     const card = document.createElement('div'); card.className = 'src' + (src.enabled === false ? ' off' : '');
     const head = document.createElement('div'); head.className = 'src-head';
-    const title = document.createElement('b'); title.textContent = `${t.icon} ${t.label}`;
+    const title = document.createElement('b'); title.textContent = `${t.icon} ${I18N.t(t.label)}`;
     const sw = document.createElement('label'); sw.className = 'switch'; sw.title = 'Activada'; sw.innerHTML = '<input type="checkbox"><span></span>';
     sw.firstChild.checked = src.enabled !== false;
     sw.firstChild.onchange = () => { src.enabled = sw.firstChild.checked; card.classList.toggle('off', !src.enabled); dirty(); };
-    const del = document.createElement('button'); del.type = 'button'; del.className = 'btn danger'; del.textContent = 'Quitar';
+    const del = document.createElement('button'); del.type = 'button'; del.className = 'btn danger'; del.textContent = I18N.t('panel.quick.remove');
     del.onclick = () => { sources.splice(i, 1); renderSources(); dirty(); };
     head.append(title, sw, del);
     const body = document.createElement('div'); body.className = 'src-body';
@@ -2060,7 +2060,7 @@ function renderSources() {
     // Modo de visualización propio de esta fuente (vacío = el de por defecto)
     const fit = document.createElement('select');
     const defLabel = $('#photos-fit').selectedOptions[0] ? $('#photos-fit').selectedOptions[0].textContent : '';
-    [['', `Cómo se ve: por defecto (${defLabel})`], ['cover', 'Cómo se ve: rellenar la pantalla'], ['blur', 'Cómo se ve: entera + fondo difuminado'], ['contain', 'Cómo se ve: entera (fondo negro)']]
+    [['', I18N.t('web.ambient.fit_default', { mode: defLabel })], ['cover', I18N.t('web.ambient.fit_cover')], ['blur', I18N.t('web.ambient.fit_blur')], ['contain', I18N.t('web.ambient.fit_contain')]]
       .forEach(([v, t]) => fit.append(tOption(t, v)));
     fit.value = src.fit || '';
     fit.onchange = () => { src.fit = fit.value || undefined; dirty(); };
@@ -2068,10 +2068,10 @@ function renderSources() {
     if (src.type === 'immich') {
       body.append(input(src.url, 'https://immich.casa/share/XXXX', (v) => { src.url = v.trim(); }),
         input('', src.hasApiKey ? 'Clave API guardada (escribe para cambiarla)' : 'Clave API (solo para álbumes privados …/albums/<id>)', (v) => { src.apiKey = v.trim(); }, 'password'),
-        hint('Enlace compartido del álbum: en Immich → álbum → Compartir → Crear enlace.'));
+        hint(I18N.t('web.ambient.shared_album_link')));
     } else if (src.type === 'google') {
       body.append(input(src.url, 'https://photos.app.goo.gl/XXXX', (v) => { src.url = v.trim(); }),
-        hint('En Google Fotos → álbum → Compartir → Crear enlace. Lo lee el ayudante de la Pi.'));
+        hint(I18N.t('web.ambient.google_photos_album')));
     } else if (src.type === 'ha_media') {
       body.append(input(src.folder, 'Carpeta, p. ej. fotos (vacío = todo «My media»)', (v) => { src.folder = v.trim(); }),
         hint('Fotos que subas a Home Assistant → Medios → My media. Solo se leen.'));
@@ -2095,16 +2095,16 @@ function redMsg(t, ok) { const m = $('#red-msg'); m.textContent = I18N.t(t); m.s
 async function loadRed() {
   try {
     const r = await api('GET', '/api/red');
-    const rows = [['Nombre', r.hostname], ['IP', r.ip + (r.ipv4 ? (r.ipv4.method === 'manual' ? ' (fija)' : ' (automática)') : '')]];
-    if (r.wifi) rows.push(['WiFi', `${r.wifi.ssid} · señal ${r.wifi.signal} %`]);
+    const rows = [[I18N.t('panel.sheets.name'), r.hostname], [I18N.t('panel.settings.ip'), r.ipv4 ? I18N.t(r.ipv4.method === 'manual' ? 'web.system.ip_static' : 'web.system.ip_auto', { ip: r.ip }) : r.ip]];
+    if (r.wifi) rows.push([I18N.t('panel.settings.wifi'), I18N.t('web.system.wifi_signal', { ssid: r.wifi.ssid, n: r.wifi.signal })]);
     else if (r.connection) rows.push(['Conexión', r.connection.type === 'ethernet' ? 'Cable de red' : r.connection.name]);
-    if (r.gateway) rows.push(['Puerta de enlace', r.gateway]);
+    if (r.gateway) rows.push([I18N.t('web.system.gateway'), r.gateway]);
     if (r.dns) rows.push(['DNS', r.dns]);
-    rows.push(['Esta web', r.urls.join('  ·  ')]);
+    rows.push([I18N.t('web.system.web'), r.urls.join('  ·  ')]);
     $('#red-info').replaceChildren(...rows.flatMap(([k, v]) => { const dt = document.createElement('dt'), dd = document.createElement('dd'); dt.textContent = t(k); dd.textContent = t(v); return [dt, dd]; }));
     $('#red-controles').classList.toggle('hidden', !r.nmcli);
     if (!r.nmcli) redMsg('Este equipo no usa NetworkManager: solo se muestra la información.');
-    else if (r.simulated) redMsg('Red simulada: los cambios se ven aquí pero no tocan la red del ordenador.');
+    else if (r.simulated) redMsg(I18N.t('web.system.simulated_network_changes'));
     $('#hostname').value = r.hostname;
     const m = (r.ipv4 && r.ipv4.method) || 'auto';
     document.querySelector(`input[name=ipm][value=${m}]`).checked = true;
@@ -2153,9 +2153,9 @@ function spkMsg(t, ok) { const m = $('#spk-msg'); m.textContent = I18N.t(t); m.s
 function spkFill(r) {
   FILLING++;
   const s = r.settings;
-  const estado = !r.installed ? 'Sin instalar' : r.active ? 'Funcionando' : s.enabled ? 'Activado, pero no está funcionando (mira el registro)' : 'Desactivado';
-  const rows = [['Estado', estado], ['Nombre', s.name || r.defaultName]];
-  if (r.pin) rows.push(['Código para Music Assistant', r.pin]);
+  const estado = !r.installed ? I18N.t('web.sound.not_installed') : r.active ? I18N.t('web.sound.running') : s.enabled ? I18N.t('web.sound.but_not_working') : I18N.t('web.sound.off');
+  const rows = [[I18N.t('panel.sheets.status'), estado], [I18N.t('panel.sheets.name'), s.name || r.defaultName]];
+  if (r.pin) rows.push([I18N.t('web.sound.music_assistant_code'), r.pin]);
   $('#spk-info').replaceChildren(...rows.flatMap(([k, v]) => { const dt = document.createElement('dt'), dd = document.createElement('dd'); dt.textContent = t(k); dd.textContent = t(v); return [dt, dd]; }));
   $('#spk-install').classList.toggle('hidden', r.installed);
   $('#spk-enabled').checked = s.enabled;
@@ -2180,7 +2180,7 @@ function spkEntities() {
   const sel = $('#spk-entity');
   const mp = Object.keys(names).filter((id) => id.startsWith('media_player.'));
   if (spkEntity && !mp.includes(spkEntity)) mp.push(spkEntity);
-  sel.replaceChildren(tOption('Automático (por el nombre)', ''), ...mp.map((id) => tOption(`${names[id] || id} (${id})`, id)));
+  sel.replaceChildren(tOption(I18N.t('web.sound.automatic_by_name'), ''), ...mp.map((id) => tOption(`${names[id] || id} (${id})`, id)));
   sel.value = spkEntity; sel.dispatchEvent(new Event('change'));
 }
 async function loadSpk() {
@@ -2219,8 +2219,8 @@ function vozSelect(sel, list, value, missing) {
 function vozFill(r) {
   FILLING++;
   const s = r.settings;
-  const estado = !r.installed ? 'Sin instalar' : r.active ? 'Escuchando' : s.enabled ? 'Activado, pero no está funcionando (mira el registro)' : 'Desactivado';
-  const rows = [['Estado', estado], ['Nombre', s.name || r.defaultName], ['Puerto (Wyoming)', String(r.port)]];
+  const estado = !r.installed ? I18N.t('web.sound.not_installed') : r.active ? I18N.t('web.sound.listening') : s.enabled ? I18N.t('web.sound.but_not_working') : I18N.t('web.sound.off');
+  const rows = [[I18N.t('panel.sheets.status'), estado], [I18N.t('panel.sheets.name'), s.name || r.defaultName], [I18N.t('web.beta.port_wyoming'), String(r.port)]];
   $('#voz-info').replaceChildren(...rows.flatMap(([k, v]) => { const dt = document.createElement('dt'), dd = document.createElement('dd'); dt.textContent = t(k); dd.textContent = t(v); return [dt, dd]; }));
   $('#voz-install').classList.toggle('hidden', r.installed);
   $('#voz-enabled').checked = s.enabled;
@@ -2242,15 +2242,15 @@ function updMsg(t, ok) { const m = $('#upd-msg'); m.textContent = I18N.t(t); m.s
 let updFilling = false, updTimer = null;
 function updFill(r) {
   updFilling = true; FILLING++;
-  const ago = (t) => { if (!t) return 'aún no'; const m = Math.round((Date.now() / 1000 - t) / 60); return m < 1 ? 'hace un momento' : m < 60 ? `hace ${m} min` : `hace ${Math.round(m / 60)} h`; };
+  const ago = (t) => { if (!t) return I18N.t('web.system.not_yet'); const m = Math.round((Date.now() / 1000 - t) / 60); return m < 1 ? I18N.t('web.system.moment_ago') : m < 60 ? I18N.t('panel.time.minutes_ago', { n: m }) : I18N.t('panel.time.hours_ago', { n: Math.round(m / 60) }); };
   const cur = r.current;
-  const rows = [['Versión', cur ? `${cur.subject} (${cur.hash}, ${new Date(cur.date).toLocaleDateString(I18N.locale())})` : '¿?'],
-    ['Rama', r.branch || '—'],
-    ['Estado', r.applying ? 'Actualizando…' : r.checking ? 'Comprobando…' : r.available.length ? `${r.available.length} cambio${r.available.length > 1 ? 's' : ''} nuevo${r.available.length > 1 ? 's' : ''}` : 'Al día'],
-    ['Última comprobación', ago(r.lastCheck)]];
+  const rows = [[I18N.t('panel.sheets.version'), cur ? `${cur.subject} (${cur.hash}, ${new Date(cur.date).toLocaleDateString(I18N.locale())})` : '¿?'],
+    [I18N.t('web.system.branch'), r.branch || '—'],
+    [I18N.t('panel.sheets.status'), r.applying ? I18N.t('web.system.updating') : r.checking ? I18N.t('web.system.checking') : r.available.length ? I18N.t(r.available.length > 1 ? 'web.system.new_changes' : 'web.system.new_changes_one', { n: r.available.length }) : I18N.t('panel.settings.up_date')],
+    [I18N.t('web.system.last_check'), ago(r.lastCheck)]];
   $('#upd-info').replaceChildren(...rows.flatMap(([k, v]) => { const dt = document.createElement('dt'), dd = document.createElement('dd'); dt.textContent = t(k); dd.textContent = t(v); return [dt, dd]; }));
   $('#upd-new').classList.toggle('hidden', !r.available.length);
-  $('#upd-new-title').textContent = 'Novedades:';
+  $('#upd-new-title').textContent = I18N.t('web.system.what_s_new');
   $('#upd-list').replaceChildren(...r.available.slice(0, 15).map((c) => { const li = document.createElement('li'); li.textContent = c.subject; return li; }));
   $('#upd-apply').classList.toggle('hidden', !r.available.length || r.applying);
   $('#upd-mode').value = r.settings.mode; $('#upd-mode').dispatchEvent(new Event('change'));
@@ -2278,13 +2278,13 @@ async function loadUpd() {
 let r_applying = false;
 $('#upd-mode').addEventListener('change', () => $('#upd-hour-box').classList.toggle('hidden', $('#upd-mode').value !== 'auto'));
 $('#upd-check').onclick = async () => {
-  updMsg('Comprobando…');
+  updMsg(I18N.t('web.system.checking'));
   try { const r = await api('POST', '/api/actualizaciones', { accion: 'comprobar' }); updFill(r.info); if (!r.info.error) updMsg(r.info.available.length ? 'Hay versión nueva.' : 'Ya está al día ✓', true); }
   catch (e) { updMsg(e.message, false); }
 };
 $('#upd-apply').onclick = async () => {
   if (!confirm('¿Actualizar ahora? El panel se reiniciará unos segundos.')) return;
-  updMsg('Actualizando…'); r_applying = true;
+  updMsg(I18N.t('web.system.updating')); r_applying = true;
   try { const r = await api('POST', '/api/actualizaciones', { accion: 'actualizar' }); updMsg(r.mensaje, true); updFill(r.info); updTimer = setTimeout(loadUpd, 2000); }
   catch (e) { updMsg(e.message, false); r_applying = false; }
 };
@@ -2297,7 +2297,7 @@ $('#login-form').addEventListener('submit', async (e) => {
 });
 $('#logout').onclick = async () => { await api('POST', '/api/logout').catch(() => {}); showLogin('Sesión cerrada'); };
 $('#guardar').onclick = async () => {
-  msg('Guardando…');
+  msg(I18N.t('web.login.saving'));
   try {
     await api('PUT', '/api/config', collect());
     const errs = [];
@@ -2305,15 +2305,15 @@ $('#guardar').onclick = async () => {
       if (x.snap === null) continue;
       const cur = x.get();
       if (JSON.stringify(cur) === x.snap) continue;
-      try { await x.save(cur, JSON.parse(x.snap)); } catch (e) { errs.push(`${x.label}: ${e.message}`); }
+      try { await x.save(cur, JSON.parse(x.snap)); } catch (e) { errs.push(`${I18N.t(x.label)}: ${e.message}`); }
     }
     await load();
-    if (errs.length) msg('Guardado, pero: ' + errs.join(' · '), 'err');
-    else msg('Guardado ✓', 'ok');
+    if (errs.length) msg(I18N.t('web.general.saved_but', { errors: errs.join(' · ') }), 'err');
+    else msg(I18N.t('web.login.saved'), 'ok');
   } catch (e) { msg(e.message, 'err'); }
 };
 $('#probar').onclick = async () => {
-  const m = $('#probar-msg'); m.textContent = 'Probando…';
+  const m = $('#probar-msg'); m.textContent = I18N.t('web.general.testing');
   try { const r = await api('POST', '/api/probar', { haUrl: $('#haUrl').value.trim(), token: $('#token').value.trim() }); m.textContent = (r.ok ? '✓ ' : '✗ ') + r.mensaje; }
   catch (e) { m.textContent = '✗ ' + e.message; }
 };
@@ -2393,7 +2393,7 @@ function fsShow(sel, btn) {
       class: 'fs-opt' + (o.selected ? ' sel' : '') + (i === active ? ' fs-act' : '') + (o.disabled ? ' dis' : ''),
       onmousedown: (e) => e.preventDefault(), onclick: () => choose(o), onmousemove: () => { if (active !== i) { active = i; mark(); } },
     }, el('span', { textContent: o.textContent }), o.selected ? el('i', { class: 'mdi mdi-check' }) : null))
-      : [el('div', { class: 'fs-empty', textContent: 'No hay nada con «' + (search ? search.value : '') + '»' })]));
+      : [el('div', { class: 'fs-empty', textContent: I18N.t('web.editor.nothing_matches', { q: search ? search.value : '' }) })]));
   };
   const mark = () => [...list.children].forEach((c, i) => c.classList.toggle('fs-act', i === active));
   const place = () => {
