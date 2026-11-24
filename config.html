@@ -63,6 +63,11 @@
   .fs-opt.dis { opacity: .45; cursor: default; }
   .fs-empty { padding: 10px; color: var(--muted); font-size: 13px; }
   .ms { display: flex; flex-direction: column; gap: 8px; }
+  .ord-row { display: flex; align-items: center; gap: 8px; padding: 6px 6px 6px 10px; border-radius: 12px; background: var(--surface-2); }
+  .ord-n { flex: none; width: 22px; height: 22px; border-radius: 50%; background: var(--surface-3); font-size: 12px; font-weight: 700; display: grid; place-items: center; color: var(--muted); }
+  .ord-label { flex: 1; min-width: 0; font-size: 14px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .ord-row button { flex: none; width: 30px; height: 30px; border: 0; border-radius: 50%; background: var(--surface-3); color: var(--text); cursor: pointer; font-size: 18px; display: grid; place-items: center; }
+  .ord-row button:disabled { opacity: .3; cursor: default; }
   .ms-chips .chip { background: var(--surface-3); }
   .ms-opt { justify-content: flex-start; }
   .ms-opt .mdi { font-size: 20px; color: var(--muted); }
@@ -348,8 +353,9 @@
     <div class="card">
       <h2>🎵 Reproductor del modo ambiente</h2>
       <div class="field">
-        <label for="defaultSpeaker">Altavoz por defecto <span class="hint">(sus controles salen en el modo ambiente)</span></label>
-        <select id="defaultSpeaker"><option value="">Ninguno</option></select>
+        <label>Altavoces, por prioridad <span class="hint">(sus controles salen en el modo ambiente)</span></label>
+        <div id="ambientSpeakers"></div>
+        <span class="hint">Manda el primero de la lista que esté sonando; si no suena ninguno, el primero en pausa y, si no, el primero.</span>
       </div>
     </div>
 
@@ -587,7 +593,6 @@ go = 'home' | 'rooms' | 'sensors' | 'media' | 'printers' | 'scooter' | 'settings
     <div class="card">
       <h2>▶️ Sonando</h2>
       <span class="hint">La pantalla con la carátula grande que sale cuando suena música.</span>
-      <div class="row"><label for="spk-open">Al sonar algo en la Pi, mostrar la pantalla «Sonando»</label><label class="switch"><input id="spk-open" type="checkbox"><span></span></label></div>
       <div class="field">
         <label for="spk-close">Al pausar o parar, cerrar «Sonando»</label>
         <select id="spk-close">
@@ -596,9 +601,9 @@ go = 'home' | 'rooms' | 'sensors' | 'media' | 'printers' | 'scooter' | 'settings
         </select>
       </div>
       <div class="field">
-        <label>Otros altavoces que también abren «Sonando»</label>
-        <div id="spk-watch"></div>
-        <span class="hint">Por ejemplo el de la habitación donde está el panel: al empezar a sonar, sale su pantalla «Sonando».</span>
+        <label>Altavoces que la abren, por prioridad</label>
+        <div id="np-speakers"></div>
+        <span class="hint">Al empezar a sonar uno, sale su «Sonando». Si ya se ve otro, solo cambia si el nuevo está más arriba o si el que se ve no está sonando; al parar, pasa al siguiente que siga sonando.</span>
       </div>
     </div>
 
@@ -1207,6 +1212,35 @@ function multiSelect(opts, list, set, emptyText) {
   paint();
   return el('div', { class: 'ms' }, chips, btn);
 }
+/** Lista con orden (prioridad): cada elegido con su número, subir, bajar y quitar; abajo, añadir. */
+function orderSelect(opts, list, set, emptyText) {
+  list = list.slice();
+  const labelOf = (x) => (opts.find((o) => o.value === x) || { label: x + ' (no existe)' }).label;
+  const rows = el('div', { class: 'ms' });
+  const label = el('span', { class: 'fs-label' });
+  const btn = el('button', { type: 'button', class: 'fs-btn' }, label, el('i', { class: 'mdi mdi-chevron-down fs-arrow' }));
+  const save = () => { set(list.slice()); paint(); };
+  const paint = () => {
+    rows.replaceChildren(...list.map((x, i) => el('div', { class: 'ord-row' }, el('span', { class: 'ord-n', textContent: String(i + 1) }),
+      el('span', { class: 'ord-label', textContent: labelOf(x), title: x }),
+      el('button', { type: 'button', title: 'Subir', disabled: i === 0, onclick: () => { [list[i - 1], list[i]] = [list[i], list[i - 1]]; save(); } }, el('i', { class: 'mdi mdi-chevron-up' })),
+      el('button', { type: 'button', title: 'Bajar', disabled: i === list.length - 1, onclick: () => { [list[i + 1], list[i]] = [list[i], list[i + 1]]; save(); } }, el('i', { class: 'mdi mdi-chevron-down' })),
+      el('button', { type: 'button', title: 'Quitar', onclick: () => { list.splice(i, 1); save(); } }, el('i', { class: 'mdi mdi-close' })))));
+    rows.classList.toggle('hidden', !list.length);
+    label.textContent = list.length ? 'Añadir o quitar…' : emptyText;
+    label.classList.toggle('muted', !list.length);
+  };
+  const toggle = (x) => { const i = list.indexOf(x); if (i >= 0) list.splice(i, 1); else list.push(x); save(); };
+  btn.addEventListener('click', (e) => { e.stopPropagation(); fsOpen && fsOpen.btn === btn ? fsClose() : msShow(btn, opts, () => list, toggle); });
+  paint();
+  return el('div', { class: 'ms' }, rows, btn);
+}
+/** Altavoces para las listas: este panel y los media_player de Home Assistant. */
+const speakerOpts = () => [{ value: '@panel', label: 'Este panel' }]
+  .concat(Object.keys(names).filter((id) => id.startsWith('media_player.')).map((id) => ({ value: id, label: names[id] || id })));
+let ambSpk = [], npSpk = [];
+function ambSpkPaint() { $('#ambientSpeakers').replaceChildren(orderSelect(speakerOpts(), ambSpk, (v) => { ambSpk = v; dirty(); }, 'Ninguno: sale el que esté sonando de los que abren «Sonando»')); }
+function npSpkPaint() { $('#np-speakers').replaceChildren(orderSelect(speakerOpts(), npSpk, (v) => { npSpk = v; dirty(); }, 'Ninguno: «Sonando» no se abre sola')); }
 function msShow(btn, opts, getList, toggle) {
   fsClose();
   const search = opts.length > 7 ? el('input', { type: 'search', class: 'fs-search', placeholder: 'Buscar…' }) : null;
@@ -1786,9 +1820,8 @@ function fill(cfg) {
   bullets = PM.bulletList(a.bullets, a.ambientChips).map((b) => ({ ...b }));
   tabs = JSON.parse(JSON.stringify(PM.tabList(a.tabs)));
   renderBullets(); renderTabs();
-  $('#defaultSpeaker').dataset.value = a.defaultSpeaker || '';
-  if (![...$('#defaultSpeaker').options].some((o) => o.value === (a.defaultSpeaker || ''))) $('#defaultSpeaker').append(new Option(a.defaultSpeaker, a.defaultSpeaker));
-  $('#defaultSpeaker').value = a.defaultSpeaker || '';
+  ambSpk = Array.isArray(a.ambientSpeakers) ? a.ambientSpeakers.slice() : a.defaultSpeaker ? [a.defaultSpeaker] : [];
+  ambSpkPaint();
   $('#voiceSatellite').dataset.value = a.voiceSatellite || '';
   if (![...$('#voiceSatellite').options].some((o) => o.value === (a.voiceSatellite || ''))) $('#voiceSatellite').append(new Option(a.voiceSatellite, a.voiceSatellite));
   $('#voiceSatellite').value = a.voiceSatellite || '';
@@ -1816,7 +1849,7 @@ function collect() {
     sound: { enabled: $('#sound-enabled').checked, volume: +$('#sound-volume').value },
     photos: { enabled: $('#photos-enabled').checked, seconds: +$('#photos-seconds').value, fit: $('#photos-fit').value },
     bullets, tabs,
-    defaultSpeaker: $('#defaultSpeaker').value,
+    ambientSpeakers: ambSpk.slice(), defaultSpeaker: ambSpk[0] || '',
     voiceSatellite: $('#voiceSatellite').value,
     voiceStyle: $('#voiceStyle').value,
     theme: $('#theme').value, accent, quick: lists.quick,
@@ -1833,7 +1866,7 @@ const EXTRA = {
     save: async (cur, old) => { const d = {}; for (const k in cur) if (cur[k] !== old[k]) d[k] = cur[k]; await api('POST', '/api/sonido', d); } },
   altavoz: { label: 'Altavoz', snap: null,
     get: () => ({ enabled: $('#spk-enabled').checked, name: $('#spk-name').value.trim(), device: $('#spk-device').value, entity: $('#spk-entity').value,
-      open: $('#spk-open').checked, closeAfter: +$('#spk-close').value, watch: spkWatch.slice() }),
+      closeAfter: +$('#spk-close').value, npSpeakers: npSpk.slice() }),
     save: async (cur) => { const r = await api('POST', '/api/altavoz', cur); spkMsg(r.mensaje, true); } },
   voz: { label: 'Asistente de voz', snap: null,
     get: () => ({ enabled: $('#voz-enabled').checked, name: $('#voz-name').value.trim(), mic: $('#voz-mic').value, output: $('#voz-out').value, wake: $('#voz-wake').value }),
@@ -1853,9 +1886,7 @@ async function loadEntities() {
     sel.replaceChildren(new Option('Automática (la primera que haya)', ''),
       ...ents.filter((e) => e.id.startsWith('weather.')).map((e) => new Option(`${e.name} (${e.id})`, e.id)));
     sel.value = cur;
-    const sp = $('#defaultSpeaker'), curSp = sp.dataset.value || '';
-    sp.replaceChildren(new Option('Ninguno', ''), new Option('Este panel (su altavoz de Music Assistant)', '@panel'), ...ents.filter((e) => e.id.startsWith('media_player.')).map((e) => new Option(`${e.name} (${e.id})`, e.id)));
-    sp.value = curSp;
+    ambSpkPaint(); npSpkPaint();
     const vs = $('#voiceSatellite'), curVs = vs.dataset.value || '';
     vs.replaceChildren(new Option('Ninguno', ''), ...ents.filter((e) => e.id.startsWith('assist_satellite.')).map((e) => new Option(`${e.name} (${e.id})`, e.id)));
     vs.value = curVs;
@@ -2026,8 +2057,7 @@ function spkFill(r) {
   if (s.device && !outs.some((o) => o.id === s.device)) outs.push({ id: s.device, name: s.device + ' (no está conectada)' });
   sel.replaceChildren(...outs.map((o) => { const op = document.createElement('option'); op.value = o.id; op.textContent = o.name; return op; }));
   sel.value = s.device; sel.dispatchEvent(new Event('change'));
-  spkEntity = s.entity; spkWatch = (s.watch || []).slice(); spkEntities();
-  $('#spk-open').checked = s.open;
+  spkEntity = s.entity; npSpk = (s.npSpeakers || []).slice(); spkEntities();
   const cl = $('#spk-close');
   if (![...cl.options].some((o) => +o.value === s.closeAfter)) cl.append(new Option(s.closeAfter + ' s', s.closeAfter));
   cl.value = String(s.closeAfter); cl.dispatchEvent(new Event('change'));
@@ -2036,13 +2066,9 @@ function spkFill(r) {
   FILLING--;
   EXTRA.altavoz.snap = JSON.stringify(EXTRA.altavoz.get());
 }
-let spkEntity = '', spkWatch = [];
-function spkWatchPaint() {
-  const opts = Object.keys(names).filter((id) => id.startsWith('media_player.')).map((id) => ({ value: id, label: `${names[id] || id} (${id})` }));
-  $('#spk-watch').replaceChildren(multiSelect(opts, spkWatch, (v) => { spkWatch = v; dirty(); }, 'Ninguno'));
-}
+let spkEntity = '';
 function spkEntities() {
-  spkWatchPaint();
+  npSpkPaint();
   const sel = $('#spk-entity');
   const mp = Object.keys(names).filter((id) => id.startsWith('media_player.'));
   if (spkEntity && !mp.includes(spkEntity)) mp.push(spkEntity);

@@ -751,20 +751,30 @@ function speakerEntity() {
     String(S.states[id].attributes.friendly_name || '').trim().toLowerCase() === want);
   return found.find((id) => reg(id).platform === 'music_assistant') || found[0] || null;
 }
-/** Altavoces que abren «Sonando»: el del panel (si está activado) y los elegidos en la web (p. ej. el de la habitación). */
+const resolveSpk = (x) => (x === '@panel' ? speakerEntity() : x);
+const spkPlaying = (x) => (S.states[x] || {}).state === 'playing';
+/** Altavoces que abren «Sonando», por orden de prioridad (web → Sonido → Sonando). '@panel' = el de este panel. */
 function watchedSpeakers() {
   if (!SPK) return [];
-  const own = SPK.enabled && SPK.open ? speakerEntity() : null;
-  return [...new Set([own, ...(SPK.watch || [])])].filter((x) => x && S.states[x]);
+  const list = SPK.npSpeakers || [...(SPK.open ? ['@panel'] : []), ...(SPK.watch || [])];
+  return [...new Set(list.map(resolveSpk))].filter((x) => x && S.states[x]);
 }
+/* Prioridad: si empieza a sonar uno con más prioridad que el que se ve, «Sonando» pasa a ese; si empieza uno con
+ * menos, solo se cambia si el que se ve no está sonando. Al parar el que se ve, pasa al siguiente que esté sonando. */
 function onSpeaker(id, old, st) {
-  if (!SPK || domain(id) !== 'media_player' || !watchedSpeakers().includes(id)) return;
+  if (!SPK || domain(id) !== 'media_player') return;
+  const w = watchedSpeakers();
+  if (!w.includes(id)) return;
   const was = old && old.state, now = st && st.state;
-  if (now === 'playing') clearTimeout(NP.closeTimer);   // vuelve a sonar: ya no se cierra
-  if (now === 'playing' && was && was !== 'playing' && was !== 'paused') {
-    if (alertOpen()) return;                 // una alarma o un aviso importante mandan
-    showNowPlaying(id);
-  } else if (NP.id === id && now !== 'playing' && was === 'playing') {
+  if (now === 'playing') {
+    if (NP.id === id) { clearTimeout(NP.closeTimer); return; }   // vuelve a sonar: ya no se cierra
+    if (!was || was === 'playing' || alertOpen()) return;          // una alarma o un aviso importante mandan
+    if (!NP.id) { if (was !== 'paused') showNowPlaying(id); return; }   // reanudar una pausa no la abre
+    const cur = w.indexOf(NP.id);
+    if (!spkPlaying(NP.id) || (cur >= 0 && w.indexOf(id) < cur)) { clearTimeout(NP.closeTimer); showNowPlaying(id); }
+  } else if (NP.id === id && was === 'playing') {
+    const next = w.find((x) => x !== id && spkPlaying(x));   // otro de la lista sigue sonando: pasa a ese
+    if (next && !alertOpen()) { clearTimeout(NP.closeTimer); showNowPlaying(next); return; }
     // En pausa o parada: se queda un rato (web → Sonido → Altavoz) por si vuelve a sonar
     const secs = SPK.closeAfter == null ? 60 : SPK.closeAfter;
     clearTimeout(NP.closeTimer);
@@ -1355,7 +1365,8 @@ const DEFAULTS = () => ({
   ambientChips: null,   // null = orden y selección por defecto
   voiceSatellite: '',   // assist_satellite cuya voz se muestra encima de la pantalla ('' = ninguno)
   voiceStyle: 'onda',   // animación de la barra de voz: onda | micro | luz | eq
-  defaultSpeaker: '',   // media_player que se controla desde el modo ambiente ('@panel' = el altavoz de este panel)
+  defaultSpeaker: '',   // (de antes) el primero de ambientSpeakers
+  ambientSpeakers: null,   // altavoces del modo ambiente por prioridad ('@panel' = el de este panel); null = [defaultSpeaker]
   quick: [],            // accesos rápidos de la cortina (entity_id)
   bullets: null,        // burbujas (integradas y de script); null = las de siempre
   tabs: null,           // pestañas con sus tarjetas; null = una por cada vista
@@ -2813,11 +2824,17 @@ const paintBullets = renderAmbientChips;
 /* ---------- Mini reproductor del altavoz por defecto (modo ambiente, abajo a la derecha) ----------
  * Si está sonando algo en el altavoz de este panel, sale ese (aunque no sea el de por defecto);
  * tocar su carátula o el título vuelve a la pantalla «Sonando». */
+/** Altavoces del modo ambiente, por orden de prioridad (Ajustes → Altavoces del modo ambiente). */
+function ambientSpeakers() {
+  const list = SET.ambientSpeakers || (SET.defaultSpeaker ? [SET.defaultSpeaker] : []);
+  return [...new Set(list.map(resolveSpk))].filter((x) => x && S.states[x]);
+}
 function ambientSpeaker() {
-  // primero uno que esté sonando de los que abren «Sonando», luego uno en pausa, y si no el de por defecto
-  const w = watchedSpeakers(), st = (x) => (S.states[x] || {}).state;
-  return w.find((x) => st(x) === 'playing') || w.find((x) => st(x) === 'paused') ||
-    (SET.defaultSpeaker === '@panel' ? speakerEntity() : SET.defaultSpeaker);
+  // el primero de la lista que esté sonando; si no, el primero en pausa; si no, el primero que esté encendido
+  const st = (x) => (S.states[x] || {}).state, l = ambientSpeakers();
+  if (!l.length) { const w = watchedSpeakers(); return w.find((x) => st(x) === 'playing') || w.find((x) => st(x) === 'paused') || null; }
+  return l.find((x) => st(x) === 'playing') || l.find((x) => st(x) === 'paused') ||
+    l.find((x) => !['unavailable', 'off', 'unknown'].includes(st(x))) || l[0];
 }
 function renderAmbientPlayer() {
   const box = $('#amb-player'), id = ambientSpeaker(), st = id && S.states[id];
@@ -2862,14 +2879,34 @@ function speakerCard() {
   // aún no haya creado su reproductor en Home Assistant. Se guarda como '@panel'.
   const own = speakerEntity();
   if (own && players.includes(own)) players.splice(players.indexOf(own), 1);
-  if (SET.defaultSpeaker === own && own) SET.defaultSpeaker = '@panel';
   const ownSub = !own ? 'Aún no está en Music Assistant' : S.states[own].state === 'unavailable' ? 'No disponible' : 'El altavoz de esta pantalla';
   const ownRow = SPK && SPK.enabled ? [['@panel', 'Este panel', 'mdi-tablet', ownSub]] : [];
-  const options = [['', 'Ninguno', 'mdi-volume-off', '']].concat(ownRow, players.map((id) => [id,
+  const options = ownRow.concat(players.map((id) => [id,
     nameOf(id), iconOf(S.states[id]), S.states[id].state === 'unavailable' ? 'No disponible' : (S.areaById[areaOf(id)] || {}).name || '']));
-  return h('div', { class: 'card set-card' }, h('div', { class: 'set-title' }, icon('mdi-speaker'), 'Altavoz por defecto'),
-    h('div', { class: 'muted small' }, 'Sus controles salen abajo a la derecha en el modo ambiente.'),
-    pickList(options, SET.defaultSpeaker, (id) => { SET.defaultSpeaker = id; saveSettings(); }));
+  const box = h('div', { class: 'amb-list' });
+  // Lista con prioridad: sale el primero que esté sonando; si no suena ninguno, el primero en pausa; si no, el primero
+  const cur = () => (SET.ambientSpeakers || (SET.defaultSpeaker ? [SET.defaultSpeaker] : [])).map((x) => (x === own && own ? '@panel' : x));
+  const save = (arr) => { SET.ambientSpeakers = arr; SET.defaultSpeaker = arr[0] || ''; saveSettings(); paint(); renderAmbientPlayer(); };
+  const paint = () => {
+    const list = cur();
+    const rows = list.map((x, i) => {
+      const o = options.find((op) => op[0] === x) || [x, nameOf(x), 'mdi-speaker', 'No existe'];
+      const mv = (d) => { const a = list.slice(); [a[i], a[i + d]] = [a[i + d], a[i]]; save(a); };
+      return h('div', { class: 'amb-item prio-row' }, h('span', { class: 'prio-n' }, i + 1), icon(o[2]),
+        h('div', { class: 'amb-item-label' }, h('div', null, o[1]), o[3] ? h('div', { class: 'muted small' }, o[3]) : null),
+        h('button', { class: 'icon-btn small', disabled: i === 0, onclick: () => mv(-1) }, icon('mdi-chevron-up')),
+        h('button', { class: 'icon-btn small', disabled: i === list.length - 1, onclick: () => mv(1) }, icon('mdi-chevron-down')),
+        h('button', { class: 'icon-btn small', onclick: () => save(list.filter((y) => y !== x)) }, icon('mdi-close')));
+    });
+    const rest = options.filter((o) => !list.includes(o[0]));
+    box.replaceChildren(...[...rows,
+      rows.length ? null : h('div', { class: 'muted small' }, 'Ninguno: sale el que esté sonando de los que abren «Sonando».'),
+      rest.length ? pickList([['', 'Añadir un altavoz…', 'mdi-plus', '']].concat(rest), '', (id) => { if (id) save([...list, id]); }) : null].filter(Boolean));
+  };
+  paint();
+  return h('div', { class: 'card set-card' }, h('div', { class: 'set-title' }, icon('mdi-speaker'), 'Altavoces del modo ambiente'),
+    h('div', { class: 'muted small' }, 'Sus controles salen abajo a la derecha. Manda el primero de la lista que esté sonando; si no suena ninguno, el primero en pausa y, si no, el primero.'),
+    box);
 }
 /** Ajustes: qué burbujas salen en el modo ambiente y en Inicio, y en qué orden. */
 function bulletsCard() {

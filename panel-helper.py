@@ -306,6 +306,11 @@ def speaker_settings():
     except (TypeError, ValueError):
         delay = 0
     entity = str(s.get('entity') or '').strip()[:120]
+    watch = [str(x)[:120] for x in (s.get('watch') or []) if str(x).startswith('media_player.')][:20]
+    if isinstance(s.get('npSpeakers'), list):
+        np_list = [str(x)[:120] for x in s['npSpeakers'] if str(x) == '@panel' or str(x).startswith('media_player.')][:20]
+    else:   # de antes: el del panel (si abría «Sonando») y luego los otros
+        np_list = (['@panel'] if s.get('open', True) is not False else []) + watch
     try:   # segundos que «Sonando» sigue abierta tras pausar/parar (-1 = nunca se cierra sola)
         close_after = max(-1, min(3600, int(s.get('closeAfter', 60))))
     except (TypeError, ValueError):
@@ -315,7 +320,9 @@ def speaker_settings():
             'entity': entity if entity.startswith('media_player.') else '', 'open': s.get('open', True) is not False,
             'closeAfter': close_after,
             # otros altavoces que también abren «Sonando» al empezar a sonar (p. ej. el de la habitación)
-            'watch': [str(x)[:120] for x in (s.get('watch') or []) if str(x).startswith('media_player.')][:20]}
+            'watch': watch,
+            # altavoces que abren «Sonando», por orden de prioridad ('@panel' = el de este panel)
+            'npSpeakers': np_list}
 
 
 def speaker_pin():
@@ -335,7 +342,7 @@ def speaker_panel():
     """Lo que necesita el panel: con qué nombre sale en Music Assistant y si abre el reproductor al sonar."""
     s = speaker_settings()
     return {'enabled': s['enabled'], 'name': s['name'] or speaker_default_name(), 'entity': s['entity'], 'open': s['open'],
-            'closeAfter': s['closeAfter'], 'watch': s['watch']}
+            'closeAfter': s['closeAfter'], 'watch': s['watch'], 'npSpeakers': s['npSpeakers']}
 
 
 def speaker_default_name():
@@ -396,7 +403,8 @@ def set_speaker(body):
            'entity': str(body.get('entity', cur['entity']) or '').strip()[:120],
            'open': bool(body.get('open', cur['open'])),
            'closeAfter': body.get('closeAfter', cur['closeAfter']),
-           'watch': body.get('watch', cur['watch']) if isinstance(body.get('watch', cur['watch']), list) else cur['watch']}
+           'watch': body.get('watch', cur['watch']) if isinstance(body.get('watch', cur['watch']), list) else cur['watch'],
+           'npSpeakers': body['npSpeakers'] if isinstance(body.get('npSpeakers'), list) else cur['npSpeakers']}
     if new['device'] and new['device'] not in {o['id'] for o in audio_outputs()}:
         raise ValueError('esa salida de audio no existe')
     DATA.mkdir(parents=True, exist_ok=True)
