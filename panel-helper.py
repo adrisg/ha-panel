@@ -37,6 +37,7 @@ import subprocess
 import sys
 import threading
 import time
+import unicodedata
 import urllib.error
 import urllib.request
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
@@ -560,7 +561,7 @@ def run_voice():
 # Se guarda en sonido.json y se vuelve a poner al arrancar (ALSA no lo recuerda sin sudo).
 SOUND_FILE = DATA / 'sonido.json'
 MIXER_CTLS = ('Master', 'PCM', 'Speaker', 'Headphone', 'Digital')
-SIM_SOUND = {'master': 70}
+SIM_SOUND = {'master': 70, 'music': 40}
 
 
 def output_card():
@@ -623,6 +624,44 @@ def sound_info():
     v = voice_settings()
     vi = voice_info() if (SIMULATE or VOICE_PY.exists()) else None
     return {'master': master_get(), 'voice': {'installed': bool(vi and vi['installed']), 'volume': v['volume'], 'micGain': v['micGain']}}
+
+
+def music_entity():
+    """El media_player de Home Assistant que es este altavoz: el elegido en la web o el que se llama como él."""
+    s = speaker_settings()
+    if s['entity']:
+        return s['entity']
+    name = (s['name'] or speaker_default_name()).strip()
+    slug = re.sub(r'[^a-z0-9]+', '_', unicodedata.normalize('NFD', name.lower()).encode('ascii', 'ignore').decode()).strip('_')
+    return 'media_player.' + slug if slug else ''
+
+
+def music_get():
+    """Volumen de la música (el del altavoz en Home Assistant / Music Assistant). En simulación no se toca Home Assistant."""
+    ent = music_entity()
+    if SIMULATE:
+        return {'available': True, 'entity': ent, 'name': 'Altavoz de prueba', 'value': SIM_SOUND['music']}
+    if not ent:
+        return {'available': False}
+    code, st = ha_request('GET', '/api/states/' + ent)
+    if code != 200 or not isinstance(st, dict):
+        return {'available': False, 'entity': ent}
+    vol = (st.get('attributes') or {}).get('volume_level')
+    return {'available': vol is not None, 'entity': ent, 'name': (st.get('attributes') or {}).get('friendly_name') or ent,
+            'value': round(vol * 100) if vol is not None else None}
+
+
+def music_set(v):
+    v = _int(v, 0, 100, 40)
+    if SIMULATE:
+        SIM_SOUND['music'] = v
+        return
+    ent = music_entity()
+    if not ent:
+        raise RuntimeError('no se sabe qué altavoz es este panel en Home Assistant')
+    code, res = ha_request('POST', '/api/services/media_player/volume_set', {'entity_id': ent, 'volume_level': v / 100})
+    if code != 200:
+        raise RuntimeError('Home Assistant no lo aceptó: ' + str((res or {}).get('error', code)))
 
 
 def set_sound(body):
@@ -1227,7 +1266,7 @@ class WebHandler(Base):
         if u.path == '/api/sonido':
             if not self._guard():
                 return
-            return self._json(200, sound_info())
+            return self._json(200, dict(sound_info(), music=music_get()))
         if u.path == '/api/actualizaciones':
             if not self._guard():
                 return
@@ -1307,9 +1346,11 @@ class WebHandler(Base):
                 return self._json(200, {'ok': True, 'mensaje': set_speaker(body), 'info': speaker_info()})
             except (ValueError, RuntimeError) as e:
                 return self._json(400, {'error': str(e)})
-        if u.path == '/api/sonido':        # volumen general, de las respuestas y ganancia del micro
+        if u.path == '/api/sonido':        # música, límite de salida, respuestas y ganancia del micro
             try:
-                return self._json(200, set_sound(body))
+                if 'music' in body:
+                    music_set(body['music'])
+                return self._json(200, dict(set_sound(body), music=music_get()))
             except (ValueError, RuntimeError) as e:
                 return self._json(400, {'error': str(e)})
         if u.path == '/api/voz':           # micro, salida y palabra del asistente de voz

@@ -526,7 +526,10 @@ go = 'home' | 'rooms' | 'sensors' | 'media' | 'printers' | 'scooter' | 'settings
     <div data-pg="sonido" class="hidden">
     <div class="card">
       <h2>🔊 Sonido</h2>
-      <span class="hint">El volumen de la música y lo multimedia se cambia en el panel (Ajustes → Sonido) o en Music Assistant.</span>
+      <div id="snd-music" class="field hidden" data-nodirty>
+        <div class="row" style="padding:0"><label for="snd-music-vol">Música <span class="hint" id="snd-music-name"></span></label><span class="val" id="snd-music-vol-v"></span></div>
+        <input id="snd-music-vol" type="range" min="0" max="100" step="1">
+      </div>
       <div id="snd-master" class="field hidden" data-nodirty>
         <div class="row" style="padding:0"><label for="snd-master-vol">Límite de salida <span class="hint" id="snd-master-card"></span></label><span class="val" id="snd-master-vol-v"></span></div>
         <input id="snd-master-vol" type="range" min="0" max="100" step="1">
@@ -2028,6 +2031,10 @@ function sndFill(r) {
   $('#snd-msg').textContent = '';
   $('#snd-voice').classList.toggle('hidden', !r.voice.installed);
   $('#snd-master').classList.toggle('hidden', !r.master.available);
+  const mu = r.music || {};
+  $('#snd-music').classList.toggle('hidden', !mu.available);
+  $('#snd-music-name').textContent = mu.name ? `(${mu.name})` : '';
+  if (mu.available && mu.value != null) set('snd-music-vol', mu.value);
   $('#snd-master-card').textContent = r.master.card ? `(${r.master.card})` : '';
   if (r.master.available && r.master.value != null) set('snd-master-vol', r.master.value);
   set('snd-voice-vol', r.voice.volume); set('snd-mic', r.voice.micGain);
@@ -2035,10 +2042,10 @@ function sndFill(r) {
 async function loadSnd() {
   try { sndFill(await api('GET', '/api/sonido')); } catch (e) { $('#snd-msg').textContent = 'No se pudo leer el sonido: ' + e.message; }
 }
-['snd-master-vol', 'snd-voice-vol', 'snd-mic'].forEach((id) => {
+['snd-music-vol', 'snd-master-vol', 'snd-voice-vol', 'snd-mic'].forEach((id) => {
   bindRange(id);
   $('#' + id).addEventListener('change', async () => {
-    const key = { 'snd-master-vol': 'master', 'snd-voice-vol': 'voiceVolume', 'snd-mic': 'micGain' }[id];
+    const key = { 'snd-music-vol': 'music', 'snd-master-vol': 'master', 'snd-voice-vol': 'voiceVolume', 'snd-mic': 'micGain' }[id];
     try { sndFill(await api('POST', '/api/sonido', { [key]: +$('#' + id).value })); } catch (e) { $('#snd-msg').textContent = e.message; }
   });
 });
