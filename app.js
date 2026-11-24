@@ -2473,6 +2473,8 @@ function shadeTabs(main) {
   SH.paintNotif = paintNotif;
   paintQuick();
   SH.goTab = goTab;
+  paintNotif.badge = () => { badge.textContent = N.unread > 0 ? N.unread : ''; };
+  paintNotif.badge();   // avisos sin ver: el número en la pestaña, aunque abra en otra ventana
   goTab(SH.startTab ?? 1, false);   // abre en los controles (la campana, en los avisos)
   SH.startTab = null;
   return h('div', { class: 'sht' }, bar, pages);
