@@ -400,6 +400,8 @@ def set_speaker(body):
     SENDSPIN_FILE.write_text(json.dumps(new, ensure_ascii=False, indent=2), encoding='utf-8')
     new = speaker_settings()
     bump_version()      # el panel se recarga con los ajustes nuevos (reproductor, abrir al sonar)
+    if not body.get('restart') and all(new[k] == cur[k] for k in ('enabled', 'name', 'device')):
+        return 'Guardado.'   # solo opciones del panel («Sonando», reproductor): el altavoz sigue sonando sin reiniciarse
     if SIMULATE:
         SIM_SPEAKER['active'] = new['enabled']
         return '[Simulación] Guardado (no suena nada en el PC).'

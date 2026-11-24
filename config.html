@@ -572,10 +572,17 @@ go = 'home' | 'rooms' | 'sensors' | 'media' | 'printers' | 'scooter' | 'settings
         <span class="hint">El de Music Assistant que se crea con el altavoz. En automático se busca por el nombre.</span>
       </div>
       <div class="field">
-        <label>Otros altavoces que también abren «Sonando»</label>
-        <div id="spk-watch"></div>
-        <span class="hint">Por ejemplo el de la habitación donde está el panel: al empezar a sonar, sale su pantalla «Sonando».</span>
+        <label>Desfase con otros altavoces</label>
+        <span class="hint">Se ajusta en Music Assistant: ajustes del reproductor de este altavoz → retraso. Se aplica al momento y se guarda en la Pi.</span>
       </div>
+      <div class="btns"><button class="btn primary" id="spk-ok">Aplicar</button></div>
+      <div id="spk-msg" class="hint"></div>
+      <details id="spk-log-box" class="hidden"><summary>Registro</summary><pre id="spk-log"></pre></details>
+    </div>
+
+    <div class="card" data-nodirty>
+      <h2>▶️ Sonando</h2>
+      <span class="hint">La pantalla con la carátula grande que sale cuando suena música.</span>
       <div class="row"><label for="spk-open">Al sonar algo en la Pi, mostrar la pantalla «Sonando»</label><label class="switch"><input id="spk-open" type="checkbox"><span></span></label></div>
       <div class="field">
         <label for="spk-close">Al pausar o parar, cerrar «Sonando»</label>
@@ -585,12 +592,12 @@ go = 'home' | 'rooms' | 'sensors' | 'media' | 'printers' | 'scooter' | 'settings
         </select>
       </div>
       <div class="field">
-        <label>Desfase con otros altavoces</label>
-        <span class="hint">Se ajusta en Music Assistant: ajustes del reproductor de este altavoz → retraso. Se aplica al momento y se guarda en la Pi.</span>
+        <label>Otros altavoces que también abren «Sonando»</label>
+        <div id="spk-watch"></div>
+        <span class="hint">Por ejemplo el de la habitación donde está el panel: al empezar a sonar, sale su pantalla «Sonando».</span>
       </div>
-      <div class="btns"><button class="btn primary" id="spk-ok">Aplicar</button></div>
-      <div id="spk-msg" class="hint"></div>
-      <details id="spk-log-box" class="hidden"><summary>Registro</summary><pre id="spk-log"></pre></details>
+      <div class="btns"><button class="btn primary" id="np-ok">Aplicar</button></div>
+      <div id="np-msg" class="hint"></div>
     </div>
 
     <div class="card">
@@ -2026,11 +2033,20 @@ async function loadSpk() {
 $('#spk-ok').onclick = async () => {
   spkMsg('Aplicando…');
   try {
-    const r = await api('POST', '/api/altavoz', { enabled: $('#spk-enabled').checked, name: $('#spk-name').value.trim(), device: $('#spk-device').value, entity: $('#spk-entity').value, open: $('#spk-open').checked, closeAfter: +$('#spk-close').value, watch: spkWatch });
+    const r = await api('POST', '/api/altavoz', { restart: true, enabled: $('#spk-enabled').checked, name: $('#spk-name').value.trim(), device: $('#spk-device').value, entity: $('#spk-entity').value, open: $('#spk-open').checked, closeAfter: +$('#spk-close').value, watch: spkWatch });
     spkFill(r.info); spkMsg(r.mensaje, true);
     // tarda unos segundos en arrancar: vuelve a mirar el estado
     setTimeout(loadSpk, 4000);
   } catch (e) { spkMsg(e.message, false); }
+};
+
+// «Sonando»: solo sus opciones (no reinicia el altavoz ni corta la música)
+$('#np-ok').onclick = async () => {
+  const m = $('#np-msg'); m.textContent = 'Aplicando…'; m.style.color = '';
+  try {
+    const r = await api('POST', '/api/altavoz', { open: $('#spk-open').checked, closeAfter: +$('#spk-close').value, watch: spkWatch });
+    spkFill(r.info); m.textContent = 'Guardado ✓'; m.style.color = 'var(--ok)';
+  } catch (e) { m.textContent = e.message; m.style.color = 'var(--danger)'; }
 };
 
 /* ---------- sonido: respuestas del asistente y micro (se aplican al soltar) ---------- */
