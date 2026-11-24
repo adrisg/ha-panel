@@ -592,6 +592,11 @@ go = 'home' | 'rooms' | 'sensors' | 'media' | 'printers' | 'scooter' | 'settings
     <div class="card">
       <h2>🔊 Sonido</h2>
       <span class="hint">El volumen de la música y lo multimedia se cambia en el panel (Ajustes → Sonido) o en Music Assistant.</span>
+      <div id="snd-master" class="field hidden" data-nodirty>
+        <div class="row" style="padding:0"><label for="snd-master-vol">Límite de salida <span class="hint" id="snd-master-card"></span></label><span class="val" id="snd-master-vol-v"></span></div>
+        <input id="snd-master-vol" type="range" min="0" max="100" step="1">
+        <span class="hint">El volumen de la Pi por esa salida: la música, los avisos y la voz nunca suenan más fuerte. Si distorsiona, bájalo.</span>
+      </div>
       <div class="field">
         <div class="row" style="padding:0"><label for="sound-volume">Avisos y alarmas</label><span class="val" id="sound-volume-v"></span></div>
         <input id="sound-volume" type="range" min="10" max="100" step="10">
@@ -2007,15 +2012,18 @@ function sndFill(r) {
   const set = (id, v) => { const i = $('#' + id); i.value = v; i.dispatchEvent(new Event('input')); };
   $('#snd-msg').textContent = '';
   $('#snd-voice').classList.toggle('hidden', !r.voice.installed);
+  $('#snd-master').classList.toggle('hidden', !r.master.available);
+  $('#snd-master-card').textContent = r.master.card ? `(${r.master.card})` : '';
+  if (r.master.available && r.master.value != null) set('snd-master-vol', r.master.value);
   set('snd-voice-vol', r.voice.volume); set('snd-mic', r.voice.micGain);
 }
 async function loadSnd() {
   try { sndFill(await api('GET', '/api/sonido')); } catch (e) { $('#snd-msg').textContent = 'No se pudo leer el sonido: ' + e.message; }
 }
-['snd-voice-vol', 'snd-mic'].forEach((id) => {
+['snd-master-vol', 'snd-voice-vol', 'snd-mic'].forEach((id) => {
   bindRange(id);
   $('#' + id).addEventListener('change', async () => {
-    const key = { 'snd-voice-vol': 'voiceVolume', 'snd-mic': 'micGain' }[id];
+    const key = { 'snd-master-vol': 'master', 'snd-voice-vol': 'voiceVolume', 'snd-mic': 'micGain' }[id];
     try { sndFill(await api('POST', '/api/sonido', { [key]: +$('#' + id).value })); } catch (e) { $('#snd-msg').textContent = e.message; }
   });
 });
