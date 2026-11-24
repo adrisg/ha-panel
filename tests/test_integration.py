@@ -78,10 +78,12 @@ async def test_zeroconf_flow(hass):
         assert r["data"][CONF_HOST] == "192.168.1.50"
 
 
-async def _state(state, rev=None):
-    if rev is None:
-        return state
-    await asyncio.Event().wait()      # the long poll never answers in tests
+def _fake_state(state):
+    async def fake(self, rev=None):
+        if rev is None:
+            return state
+        await asyncio.Event().wait()  # the long poll never answers in tests
+    return fake
 
 
 async def _setup(hass, expose=None):
@@ -92,7 +94,7 @@ async def _setup(hass, expose=None):
     entry.add_to_hass(hass)
     command = AsyncMock()
     patches = [patch(f"{API}.info", AsyncMock(return_value=dict(INFO, expose=expose))),
-               patch(f"{API}.state", side_effect=lambda rev=None: _state(state, rev)),
+               patch(f"{API}.state", new=_fake_state(state)),
                patch(f"{API}.command", command)]
     for p in patches:
         p.start()
