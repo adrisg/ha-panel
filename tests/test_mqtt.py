@@ -136,7 +136,7 @@ def test_discovery_states_and_commands(helper):
     broker.send(base + '/reload/press', 'PRESS')
     assert wait(lambda: helper.COMMAND['type'] == 'reload')
     log = ' | '.join(helper.MQTT_LOG)
-    assert 'Conectado' in log and '← ' + base + '/brightness/set: 40' in log and '→ ' + base + '/screen/state: ON' in log
+    assert 'Connected' in log and '← ' + base + '/brightness/set: 40' in log and '→ ' + base + '/screen/state: ON' in log
     helper.MQTT['client'].stop()
 
 
@@ -173,8 +173,8 @@ def test_only_chosen_entities(helper):
 def test_wrong_password(helper):
     broker = FakeBroker(accept_password='right')
     _start(helper, broker, password='wrong')
-    assert helper.MQTT['status'] == 'error' and 'contraseña' in helper.MQTT['error']
-    assert any('Error: usuario o contraseña incorrectos' in x for x in helper.MQTT_LOG)
+    assert helper.MQTT['status'] == 'error' and 'password' in helper.MQTT['error']
+    assert any('Error: wrong user or password' in x for x in helper.MQTT_LOG)
     helper.MQTT['client'].stop()
 
 
