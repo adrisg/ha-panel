@@ -23,6 +23,6 @@ Lista de cosas por hacer. 🚧 = en marcha · ✅ = hecho.
 
 ## Para que lo use más gente
 
-11. 🚧 **Internacional**: la interfaz en varios idiomas (empezando por inglés y español).
+11. ✅ **Internacional**: inglés y español (`lib/i18n.js`; otro idioma = otro archivo `lib/i18n-xx.js`).
 12. **Copia de seguridad de los ajustes**: descargarlos y subirlos desde la web.
 13. **Imagen lista para grabar**: Raspberry Pi OS con todo instalado.

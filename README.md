@@ -17,6 +17,7 @@ Una pantalla bonita para el escritorio que decora con tus fotos y desde la que v
 - 🧩 **Pestañas a tu gusto**, con componentes que puedes crear tú ([cómo](SCRIPTS.md#componentes)).
 - ⬇️ **Panel de acceso rápido como en Android**: desliza desde arriba para la música, el volumen, el brillo, los avisos y tus accesos rápidos.
 - 🎨 **Totalmente configurable a tu gusto**: el aspecto, qué sale en cada pantalla y cómo se comporta.
+- 🌍 **En español o en inglés** (o el idioma de tu Home Assistant, automáticamente).
 
 ## Qué puedes controlar
 

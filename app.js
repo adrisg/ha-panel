@@ -26,11 +26,11 @@ function h(tag, props, ...kids) {
     else if (k === 'style') el.style.cssText = v;
     else if (k === 'html') el.innerHTML = v;
     else if (k.startsWith('on')) el.addEventListener(k.slice(2), v);
-    else el.setAttribute(k, v === true ? '' : v);
+    else el.setAttribute(k, v === true ? '' : (k === 'title' || k === 'placeholder' ? t(v) : v));
   }
   for (const c of kids.flat(Infinity)) {
     if (c == null || c === false) continue;
-    el.append(c.nodeType ? c : document.createTextNode(String(c)));
+    el.append(c.nodeType ? c : document.createTextNode(typeof c === 'string' ? t(c) : String(c)));   // textos traducidos (lib/i18n.js)
   }
   return el;
 }
@@ -40,8 +40,8 @@ const cap = (s) => s ? s.charAt(0).toUpperCase() + s.slice(1) : s;
 const fmtNum = (n) => {
   if (n == null || isNaN(n)) return '—';
   n = Number(n);
-  return Math.abs(n) >= 100 ? Math.round(n).toLocaleString('es-ES')
-    : (Math.round(n * 10) / 10).toLocaleString('es-ES');
+  return Math.abs(n) >= 100 ? Math.round(n).toLocaleString(I18N.locale())
+    : (Math.round(n * 10) / 10).toLocaleString(I18N.locale());
 };
 const absUrl = (p) => !p ? '' : /^(https?:|data:|blob:)/.test(p) ? p : CFG.haUrl + p;
 function relTime(iso) {
@@ -58,11 +58,11 @@ function fmtDuration(sec) {
   const hh = Math.floor(sec / 3600), mm = Math.floor((sec % 3600) / 60);
   return hh ? `${hh} h ${mm} min` : `${mm} min`;
 }
-const hhmm = (d) => d.toLocaleTimeString('es-ES', { hour: '2-digit', minute: '2-digit' });
+const hhmm = (d) => d.toLocaleTimeString(I18N.locale(), { hour: '2-digit', minute: '2-digit' });
 let toastTimer;
 function toast(msg, error = false) {
   const t = $('#toast');
-  t.textContent = msg;
+  t.textContent = I18N.t(msg);
   t.className = 'toast show' + (error ? ' error' : '');
   clearTimeout(toastTimer);
   toastTimer = setTimeout(() => (t.className = 'toast' + (error ? ' error' : '')), 2600);
@@ -276,7 +276,7 @@ function dedupeMedia(list) {
 }
 
 /* ====================== Textos e iconos ====================== */
-const T = {
+const T_ES = {
   on: 'Encendido', off: 'Apagado', unavailable: 'No disponible', unknown: '—', open: 'Abierto',
   closed: 'Cerrado', opening: 'Abriendo', closing: 'Cerrando', locked: 'Cerrado con llave',
   unlocked: 'Abierto', locking: 'Cerrando…', unlocking: 'Abriendo…', jammed: 'Atascado',
@@ -285,6 +285,8 @@ const T = {
   auto: 'Auto', heat_cool: 'Calor/Frío', dry: 'Deshumidificar', fan_only: 'Ventilador',
   cleaning: 'Limpiando', docked: 'En la base', returning: 'Volviendo', error: 'Error',
 };
+/** Estados en el idioma del panel (T.on → «Encendido» / «On»). */
+const T = new Proxy(T_ES, { get: (o, k) => (o[k] != null ? t(o[k]) : undefined) });
 const BIN = {
   door: ['Cerrada', 'Abierta'], window: ['Cerrada', 'Abierta'], garage_door: ['Cerrada', 'Abierta'],
   opening: ['Cerrado', 'Abierto'], motion: ['Sin movimiento', 'Movimiento'], occupancy: ['Libre', 'Ocupado'],
@@ -954,7 +956,7 @@ function showNowPlaying(id) {
   });
   // Progreso y reloj, cada segundo
   const tick = () => {
-    clock.textContent = new Date().toLocaleTimeString('es-ES', { hour: '2-digit', minute: '2-digit' });
+    clock.textContent = new Date().toLocaleTimeString(I18N.locale(), { hour: '2-digit', minute: '2-digit' });
     const st = S.states[id], a = (st && st.attributes) || {};
     const total = +a.media_duration || 0;
     root.classList.toggle('no-prog', !total);
@@ -1166,7 +1168,7 @@ function weatherCard(id, days = 5) {
       h('div', { class: 'w-temp' }, fmtNum(a.temperature) + '°'), h('div', { class: 'w-cond' }, wText(st.state)), h('div', { class: 'muted small' }, extra)));
   });
   if (days > 0) getForecast(id).then((f) => fc.replaceChildren(...f.slice(0, days).map((d) => h('div', { class: 'fc-day' },
-    h('div', { class: 'fc-name' }, new Date(d.datetime).toLocaleDateString('es-ES', { weekday: 'short' }).replace('.', '')),
+    h('div', { class: 'fc-name' }, new Date(d.datetime).toLocaleDateString(I18N.locale(), { weekday: 'short' }).replace('.', '')),
     icon(wIcon(d.condition)), h('div', { class: 'fc-t' }, fmtNum(d.temperature) + '°'),
     // Probabilidad de lluvia siempre visible (también 0 %); vacía solo si la integración no la da
     d.precipitation_probability != null ? h('div', { class: 'fc-rain' }, icon('mdi-water'), d.precipitation_probability + '%')
@@ -1365,6 +1367,7 @@ const DEFAULTS = () => ({
     end: (CFG.night && CFG.night.end) || '07:00', brightness: Math.round((1 - ((CFG.night && CFG.night.dim) ?? 0.6)) * 100),
     screenOff: false,                      // apagar la pantalla de noche cuando no se usa
   },
+  language: 'auto',     // auto (el de Home Assistant) | es | en
   theme: 'oscuro',      // oscuro | claro | auto (claro de día y oscuro de noche)
   accent: 'azul',       // color de acento (ACCENTS)
   sound: { enabled: true, volume: 70 },
@@ -1397,6 +1400,7 @@ async function loadSettings() {
     } catch (e) { /* sin ajustes guardados: valores por defecto */ }
   }
   SET = mergeSettings(saved || {});
+  setLanguage();
   applySettings();
 }
 let saveTimer;
@@ -1415,9 +1419,19 @@ function saveSettings(quiet) {   // quiet: sin el aviso «Ajustes guardados»
     } catch (e) { toast('No se pudieron guardar: ' + e.message, true); }
   }, 600);
 }
-function applySettings() { applyTheme(); resetIdle(); screenTick(); try { COMPILED.forEach((m) => (m.cache = {})); } catch (e) { /* aún no cargado */ } }
+function applySettings() { setLanguage(); applyTheme(); resetIdle(); screenTick(); try { COMPILED.forEach((m) => (m.cache = {})); } catch (e) { /* aún no cargado */ } }
 
 /** Tema claro u oscuro. «auto»: claro mientras el sol está arriba (sun.sun) o, sin él, de 8:00 a 20:00. */
+/* Idioma de los textos (lib/i18n.js). «Automático»: el de Home Assistant (o, sin conexión, el del navegador). */
+let HA_LANG = null;
+function setLanguage() {
+  const want = I18N.resolve(SET.language, HA_LANG || navigator.language);
+  if (want === I18N.lang) return;
+  I18N.set(want);
+  try { renderRail(); render(); } catch (e) { /* aún arrancando */ }
+}
+I18N.set(I18N.resolve(((window.PANEL_HELPER || {}).ajustes || {}).language, navigator.language));
+
 function themeIsLight() {
   if (SET.theme === 'claro') return true;
   if (SET.theme !== 'auto') return false;
@@ -1691,6 +1705,8 @@ function renderSettings() {
   return [h('div', { class: 'settings' },
     h('div', { class: 'card set-card' }, h('div', { class: 'set-title' }, icon('mdi-monitor'), 'Pantalla'),
       bright,
+      setBlock('Idioma', null, segmented([['auto', 'Automático'], ['es', 'Español'], ['en', 'English']], SET.language || 'auto',
+        (v) => { SET.language = v; saveSettings(); })),
       setBlock('Tema', 'Automático: claro de día y oscuro de noche (con la salida y la puesta del sol)',
         segmented([['oscuro', 'Oscuro'], ['claro', 'Claro'], ['auto', 'Automático']], SET.theme || 'oscuro', (v) => { SET.theme = v; saveSettings(); if (accentPicker.paint) accentPicker.paint(); })),   // los círculos, en el tono del tema
       setBlock('Color', 'El de los botones, las barras y la burbuja del volumen', accentPicker()),
@@ -1776,7 +1792,7 @@ function nextOccurrence(al, from = new Date()) {
 function whenText(d) {
   const now = new Date(), tom = new Date(now.getFullYear(), now.getMonth(), now.getDate() + 1);
   const day = d.toDateString() === now.toDateString() ? 'Hoy' : d.toDateString() === tom.toDateString() ? 'Mañana'
-    : cap(d.toLocaleDateString('es-ES', { weekday: 'long' }));
+    : cap(d.toLocaleDateString(I18N.locale(), { weekday: 'long' }));
   return `${day} ${hhmm(d)}`;
 }
 function daysText(days) {
@@ -2116,7 +2132,7 @@ const VIEW_DIRTY = new Set();
 /** Sin conexión configurada/** Sin conexión configurada: QR de la web de configuración (si hay ayudante) o instrucciones. */
 async function showSetup() {
   $('#rail').replaceChildren();
-  $('#view-title').textContent = 'Configurar el panel';
+  $('#view-title').textContent = I18N.t('Configurar el panel');
   const box = h('div', { class: 'setup' }, icon('mdi-home-assistant', 'setup-icon'), h('h2', null, 'Conecta el panel con Home Assistant'));
   $('#view').replaceChildren(box);
   const net = await fetchNet();
@@ -2138,7 +2154,7 @@ function render() {
   S.viewTimers.forEach(clearInterval); S.viewTimers = [];
   if (S.view !== 'settings' && !visibleTabs().some((t) => t.id === S.view)) S.view = tabFor(S.view);
   const t = S.view === 'settings' ? null : visibleTabs().find((x) => x.id === S.view);
-  $('#view-title').textContent = t ? t.title : VIEWS.settings.title;
+  $('#view-title').textContent = I18N.t(t ? t.title : VIEWS.settings.title);
   const view = $('#view');
   const scroll = view.scrollTop;
   view.replaceChildren(...(t ? renderTab(t) : VIEWS.settings.render()).filter(Boolean));
@@ -2564,8 +2580,8 @@ function shadeFill() {
   box.replaceChildren(
     // arriba: la hora y la fecha, y a la derecha los botones pequeños (apagar la pantalla y ajustes)
     h('div', { class: 'sh-head' },
-      h('div', { class: 'sh-when' }, h('b', null, now.toLocaleTimeString('es-ES', { hour: '2-digit', minute: '2-digit' })),
-        h('span', null, cap(now.toLocaleDateString('es-ES', { weekday: 'long', day: 'numeric', month: 'long' })))),
+      h('div', { class: 'sh-when' }, h('b', null, now.toLocaleTimeString(I18N.locale(), { hour: '2-digit', minute: '2-digit' })),
+        h('span', null, cap(now.toLocaleDateString(I18N.locale(), { weekday: 'long', day: 'numeric', month: 'long' })))),
       h('div', { class: 'sh-ibtns' },
         iconBtn('mdi-monitor-off', 'Apagar la pantalla', () => { screenOffNow(); }),
         iconBtn('mdi-cog', 'Ajustes', () => {   // desde el modo ambiente o «Sonando» también
@@ -2975,7 +2991,7 @@ async function getJSON(url, headers) {
   if (!r.ok) throw new Error(`HTTP ${r.status} en ${new URL(url).pathname}`);
   return r.json();
 }
-const monthYear = (iso) => { const d = new Date(iso); return isNaN(d) ? '' : cap(d.toLocaleDateString('es-ES', { month: 'long', year: 'numeric' })); };
+const monthYear = (iso) => { const d = new Date(iso); return isNaN(d) ? '' : cap(d.toLocaleDateString(I18N.locale(), { month: 'long', year: 'numeric' })); };
 // size=preview: ~1440 px, suficiente para la pantalla y ligero para la Pi. c = thumbhash (como la web de Immich, para la caché)
 const immichUrl = (base, id, thumbhash, auth) =>
   `${base}/api/assets/${id}/thumbnail?size=preview&edited=true${thumbhash ? '&c=' + encodeURIComponent(thumbhash) : ''}&${auth}`;
@@ -3179,10 +3195,10 @@ function nextBackground() {
 const toMin = (s) => { const [hh, mm] = s.split(':').map(Number); return hh * 60 + mm; };
 function tick() {
   const now = new Date();
-  const hm = now.toLocaleTimeString('es-ES', { hour: '2-digit', minute: '2-digit' });
+  const hm = now.toLocaleTimeString(I18N.locale(), { hour: '2-digit', minute: '2-digit' });
   $('#clock-mini').textContent = hm;
   $('#amb-clock').textContent = hm;
-  $('#amb-date').textContent = cap(now.toLocaleDateString('es-ES', { weekday: 'long', day: 'numeric', month: 'long' }));
+  $('#amb-date').textContent = cap(now.toLocaleDateString(I18N.locale(), { weekday: 'long', day: 'numeric', month: 'long' }));
   const wid = weatherId();
   $('#weather-mini').replaceChildren(...(wid ? [icon(wIcon(S.states[wid].state)), ' ' + fmtNum(S.states[wid].attributes.temperature) + '°'] : []));
   checkAlarms(now);
@@ -3312,12 +3328,14 @@ function showHaCode(code) {
 /* ====================== Arranque ====================== */
 async function loadAll() {
   const safe = (p) => p.catch(() => []);
-  const [states, areas, devs, ents] = await Promise.all([
+  const [states, areas, devs, ents, haConf] = await Promise.all([
     conn.send({ type: 'get_states' }),
     safe(conn.send({ type: 'config/area_registry/list' })),
     safe(conn.send({ type: 'config/device_registry/list' })),
     safe(conn.send({ type: 'config/entity_registry/list' })),
+    conn.send({ type: 'get_config' }).catch(() => ({})),
   ]);
+  if (haConf && haConf.language) { HA_LANG = haConf.language; setLanguage(); }   // «Automático» = el idioma de Home Assistant
   S.states = {}; S.ents = {}; S.devs = {};
   states.forEach((s) => (S.states[s.entity_id] = s));
   S.areas = areas; S.areaById = Object.fromEntries(areas.map((a) => [a.area_id, a]));

@@ -519,6 +519,8 @@ go = 'home' | 'rooms' | 'sensors' | 'media' | 'printers' | 'scooter' | 'settings
         <select id="idleSeconds"><option value="0">Nunca</option><option value="30">30 s</option><option value="60">1 min</option><option value="90">1,5 min</option><option value="180">3 min</option><option value="300">5 min</option><option value="600">10 min</option></select></div>
       <div class="row"><label for="screenOffMinutes">Apagar la pantalla tras <span class="hint">(en modo ambiente)</span></label>
         <select id="screenOffMinutes"><option value="0">Nunca</option><option value="5">5 min</option><option value="15">15 min</option><option value="30">30 min</option><option value="60">1 h</option><option value="120">2 h</option></select></div>
+      <div class="row"><label for="language">Idioma <span class="hint">(automático: el de Home Assistant)</span></label>
+        <select id="language"><option value="auto">Automático</option><option value="es">Español</option><option value="en">English</option></select></div>
       <div class="row"><label for="theme">Tema <span class="hint">(automático: claro de día, oscuro de noche)</span></label>
         <select id="theme"><option value="oscuro">Oscuro</option><option value="claro">Claro</option><option value="auto">Automático</option></select></div>
       <div class="field">
@@ -739,10 +741,14 @@ go = 'home' | 'rooms' | 'sensors' | 'media' | 'printers' | 'scooter' | 'settings
   </div></div>
 </div>
 
+<script src="/lib/i18n.js"></script>
+<script src="/lib/i18n-en.js"></script>
 <script src="/lib/modulos.js"></script>
 <script src="/lib/componentes.js"></script>
 <script>
 'use strict';
+(() => { let l = null; try { l = localStorage.getItem('panel_lang'); } catch (e) { /* */ } I18N.set(l || I18N.resolve('auto', navigator.language)); })();
+I18N.page(document.body);
 const $ = (s) => document.querySelector(s);
 const DEF = {   // mismos valores por defecto que el panel
   idleSeconds: 90, screenOffMinutes: 0, brightness: 100,
@@ -759,14 +765,17 @@ function renderAccents() {
     style: `background:${c};color:#111`, onclick: () => { accent = k; renderAccents(); dirty(); } }, k === accent ? el('i', { class: 'mdi mdi-check' }) : null)));
 }
 const PM = window.PanelModulos;
+/** Una opción de un desplegable, con el texto traducido. */
+const tOption = (text, value) => new Option(typeof text === 'string' ? t(text) : text, value);
 const el = (tag, props = {}, ...kids) => {
   const e = document.createElement(tag);
   for (const [k, v] of Object.entries(props)) {
     if (v == null || v === false) continue;
     if (k === 'class') e.className = v; else if (k.startsWith('on')) e.addEventListener(k.slice(2), v);
-    else if (k in e && k !== 'list') e[k] = v; else e.setAttribute(k, v === true ? '' : v);
+    else if (k in e && k !== 'list') e[k] = (k === 'textContent' || k === 'title' || k === 'placeholder') && typeof v === 'string' ? t(v) : v;
+    else e.setAttribute(k, v === true ? '' : (k === 'title' || k === 'placeholder') ? t(v) : v);
   }
-  e.append(...kids.flat().filter((x) => x != null && x !== false));
+  e.append(...kids.flat().filter((x) => x != null && x !== false).map((x) => (typeof x === 'string' ? t(x) : x)));   // textos traducidos (lib/i18n.js)
   return e;
 };
 const switchEl = (checked, onchange) => {
@@ -803,6 +812,15 @@ const PAGES = [...document.querySelectorAll('.pages button')].map((b) => b.datas
 const OLD_PAGES = { burbujas: 'ambiente', ajustes: 'general' };   // enlaces de antes
 const want = location.hash.slice(1);
 showPage(PAGES.includes(want) ? want : OLD_PAGES[want] || 'general');
+
+/* Idioma de esta web: el elegido en los ajustes (o el del navegador). Los textos fijos se traducen una vez al cargar;
+ * si al leer los ajustes resulta que es otro, se recarga en ese idioma. */
+function webLanguage(choice) {
+  const want = I18N.resolve(choice, navigator.language);
+  let saved = null;
+  try { saved = localStorage.getItem('panel_lang'); localStorage.setItem('panel_lang', want); } catch (e) { /* sin almacenamiento */ }
+  if (want !== I18N.lang && saved !== want) location.reload();
+}
 
 /* ---------- código (archivos .js guardados en la Pi; los de serie vienen en lib/modulos.js) ---------- */
 let scripts = {}, files = {}, states = null, panelData = null;
@@ -1123,7 +1141,7 @@ function renderAll() { renderBullets(); renderCardScripts(); renderTabs(); }
 
 /* ---------- burbujas: título, dónde salen, orden y funcionamiento ---------- */
 let bullets = [], openBullet = null;
-const bmsg = (t, kind = '') => { $('#bullet-msg').textContent = t; $('#bullet-msg').className = 'hint ' + kind; };
+const bmsg = (t, kind = '') => { $('#bullet-msg').textContent = I18N.t(t); $('#bullet-msg').className = 'hint ' + kind; };
 function renderBullets() {
   $('#bullets').replaceChildren(...bullets.map((b, i) => {
     const open = openBullet === b.id, def = PM.BUILTINS.some((x) => x.script === b.script);
@@ -1224,7 +1242,7 @@ function multiSelect(opts, list, set, emptyText) {
     chips.replaceChildren(...list.map((x, i) => el('span', { class: 'chip', title: x }, labelOf(x),
       el('button', { type: 'button', textContent: '×', title: 'Quitar', onclick: () => { list.splice(i, 1); save(); if (fsOpen && fsOpen.btn === btn) fsOpen.refresh(); } }))));
     chips.classList.toggle('hidden', !list.length);
-    label.textContent = list.length ? `${list.length} elegida${list.length > 1 ? 's' : ''} · añadir o quitar…` : emptyText;
+    label.textContent = t(list.length ? `${list.length} elegida${list.length > 1 ? 's' : ''} · añadir o quitar…` : emptyText);
     label.classList.toggle('muted', !list.length);
   };
   const toggle = (x) => { const i = list.indexOf(x); if (i >= 0) list.splice(i, 1); else list.push(x); save(); };
@@ -1247,7 +1265,7 @@ function orderSelect(opts, list, set, emptyText) {
       el('button', { type: 'button', title: 'Bajar', disabled: i === list.length - 1, onclick: () => { [list[i + 1], list[i]] = [list[i], list[i + 1]]; save(); } }, el('i', { class: 'mdi mdi-chevron-down' })),
       el('button', { type: 'button', title: 'Quitar', onclick: () => { list.splice(i, 1); save(); } }, el('i', { class: 'mdi mdi-close' })))));
     rows.classList.toggle('hidden', !list.length);
-    label.textContent = list.length ? 'Añadir o quitar…' : emptyText;
+    label.textContent = t(list.length ? 'Añadir o quitar…' : emptyText);
     label.classList.toggle('muted', !list.length);
   };
   const toggle = (x) => { const i = list.indexOf(x); if (i >= 0) list.splice(i, 1); else list.push(x); save(); };
@@ -1376,7 +1394,7 @@ $('#bullet-file').onchange = async (e) => {
 /* ---------- componentes: scripts con type: 'card' ---------- */
 let openCard = null;
 const testVals = {};          // ajustes de prueba de cada componente (no se guardan)
-const cmsg = (t, kind = '') => { $('#cscript-msg').textContent = t; $('#cscript-msg').className = 'hint ' + kind; };
+const cmsg = (t, kind = '') => { $('#cscript-msg').textContent = I18N.t(t); $('#cscript-msg').className = 'hint ' + kind; };
 const EMPTY_CARD = (name) => `{
   type: 'card', name: '${name.replace(/'/g, '')}', icon: 'mdi:star-outline', width: '1/2',
   config: {
@@ -1782,7 +1800,7 @@ async function api(method, path, body) {
   if (!r.ok) throw new Error(data.error || 'Error ' + r.status);
   return data;
 }
-function msg(text, kind = '') { const m = $('#msg'); m.textContent = text; m.className = kind; }
+function msg(text, kind = '') { const m = $('#msg'); m.textContent = t(text); m.className = kind; }
 function showLogin(text) { $('#app').classList.add('hidden'); $('#login').classList.remove('hidden'); $('#login-msg').textContent = text || ''; $('#pw').focus(); }
 
 /* ---------- formulario ---------- */
@@ -1834,6 +1852,8 @@ function fill(cfg) {
   for (const k of EXPOSE_KEYS) $('#expose-' + k).checked = !a.haExpose || a.haExpose[k] !== false;
   Object.keys(lists).forEach(renderChips);
   $('#theme').value = a.theme || 'oscuro';
+  $('#language').value = a.language || 'auto';
+  webLanguage(a.language);
   accent = a.accent || 'azul'; renderAccents();
   $('#weatherEntity').dataset.value = p.weatherEntity || '';
   $('#weatherEntity').value = p.weatherEntity || '';
@@ -1844,7 +1864,7 @@ function fill(cfg) {
   ambSpk = Array.isArray(a.ambientSpeakers) ? a.ambientSpeakers.slice() : a.defaultSpeaker ? [a.defaultSpeaker] : [];
   ambSpkPaint();
   $('#voiceSatellite').dataset.value = a.voiceSatellite || '';
-  if (![...$('#voiceSatellite').options].some((o) => o.value === (a.voiceSatellite || ''))) $('#voiceSatellite').append(new Option(a.voiceSatellite, a.voiceSatellite));
+  if (![...$('#voiceSatellite').options].some((o) => o.value === (a.voiceSatellite || ''))) $('#voiceSatellite').append(tOption(a.voiceSatellite, a.voiceSatellite));
   $('#voiceSatellite').value = a.voiceSatellite || '';
   $('#voiceStyle').value = a.voiceStyle || 'onda';
   window.__ajustes = cfg.ajustes || {};
@@ -1873,7 +1893,7 @@ function collect() {
     ambientSpeakers: ambSpk.slice(), defaultSpeaker: ambSpk[0] || '',
     voiceSatellite: $('#voiceSatellite').value,
     voiceStyle: $('#voiceStyle').value,
-    theme: $('#theme').value, accent, quick: lists.quick,
+    theme: $('#theme').value, language: $('#language').value, accent, quick: lists.quick,
     haExpose: Object.fromEntries(EXPOSE_KEYS.map((k) => [k, $('#expose-' + k).checked])),
   };
   return { panel, ajustes };
@@ -1905,12 +1925,12 @@ async function loadEntities() {
     names = Object.fromEntries(ents.map((e) => [e.id, e.name]));
     $('#entidades').replaceChildren(...ents.map((e) => { const o = document.createElement('option'); o.value = e.id; o.label = e.name; return o; }));
     const sel = $('#weatherEntity'), cur = sel.dataset.value;
-    sel.replaceChildren(new Option('Automática (la primera que haya)', ''),
-      ...ents.filter((e) => e.id.startsWith('weather.')).map((e) => new Option(`${e.name} (${e.id})`, e.id)));
+    sel.replaceChildren(tOption('Automática (la primera que haya)', ''),
+      ...ents.filter((e) => e.id.startsWith('weather.')).map((e) => tOption(`${e.name} (${e.id})`, e.id)));
     sel.value = cur;
     ambSpkPaint(); npSpkPaint();
     const vs = $('#voiceSatellite'), curVs = vs.dataset.value || '';
-    vs.replaceChildren(new Option('Ninguno', ''), ...ents.filter((e) => e.id.startsWith('assist_satellite.')).map((e) => new Option(`${e.name} (${e.id})`, e.id)));
+    vs.replaceChildren(tOption('Ninguno', ''), ...ents.filter((e) => e.id.startsWith('assist_satellite.')).map((e) => tOption(`${e.name} (${e.id})`, e.id)));
     vs.value = curVs;
     spkEntities();
     Object.keys(lists).forEach(renderChips);
@@ -1923,7 +1943,7 @@ async function loadHaKey() {
   let estado;
   try {
     const r = await api('GET', '/api/ha-key');
-    estado = r.linked ? 'Conectado' : r.lastSeen ? 'Sin conexión desde ' + new Date(r.lastSeen * 1000).toLocaleString('es-ES') : 'Sin vincular';
+    estado = r.linked ? 'Conectado' : r.lastSeen ? 'Sin conexión desde ' + new Date(r.lastSeen * 1000).toLocaleString(I18N.locale()) : 'Sin vincular';
     if (!r.mdns) estado += ' · falta avahi-utils para que lo encuentre solo';
   } catch (e) { estado = 'Error: ' + e.message; }
   $('#hakey-info').replaceChildren(el('dt', { textContent: 'Estado' }), el('dd', { textContent: estado }));
@@ -1969,7 +1989,7 @@ function input(value, placeholder, onInput, type = 'text') {
   i.addEventListener('input', () => { onInput(i.value); dirty(); });
   return i;
 }
-function hint(text) { const s = document.createElement('span'); s.className = 'hint'; s.textContent = text; return s; }
+function hint(text) { const s = document.createElement('span'); s.className = 'hint'; s.textContent = t(text); return s; }
 function renderSources() {
   const box = $('#sources');
   if (!sources.length) { box.replaceChildren(hint('Sin fuentes: el modo ambiente usa un degradado de color.')); return; }
@@ -1990,7 +2010,7 @@ function renderSources() {
     const fit = document.createElement('select');
     const defLabel = $('#photos-fit').selectedOptions[0] ? $('#photos-fit').selectedOptions[0].textContent : '';
     [['', `Cómo se ve: por defecto (${defLabel})`], ['cover', 'Cómo se ve: rellenar la pantalla'], ['blur', 'Cómo se ve: entera + fondo difuminado'], ['contain', 'Cómo se ve: entera (fondo negro)']]
-      .forEach(([v, t]) => fit.append(new Option(t, v)));
+      .forEach(([v, t]) => fit.append(tOption(t, v)));
     fit.value = src.fit || '';
     fit.onchange = () => { src.fit = fit.value || undefined; dirty(); };
     body.append(fit);
@@ -2020,7 +2040,7 @@ $('#src-add').onclick = () => {
 
 /* ---------- red ---------- */
 let wifiSel = null;
-function redMsg(t, ok) { const m = $('#red-msg'); m.textContent = t; m.style.color = ok === false ? 'var(--danger)' : ok ? 'var(--ok)' : ''; }
+function redMsg(t, ok) { const m = $('#red-msg'); m.textContent = I18N.t(t); m.style.color = ok === false ? 'var(--danger)' : ok ? 'var(--ok)' : ''; }
 async function loadRed() {
   try {
     const r = await api('GET', '/api/red');
@@ -2030,7 +2050,7 @@ async function loadRed() {
     if (r.gateway) rows.push(['Puerta de enlace', r.gateway]);
     if (r.dns) rows.push(['DNS', r.dns]);
     rows.push(['Esta web', r.urls.join('  ·  ')]);
-    $('#red-info').replaceChildren(...rows.flatMap(([k, v]) => { const dt = document.createElement('dt'), dd = document.createElement('dd'); dt.textContent = k; dd.textContent = v; return [dt, dd]; }));
+    $('#red-info').replaceChildren(...rows.flatMap(([k, v]) => { const dt = document.createElement('dt'), dd = document.createElement('dd'); dt.textContent = t(k); dd.textContent = t(v); return [dt, dd]; }));
     $('#red-controles').classList.toggle('hidden', !r.nmcli);
     if (!r.nmcli) redMsg('Este equipo no usa NetworkManager: solo se muestra la información.');
     else if (r.simulated) redMsg('Red simulada: los cambios se ven aquí pero no tocan la red del ordenador.');
@@ -2078,14 +2098,14 @@ $('#host-ok').onclick = async () => {
 };
 
 /* ---------- altavoz (Sendspin) ---------- */
-function spkMsg(t, ok) { const m = $('#spk-msg'); m.textContent = t; m.style.color = ok === false ? 'var(--danger)' : ok ? 'var(--ok)' : ''; }
+function spkMsg(t, ok) { const m = $('#spk-msg'); m.textContent = I18N.t(t); m.style.color = ok === false ? 'var(--danger)' : ok ? 'var(--ok)' : ''; }
 function spkFill(r) {
   FILLING++;
   const s = r.settings;
   const estado = !r.installed ? 'Sin instalar' : r.active ? 'Funcionando' : s.enabled ? 'Activado, pero no está funcionando (mira el registro)' : 'Desactivado';
   const rows = [['Estado', estado], ['Nombre', s.name || r.defaultName]];
   if (r.pin) rows.push(['Código para Music Assistant', r.pin]);
-  $('#spk-info').replaceChildren(...rows.flatMap(([k, v]) => { const dt = document.createElement('dt'), dd = document.createElement('dd'); dt.textContent = k; dd.textContent = v; return [dt, dd]; }));
+  $('#spk-info').replaceChildren(...rows.flatMap(([k, v]) => { const dt = document.createElement('dt'), dd = document.createElement('dd'); dt.textContent = t(k); dd.textContent = t(v); return [dt, dd]; }));
   $('#spk-install').classList.toggle('hidden', r.installed);
   $('#spk-enabled').checked = s.enabled;
   $('#spk-name').value = s.name; $('#spk-name').placeholder = r.defaultName;
@@ -2096,7 +2116,7 @@ function spkFill(r) {
   sel.value = s.device; sel.dispatchEvent(new Event('change'));
   spkEntity = s.entity; npSpk = (s.npSpeakers || []).slice(); spkEntities();
   const cl = $('#spk-close');
-  if (![...cl.options].some((o) => +o.value === s.closeAfter)) cl.append(new Option(s.closeAfter + ' s', s.closeAfter));
+  if (![...cl.options].some((o) => +o.value === s.closeAfter)) cl.append(tOption(s.closeAfter + ' s', s.closeAfter));
   cl.value = String(s.closeAfter); cl.dispatchEvent(new Event('change'));
   $('#spk-log').textContent = r.log || '';
   $('#spk-log-box').classList.toggle('hidden', !r.log);
@@ -2109,7 +2129,7 @@ function spkEntities() {
   const sel = $('#spk-entity');
   const mp = Object.keys(names).filter((id) => id.startsWith('media_player.'));
   if (spkEntity && !mp.includes(spkEntity)) mp.push(spkEntity);
-  sel.replaceChildren(new Option('Automático (por el nombre)', ''), ...mp.map((id) => new Option(`${names[id] || id} (${id})`, id)));
+  sel.replaceChildren(tOption('Automático (por el nombre)', ''), ...mp.map((id) => tOption(`${names[id] || id} (${id})`, id)));
   sel.value = spkEntity; sel.dispatchEvent(new Event('change'));
 }
 async function loadSpk() {
@@ -2138,11 +2158,11 @@ async function loadSnd() {
 ['snd-music-vol', 'snd-master-vol', 'snd-voice-vol', 'snd-mic'].forEach(bindRange);
 
 /* ---------- asistente de voz (micro de la Pi) ---------- */
-function vozMsg(t, ok) { const m = $('#voz-msg'); m.textContent = t; m.style.color = ok === false ? 'var(--danger)' : ok ? 'var(--ok)' : ''; }
+function vozMsg(t, ok) { const m = $('#voz-msg'); m.textContent = I18N.t(t); m.style.color = ok === false ? 'var(--danger)' : ok ? 'var(--ok)' : ''; }
 function vozSelect(sel, list, value, missing) {
   const opts = list.slice();
   if (value && !opts.some((o) => o.id === value)) opts.push({ id: value, name: value + ' ' + missing });
-  sel.replaceChildren(...opts.map((o) => new Option(o.name, o.id)));
+  sel.replaceChildren(...opts.map((o) => tOption(o.name, o.id)));
   sel.value = value; sel.dispatchEvent(new Event('change'));
 }
 function vozFill(r) {
@@ -2150,7 +2170,7 @@ function vozFill(r) {
   const s = r.settings;
   const estado = !r.installed ? 'Sin instalar' : r.active ? 'Escuchando' : s.enabled ? 'Activado, pero no está funcionando (mira el registro)' : 'Desactivado';
   const rows = [['Estado', estado], ['Nombre', s.name || r.defaultName], ['Puerto (Wyoming)', String(r.port)]];
-  $('#voz-info').replaceChildren(...rows.flatMap(([k, v]) => { const dt = document.createElement('dt'), dd = document.createElement('dd'); dt.textContent = k; dd.textContent = v; return [dt, dd]; }));
+  $('#voz-info').replaceChildren(...rows.flatMap(([k, v]) => { const dt = document.createElement('dt'), dd = document.createElement('dd'); dt.textContent = t(k); dd.textContent = t(v); return [dt, dd]; }));
   $('#voz-install').classList.toggle('hidden', r.installed);
   $('#voz-enabled').checked = s.enabled;
   $('#voz-name').value = s.name; $('#voz-name').placeholder = r.defaultName;
@@ -2167,24 +2187,24 @@ async function loadVoz() {
 }
 
 /* ---------- actualizaciones ---------- */
-function updMsg(t, ok) { const m = $('#upd-msg'); m.textContent = t; m.style.color = ok === false ? 'var(--danger)' : ok ? 'var(--ok)' : ''; }
+function updMsg(t, ok) { const m = $('#upd-msg'); m.textContent = I18N.t(t); m.style.color = ok === false ? 'var(--danger)' : ok ? 'var(--ok)' : ''; }
 let updFilling = false, updTimer = null;
 function updFill(r) {
   updFilling = true; FILLING++;
   const ago = (t) => { if (!t) return 'aún no'; const m = Math.round((Date.now() / 1000 - t) / 60); return m < 1 ? 'hace un momento' : m < 60 ? `hace ${m} min` : `hace ${Math.round(m / 60)} h`; };
   const cur = r.current;
-  const rows = [['Versión', cur ? `${cur.subject} (${cur.hash}, ${new Date(cur.date).toLocaleDateString('es-ES')})` : '¿?'],
+  const rows = [['Versión', cur ? `${cur.subject} (${cur.hash}, ${new Date(cur.date).toLocaleDateString(I18N.locale())})` : '¿?'],
     ['Rama', r.branch || '—'],
     ['Estado', r.applying ? 'Actualizando…' : r.checking ? 'Comprobando…' : r.available.length ? `${r.available.length} cambio${r.available.length > 1 ? 's' : ''} nuevo${r.available.length > 1 ? 's' : ''}` : 'Al día'],
     ['Última comprobación', ago(r.lastCheck)]];
-  $('#upd-info').replaceChildren(...rows.flatMap(([k, v]) => { const dt = document.createElement('dt'), dd = document.createElement('dd'); dt.textContent = k; dd.textContent = v; return [dt, dd]; }));
+  $('#upd-info').replaceChildren(...rows.flatMap(([k, v]) => { const dt = document.createElement('dt'), dd = document.createElement('dd'); dt.textContent = t(k); dd.textContent = t(v); return [dt, dd]; }));
   $('#upd-new').classList.toggle('hidden', !r.available.length);
   $('#upd-new-title').textContent = 'Novedades:';
   $('#upd-list').replaceChildren(...r.available.slice(0, 15).map((c) => { const li = document.createElement('li'); li.textContent = c.subject; return li; }));
   $('#upd-apply').classList.toggle('hidden', !r.available.length || r.applying);
   $('#upd-mode').value = r.settings.mode; $('#upd-mode').dispatchEvent(new Event('change'));
   const hs = $('#upd-hour');
-  if (!hs.options.length) for (let h = 0; h < 24; h++) hs.append(new Option(String(h).padStart(2, '0') + ':00', h));
+  if (!hs.options.length) for (let h = 0; h < 24; h++) hs.append(tOption(String(h).padStart(2, '0') + ':00', h));
   hs.value = String(r.settings.hour); hs.dispatchEvent(new Event('change'));
   $('#upd-hour-box').classList.toggle('hidden', r.settings.mode !== 'auto');
   $('#upd-sudo').classList.toggle('hidden', r.sudo);
