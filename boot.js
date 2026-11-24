@@ -16,7 +16,7 @@
     var cfg = JSON.parse(xhr.responseText);
     window.PANEL_HELPER = cfg;
     // Solo cuando el ayudante ya tiene una configuración completa (tras la primera importación)
-    if (cfg.panel && (cfg.panel.haUrl || cfg.panel.connection === 'integration')) {
+    if (cfg.panel && cfg.panel.haUrl) {
       var merged = {};
       var base = window.PANEL_CONFIG || {};
       for (var k in base) merged[k] = base[k];

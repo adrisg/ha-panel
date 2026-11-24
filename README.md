@@ -113,23 +113,9 @@ Todo se guarda con **Guardar**, abajo.
 
 **Altavoz:** si no lo instalaste con `install.sh`, lanza `bash ~/ha-panel/scripts/setup-sendspin.sh` y actívalo en la web → Sonido → Altavoz.
 
-## Dos formas de conectarlo con Home Assistant
+## El panel en Home Assistant (MQTT)
 
-En la web → 🏠 General → **Home Assistant** eliges cómo:
-
-| | **Con token** | **Con la integración** |
-|---|---|---|
-| Qué ve el panel | todo Home Assistant | solo las entidades que elijas |
-| Qué necesita | un token de larga duración | la integración «Panel Hogar» (abajo) |
-| Dónde se elige lo que ve | en el propio panel (favoritos, ocultas…) | en Home Assistant → la integración → **Configurar** |
-
-Con la integración no hace falta ningún token: el panel le pide a la integración los estados y las acciones, y la integración solo deja pasar las entidades que le hayas dado.
-
-## Home Assistant: el panel como dispositivo
-
-Instala la integración **Panel Hogar**: en HACS, añade este repositorio como repositorio personalizado (tipo *Integración*), o copia `custom_components/panel_hogar` a tu carpeta `config/custom_components`. Reinicia Home Assistant.
-
-El panel aparece solo en **Ajustes → Dispositivos → Descubiertos**. Al añadirlo, sale un código en la pantalla del panel: escríbelo en Home Assistant y listo.
+Si tienes MQTT (por ejemplo el complemento **Mosquitto**), el panel aparece solo en Home Assistant como un dispositivo: no hay que instalar nada más. En la web → 🏠 General → **El panel en Home Assistant (MQTT)**: actívalo y pon el servidor, el usuario y la contraseña de MQTT.
 
 | Entidad | Qué hace |
 |---|---|
@@ -138,13 +124,11 @@ El panel aparece solo en **Ajustes → Dispositivos → Descubiertos**. Al añad
 | Último toque | cuándo se tocó la pantalla por última vez |
 | Recargar | recarga el panel |
 
-En la web → 🏠 General → **Integración de Home Assistant** eliges qué entidades se ven y puedes desvincularlo.
+En esa misma tarjeta eliges cuáles se ven en Home Assistant.
 
-## Ver el panel desde otro equipo
+## Pantalla en directo
 
-**Pantalla en directo:** en la web → 🏠 General → **📺 Pantalla en directo** → **Ver**, para ver lo que muestra ahora mismo la pantalla de la Pi (se actualiza cada segundo).
-
-**El panel en tu navegador:** Abre `http://<nombre-de-la-pi>.local:8080/panel/` en el navegador (o la web de configuración → **🖥️ Abrir el panel aquí**) y entra con la contraseña de la web. Es el mismo panel, para usarlo desde el móvil o el ordenador; no cambia el brillo ni apaga la pantalla de la Pi.
+En la web → 🏠 General → **📺 Pantalla en directo** → **Ver**: lo que muestra ahora mismo la pantalla de la Pi, actualizado cada segundo.
 
 ## Probarlo en el ordenador
 

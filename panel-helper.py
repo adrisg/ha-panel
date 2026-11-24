@@ -66,7 +66,7 @@ SIM_NETS = [('MiCasa_5G', 82, True), ('MiCasa', 64, True), ('Vecino_2.4', 41, Tr
 # Rutas de Immich que el panel puede leer a través del ayudante (solo lectura)
 IMMICH_PATHS = ('/api/shared-links/me', '/api/albums/', '/api/timeline/buckets', '/api/timeline/bucket')
 # Opciones de config.js que se pueden cambiar desde la web
-PANEL_KEYS = ('connection', 'haUrl', 'token', 'ambientPhotos', 'immichApiKey', 'favorites', 'hiddenEntities', 'weatherEntity',
+PANEL_KEYS = ('mqttEnabled', 'mqttHost', 'mqttPort', 'mqttUser', 'mqttPassword', 'haUrl', 'token', 'ambientPhotos', 'immichApiKey', 'favorites', 'hiddenEntities', 'weatherEntity',
               'excludePlatforms', 'printerPlugs', 'sensorClasses', 'cameraRefreshSeconds', 'hideUnavailable', 'photoSources')
 # Álbumes compartidos de Google Fotos: solo se leen enlaces de estos dominios
 GOOGLE_HOSTS = ('photos.app.goo.gl', 'photos.google.com', 'goo.gl')
@@ -182,7 +182,7 @@ def clean_panel(values, current=None, keep_secret_if_empty=True):
     for k in PANEL_KEYS:
         if k not in values:
             continue
-        if k in ('token', 'immichApiKey') and keep_secret_if_empty and not values[k]:
+        if k in ('token', 'immichApiKey', 'mqttPassword') and keep_secret_if_empty and not values[k]:
             continue
         if k == 'photoSources':
             out[k] = merge_source_keys(values[k], (current or {}).get('photoSources'))
@@ -782,8 +782,6 @@ def _restart_after_update(before):
         _user_ctl('restart', VOICE_UNIT)
     if 'panel-helper.py' in changed:
         sys.stdout.flush()
-        if MDNS['proc']:
-            MDNS['proc'].terminate()
         os.execv(sys.executable, [sys.executable, str(HERE / 'panel-helper.py')])   # mismo proceso, código nuevo
 
 
@@ -830,34 +828,15 @@ def apply_update():
         UPD['applying'] = False
 
 
-# ---------------------------------------------------------------- integración de Home Assistant
-# La integración «Panel Hogar» (custom_components/panel_hogar) habla con el panel por la web (puerto 8080):
-#   GET  /api/v1/info                      -> {id, name, version}
-#   GET  /api/v1/state?rev=N&timeout=25     -> {rev, screen_on, brightness, ambient, last_touch}; si rev es el actual, espera a que cambie
-#   POST /api/v1/command {command, value}   -> screen_on | screen_off | brightness (5–100) | ambient_on | ambient_off | reload
-# Con la cabecera «Authorization: Bearer <clave>»; la clave se ve (y se cambia) en la web → General.
-HA_KEY_FILE = DATA / 'ha_api.json'
-PANEL_STATE = {'rev': 0, 'screen_on': None, 'brightness': None, 'ambient': None, 'last_touch': None}
-STATE_COND = threading.Condition()
+# ---------------------------------------------------------------- Home Assistant por MQTT
+# El panel aparece en Home Assistant como un dispositivo, por el descubrimiento de MQTT (Mosquitto): no hay que
+# instalar nada en Home Assistant. Entidades (las que se elijan en la web → General): Pantalla (encendida y brillo),
+# Modo ambiente, Último toque y Recargar. Temas: panel_hogar/<id>/… y homeassistant/<tipo>/panel_hogar_<id>/<cosa>/config
+HA_EXPOSE = ('screen', 'ambient', 'last_touch', 'reload')
+PANEL_STATE = {'screen_on': None, 'brightness': None, 'ambient': None, 'last_touch': None}
 HA_COMMANDS = {'screen_on': 'pantalla_on', 'screen_off': 'pantalla_off', 'ambient_on': 'ambiente', 'ambient_off': 'inicio',
                'reload': 'recargar', 'brightness': 'brillo'}
-
-
-def ha_api_key(regenerate=False):
-    """Clave para la integración de Home Assistant (se crea la primera vez)."""
-    try:
-        key = json.loads(HA_KEY_FILE.read_text(encoding='utf-8')).get('key')
-    except (OSError, ValueError):
-        key = None
-    if regenerate or not key:
-        key = secrets.token_urlsafe(24)
-        DATA.mkdir(parents=True, exist_ok=True)
-        HA_KEY_FILE.write_text(json.dumps({'key': key}), encoding='utf-8')
-        try:
-            os.chmod(HA_KEY_FILE, 0o600)
-        except OSError:
-            pass
-    return key
+MQTT = {'client': None, 'status': 'off', 'error': ''}
 
 
 def panel_id():
@@ -869,41 +848,22 @@ def panel_id():
     return hashlib.sha256(('panel-hogar:' + seed).encode()).hexdigest()[:12]
 
 
-HA_EXPOSE = ('screen', 'ambient', 'last_touch', 'reload')
-
-
 def ha_expose():
-    """Lo que se ve en Home Assistant (web → General → Integración); por defecto, todo."""
+    """Lo que se ve en Home Assistant (web → General); por defecto, todo."""
     chosen = load_config()['ajustes'].get('haExpose') or {}
     return [k for k in HA_EXPOSE if chosen.get(k) is not False]
 
 
-def panel_info():
-    code, out, _ = _git('rev-parse', '--short', 'HEAD', timeout=5)
-    return {'id': panel_id(), 'name': 'Panel ' + socket.gethostname().split('.')[0], 'version': out.strip() if code == 0 else '',
-            'expose': ha_expose()}
-
-
 def set_panel_state(body):
-    """El panel cuenta cómo está (pantalla, brillo, modo ambiente, último toque); avisa a quien esté esperando."""
-    with STATE_COND:
-        changed = False
-        for k in ('screen_on', 'brightness', 'ambient', 'last_touch'):
+    """El panel cuenta cómo está (pantalla, brillo, modo ambiente, último toque); si cambia, se manda por MQTT."""
+    changed = {}
+    with LOCK:
+        for k in PANEL_STATE:
             if k in body and body[k] != PANEL_STATE[k]:
-                PANEL_STATE[k] = body[k]
-                changed = True
-        if changed:
-            PANEL_STATE['rev'] += 1
-            STATE_COND.notify_all()
-        return PANEL_STATE['rev']
-
-
-def wait_panel_state(rev, timeout):
-    """El estado; si rev es el actual, espera (como mucho timeout s) a que cambie."""
-    with STATE_COND:
-        if rev is not None and rev == PANEL_STATE['rev'] and timeout > 0:
-            STATE_COND.wait(timeout)
-        return dict(PANEL_STATE)
+                PANEL_STATE[k] = changed[k] = body[k]
+    if changed:
+        mqtt_publish_state(changed)
+    return True
 
 
 def send_command(command, value=None):
@@ -918,113 +878,229 @@ def send_command(command, value=None):
         COMMAND['value'] = value
 
 
-# Vincular con Home Assistant sin copiar claves: la integración encuentra el panel en la red (mDNS, _panel-hogar._tcp)
-# y pide un código (POST /api/v1/pair/start). El panel lo enseña en grande; al escribirlo en Home Assistant
-# (POST /api/v1/pair/finish {code}) se le da la clave. El código vale 3 minutos y 5 intentos.
-PAIR = {'code': None, 'until': 0.0, 'tries': 0, 'last_start': 0.0}
-MDNS = {'proc': None}             # avahi-publish (se cierra antes de relanzar el ayudante)
-HA_SEEN = {'at': 0.0}
+class MqttClient:
+    """Cliente MQTT 3.1.1 mínimo (sin dependencias): conecta, publica, se suscribe y se reconecta solo."""
 
+    def __init__(self, host, port, user, password, client_id, will, on_connect, on_message):
+        self.host, self.port, self.user, self.password = host, int(port or 1883), user, password
+        self.client_id, self.will, self.on_connect, self.on_message = client_id, will, on_connect, on_message
+        self.sock, self.stopped, self.wlock = None, False, threading.Lock()
 
-def pair_start():
-    with LOCK:
-        now = time.time()
-        if now - PAIR['last_start'] < 3:
-            raise ValueError('too many requests')
-        PAIR.update(code=f'{secrets.randbelow(10 ** 6):06d}', until=now + 180, tries=0, last_start=now)
-    return {'id': panel_id(), 'name': panel_info()['name']}
+    @staticmethod
+    def _str(s):
+        b = s.encode() if isinstance(s, str) else s
+        return len(b).to_bytes(2, 'big') + b
 
+    @staticmethod
+    def _packet(kind, body):
+        n, rem = len(body), b''
+        while True:
+            byte, n = n % 128, n // 128
+            rem += bytes([byte | (0x80 if n else 0)])
+            if not n:
+                return bytes([kind]) + rem + body
 
-def pair_finish(code):
-    with LOCK:
-        if not PAIR['code'] or time.time() > PAIR['until']:
-            PAIR['code'] = None
-            raise ValueError('expired')
-        PAIR['tries'] += 1
-        ok = hmac.compare_digest(str(code).replace(' ', ''), PAIR['code'])
-        if not ok and PAIR['tries'] >= 5:
-            PAIR['code'] = None
-        if not ok:
-            raise PermissionError('wrong code')
-        PAIR['code'] = None
-    return {'key': ha_api_key(), 'id': panel_id(), 'name': panel_info()['name']}
+    def _send(self, data):
+        with self.wlock:
+            if self.sock:
+                self.sock.sendall(data)
 
-
-def pair_code():
-    """El código que tiene que enseñar el panel ahora mismo (o None)."""
-    return PAIR['code'] if PAIR['code'] and time.time() < PAIR['until'] else None
-
-
-def _die_with_parent():
-    """En Linux: si el ayudante se cierra (p. ej. al reiniciar el kiosko), el hijo también."""
-    try:
-        import ctypes
-        ctypes.CDLL('libc.so.6').prctl(1, signal.SIGTERM)   # PR_SET_PDEATHSIG
-    except (OSError, AttributeError):
-        pass
-
-
-def mdns_announce():
-    """Anuncia el panel en la red (avahi-publish, de avahi-utils) para que Home Assistant lo encuentre solo."""
-    if SIMULATE:
-        return
-    while True:
-        exe = shutil.which('avahi-publish')
-        if exe:
-            try:
-                MDNS['proc'] = subprocess.Popen([exe, '-s', panel_info()['name'], '_panel-hogar._tcp', str(WEB_PORT), f'id={panel_id()}'],
-                                                stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL, preexec_fn=_die_with_parent)
-                MDNS['proc'].wait()
-            except OSError:
-                pass
-        time.sleep(30)          # si se corta (o aún no está instalado), se vuelve a intentar
-
-
-# Modo «con la integración» (sin token): el panel habla con Home Assistant a través de la integración Panel Hogar,
-# que solo deja ver y tocar las entidades que se le hayan dado. Aquí solo se pasan los mensajes:
-#   panel → POST /bridge/send {msg}          (127.0.0.1)    → la integración los recoge con GET /api/v1/bridge/requests
-#   integración → POST /api/v1/bridge/messages {messages}  → el panel los recoge con GET /bridge/poll?since=N
-BRIDGE = {'to_ha': [], 'to_panel': [], 'seq': 0, 'seen': 0.0}
-BRIDGE_COND = threading.Condition()
-
-
-def bridge_send(msg):
-    with BRIDGE_COND:
-        if len(BRIDGE['to_ha']) < 500:
-            BRIDGE['to_ha'].append(msg)
-        BRIDGE_COND.notify_all()
-
-
-def bridge_take(timeout):
-    """La integración recoge lo que ha mandado el panel (espera si no hay nada)."""
-    with BRIDGE_COND:
-        BRIDGE['seen'] = time.time()
-        if not BRIDGE['to_ha'] and timeout > 0:
-            BRIDGE_COND.wait(timeout)
-        out, BRIDGE['to_ha'] = BRIDGE['to_ha'], []
-        BRIDGE['seen'] = time.time()
+    def _recv(self, n):
+        out = b''
+        while len(out) < n:
+            chunk = self.sock.recv(n - len(out))
+            if not chunk:
+                raise ConnectionError('cerrada')
+            out += chunk
         return out
 
+    def _read_packet(self):
+        head = self._recv(1)[0]
+        mult, length = 1, 0
+        while True:
+            b = self._recv(1)[0]
+            length += (b & 127) * mult
+            mult *= 128
+            if not b & 128:
+                break
+        return head, self._recv(length) if length else b''
 
-def bridge_put(messages):
-    """Respuestas y eventos de la integración para el panel."""
-    with BRIDGE_COND:
-        BRIDGE['seen'] = time.time()
-        for m in messages[:500]:
-            BRIDGE['seq'] += 1
-            BRIDGE['to_panel'].append((BRIDGE['seq'], m))
-        BRIDGE['to_panel'] = BRIDGE['to_panel'][-1000:]
-        BRIDGE_COND.notify_all()
+    def publish(self, topic, payload, retain=False):
+        if isinstance(payload, (dict, list)):
+            payload = json.dumps(payload, ensure_ascii=False)
+        body = self._str(topic) + (payload.encode() if isinstance(payload, str) else payload or b'')
+        try:
+            self._send(self._packet(0x30 | (1 if retain else 0), body))
+        except OSError:
+            pass
+
+    def subscribe(self, topics):
+        body = (1).to_bytes(2, 'big') + b''.join(self._str(t) + b'\x00' for t in topics)
+        self._send(self._packet(0x82, body))
+
+    def stop(self):
+        self.stopped = True
+        try:
+            self._send(b'\xe0\x00')          # DISCONNECT
+            self.sock.close()
+        except (OSError, AttributeError):
+            pass
+
+    def run(self):
+        while not self.stopped:
+            try:
+                self.sock = socket.create_connection((self.host, self.port), timeout=10)
+                flags = 0x02 | 0x04 | 0x20          # sesión limpia, testamento (retenido)
+                body = self._str('MQTT') + bytes([4])
+                payload = self._str(self.client_id) + self._str(self.will[0]) + self._str(self.will[1])
+                if self.user:
+                    flags |= 0x80
+                    payload += self._str(self.user)
+                    if self.password:
+                        flags |= 0x40
+                        payload += self._str(self.password)
+                self._send(self._packet(0x10, body + bytes([flags]) + (60).to_bytes(2, 'big') + payload))
+                head, data = self._read_packet()
+                if head >> 4 != 2 or len(data) < 2 or data[1] != 0:
+                    reason = {4: 'usuario o contraseña incorrectos', 5: 'sin permiso'}.get(data[1] if len(data) > 1 else 0, 'rechazado')
+                    raise ConnectionError(reason)
+                MQTT.update(status='connected', error='')
+                self.on_connect(self)
+                self.sock.settimeout(1)
+                last_ping = time.time()
+                while not self.stopped:
+                    if time.time() - last_ping > 30:
+                        self._send(b'\xc0\x00')     # PINGREQ
+                        last_ping = time.time()
+                    try:
+                        head, data = self._read_packet()
+                    except socket.timeout:
+                        continue
+                    if head >> 4 == 3:              # PUBLISH
+                        tlen = int.from_bytes(data[:2], 'big')
+                        topic = data[2:2 + tlen].decode(errors='replace')
+                        rest = data[2 + tlen:]
+                        qos = (head >> 1) & 3
+                        if qos:
+                            self._send(self._packet(0x40, rest[:2]))   # PUBACK
+                            rest = rest[2:]
+                        try:
+                            self.on_message(topic, rest.decode(errors='replace'))
+                        except Exception as e:   # noqa: BLE001 — una orden rara no tumba la conexión
+                            print('mqtt: orden con error:', e, flush=True)
+            except (OSError, ConnectionError, ValueError) as e:
+                MQTT.update(status='error', error=str(e) or type(e).__name__)
+            finally:
+                try:
+                    self.sock.close()
+                except (OSError, AttributeError):
+                    pass
+                self.sock = None
+            if not self.stopped:
+                time.sleep(10)
 
 
-def bridge_poll(since, timeout):
-    """El panel recoge lo nuevo (espera si no hay nada). online = la integración está conectada."""
-    with BRIDGE_COND:
-        if since is not None and BRIDGE['seq'] <= since and timeout > 0:
-            BRIDGE_COND.wait(timeout)
-        msgs = [m for s, m in BRIDGE['to_panel'] if since is None or s > since]
-        return {'seq': BRIDGE['seq'], 'messages': msgs if since is not None else [],
-                'online': time.time() - BRIDGE['seen'] < 45}
+def _mqtt_base():
+    return f'panel_hogar/{panel_id()}'
+
+
+def _mqtt_device():
+    code, out, _ = _git('rev-parse', '--short', 'HEAD', timeout=5)
+    host = socket.gethostname().split('.')[0]
+    return {'identifiers': [f'panel_hogar_{panel_id()}'], 'name': f'Panel {host}', 'manufacturer': 'Panel Hogar',
+            'model': 'Raspberry Pi', 'sw_version': out.strip() if code == 0 else '', 'configuration_url': f'http://{host}.local:{WEB_PORT}'}
+
+
+def _mqtt_names():
+    en = load_config()['ajustes'].get('language') == 'en'
+    return ({'screen': 'Screen', 'ambient': 'Ambient mode', 'last_touch': 'Last touched', 'reload': 'Reload'} if en else
+            {'screen': 'Pantalla', 'ambient': 'Modo ambiente', 'last_touch': 'Último toque', 'reload': 'Recargar'})
+
+
+def mqtt_discovery(client=None):
+    """Anuncia (o quita) cada entidad en Home Assistant según lo elegido en la web."""
+    client = client or MQTT['client']
+    if not client or MQTT['status'] != 'connected':
+        return
+    base, pid, dev, names, expose = _mqtt_base(), panel_id(), _mqtt_device(), _mqtt_names(), ha_expose()
+    common = {'availability_topic': base + '/status', 'device': dev}
+    configs = {
+        'screen': ('light', dict(common, name=names['screen'], unique_id=f'{pid}_screen', icon='mdi:monitor',
+                                 command_topic=base + '/screen/set', state_topic=base + '/screen/state',
+                                 brightness_command_topic=base + '/brightness/set', brightness_state_topic=base + '/brightness/state',
+                                 brightness_scale=100, payload_on='ON', payload_off='OFF')),
+        'ambient': ('switch', dict(common, name=names['ambient'], unique_id=f'{pid}_ambient', icon='mdi:image-filter-hdr',
+                                   command_topic=base + '/ambient/set', state_topic=base + '/ambient/state', payload_on='ON', payload_off='OFF')),
+        'last_touch': ('sensor', dict(common, name=names['last_touch'], unique_id=f'{pid}_last_touch', device_class='timestamp',
+                                      state_topic=base + '/last_touch')),
+        'reload': ('button', dict(common, name=names['reload'], unique_id=f'{pid}_reload', device_class='restart',
+                                  command_topic=base + '/reload/press', payload_press='PRESS')),
+    }
+    for key, (kind, cfg) in configs.items():
+        topic = f'homeassistant/{kind}/panel_hogar_{pid}/{key}/config'
+        client.publish(topic, cfg if key in expose else b'', retain=True)
+
+
+def mqtt_publish_state(changed=None):
+    client = MQTT['client']
+    if not client or MQTT['status'] != 'connected':
+        return
+    base, st = _mqtt_base(), dict(PANEL_STATE)
+    keys = changed.keys() if changed else st.keys()
+    for k in keys:
+        v = st[k]
+        if v is None:
+            continue
+        if k == 'screen_on':
+            client.publish(base + '/screen/state', 'ON' if v else 'OFF', retain=True)
+        elif k == 'brightness':
+            client.publish(base + '/brightness/state', str(v), retain=True)
+        elif k == 'ambient':
+            client.publish(base + '/ambient/state', 'ON' if v else 'OFF', retain=True)
+        elif k == 'last_touch':
+            client.publish(base + '/last_touch', v, retain=True)
+
+
+def _mqtt_connected(client):
+    base = _mqtt_base()
+    client.publish(base + '/status', 'online', retain=True)
+    client.subscribe([base + '/screen/set', base + '/brightness/set', base + '/ambient/set', base + '/reload/press',
+                      'homeassistant/status'])
+    mqtt_discovery(client)
+    mqtt_publish_state()
+
+
+def _mqtt_message(topic, payload):
+    base = _mqtt_base()
+    if topic == 'homeassistant/status':
+        if payload == 'online':          # Home Assistant se ha reiniciado: se vuelve a anunciar
+            mqtt_discovery()
+            mqtt_publish_state()
+        return
+    if topic == base + '/screen/set':
+        send_command('screen_on' if payload.upper() == 'ON' else 'screen_off')
+    elif topic == base + '/brightness/set':
+        send_command('brightness', payload)
+    elif topic == base + '/ambient/set':
+        send_command('ambient_on' if payload.upper() == 'ON' else 'ambient_off')
+    elif topic == base + '/reload/press':
+        send_command('reload')
+
+
+def mqtt_restart():
+    """Arranca (o vuelve a arrancar) la conexión con los datos de la web → General → Home Assistant (MQTT)."""
+    old = MQTT['client']
+    if old:
+        old.stop()
+    MQTT.update(client=None, status='off', error='')
+    p = load_config()['panel']
+    if not p.get('mqttEnabled') or not p.get('mqttHost'):
+        return
+    base = _mqtt_base()
+    client = MqttClient(p['mqttHost'], p.get('mqttPort') or 1883, p.get('mqttUser') or '', p.get('mqttPassword') or '',
+                        f'panel-hogar-{panel_id()}', (base + '/status', 'offline'), _mqtt_connected, _mqtt_message)
+    MQTT.update(client=client, status='connecting')
+    threading.Thread(target=client.run, daemon=True).start()
 
 
 # Pantalla en directo (web → General): una captura de lo que se ve en la pantalla de la Pi (grim, dentro de cage).
@@ -1348,17 +1424,9 @@ class LocalHandler(Base):
             return self._json(200, sound_info())
         if u.path == '/actualizaciones':
             return self._json(200, update_info())
-        if u.path == '/bridge/poll':     # modo «con la integración»: respuestas y eventos de Home Assistant
-            q = parse_qs(u.query)
-            try:
-                since = int(q['since'][0]) if 'since' in q else None
-                timeout = max(0.0, min(30.0, float(q.get('timeout', ['0'])[0])))
-            except ValueError:
-                return self._json(400)
-            return self._json(200, bridge_poll(since, timeout))
         if u.path == '/poll':
             cfg = load_config()
-            return self._json(200, {'version': cfg['version'], 'reload': cfg.get('reload', 0), 'command': COMMAND, 'pin': speaker_pin(), 'haCode': pair_code(),
+            return self._json(200, {'version': cfg['version'], 'reload': cfg.get('reload', 0), 'command': COMMAND, 'pin': speaker_pin(),
                                     'update': len(UPD['available']) if update_settings()['mode'] == 'avisar' else 0})
         if u.path == '/proxy':
             return self._proxy(parse_qs(u.query).get('url', [''])[0])
@@ -1375,11 +1443,8 @@ class LocalHandler(Base):
         u = urlparse(self.path)
         q = parse_qs(u.query)
         try:
-            if u.path == '/estado':     # el panel cuenta cómo está (para la integración de Home Assistant)
+            if u.path == '/estado':     # el panel cuenta cómo está (para Home Assistant por MQTT)
                 return self._json(200, {'rev': set_panel_state(self._body())})
-            if u.path == '/bridge/send':   # modo «con la integración»: un mensaje para Home Assistant
-                bridge_send(self._body())
-                return self._json(200, {'ok': True})
             if u.path == '/brightness':
                 return self._json(200, {'ok': set_brightness(int(q.get('value', ['100'])[0]))})
             if u.path == '/power':
@@ -1449,102 +1514,8 @@ class WebHandler(Base):
             return False
         return True
 
-    # ------------------------------------------------------------------ el panel, desde otro equipo
-    # http://<pi>:8080/panel/ — el mismo panel, en tu navegador (con la contraseña de la web). Llega al ayudante
-    # por /_helper/… con lo justo: no toca la pantalla ni el brillo de la Pi y no se hace pasar por ella.
-    PANEL_FILES = ('.html', '.js', '.css', '.woff', '.woff2', '.ttf', '.eot', '.svg', '.png', '.jpg', '.json')
-    HELPER_GET = ('/config', '/poll', '/sonido', '/voz', '/bridge/poll')
-    HELPER_POST = ('/bridge/send', '/sonido', '/voz')
-
-    def _panel_file(self, u):
-        if not self._session():
-            self.send_response(302)
-            self.send_header('Location', '/')
-            self.end_headers()
-            return
-        rel = u.path[len('/panel/'):] or 'index.html'
-        path = (HERE / rel).resolve()
-        if HERE.resolve() not in path.parents or path.suffix not in self.PANEL_FILES or not path.is_file() \
-                or path.name in ('config.html',) or '.git' in path.parts:
-            return self._json(404)
-        data = path.read_bytes()
-        types = {'.html': 'text/html; charset=utf-8', '.js': 'text/javascript; charset=utf-8', '.css': 'text/css; charset=utf-8',
-                 '.svg': 'image/svg+xml', '.png': 'image/png', '.jpg': 'image/jpeg', '.json': 'application/json',
-                 '.woff': 'font/woff', '.woff2': 'font/woff2', '.ttf': 'font/ttf', '.eot': 'application/vnd.ms-fontobject'}
-        self.send_response(200)
-        self.send_header('Content-Type', types.get(path.suffix, 'application/octet-stream'))
-        self.send_header('Content-Length', str(len(data)))
-        self.send_header('Cache-Control', 'no-store')
-        self.end_headers()
-        self.wfile.write(data)
-
-    def _helper_proxy(self, u, method):
-        """El panel abierto desde otro equipo llega al ayudante local por aquí, solo a lo permitido."""
-        if not self._session():
-            return self._json(401, {'error': 'inicia sesión'})
-        path = u.path[len('/_helper'):]
-        allowed = self.HELPER_GET if method == 'GET' else ('/ajustes',) if method == 'PUT' else self.HELPER_POST
-        if path not in allowed:
-            return self._json(403, {'error': 'no permitido desde otro equipo'})
-        n = int(self.headers.get('Content-Length') or 0)
-        body = self.rfile.read(n) if n and n < 256 * 1024 else None
-        req = urllib.request.Request(f'http://127.0.0.1:{LOCAL_PORT}{path}' + (f'?{u.query}' if u.query else ''), data=body,
-                                     method=method, headers={'Content-Type': self.headers.get('Content-Type', 'application/json')})
-        try:
-            r = urllib.request.urlopen(req, timeout=40)
-        except urllib.error.HTTPError as e:
-            r = e
-        except OSError:
-            return self._json(502)
-        data = r.read()
-        self.send_response(getattr(r, 'status', None) or r.code)
-        self.send_header('Content-Type', r.headers.get('Content-Type', 'application/json'))
-        self.send_header('Content-Length', str(len(data)))
-        self.send_header('Cache-Control', 'no-store')
-        self.end_headers()
-        self.wfile.write(data)
-
-    def _ha_auth(self):
-        """Integración de Home Assistant: «Authorization: Bearer <clave>»."""
-        got = (self.headers.get('Authorization') or '').removeprefix('Bearer ').strip()
-        if got and hmac.compare_digest(got, ha_api_key()):
-            HA_SEEN['at'] = time.time()
-            return True
-        time.sleep(0.5)
-        self._json(401, {'error': 'invalid key'})
-        return False
-
     def do_GET(self):
         u = urlparse(self.path)
-        if u.path == '/panel':
-            self.send_response(301)
-            self.send_header('Location', '/panel/')
-            self.end_headers()
-            return
-        if u.path.startswith('/panel/'):
-            return self._panel_file(u)
-        if u.path.startswith('/_helper/'):
-            return self._helper_proxy(u, 'GET')
-        if u.path.startswith('/api/v1/'):
-            if not self._ha_auth():
-                return
-            if u.path == '/api/v1/info':
-                return self._json(200, panel_info())
-            if u.path == '/api/v1/bridge/requests':
-                try:
-                    timeout = max(0.0, min(55.0, float(parse_qs(u.query).get('timeout', ['0'])[0])))
-                except ValueError:
-                    return self._json(400)
-                return self._json(200, {'messages': bridge_take(timeout)})
-            if u.path == '/api/v1/state':
-                q = parse_qs(u.query)
-                try:
-                    rev = int(q['rev'][0]) if 'rev' in q else None
-                    timeout = max(0.0, min(55.0, float(q.get('timeout', ['0'])[0])))
-                except ValueError:
-                    return self._json(400, {'error': 'bad rev or timeout'})
-                return self._json(200, dict(wait_panel_state(rev, timeout), expose=ha_expose()))
-            return self._json(404)
         if u.path == '/api/pantalla.png':   # la pantalla de la Pi en directo
             if not self._guard():
                 return
@@ -1558,12 +1529,10 @@ class WebHandler(Base):
             self.end_headers()
             self.wfile.write(png)
             return
-        if u.path == '/api/ha-key':      # la clave para la integración, en la web
+        if u.path == '/api/mqtt':        # estado de la conexión con Home Assistant por MQTT
             if not self._guard():
                 return
-            seen = HA_SEEN['at']
-            return self._json(200, {'linked': seen > 0 and time.time() - seen < 120, 'lastSeen': seen or None,
-                                    'mdns': SIMULATE or bool(shutil.which('avahi-publish'))})
+            return self._json(200, {'status': MQTT['status'], 'error': MQTT['error']})
         if u.path in ('/', '/index.html'):
             try:
                 data = (HERE / 'config.html').read_bytes()
@@ -1610,6 +1579,7 @@ class WebHandler(Base):
             panel = dict(cfg['panel'])
             panel['hasToken'] = bool(panel.pop('token', None))          # el token nunca sale de la Pi
             panel['hasImmichApiKey'] = bool(panel.pop('immichApiKey', None))
+            panel['hasMqttPassword'] = bool(panel.pop('mqttPassword', None))
             if isinstance(panel.get('photoSources'), list):   # sin configurar: la web las crea desde ambientPhotos
                 panel['photoSources'] = [dict({k: v for k, v in src.items() if k != 'apiKey'}, hasApiKey=bool(src.get('apiKey')))
                                          for src in panel['photoSources'] if isinstance(src, dict)]
@@ -1647,39 +1617,10 @@ class WebHandler(Base):
 
     def do_POST(self):
         u = urlparse(self.path)
-        if u.path.startswith('/_helper/'):
-            return self._helper_proxy(u, 'POST')
         try:
             body = self._body()
         except ValueError:
             return self._json(400)
-        if u.path == '/api/v1/pair/start':
-            try:
-                return self._json(200, pair_start())
-            except ValueError as e:
-                return self._json(429, {'error': str(e)})
-        if u.path == '/api/v1/pair/finish':
-            try:
-                return self._json(200, pair_finish(body.get('code', '')))
-            except PermissionError as e:
-                time.sleep(1)
-                return self._json(403, {'error': str(e)})
-            except ValueError as e:
-                return self._json(410, {'error': str(e)})
-        if u.path == '/api/v1/bridge/messages':
-            if not self._ha_auth():
-                return
-            msgs = body.get('messages')
-            bridge_put(msgs if isinstance(msgs, list) else [])
-            return self._json(200, {'ok': True})
-        if u.path == '/api/v1/command':
-            if not self._ha_auth():
-                return
-            try:
-                send_command(str(body.get('command', '')), body.get('value'))
-            except ValueError as e:
-                return self._json(400, {'error': str(e)})
-            return self._json(200, {'ok': True})
         if u.path == '/api/login':
             if not PASS_FILE.exists():
                 return self._json(409, {'error': 'Aún no hay contraseña. En la Pi ejecuta: python3 ~/ha-panel/panel-helper.py --set-password'})
@@ -1752,10 +1693,6 @@ class WebHandler(Base):
                 return self._json(400, {'error': str(e)})
         if u.path == '/api/actualizaciones':   # comprobar, actualizar ya, o modo (avisar / automático) y hora
             return self._json(*update_action(body))
-        if u.path == '/api/ha-key':        # desvincular: otra clave (Home Assistant tendrá que volver a vincularse)
-            ha_api_key(regenerate=True)
-            HA_SEEN['at'] = 0.0
-            return self._json(200, {'ok': True})
         if u.path == '/api/orden':         # recargar, apagar/encender pantalla, modo ambiente, inicio
             tipo = body.get('tipo')
             if tipo not in ('recargar', 'pantalla_off', 'pantalla_on', 'ambiente', 'inicio'):
@@ -1792,8 +1729,6 @@ class WebHandler(Base):
             except ValueError as e:
                 return self._json(400, {'error': str(e)})
             return self._json(200, {'ok': True, 'name': name, 'version': bump_version()})
-        if urlparse(self.path).path.startswith('/_helper/'):
-            return self._helper_proxy(urlparse(self.path), 'PUT')
         if urlparse(self.path).path != '/api/config':
             return self._json(404)
         if not self._guard(mutating=True):
@@ -1811,7 +1746,10 @@ class WebHandler(Base):
                 cfg['ajustes'] = body['ajustes']
             # Conexión, entidades, fotos…: el panel tiene que arrancar de nuevo. Solo ajustes: los aplica al momento.
             reload = json.dumps(cfg['panel'], sort_keys=True) != old_panel
-            return self._json(200, {'ok': True, 'version': save_config(cfg, reload), 'reload': reload})
+            version = save_config(cfg, reload)
+        # MQTT: con datos nuevos se vuelve a conectar; si no, se vuelven a anunciar las entidades (lo elegido o el idioma)
+        threading.Thread(target=mqtt_restart if reload else mqtt_discovery, daemon=True).start()
+        return self._json(200, {'ok': True, 'version': version, 'reload': reload})
 
 
 def serve(port, handler, host):
@@ -1846,7 +1784,7 @@ def main():
         print('Panel Hogar · ayudante en MODO SIMULACIÓN (pantalla y red simuladas; no se cambia nada del equipo)', flush=True)
     threading.Thread(target=serve, args=(WEB_PORT, WebHandler, '0.0.0.0'), daemon=True).start()
     threading.Thread(target=update_loop, daemon=True).start()
-    threading.Thread(target=mdns_announce, daemon=True).start()   # para que Home Assistant lo encuentre solo
+    mqtt_restart()   # Home Assistant por MQTT (si está activado en la web)
     master_restore()
     serve(LOCAL_PORT, LocalHandler, '127.0.0.1')
 

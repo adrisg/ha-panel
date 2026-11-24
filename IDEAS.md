@@ -18,7 +18,7 @@ Lista de cosas por hacer. 🚧 = en marcha · ✅ = hecho.
 
 ## Integración con Home Assistant
 
-9. ✅ **El panel como dispositivo en Home Assistant** (integración `panel_hogar`; falta probarla en un Home Assistant de verdad): entidades propias (pantalla, brillo, modo ambiente, volumen…) para usarlas en automatizaciones.
+9. ✅ **El panel como dispositivo en Home Assistant**, por MQTT (descubrimiento automático): pantalla y brillo, modo ambiente, último toque y recargar.
 10. **PIN para acciones delicadas**: pedir un código para abrir la puerta o desarmar la alarma.
 
 ## Para que lo use más gente
