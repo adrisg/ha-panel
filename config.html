@@ -368,7 +368,7 @@
       <h2>🖼️ Ambient mode photos</h2>
       <div class="row"><label for="photos-enabled" data-i18n="panel.settings.show_photos">Show photos</label><label class="switch"><input id="photos-enabled" type="checkbox"><span></span></label></div>
       <div class="row"><label for="photos-fit">How photos are shown <span class="hint" data-i18n="web.ambient.default">(default)</span></label>
-        <select id="photos-fit"><option value="cover">Fill the screen</option><option value="blur">Whole + blurred background</option><option value="contain">Whole (black background)</option></select></div>
+        <select id="photos-fit"><option value="cover" data-i18n="web.ambient.fill_screen">Fill the screen</option><option value="blur" data-i18n="web.ambient.whole_blurred_background">Whole + blurred background</option><option value="contain" data-i18n="web.ambient.whole_black_background">Whole (black background)</option></select></div>
       <div class="row"><label for="photos-seconds" data-i18n="panel.settings.change_photo_every">Change photo every</label>
         <select id="photos-seconds"><option value="15">15 s</option><option value="30">30 s</option><option value="60">1 min</option><option value="300">5 min</option><option value="900">15 min</option></select></div>
       <div class="field">
@@ -376,10 +376,10 @@
         <div id="sources" class="sources"></div>
         <div class="add">
           <select id="src-type">
-            <option value="immich">Immich</option>
-            <option value="google">Google Photos</option>
-            <option value="ha_media">Home Assistant folder (Media)</option>
-            <option value="urls">Photos by URL</option>
+            <option value="immich" data-i18n="web.ambient.immich">Immich</option>
+            <option value="google" data-i18n="web.ambient.google_photos">Google Photos</option>
+            <option value="ha_media" data-i18n="web.ambient.home_assistant_folder">Home Assistant folder (Media)</option>
+            <option value="urls" data-i18n="web.ambient.photos_by_url">Photos by URL</option>
           </select>
           <button class="btn" id="src-add" type="button" data-i18n="web.ambient.add_source">Add source</button>
         </div>
@@ -392,7 +392,7 @@
       <div id="bullets" class="bubs amb-web"></div>
       <div class="add" style="margin-top:12px">
         <input id="bullet-title" type="text" placeholder="Title of the new bubble (e.g. Living room temperature)">
-        <select id="bullet-tpl"><option value="burbuja">That shows something</option><option value="luces">That does something when tapped</option><option value="">Empty</option></select>
+        <select id="bullet-tpl"><option value="burbuja" data-i18n="web.ambient.shows_something">That shows something</option><option value="luces" data-i18n="web.ambient.does_something_when">That does something when tapped</option><option value="" data-i18n="web.ambient.empty">Empty</option></select>
         <button class="btn" id="bullet-add" type="button" data-i18n="web.ambient.create">Create</button>
       </div>
       <div class="add" style="margin-top:8px">
@@ -475,7 +475,7 @@ go = 'home' | 'rooms' | 'sensors' | 'media' | 'printers' | 'scooter' | 'settings
       </div>
       <div class="field">
         <label for="weatherEntity" data-i18n="web.general.weather_entity">Weather entity</label>
-        <select id="weatherEntity"><option value="">Automatic (the first one found)</option></select>
+        <select id="weatherEntity"><option value="" data-i18n="panel.settings.automatic_first_one">Automatic (the first one found)</option></select>
       </div>
       <div class="field">
         <label data-i18n="web.general.hidden_entities">Hidden entities</label>
@@ -536,13 +536,13 @@ go = 'home' | 'rooms' | 'sensors' | 'media' | 'printers' | 'scooter' | 'settings
         <input id="brightness" type="range" min="5" max="100" step="5">
       </div>
       <div class="row"><label for="idleSeconds" data-i18n="web.screen.ambient_mode_after">Ambient mode after</label>
-        <select id="idleSeconds"><option value="0">Never</option><option value="30">30 s</option><option value="60">1 min</option><option value="90">1.5 min</option><option value="180">3 min</option><option value="300">5 min</option><option value="600">10 min</option></select></div>
+        <select id="idleSeconds"><option value="0" data-i18n="panel.settings.never">Never</option><option value="30">30 s</option><option value="60">1 min</option><option value="90" data-i18n="panel.settings.1_5_min">1.5 min</option><option value="180">3 min</option><option value="300">5 min</option><option value="600">10 min</option></select></div>
       <div class="row"><label for="screenOffMinutes">Turn off the screen after <span class="hint" data-i18n="web.screen.ambient_mode">(in ambient mode)</span></label>
-        <select id="screenOffMinutes"><option value="0">Never</option><option value="5">5 min</option><option value="15">15 min</option><option value="30">30 min</option><option value="60">1 h</option><option value="120">2 h</option></select></div>
+        <select id="screenOffMinutes"><option value="0" data-i18n="panel.settings.never">Never</option><option value="5">5 min</option><option value="15">15 min</option><option value="30">30 min</option><option value="60">1 h</option><option value="120">2 h</option></select></div>
       <div class="row"><label for="language">Language <span class="hint" data-i18n="web.screen.automatic_home_assistant">(automatic: Home Assistant's)</span></label>
-        <select id="language"><option value="auto">Automatic</option></select></div>
+        <select id="language"><option value="auto" data-i18n="panel.settings.automatic">Automatic</option></select></div>
       <div class="row"><label for="theme">Theme <span class="hint" data-i18n="web.screen.automatic_light_by">(automatic: light by day, dark at night)</span></label>
-        <select id="theme"><option value="dark">Dark</option><option value="light">Light</option><option value="auto">Automatic</option></select></div>
+        <select id="theme"><option value="dark" data-i18n="panel.settings.dark">Dark</option><option value="light" data-i18n="panel.settings.theme_light">Light</option><option value="auto" data-i18n="panel.settings.automatic">Automatic</option></select></div>
       <div class="field">
         <label>Colour <span class="hint" data-i18n="web.screen.buttons_sliders_volume">(buttons, sliders and volume bubble)</span></label>
         <div class="accents" id="accent"></div>
@@ -633,8 +633,8 @@ go = 'home' | 'rooms' | 'sensors' | 'media' | 'printers' | 'scooter' | 'settings
       <div class="field">
         <label for="spk-close" data-i18n="web.sound.when_paused_or">When paused or stopped, close «Now playing»</label>
         <select id="spk-close">
-          <option value="0">Immediately</option><option value="30">After 30 seconds</option><option value="60">After a minute</option>
-          <option value="120">After 2 minutes</option><option value="300">After 5 minutes</option><option value="-1">Never (close with ✕)</option>
+          <option value="0" data-i18n="web.sound.immediately">Immediately</option><option value="30" data-i18n="web.sound.after_30_seconds">After 30 seconds</option><option value="60" data-i18n="web.sound.after_minute">After a minute</option>
+          <option value="120" data-i18n="web.sound.after_2_minutes">After 2 minutes</option><option value="300" data-i18n="web.sound.after_5_minutes">After 5 minutes</option><option value="-1" data-i18n="web.sound.never_close">Never (close with ✕)</option>
         </select>
       </div>
       <div class="field">
@@ -648,11 +648,11 @@ go = 'home' | 'rooms' | 'sensors' | 'media' | 'printers' | 'scooter' | 'settings
       <h2>🗣️ Voice on screen</h2>
       <div class="field">
         <label for="voiceSatellite">Voice assistant <span class="hint" data-i18n="web.sound.assist_satellite_what">(Assist satellite: what you say and its answer appear on the screen)</span></label>
-        <select id="voiceSatellite"><option value="">None</option></select>
+        <select id="voiceSatellite"><option value="" data-i18n="panel.settings.none">None</option></select>
       </div>
       <div class="field">
         <label for="voiceStyle" data-i18n="web.sound.voice_animation">Voice animation</label>
-        <select id="voiceStyle"><option value="wave">Wave</option><option value="mic">Microphone</option><option value="light">Light line</option><option value="eq">Equaliser</option></select>
+        <select id="voiceStyle"><option value="wave" data-i18n="panel.settings.wave">Wave</option><option value="mic" data-i18n="panel.settings.microphone">Microphone</option><option value="light" data-i18n="panel.settings.light_line">Light line</option><option value="eq" data-i18n="panel.settings.equaliser">Equaliser</option></select>
       </div>
     </div>
 
@@ -734,8 +734,8 @@ go = 'home' | 'rooms' | 'sensors' | 'media' | 'printers' | 'scooter' | 'settings
       <div class="field">
         <label for="upd-mode" data-i18n="panel.settings.when_there_new">When there is a new version</label>
         <select id="upd-mode">
-          <option value="notify">Notify me (I update with the button)</option>
-          <option value="auto">Update by itself every day at a time</option>
+          <option value="notify" data-i18n="web.system.notify_me_i">Notify me (I update with the button)</option>
+          <option value="auto" data-i18n="web.system.update_by_itself">Update by itself every day at a time</option>
         </select>
       </div>
       <div class="field" id="upd-hour-box">

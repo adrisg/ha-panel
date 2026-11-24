@@ -1,5 +1,5 @@
-/* Panel Hogar — panel propio para Home Assistant (API WebSocket), estilo Nest Hub.
- * Sin frameworks: JS puro para que vaya fluido en una Raspberry Pi 2. */
+/* Panel Hogar — a panel of your own for Home Assistant (WebSocket API), Nest Hub style.
+ * No frameworks: plain JS so it runs smoothly on a Raspberry Pi 2. */
 'use strict';
 
 const CFG = Object.assign({
@@ -13,7 +13,7 @@ const CFG = Object.assign({
 }, window.PANEL_CONFIG || {});
 CFG.haUrl = (CFG.haUrl || '').replace(/\/+$/, '');
 const PARAMS = new URLSearchParams(location.search);
-// Sin dirección o sin token no hay nada que mostrar: se enseña cómo conectarlo
+// With no address or no token there is nothing to show: it shows how to connect it
 const NEEDS_SETUP = !CFG.haUrl || !CFG.token || CFG.token === 'PEGA_AQUI_TU_TOKEN';
 
 /* ====================== Utilidades ====================== */
@@ -68,7 +68,7 @@ function toast(msg, error = false) {
   toastTimer = setTimeout(() => (t.className = 'toast' + (error ? ' error' : '')), 2600);
 }
 
-/* ====================== Conexión con Home Assistant ====================== */
+/* ====================== Connection to Home Assistant ====================== */
 class HAConn {
   constructor(url, token) {
     this.url = url; this.token = token; this.id = 1;
@@ -145,7 +145,7 @@ const api = {
   },
 };
 
-/** Llama a un servicio; si falla avisa y repinta el estado real. */
+/** Calls a service; if it fails it says so and paints the real state again. */
 function call(dom, service, data, id, returnResponse) {
   return api.callService(dom, service, data, id, returnResponse).catch((e) => {
     toast(I18N.t('panel.status.error_prefix') + e.message, true);
@@ -160,7 +160,7 @@ const S = {
   view: 'home', sheetId: null, ambient: false, connected: false,
   viewTimers: [], sheetTimers: [], forecast: null, forecastAt: 0,
 };
-// Enlaces entidad → funciones que repintan una parte de la pantalla (por "ámbito")
+// Entity → functions that repaint part of the screen (by "scope")
 const B = { view: new Map(), sheet: new Map(), np: new Map(), shade: new Map() };
 function bind(scope, id, fn) {
   if (!id) return;
@@ -187,7 +187,7 @@ function setState(id, st) {
   if (st) S.states[id] = st; else delete S.states[id];
   fire(id);
   onPrinterStatus(id, old, st);
-  // Si un reproductor empieza o deja de tener algo, se reordena la vista Multimedia
+  // If a player starts or stops having something, the Media view is reordered
   if (S.view === 'media' && domain(id) === 'media_player' && mediaRank(old) !== mediaRank(st)) {
     clearTimeout(structTimer);
     structTimer = setTimeout(() => !S.sheetId && render(), 1500);
@@ -211,7 +211,7 @@ function areaOf(id) {
   return (d && d.area_id) || null;
 }
 function isScooter(id) { return reg(id).platform === CFG.scooterPlatform; }
-// Dominios cuyo estado normal es "unknown" (no deben ocultarse por eso)
+// Domains whose normal state is "unknown" (they must not be hidden because of it)
 const STATELESS = ['scene', 'script', 'button', 'input_button', 'camera'];
 function visible(id) {
   const e = reg(id), st = S.states[id], d = domain(id);
@@ -222,12 +222,12 @@ function visible(id) {
   if (/_permit_join$/.test(id)) return false;          // Zigbee: "permitir emparejar"
   if (d !== 'camera') {
     if (CFG.excludePlatforms.includes(e.platform)) return false;
-    // De un aspirador solo interesa la propia entidad vacuum, no sus decenas de ajustes
+    // Of a vacuum only the vacuum entity itself matters, not its dozens of settings
     if (d !== 'vacuum' && e.device_id && S.vacuumDevs.has(e.device_id)) return false;
   }
   return true;
 }
-// Nombres que no dicen nada sin el dispositivo delante ("Light", "Temperatura"…)
+// Names that say nothing without the device in front ("Light", "Temperature"…)
 const GENERIC = new Set(['light', 'luz', 'switch', 'interruptor', 'media player', 'reproductor', 'fan', 'ventilador',
   'temperature', 'temperatura', 'humidity', 'humedad', 'power', 'potencia', 'energy', 'energía', 'battery',
   'batería', 'battery level', 'nivel de batería', 'door', 'puerta', 'contact', 'contacto', 'window', 'ventana',
@@ -244,13 +244,13 @@ function nameOf(id, strip = true) {
     const r2 = rest(a && a.name);
     if (r2) n = r2;
   }
-  // Limpia nombres raros de algunas integraciones: espacios dobles y «Maripili  Maripili»
+  // Cleans odd names from some integrations: double spaces and “Maripili  Maripili”
   n = n.replace(/\s+/g, ' ').trim();
   const twice = n.match(/^(.+) \1$/i);
   if (twice) n = twice[1];
   return cap(n);
 }
-/** Orden de los reproductores: 0 sonando · 1 en pausa con contenido · 2 encendido con algo · 3 encendido vacío · 4 apagado · 5 no disponible */
+/** Order of the players: 0 playing · 1 paused with content · 2 on with something · 3 on and empty · 4 off · 5 unavailable */
 function mediaRank(st) {
   if (!st) return 9;
   const a = st.attributes, s = st.state, has = !!(a.media_title || a.entity_picture);
@@ -262,7 +262,7 @@ function mediaRank(st) {
   return 5;
 }
 
-/** Quita reproductores repetidos (la misma TV por Cast, Android TV, Music Assistant…). */
+/** Removes repeated players (the same TV through Cast, Android TV, Music Assistant…). */
 function dedupeMedia(list) {
   const score = (id) => (S.states[id].state !== 'unavailable' ? 2 : 0) + (areaOf(id) ? 1 : 0);
   const best = new Map();
@@ -285,7 +285,7 @@ const T_ES = {
   auto: 'panel.states.auto', heat_cool: 'panel.states.heat_cool', dry: 'panel.states.dry', fan_only: 'panel.states.fan',
   cleaning: 'panel.states.cleaning', docked: 'panel.states.docked', returning: 'panel.states.returning', error: 'panel.states.error',
 };
-/** Estados en el idioma del panel (T.on → «Encendido» / «On»). */
+/** States in the panel language (T.on → “On” / “Encendido”). */
 const T = new Proxy(T_ES, { get: (o, k) => (o[k] != null ? t(o[k]) : undefined) });
 const BIN = {
   door: ['panel.states.closed_f', 'panel.states.open_f'], window: ['panel.states.closed_f', 'panel.states.open_f'], garage_door: ['panel.states.closed_f', 'panel.states.open_f'],
@@ -317,7 +317,7 @@ const DC_ICON = {
 function iconOf(st) {
   if (!st) return 'mdi-help-circle-outline';
   const a = st.attributes, d = domain(st.entity_id), s = st.state;
-  if (d === 'vacuum') return s === 'error' ? 'mdi-robot-vacuum-alert' : 'mdi-robot-vacuum';   // sin el «zzz» de la integración
+  if (d === 'vacuum') return s === 'error' ? 'mdi-robot-vacuum-alert' : 'mdi-robot-vacuum';   // without the integration's “zzz”
   if (a.icon) return a.icon.replace('mdi:', 'mdi-');
   if (d === 'light') return s === 'on' ? 'mdi-lightbulb-on' : 'mdi-lightbulb-outline';
   if (d === 'lock') return s === 'locked' ? 'mdi-lock' : s === 'unavailable' || s === 'unknown' ? 'mdi-lock-question' : 'mdi-lock-open-variant';
@@ -333,7 +333,7 @@ function iconOf(st) {
   if (d === 'media_player' && a.device_class === 'tv') return 'mdi-television';
   return DC_ICON[a.device_class] || DOMAIN_ICON[d] || 'mdi-help-circle-outline';
 }
-/** Texto del estado de una entidad, ya traducido. */
+/** Text of an entity state, already translated. */
 const fmtState = (st) => I18N.t(fmtStateRaw(st));
 function fmtStateRaw(st) {
   if (!st) return '—';
@@ -387,7 +387,7 @@ const wText = (c) => I18N.t((W[c] || [0, cap(c || '')])[1]);
 const weatherId = () => (CFG.weatherEntity && S.states[CFG.weatherEntity]) ? CFG.weatherEntity
   : Object.keys(S.states).find((id) => domain(id) === 'weather');
 
-const FORECASTS = {};      // previsión por entidad del tiempo: { id: { list, t } }
+const FORECASTS = {};      // forecast per weather entity: { id: { list, t } }
 async function getForecast(id = weatherId()) {
   if (!id || !S.states[id]) return [];
   const c = FORECASTS[id];
@@ -405,7 +405,7 @@ async function getForecast(id = weatherId()) {
 }
 
 /* ====================== Componentes ====================== */
-/** Toque corto / pulsación larga, sin disparar al hacer scroll. */
+/** Short tap / long press, without firing when scrolling. */
 function pressable(el, onTap, onLong) {
   let timer = null, long = false, sx = 0, sy = 0;
   const cancel = () => { if (timer) { clearTimeout(timer); timer = null; } };
@@ -426,7 +426,7 @@ const HAS_SHEET = ['light', 'fan', 'cover', 'climate', 'media_player', 'lock', '
 
 function tap(id, el) {
   const d = domain(id);
-  // Un interruptor sin conexión no se intenta encender: se abre su detalle (o se avisa)
+  // A switch with no connection is not turned on: its details open (or it says so)
   if (S.states[id] && S.states[id].state === 'unavailable' && TOGGLE.includes(d)) {
     if (HAS_SHEET.includes(d)) openSheet(id); else toast(`${nameOf(id)} no está disponible`, true);
     return;
@@ -443,10 +443,10 @@ function tap(id, el) {
   openSheet(id);
 }
 
-/* ---------- Color real de las luces ----------
- * Una luz encendida pinta su ficha con su propio color: el RGB si lo tiene, o el blanco cálido/frío
- * de su temperatura de color. El texto se pone oscuro o claro según lo luminoso que sea el fondo. */
-function kelvinToRgb(k) {          // aproximación de Tanner Helland
+/* ---------- Real colour of the lights ----------
+ * A light that is on paints its tile with its own colour: the RGB if it has it, or the warm/cold white
+ * of its colour temperature. The text goes dark or light depending on how bright the background is. */
+function kelvinToRgb(k) {          // Tanner Helland's approximation
   const t = k / 100;
   const r = t <= 66 ? 255 : 329.698727446 * Math.pow(t - 60, -0.1332047592);
   const g = t <= 66 ? 99.4708025861 * Math.log(t) - 161.1195681661 : 288.1221695283 * Math.pow(t - 60, -0.0755148492);
@@ -457,17 +457,17 @@ function lightColor(st) {
   const a = st.attributes;
   if (Array.isArray(a.rgb_color)) return a.rgb_color;
   if (a.color_temp_kelvin) return kelvinToRgb(a.color_temp_kelvin);
-  if (Array.isArray(a.hs_color)) {                          // por si solo da tono/saturación
+  if (Array.isArray(a.hs_color)) {                          // in case it only gives hue/saturation
     const [hh, ss] = a.hs_color, c = ss / 100, x = c * (1 - Math.abs(((hh / 60) % 2) - 1));
     const [r, g, b] = hh < 60 ? [c, x, 0] : hh < 120 ? [x, c, 0] : hh < 180 ? [0, c, x] : hh < 240 ? [0, x, c] : hh < 300 ? [x, 0, c] : [c, 0, x];
     return [r, g, b].map((v) => Math.round((v + (1 - c)) * 255));
   }
-  return null;                                               // sin color: se queda el amarillo de siempre
+  return null;                                               // no colour: the usual yellow stays
 }
 function paintLight(el, st) {
   const rgb = st && domain(st.entity_id) === 'light' && st.state === 'on' && lightColor(st);
   if (!rgb) { el.style.removeProperty('background'); el.style.removeProperty('color'); return; }
-  // Un poco suavizado hacia el blanco para que se lea bien y no deslumbre
+  // Softened a bit towards white so it reads well and does not dazzle
   const soft = rgb.map((v) => Math.round(v * 0.8 + 255 * 0.2));
   const lum = (0.2126 * soft[0] + 0.7152 * soft[1] + 0.0722 * soft[2]) / 255;
   el.style.background = `rgb(${soft.join(',')})`;
@@ -562,7 +562,7 @@ function mediaCard(id, scope) {
   return card;
 }
 
-/* ====================== Hoja de detalle (pulsación larga) ====================== */
+/* ====================== Details sheet (long press) ====================== */
 function bigToggle(id) {
   const d = domain(id);
   const b = h('button', { class: 'big-toggle', onclick: () => call(d, 'toggle', {}, id) });
@@ -653,7 +653,7 @@ const SHEETS = {
     const b = (ic, label, svc, cls = '') => h('button', { class: 'big-action ' + cls, onclick: () => call('vacuum', svc, {}, id).then((r) => r !== null && closeSheet()) }, icon(ic), label);
     const parts = [status];
 
-    // Habitaciones del mapa (Dreame: attributes.rooms[mapa] = [{id, name, icon}])
+    // Rooms of the map (Dreame: attributes.rooms[map] = [{id, name, icon}])
     const rooms = a.rooms ? (a.rooms[a.selected_map] || Object.values(a.rooms)[0] || []) : [];
     if (dreame && rooms.length) {
       const sel = new Set();
@@ -680,7 +680,7 @@ const SHEETS = {
       parts.push(h('div', { class: 'btn-row' }, b('mdi-play', I18N.t('panel.sheets.clean'), 'start', 'primary')));
     }
 
-    // Atajos guardados en la app de Dreame
+    // Shortcuts saved in the Dreame app
     const shortcuts = dreame && a.shortcuts ? Object.values(a.shortcuts).filter((s) => s && s.name) : [];
     if (shortcuts.length) {
       parts.push(h('div', { class: 'vac-title' }, I18N.t('panel.sheets.app_shortcuts')), h('div', { class: 'chips vac-shortcuts' }, shortcuts.map((s) =>
@@ -693,7 +693,7 @@ const SHEETS = {
   camera(id) { return [cameraImg(id, 'sheet', 2)]; },
   sensor(id) { return [historyChart(id)]; },
   binary_sensor(id) { return [historyChart(id)]; },
-  // Interruptores y parecidos: encender/apagar y su historial
+  // Switches and the like: on/off and their history
   switch(id) { return [bigToggle(id), historyChart(id)]; },
   input_boolean(id) { return [bigToggle(id), historyChart(id)]; },
   automation(id) { return [bigToggle(id), historyChart(id)]; },
@@ -701,7 +701,7 @@ const SHEETS = {
   humidifier(id) { return [bigToggle(id), historyChart(id)]; },
   weather(id) { return [weatherCard(id)]; },
 };
-/** Detalle de cualquier otra entidad: su estado y su historial */
+/** Details of any other entity: its state and its history */
 function genericSheet(id) {
   const val = h('div', { class: 'sheet-state' });
   bind('sheet', id, (st) => { val.textContent = fmtState(st); });
@@ -738,58 +738,58 @@ function historyChart(id) {
   return box;
 }
 
-/* ====================== Altavoz Sendspin del panel ======================
- * Si la Pi es altavoz de Music Assistant (web → Sonido → Altavoz) y empieza a sonar algo en ella,
- * sale del modo ambiente y abre su reproductor; al parar, se cierra solo. */
+/* ====================== The panel's Sendspin speaker ======================
+ * If the Pi is a Music Assistant speaker (web → Sound → Speaker) and something starts playing on it,
+ * it leaves ambient mode and opens its player; when it stops, it closes by itself. */
 const SPK = (window.PANEL_HELPER && window.PANEL_HELPER.speaker) || null;
 function speakerEntity() {
   if (!SPK || !SPK.enabled) return null;
   if (SPK.entity) return SPK.entity;
-  // Automático: por el identificador, que sale del nombre del altavoz y no cambia aunque lo renombres
-  // en Home Assistant o Music Assistant («Panel ha-panel» → media_player.panel_ha_panel)
+  // Automatic: by the id, which comes from the speaker name and does not change even if you rename it
+  // in Home Assistant or Music Assistant (“Panel ha-panel” → media_player.panel_ha_panel)
   const want = String(SPK.name || '').trim().toLowerCase();
   const slug = 'media_player.' + want.normalize('NFD').replace(/[̀-ͯ]/g, '').replace(/[^a-z0-9]+/g, '_').replace(/^_+|_+$/g, '');
   if (S.states[slug]) return slug;
-  // Si no existe ese identificador (p. ej. ya estaba cogido y HA le puso «_2»), por el nombre
+  // If that id does not exist (e.g. it was taken and HA added “_2”), by the name
   const found = Object.keys(S.states).filter((id) => domain(id) === 'media_player' &&
     String(S.states[id].attributes.friendly_name || '').trim().toLowerCase() === want);
   return found.find((id) => reg(id).platform === 'music_assistant') || found[0] || null;
 }
 const resolveSpk = (x) => (x === '@panel' ? speakerEntity() : x);
 const spkPlaying = (x) => (S.states[x] || {}).state === 'playing';
-/** Altavoces que abren «Sonando», por orden de prioridad (web → Sonido → Sonando). '@panel' = el de este panel. */
+/** Speakers that open “Now playing”, by priority (web → Sound → Now playing). '@panel' = this panel's. */
 function watchedSpeakers() {
   if (!SPK) return [];
   const list = SPK.npSpeakers || [...(SPK.open ? ['@panel'] : []), ...(SPK.watch || [])];
   return [...new Set(list.map(resolveSpk))].filter((x) => x && S.states[x]);
 }
-/* Prioridad: si empieza a sonar uno con más prioridad que el que se ve, «Sonando» pasa a ese; si empieza uno con
- * menos, solo se cambia si el que se ve no está sonando. Al parar el que se ve, pasa al siguiente que esté sonando. */
+/* Priority: if one with more priority than the one shown starts playing, “Now playing” switches to it; if one with
+ * less starts, it only switches if the one shown is not playing. When the one shown stops, it goes to the next one playing. */
 function onSpeaker(id, old, st) {
   if (!SPK || domain(id) !== 'media_player') return;
   const w = watchedSpeakers();
   if (!w.includes(id)) return;
   const was = old && old.state, now = st && st.state;
   if (now === 'playing') {
-    if (NP.id === id) { clearTimeout(NP.closeTimer); return; }   // vuelve a sonar: ya no se cierra
-    if (!was || was === 'playing' || alertOpen()) return;          // una alarma o un aviso importante mandan
-    if (!NP.id) { if (was !== 'paused') showNowPlaying(id); return; }   // reanudar una pausa no la abre
+    if (NP.id === id) { clearTimeout(NP.closeTimer); return; }   // playing again: it no longer closes
+    if (!was || was === 'playing' || alertOpen()) return;          // an alarm or an important notification comes first
+    if (!NP.id) { if (was !== 'paused') showNowPlaying(id); return; }   // resuming a pause does not open it
     const cur = w.indexOf(NP.id);
     if (!spkPlaying(NP.id) || (cur >= 0 && w.indexOf(id) < cur)) { clearTimeout(NP.closeTimer); showNowPlaying(id); }
   } else if (NP.id === id && was === 'playing') {
-    const next = w.find((x) => x !== id && spkPlaying(x));   // otro de la lista sigue sonando: pasa a ese
+    const next = w.find((x) => x !== id && spkPlaying(x));   // another one on the list is still playing: switch to it
     if (next && !alertOpen()) { clearTimeout(NP.closeTimer); showNowPlaying(next); return; }
-    // En pausa o parada: se queda un rato (web → Sonido → Altavoz) por si vuelve a sonar
+    // Paused or stopped: it stays a while (web → Sound → Speaker) in case it plays again
     const secs = SPK.closeAfter == null ? 60 : SPK.closeAfter;
     clearTimeout(NP.closeTimer);
-    // al cerrarse sola vuelve al modo ambiente (con la ✕ se queda donde estaba)
+    // when it closes by itself it goes back to ambient mode (with the ✕ it stays where it was)
     const autoClose = () => { if (!alertOpen() && !S.sheetId) npToAmbient(true); else { hideNowPlaying(true); resetIdle(); } };
     if (secs === 0) autoClose();
     else if (secs > 0) NP.closeTimer = setTimeout(() => { if ((S.states[id] || {}).state !== 'playing') autoClose(); }, secs * 1000);
   }
 }
 
-/* Pantalla «Sonando»: carátula grande con el fondo difuminado, título, progreso y controles (el volumen, en el panel de acceso rápido) */
+/* “Now playing” screen: big artwork with the blurred background, title, progress and controls (the volume, in the quick access panel) */
 const NP = { id: null, timer: null, closeTimer: null, fromAmbient: false };
 const npPlaying = () => !!NP.id && (S.states[NP.id] || {}).state === 'playing';
 function fmtTime(s) {
@@ -797,8 +797,8 @@ function fmtTime(s) {
   const h = Math.floor(s / 3600), m = Math.floor((s % 3600) / 60), ss = String(s % 60).padStart(2, '0');
   return h ? `${h}:${String(m).padStart(2, '0')}:${ss}` : `${m}:${ss}`;
 }
-/* Arrastrar con el dedo o el ratón. En la pantalla táctil de la Pi los eventos de puntero no siempre llegan,
- * así que se escuchan los táctiles (y los de puntero solo para ratón). start(x, y) devuelve false para ignorar. */
+/* Drag with the finger or the mouse. On the Pi's touch screen pointer events do not always arrive,
+ * so touch events are listened to (and pointer ones only for the mouse). start(x, y) returns false to ignore. */
 function dragOn(el, { start, move, end }) {
   let on = false;
   const t0 = (e) => e.touches[0] || e.changedTouches[0];
@@ -816,10 +816,10 @@ function dragOn(el, { start, move, end }) {
   el.addEventListener('pointerup', pEnd);
   el.addEventListener('pointercancel', pEnd);
 }
-/* Símbolo del altavoz según el volumen (para la burbuja). */
+/* Speaker symbol for the volume (for the bubble). */
 const volIconOf = (v) => v <= 0 ? 'mdi-volume-off' : v < 34 ? 'mdi-volume-low' : v < 67 ? 'mdi-volume-medium' : 'mdi-volume-high';
-/* Volumen en «Sonando» para OTROS altavoces (el del panel se cambia en el panel de acceso rápido): un botón con el altavoz
- * abajo a la derecha que despliega una barra vertical con el número. Solo sale si ese altavoz deja cambiar el volumen. */
+/* Volume in “Now playing” for OTHER speakers (the panel's is changed in the quick access panel): a button with the speaker
+ * at the bottom right that opens a vertical bar with the number. It only shows if that speaker lets you change the volume. */
 const canSetVolume = (st) => !!st && st.attributes.volume_level != null && ((st.attributes.supported_features || 0) & 4) !== 0;
 function npVolume(id) {
   const fill = h('i'), val = h('span', { class: 'vb-val' });
@@ -838,7 +838,7 @@ function npVolume(id) {
     move: (x, y) => at(y),
     end: () => { W.drag = false; clearInterval(W.live); send(); hideLater(); },
   });
-  // lo que llega de Home Assistant (lo que llega tarde de un arrastre propio no hace saltar la barra)
+  // what comes from Home Assistant (a late echo of your own drag does not make the bar jump)
   W.update = (st) => {
     el.classList.toggle('hidden', !canSetVolume(st));
     if (!canSetVolume(st) || W.drag || Date.now() - W.sentAt < 3000) return;
@@ -846,9 +846,9 @@ function npVolume(id) {
   };
   return W;
 }
-/* Burbuja de volumen: si cambia el volumen del altavoz del panel desde otro sitio (Home Assistant, Music Assistant,
-   el móvil…), sale arriba en el centro una burbuja con el número nuevo, en cualquier pantalla. Se va sola a los 2 s.
-   Lo que cambias desde el propio panel no la saca. */
+/* Volume bubble: if the volume of the panel speaker changes from somewhere else (Home Assistant, Music Assistant,
+   the phone…), a bubble with the new number shows at the top centre, on any screen. It goes away after 2 s.
+   What you change on the panel itself does not show it. */
 const OSD = { known: null, sent: -1, sentAt: 0, timer: null };
 function volMarkSent(v) { OSD.sent = v; OSD.sentAt = Date.now(); }
 function volBubble(v) {
@@ -863,12 +863,12 @@ function onVolumeChange(id, st) {
   if (!st || id !== speakerEntity() || st.attributes.volume_level == null) return;
   const v = Math.round(st.attributes.volume_level * 100), was = OSD.known;
   OSD.known = v;
-  if (was == null || v === was || Date.now() - OSD.sentAt < 4000) return;   // primera vez, sin cambios o cambiado aquí
+  if (was == null || v === was || Date.now() - OSD.sentAt < 4000) return;   // first time, no change or changed here
   volBubble(v);
 }
 function showNowPlaying(id) {
   if (NP.id === id && $('#np').classList.contains('show')) return;
-  // ¿Se abrió desde el modo ambiente? Al cerrarla con la ✕ se vuelve a él
+  // Was it opened from ambient mode? Closing it with the ✕ goes back to it
   const fromAmbient = S.ambient || (!!NP.id && NP.fromAmbient);
   hideNowPlaying(true);
   closeSheet();
@@ -878,13 +878,13 @@ function showNowPlaying(id) {
   const bg = h('div', { class: 'np-bg' }), art = h('div', { class: 'np-art' }, icon('mdi-music'));
   const title = h('div', { class: 'np-title' }), sub = h('div', { class: 'np-sub' });
   const bar = h('i'), cur = h('span'), dur = h('span');
-  // Progreso: un puntito marca por dónde va. Solo arrastrando el puntito se cambia (al soltar).
-  // Con eventos táctiles y de ratón: en la pantalla táctil de la Pi los de puntero no siempre llegan.
-  const tip = h('span', { class: 'np-tip' });   // mientras lo mantienes: el tiempo donde lo vas a dejar
+  // Progress: a dot marks where it is. Only dragging the dot changes it (on release).
+  // With touch and mouse events: on the Pi's touch screen pointer events do not always arrive.
+  const tip = h('span', { class: 'np-tip' });   // while you hold it: the time where you are going to leave it
   const knob = h('b', { class: 'np-knob' }, tip);
   const seek = h('div', { class: 'np-seek' }, h('div', { class: 'np-bar' }, bar), knob);
   let seekDrag = false, seekMoved = false, seekPos = 0, seekX = 0, frac = 0, lastPos = null;
-  let seekHold = null;   // tras soltar: se queda donde lo dejaste hasta que llegue la posición nueva
+  let seekHold = null;   // after releasing: it stays where you left it until the new position arrives
   const canSeek = () => { const a = (S.states[id] || {}).attributes || {}; return !!((a.supported_features || 0) & 2) && +a.media_duration > 0; };
   const paintProg = (f, instant) => {
     if (instant) seek.classList.add('instant');
@@ -898,7 +898,7 @@ function showNowPlaying(id) {
   };
   const seekStart = (x) => {
     const r = seek.getBoundingClientRect();
-    if (!canSeek() || Math.abs(x - (r.left + r.width * frac)) > 44) return false;   // solo cerca del puntito
+    if (!canSeek() || Math.abs(x - (r.left + r.width * frac)) > 44) return false;   // only near the dot
     seekDrag = true; seekMoved = false; seekX = x; seek.classList.add('drag');
     tip.textContent = fmtTime(frac * +S.states[id].attributes.media_duration);
     return true;
@@ -920,7 +920,7 @@ function showNowPlaying(id) {
   const clock = h('span', { class: 'np-clock' });
   const svc = (s) => () => call('media_player', s, {}, id);
   const play = h('button', { class: 'np-play', onclick: svc('media_play_pause') });
-  // si es otro altavoz (no el del panel), su volumen aquí mismo; el del panel está en el panel de acceso rápido
+  // if it is another speaker (not the panel's), its volume right here; the panel's is in the quick access panel
   const vol = id !== speakerEntity() ? npVolume(id) : null;
   const root = $('#np');
   root.classList.toggle('has-vol', !!vol);
@@ -930,10 +930,10 @@ function showNowPlaying(id) {
     h('div', { class: 'np-main' }, art, h('div', { class: 'np-info' }, title, sub,
       h('div', { class: 'np-ctrls' }, h('button', { onclick: svc('media_previous_track') }, icon('mdi-skip-previous')), play,
         h('button', { onclick: svc('media_next_track') }, icon('mdi-skip-next'))))),
-    ...(vol ? [vol.el] : []),   // replaceChildren pintaría «null» como texto
-    // progreso: abajo del todo, de lado a lado
+    ...(vol ? [vol.el] : []),   // replaceChildren would paint “null” as text
+    // progress: at the very bottom, from side to side
     h('div', { class: 'np-prog' }, h('div', { class: 'np-times' }, cur, dur), seek));
-  // Si una palabra no cabe, la letra se hace más pequeña (hasta un 60 %); si aun así no cabe, se parte
+  // If a word does not fit, the font gets smaller (down to 60 %); if it still does not fit, it breaks
   const fitTitle = () => {
     title.style.fontSize = ''; title.style.overflowWrap = 'normal';
     const base = parseFloat(getComputedStyle(title).fontSize);
@@ -956,7 +956,7 @@ function showNowPlaying(id) {
       art.classList.toggle('has', !!pic);
     }
   });
-  // Progreso y reloj, cada segundo
+  // Progress and clock, every second
   const tick = () => {
     clock.textContent = new Date().toLocaleTimeString(I18N.locale(), { hour: '2-digit', minute: '2-digit' });
     const st = S.states[id], a = (st && st.attributes) || {};
@@ -972,9 +972,9 @@ function showNowPlaying(id) {
       else seekHold = null;
     }
     pos = Math.min(pos, total);
-    cur.textContent = fmtTime(pos); dur.textContent = fmtTime(total);   // por dónde va la música (también mientras arrastras)
+    cur.textContent = fmtTime(pos); dur.textContent = fmtTime(total);   // where the music is (also while you drag)
     if (seekDrag) return;
-    const jump = lastPos == null || Math.abs(pos - lastPos - 1) > 1.5;   // saltos (canción nueva, posición nueva): sin animación
+    const jump = lastPos == null || Math.abs(pos - lastPos - 1) > 1.5;   // jumps (new song, new position): no animation
     lastPos = pos;
     frac = pos / total; paintProg(frac, jump);
   };
@@ -983,7 +983,7 @@ function showNowPlaying(id) {
   root.classList.add('show');
   wakeScreen(); resetIdle();
 }
-/** De «Sonando» al modo ambiente sin que se vea el panel en medio: el ambiente sale ya debajo y «Sonando» se desvanece encima. */
+/** From “Now playing” to ambient mode without showing the panel in between: ambient is already underneath and “Now playing” fades on top. */
 function npToAmbient(quiet) {
   const a = $('#ambient');
   a.style.transition = 'none';
@@ -1003,7 +1003,7 @@ function hideNowPlaying(quiet) {
 }
 
 function openSheet(id) {
-  if (SH.open) shade(false);   // la pulsación larga en un acceso rápido abre su detalle
+  if (SH.open) shade(false);   // a long press on a quick access opens its details
   closeSheet();
   const st = S.states[id];
   if (!st) return;
@@ -1015,7 +1015,7 @@ function openSheet(id) {
     h('span', null, I18N.t('panel.sheets.device_not_available')));
   const body = h('div', { class: 'sheet-body' }, builder(id));
   $('#sheet-card').replaceChildren(head, notice, body);
-  // Sin conexión con el dispositivo: los controles se desactivan (y se reactivan solos si vuelve)
+  // No connection with the device: the controls are disabled (and enabled again by themselves if it comes back)
   bind('sheet', id, (s) => {
     const off = !s || s.state === 'unavailable';
     notice.classList.toggle('hidden', !off);
@@ -1033,7 +1033,7 @@ function closeSheet() {
   $('#sheet-card').replaceChildren();
 }
 
-/* ====================== Utilidades de entidades ====================== */
+/* ====================== Entity utilities ====================== */
 const ids = (filter) => Object.keys(S.states).filter((id) => visible(id) && !isScooter(id) && filter(id));
 const empty = (ic, msg) => h('div', { class: 'empty-state' }, icon(ic), msg);
 
@@ -1044,12 +1044,12 @@ function scooterIds() {
 }
 const num = (id) => (id && S.states[id] ? parseFloat(S.states[id].state) : NaN);
 const isOn = (id) => !!id && S.states[id] && S.states[id].state === 'on';
-/** 'charged' (llegó al límite: verde) | 'charging' (azul) | false */
+/** 'charged' (reached the limit: green) | 'charging' (blue) | false */
 const chargeMode = (k) => isOn(k.charged) ? 'charged' : isOn(k.charging_any) ? 'charging' : false;
 
-/** La pantalla de Ajustes del panel (la ruedecita) */
+/** The panel's Settings screen (the cog) */
 const VIEWS = { settings: { title: 'panel.nav.settings', icon: 'mdi-cog', render: () => renderSettings() } };
-/** Pestañas de serie que no salen si no hay de qué (p. ej. Patinete sin patinete) */
+/** Built-in tabs that do not show if there is nothing for them (e.g. Scooter without a scooter) */
 const VIEW_VISIBLE = {
   media: () => ids((id) => ['media_player', 'camera'].includes(domain(id))).length > 0,
   printers: () => printers().length > 0,
@@ -1057,8 +1057,8 @@ const VIEW_VISIBLE = {
 };
 
 /* ====================== Impresoras 3D ====================== */
-// Cada integración nombra sus entidades a su manera: Bambu por translation_key,
-// Moonraker (Klipper/Snapmaker) por el final del entity_id.
+// Each integration names its entities its own way: Bambu by translation_key,
+// Moonraker (Klipper/Snapmaker) by the end of the entity_id.
 const BAMBU = {
   status: 'sensor:print_status', progress: 'sensor:print_progress', remaining: 'sensor:remaining_time',
   layer: 'sensor:current_layer', layers: 'sensor:total_layers', job: 'sensor:subtask_name', file: 'sensor:gcode_file',
@@ -1098,16 +1098,16 @@ function printers() {
       e[k] = ids.find((id) => domain(id) === dom &&
         (platform === 'bambu_lab' ? reg(id).translation_key === key : id.endsWith('_' + key)));
     }
-    if (!e.status) continue;               // p. ej. la bobina externa o MakerWorld de Bambu
+    if (!e.status) continue;               // e.g. Bambu's external spool or MakerWorld
     const d = S.devs[dev] || {};
     const name = d.name_by_user || d.name || I18N.t('panel.sheets.printer');
     let nozzles = [{ label: I18N.t('panel.sheets.nozzle'), cur: e.nozzle, tgt: e.nozzleTarget }];
     if (platform === 'moonraker') {
       const cams = ids.filter((id) => domain(id) === 'camera');
       e.camera = cams.find((id) => !/thumbnail|gui|screen/.test(id)) || cams[0];
-      e.screen = cams.find((id) => /gui|screen|pantalla/.test(id));     // la pantalla de la impresora
+      e.screen = cams.find((id) => /gui|screen|pantalla/.test(id));     // the printer's screen
       e.light = ids.find((id) => domain(id) === 'light');
-      // Miniatura: una entidad image.<impresora>_thumb… (aunque no esté en el dispositivo) o la cámara "thumbnail"
+      // Thumbnail: an image.<printer>_thumb… entity (even if it is not in the device) or the "thumbnail" camera
       const prefix = e.status.split('.')[1].replace(/_current_print_state$/, '');
       e.cover = Object.keys(S.states).find((id) => id.startsWith(`image.${prefix}_thumb`)) || cams.find((id) => /thumbnail/.test(id));
       // Varias boquillas (Snapmaker U1: extruder, extruder1, extruder2, extruder3)
@@ -1119,7 +1119,7 @@ function printers() {
         fil: ids.find((x) => x.endsWith(`_e${n}_filament`)),
       }));
     }
-    // Enchufe de la impresora: config.printerPlugs o un switch que acabe en su nombre ("…_bambu_p1s")
+    // Printer plug: config.printerPlugs or a switch ending in its name ("…_bambu_p1s")
     const slug = name.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '').split(/\s+/).slice(0, 2).join('_').replace(/[^a-z0-9_]/g, '');
     e.plug = (CFG.printerPlugs || {})[name] ||
       Object.keys(S.states).find((id) => domain(id) === 'switch' && id.endsWith('_' + slug) && !PRINTER_MAPS[reg(id).platform]);
@@ -1147,7 +1147,7 @@ function confirmBtn(ic, label, fn, ask = I18N.t('panel.notices.sure_tap_again'))
   return b;
 }
 
-/** Si cambia el estado de una impresora: avisa al terminar y repinta (aparece/desaparece en Inicio). */
+/** If a printer state changes: notifies when it finishes and repaints (it shows/hides on Home). */
 function onPrinterStatus(id, old, st) {
   const p = printers().find((x) => x.e.status === id);
   if (!p) return;
@@ -1172,7 +1172,7 @@ function weatherCard(id, days = 5) {
   if (days > 0) getForecast(id).then((f) => fc.replaceChildren(...f.slice(0, days).map((d) => h('div', { class: 'fc-day' },
     h('div', { class: 'fc-name' }, new Date(d.datetime).toLocaleDateString(I18N.locale(), { weekday: 'short' }).replace('.', '')),
     icon(wIcon(d.condition)), h('div', { class: 'fc-t' }, fmtNum(d.temperature) + '°'),
-    // Probabilidad de lluvia siempre visible (también 0 %); vacía solo si la integración no la da
+    // Chance of rain always visible (also 0 %); empty only if the integration does not give it
     d.precipitation_probability != null ? h('div', { class: 'fc-rain' }, icon('mdi-water'), d.precipitation_probability + '%')
       : h('div', { class: 'fc-rain empty' }, ' '),
     d.templow != null ? h('div', { class: 'fc-low' }, fmtNum(d.templow) + '°') : null))));
@@ -1215,12 +1215,12 @@ const alertOpen = () => !!(typeof RING !== 'undefined' && RING.active) || N.queu
 
 function onNotif(ev) {
   const n = normNotif(ev.data);
-  N.queue = N.queue.filter((x) => x.id !== n.id);       // mismo id = lo sustituye (p. ej. vuelven a llamar)
+  N.queue = N.queue.filter((x) => x.id !== n.id);       // same id = it replaces it (e.g. they ring again)
   N.queue.unshift(n);
   N.history = [n, ...N.history.filter((x) => x.id !== n.id || x.at !== n.at)].slice(0, 30);
   N.unread++;
   renderBell();
-  if (n.level !== 'info') {                            // despierta la pantalla
+  if (n.level !== 'info') {                            // wakes the screen up
     if (S.ambient) { S.ambient = false; $('#ambient').classList.remove('show'); }
     closeSheet();
     tick();
@@ -1291,7 +1291,7 @@ function showNotif() {
   modal.classList.remove('hidden');
 }
 
-/** Vuelve a abrir un aviso del historial, en grande y sin sonido, hasta que se cierre. */
+/** Opens a notification from the history again, big and without sound, until it is closed. */
 function reopenNotif(n) {
   const c = { ...n, level: n.level === 'info' ? 'warning' : n.level, timeout: 0, sound: false };
   N.queue = [c, ...N.queue.filter((x) => x.id !== c.id)];
@@ -1301,30 +1301,30 @@ async function runNotifAction(n, a) {
   if (a.service) {
     const [dom, svc] = String(a.service).split('.');
     const r = await call(dom, svc, a.data, a.entity);
-    if (r === null) return;                          // falló: el aviso sigue abierto para reintentar
+    if (r === null) return;                          // it failed: the notification stays open to try again
     toast(`${a.title} ✓`);
   }
   conn.send({ type: 'fire_event', event_type: 'panel_notification_action', event_data: { id: n.id, action: a.title } }).catch(() => {});
   closeNotif(n.id, true);
 }
 
-/* Campana con el historial de avisos */
+/* Bell with the notification history */
 function renderBell() {
   const b = $('#bell');
   b.classList.toggle('hidden', !N.history.length);
   $('#bell-count').textContent = N.unread > 0 ? N.unread : '';
-  refreshBubbles();   // la burbuja de Avisos sale o se va al momento
+  refreshBubbles();   // the Notifications bubble shows or goes away at once
 }
-/** Vuelve a pintar las burbujas (las que dependen del panel, no de Home Assistant, como la de Avisos). */
+/** Paints the bubbles again (the ones that depend on the panel, not on Home Assistant, like Notifications). */
 function refreshBubbles() {
   try {
     COMPILED.forEach((m) => (m.cache = {}));
     renderAmbientChips();
     if (!S.sheetId) VIEW_CODE.forEach((v) => v && v.paint());
-  } catch (e) { /* aún arrancando */ }
+  } catch (e) { /* still starting */ }
 }
 
-/* Sonidos generados con Web Audio (no hacen falta archivos) */
+/* Sounds made with Web Audio (no files needed) */
 function tone(freqs, dur, vol) {
   try {
     const ctx = N.ctx || (N.ctx = new (window.AudioContext || window.webkitAudioContext)());
@@ -1340,15 +1340,15 @@ function tone(freqs, dur, vol) {
       o.start(t); o.stop(t + dur + 0.05);
       t += dur;
     }
-  } catch (e) { /* sin audio */ }
+  } catch (e) { /* no audio */ }
 }
 function playSound(level) {
   stopSound();
   if (!SET.sound.enabled) return;
-  if (level === 'critical') {                          // pitido insistente hasta que lo cierres
+  if (level === 'critical') {                          // insistent beep until you close it
     const beep = () => tone([880, 660, 880, 660], 0.18);
     beep(); N.soundTimer = setInterval(beep, 1500);
-  } else if (level === 'warning') {                    // "ding-dong" cada 6 s durante 30 s
+  } else if (level === 'warning') {                    // "ding-dong" every 6 s for 30 s
     const dd = () => tone([784, 622], 0.5);
     dd(); N.soundTimer = setInterval(dd, 6000);
     N.soundStop = setTimeout(stopSound, 30000);
@@ -1356,33 +1356,33 @@ function playSound(level) {
 }
 function stopSound() { clearInterval(N.soundTimer); clearTimeout(N.soundStop); N.soundTimer = null; }
 
-/* ====================== Ajustes (se guardan en Home Assistant) ======================
- * En la Pi se guardan en el ayudante (panel-helper.py), así sobreviven a reinicios aunque Chromium vaya
- * en modo incógnito. Sin ayudante, en el navegador. El panel no escribe nada en Home Assistant. */
+/* ====================== Settings ======================
+ * On the Pi they are saved in the helper (panel-helper.py), so they survive restarts even if Chromium runs
+ * in incognito mode. Without the helper, in the browser. The panel writes nothing in Home Assistant. */
 const SETTINGS_KEY = 'panel_hogar_settings';
 const DEFAULTS = () => ({
-  idleSeconds: CFG.idleSeconds,            // segundos sin tocar hasta el modo ambiente (0 = nunca)
-  screenOffMinutes: 0,                     // minutos en ambiente hasta apagar la pantalla (0 = nunca)
-  brightness: 100,                         // brillo de día (%)
+  idleSeconds: CFG.idleSeconds,            // seconds without touching until ambient mode (0 = never)
+  screenOffMinutes: 0,                     // minutes in ambient until the screen turns off (0 = never)
+  brightness: 100,                         // daytime brightness (%)
   night: {
     enabled: !!(CFG.night && CFG.night.dim), start: (CFG.night && CFG.night.start) || '23:00',
     end: (CFG.night && CFG.night.end) || '07:00', brightness: Math.round((1 - ((CFG.night && CFG.night.dim) ?? 0.6)) * 100),
-    screenOff: false,                      // apagar la pantalla de noche cuando no se usa
+    screenOff: false,                      // turn the screen off at night when it is not used
   },
-  language: 'auto',     // auto (el de Home Assistant) | es | en
+  language: 'auto',     // auto (Home Assistant's) | en | es
   theme: 'dark',        // dark | light | auto (light by day, dark at night)
   accent: 'blue',       // accent colour (ACCENTS)
   sound: { enabled: true, volume: 70 },
   photos: { enabled: true, seconds: CFG.photoSeconds || 30, fit: 'blur' },   // fit: cover | blur | contain
   alarms: [],
-  ambientChips: null,   // null = orden y selección por defecto
-  voiceSatellite: '',   // assist_satellite cuya voz se muestra encima de la pantalla ('' = ninguno)
+  ambientChips: null,   // null = default order and selection
+  voiceSatellite: '',   // assist_satellite whose voice shows over the screen ('' = none)
   voiceStyle: 'wave',   // voice bar animation: wave | mic | light | eq
-  defaultSpeaker: '',   // (de antes) el primero de ambientSpeakers
-  ambientSpeakers: null,   // altavoces del modo ambiente por prioridad ('@panel' = el de este panel); null = [defaultSpeaker]
-  quick: [],            // accesos rápidos (entity_id)
-  bullets: null,        // burbujas (integradas y de script); null = las de siempre
-  tabs: null,           // pestañas con sus tarjetas; null = una por cada vista
+  defaultSpeaker: '',   // (from before) the first of ambientSpeakers
+  ambientSpeakers: null,   // ambient mode speakers by priority ('@panel' = this panel's); null = [defaultSpeaker]
+  quick: [],            // quick access (entity_id)
+  bullets: null,        // bubbles (built-in and script ones); null = the usual ones
+  tabs: null,           // tabs with their cards; null = one per view
 });
 let SET = DEFAULTS();
 const mergeSettings = (saved = {}) => {
@@ -1394,45 +1394,45 @@ const mergeSettings = (saved = {}) => {
 async function loadSettings() {
   let saved = null;
   const helper = window.PANEL_HELPER;
-  if (helper && helper.settings && Object.keys(helper.settings).length) saved = helper.settings;   // los de la web
+  if (helper && helper.settings && Object.keys(helper.settings).length) saved = helper.settings;   // the web ones
   else {
     try {
       saved = JSON.parse(localStorage.getItem(SETTINGS_KEY) || localStorage.getItem('panel_hogar_ajustes') || 'null');
-      // Ajustes de versiones anteriores, guardados en Home Assistant: solo se leen (nunca se escriben)
+      // Settings from older versions, saved in Home Assistant: only read (never written)
       if (!saved) saved = (await conn.send({ type: 'frontend/get_user_data', key: SETTINGS_KEY }) || {}).value;
-    } catch (e) { /* sin ajustes guardados: valores por defecto */ }
+    } catch (e) { /* no saved settings: defaults */ }
   }
   SET = mergeSettings(saved || {});
   setLanguage();
   applySettings();
 }
 let saveTimer;
-function saveSettings(quiet) {   // quiet: sin el aviso «Ajustes guardados»
+function saveSettings(quiet) {   // quiet: without the “Settings saved” notice
   applySettings();
   clearTimeout(saveTimer);
   saveTimer = setTimeout(async () => {
     try {
-      if (window.PANEL_HELPER) {        // en la Pi: se guardan en el ayudante (así la web los ve)
+      if (window.PANEL_HELPER) {        // on the Pi: saved in the helper (so the web sees them)
         const r = await fetch(HELPER + '/settings', { method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(SET) });
         const j = await r.json(); REMOTE.version = j.version;
-      } else {                          // sin ayudante: en este navegador (nunca se escribe nada en Home Assistant)
-        try { localStorage.setItem(SETTINGS_KEY, JSON.stringify(SET)); } catch (e) { /* sin almacenamiento */ }
+      } else {                          // no helper: in this browser (nothing is ever written in Home Assistant)
+        try { localStorage.setItem(SETTINGS_KEY, JSON.stringify(SET)); } catch (e) { /* no storage */ }
       }
       if (!quiet) toast(I18N.t('panel.settings.settings_saved'));
     } catch (e) { toast(I18N.t('panel.settings.could_not_save_prefix') + e.message, true); }
   }, 600);
 }
-function applySettings() { setLanguage(); applyTheme(); resetIdle(); screenTick(); try { COMPILED.forEach((m) => (m.cache = {})); } catch (e) { /* aún no cargado */ } }
+function applySettings() { setLanguage(); applyTheme(); resetIdle(); screenTick(); try { COMPILED.forEach((m) => (m.cache = {})); } catch (e) { /* not loaded yet */ } }
 
-/** Tema claro u oscuro. «auto»: claro mientras el sol está arriba (sun.sun) o, sin él, de 8:00 a 20:00. */
-/* Idioma de los textos (translations/). «Automático»: el de Home Assistant (o, sin conexión, el del navegador). */
+/** Light or dark theme. “auto”: light while the sun is up (sun.sun) or, without it, from 8:00 to 20:00. */
+/* Language of the texts (translations/). “Automatic”: Home Assistant's (or, offline, the browser's). */
 let HA_LANG = null;
 function setLanguage() {
   const want = I18N.resolve(SET.language, HA_LANG || navigator.language);
   if (want === I18N.lang) return;
   I18N.set(want);
   I18N.page(document.body);   // the fixed texts of index.html (titles…)
-  try { renderRail(); render(); } catch (e) { /* aún arrancando */ }
+  try { renderRail(); render(); } catch (e) { /* still starting */ }
 }
 I18N.set(I18N.resolve(((window.PANEL_HELPER || {}).settings || {}).language, navigator.language));
 I18N.page(document.body);
@@ -1445,7 +1445,7 @@ function themeIsLight() {
   const hr = new Date().getHours();
   return hr >= 8 && hr < 20;
 }
-/* Colores de acento: [nombre, en oscuro (color, letra encima, fondo suave), en claro (lo mismo)] */
+/* Accent colours: [name, in dark (colour, text on top, soft background), in light (the same)] */
 const ACCENTS = {
   blue:     ['panel.settings.blue',     ['#8ab4f8', '#0b1d3a', '#1d3354'], ['#1a66d6', '#ffffff', '#d5e3fa']],
   teal:     ['panel.settings.teal', ['#78d9ec', '#00363f', '#1b3d45'], ['#00838f', '#ffffff', '#d0f0f3']],
@@ -1466,10 +1466,10 @@ function applyTheme() {
   }
   if (document.documentElement.classList.contains('light') === light) return;
   document.documentElement.classList.toggle('light', light);
-  try { if (!photosOn()) nextBackground(); } catch (e) { /* aún arrancando */ }   // el fondo sin fotos del modo ambiente cambia con el tema
+  try { if (!photosOn()) nextBackground(); } catch (e) { /* still starting */ }   // the ambient mode background without photos changes with the theme
 }
 
-/** Círculos para elegir el color de acento (se ven en el tono del tema actual). */
+/** Circles to choose the accent colour (in the shade of the current theme). */
 function accentPicker() {
   const wrap = h('div', { class: 'accents' });
   const paint = () => wrap.replaceChildren(...Object.entries(ACCENTS).map(([k, [label, dark, light]]) => {
@@ -1489,9 +1489,9 @@ function isNight(now = new Date()) {
   return a > b ? (m >= a || m < b) : (m >= a && m < b);
 }
 
-/* ---------- Brillo y apagado de pantalla ----------
- * Con el ayudante de la Pi (panel-helper.py en 127.0.0.1:8766) se cambia el brillo real y se apaga
- * la pantalla de verdad. Sin él, se oscurece con una capa negra (funciona en cualquier pantalla). */
+/* ---------- Screen brightness and turning off ----------
+ * With the Pi's helper (panel-helper.py on 127.0.0.1:8766) the real brightness changes and the screen
+ * really turns off. Without it, a black layer darkens it (works on any screen). */
 const HELPER = window.PANEL_HELPER_URL || 'http://127.0.0.1:8766';
 const SCREEN = { off: false, lastTouch: Date.now(), helper: null, level: null, forcedOff: false };
 async function helperInit() {
@@ -1516,9 +1516,9 @@ function setScreenOff(off) {
   $('#blackout').classList.toggle('hidden', !off);
   if (SCREEN.helper && SCREEN.helper.power) helperPost('/power?on=' + (off ? 0 : 1));
   if (off) stopSound();
-  else if (S.entered) enterScreen();   // se enciende la pantalla
+  else if (S.entered) enterScreen();   // the screen turns on
 }
-/** Decide brillo y apagado: se llama cada 5 s, al tocar, al cambiar ajustes y al llegar un aviso. */
+/** Decides brightness and turning off: called every 5 s, on touch, when settings change and when a notification arrives. */
 function screenTick() {
   applyTheme();
   const night = isNight(), alert = alertOpen();
@@ -1528,29 +1528,29 @@ function screenTick() {
     if (SET.screenOffMinutes > 0 && idle >= Math.max(0, SET.idleSeconds) + SET.screenOffMinutes * 60) off = true;
     if (night && SET.night.screenOff && idle >= Math.max(60, SET.idleSeconds)) off = true;
   }
-  if (SCREEN.forcedOff && !alert) off = true;   // apagada a mano (botón o Home Assistant): hasta tocarla o un aviso
+  if (SCREEN.forcedOff && !alert) off = true;   // turned off by hand (button or Home Assistant): until it is touched or a notification
   setScreenOff(off);
   setBrightness(alert ? 100 : night ? SET.night.brightness : SET.brightness);
   reportState();
 }
-/** Apagar la pantalla ya (botón, mando a distancia o Home Assistant): sigue apagada hasta que la toquen. */
+/** Turn the screen off now (button, remote control or Home Assistant): it stays off until touched. */
 function screenOffNow() { SCREEN.lastTouch = 0; SCREEN.forcedOff = true; screenTick(); }
 function wakeScreen() { SCREEN.lastTouch = Date.now(); SCREEN.forcedOff = false; screenTick(); }
-/** Al arrancar o al encenderse la pantalla: si suena algo, «Sonando»; si no, el modo ambiente. */
+/** On start or when the screen turns on: if something plays, “Now playing”; otherwise ambient mode. */
 function enterScreen() {
   if (alertOpen()) return;
   const playing = watchedSpeakers().find((x) => (S.states[x] || {}).state === 'playing');
   if (playing) {
     if (NP.id === playing) return;
-    showAmbient();             // así la ✕ de «Sonando» vuelve al modo ambiente
+    showAmbient();             // so the ✕ of “Now playing” goes back to ambient mode
     showNowPlaying(playing);
   } else {
     npToAmbient(true);
   }
 }
 
-/* ---------- Controles de la vista Ajustes ---------- */
-/** Desplegable táctil: enseña la opción elegida y, al tocarla, abre la lista. options: [[valor, nombre, icono, subtítulo]] */
+/* ---------- Controls of the Settings view ---------- */
+/** Touch dropdown: shows the chosen option and, when tapped, opens the list. options: [[value, name, icon, subtitle]] */
 function pickList(options, value, onpick) {
   const wrap = h('div', { class: 'pick' });
   let open = false;
@@ -1596,7 +1596,7 @@ const setRow = (label, sub, control) => h('div', { class: 'set-row' },
 const setBlock = (label, sub, control) => h('div', { class: 'set-block' },
   h('div', { class: 'set-text' }, h('div', null, label), sub ? h('div', { class: 'muted small' }, sub) : null), control);
 
-/* ---------- Red y configuración desde el móvil ---------- */
+/* ---------- Network and setting up from the phone ---------- */
 async function fetchNet() {
   try { return await (await fetch(HELPER + '/network', { cache: 'no-store' })).json(); } catch (e) { return null; }
 }
@@ -1607,7 +1607,7 @@ function qrSvg(text) {
   qr.make();
   return qr.createSvgTag({ cellSize: 6, margin: 3, scalable: true });
 }
-/** Hoja con el QR de la web de configuración y la dirección escrita, para abrirla con el móvil. */
+/** Sheet with the QR of the configuration web and the address written, to open it on the phone. */
 async function openConfigQR() {
   closeSheet();
   const net = await fetchNet();
@@ -1650,7 +1650,7 @@ function netCard() {
     h('div', { class: 'muted small' }, I18N.t('panel.settings.pi_s_wifi')));
 }
 
-/* ---------- Actualizaciones (las hace el ayudante con git; también desde la web) ---------- */
+/* ---------- Updates (the helper does them with git; also from the web) ---------- */
 async function updApi(body) {
   const r = await fetch(HELPER + '/updates', body ? { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) } : { cache: 'no-store' });
   const d = await r.json();
@@ -1658,7 +1658,7 @@ async function updApi(body) {
   return body ? d.info : d;
 }
 function updatesCard() {
-  const body = h('div', { class: 'set-body' }, h('div', { class: 'muted small' }, I18N.t('panel.settings.reading')));   // sus filas van como las del resto de tarjetas
+  const body = h('div', { class: 'set-body' }, h('div', { class: 'muted small' }, I18N.t('panel.settings.reading')));   // its rows look like the rest of the cards
   let timer = null;
   const fill = (u) => {
     clearTimeout(timer);
@@ -1713,7 +1713,7 @@ function renderSettings() {
       setBlock(I18N.t('panel.settings.language'), null, segmented([['auto', I18N.t('panel.settings.automatic')], ...Object.entries(I18N.langs)], SET.language || 'auto',
         (v) => { SET.language = v; saveSettings(); })),
       setBlock(I18N.t('panel.settings.theme'), I18N.t('panel.settings.automatic_light_by'),
-        segmented([['dark', I18N.t('panel.settings.dark')], ['light', I18N.t('panel.settings.theme_light')], ['auto', I18N.t('panel.settings.automatic')]], SET.theme || 'dark', (v) => { SET.theme = v; saveSettings(); if (accentPicker.paint) accentPicker.paint(); })),   // los círculos, en el tono del tema
+        segmented([['dark', I18N.t('panel.settings.dark')], ['light', I18N.t('panel.settings.theme_light')], ['auto', I18N.t('panel.settings.automatic')]], SET.theme || 'dark', (v) => { SET.theme = v; saveSettings(); if (accentPicker.paint) accentPicker.paint(); })),   // the circles, in the shade of the theme
       setBlock(I18N.t('panel.settings.colour'), I18N.t('panel.settings.buttons_sliders_volume'), accentPicker()),
       setBlock(I18N.t('panel.settings.ambient_mode'), I18N.t('panel.settings.time_without_touching'),
         segmented([[0, I18N.t('panel.settings.never')], [30, '30 s'], [60, '1 min'], [90, I18N.t('panel.settings.1_5_min')], [180, '3 min'], [300, '5 min'], [600, '10 min']],
@@ -1777,9 +1777,9 @@ function renderSettings() {
         h('button', { class: 'big-action', onclick: () => location.reload() }, icon('mdi-refresh'), I18N.t('panel.settings.reload_panel')))))];
 }
 
-/* ====================== Alarmas (despertador) ======================
- * Son del propio panel: se guardan en los Ajustes (SET.alarms) y suenan en la pantalla. No se lee nada del móvil.
- * Días: 0 = lunes … 6 = domingo. Sin días = suena una vez y se desactiva. */
+/* ====================== Alarms (alarm clock) ======================
+ * They belong to the panel: saved in the Settings (SET.alarms) and they ring on the screen. Nothing is read from the phone.
+ * Days: 0 = Monday … 6 = Sunday. No days = it rings once and turns off. */
 const DAY_LETTERS = ['L', 'M', 'X', 'J', 'V', 'S', 'D'];
 const idxOfDay = (d) => (d.getDay() + 6) % 7;
 const RING = { active: null, lastKey: null, timer: null, stop: null, started: 0, snooze: {} };
@@ -1808,9 +1808,9 @@ function daysText(days) {
   if (s === '56') return I18N.t('panel.time.weekends');
   return [...days].sort().map((i) => DAY_LETTERS[i]).join(' ');
 }
-/** La próxima alarma de las próximas 24 h, para Inicio y el modo ambiente. */
+/** The next alarm in the next 24 h, for Home and ambient mode. */
 
-/* ---------- Que suene ---------- */
+/* ---------- Ringing ---------- */
 function checkAlarms(now = new Date()) {
   if (RING.active || NEEDS_SETUP) return;
   const minute = `${String(now.getHours()).padStart(2, '0')}:${String(now.getMinutes()).padStart(2, '0')}`;
@@ -1843,7 +1843,7 @@ function ringAlarm(al) {
       h('button', { class: 'big-action', onclick: () => stopAlarm(true) }, icon('mdi-sleep'), I18N.t('panel.settings.snooze_9')),
       h('button', { class: 'big-action primary', onclick: () => stopAlarm(false) }, icon('mdi-alarm-off'), I18N.t('panel.sheets.stop')))));
   $('#ring').classList.remove('hidden');
-  // Melodía que va subiendo de volumen durante el primer minuto
+  // Tune that gets louder during the first minute
   const play = () => {
     const ramp = Math.min(1, 0.35 + (Date.now() - RING.started) / 60000);
     const vol = Math.max(SET.sound.volume, 60) / 100 * ramp;
@@ -1852,7 +1852,7 @@ function ringAlarm(al) {
   };
   play();
   RING.timer = setInterval(play, 2200);
-  RING.stop = setTimeout(() => stopAlarm(false), 10 * 60e3);     // como mucho 10 minutos sonando
+  RING.stop = setTimeout(() => stopAlarm(false), 10 * 60e3);     // at most 10 minutes ringing
 }
 function stopAlarm(snooze) {
   const al = RING.active;
@@ -1863,7 +1863,7 @@ function stopAlarm(snooze) {
   if (snooze) {
     RING.snooze[al.id] = Date.now() + 9 * 60e3;
     toast(`Pospuesta hasta las ${hhmm(new Date(RING.snooze[al.id]))}`);
-  } else if (!al.days || !al.days.length) {               // una sola vez: se desactiva
+  } else if (!al.days || !al.days.length) {               // just once: it turns off
     al.enabled = false;
     saveSettings();
   }
@@ -1873,7 +1873,7 @@ function stopAlarm(snooze) {
   if (S.view === 'settings') render();
 }
 
-/* ---------- Editor de alarmas ---------- */
+/* ---------- Alarm editor ---------- */
 function openAlarmEditor(existing) {
   closeSheet();
   const al = existing ? { ...existing, days: [...(existing.days || [])] }
@@ -1930,7 +1930,7 @@ function openAlarmEditor(existing) {
   S.sheetId = 'alarma';
 }
 
-/** Tarjeta de Ajustes con las alarmas del panel. */
+/** Settings card with the panel alarms. */
 function alarmsCard() {
   const list = (SET.alarms || []).map((al) => {
     const next = al.enabled ? nextOccurrence(al) : null;
@@ -1948,18 +1948,18 @@ function alarmsCard() {
     h('div', { class: 'btn-row' }, h('button', { class: 'big-action primary', onclick: () => openAlarmEditor(null) }, icon('mdi-alarm-plus'), I18N.t('panel.settings.add_alarm'))));
 }
 
-/* ====================== Navegación y renderizado ====================== */
-/* ====================== Pestañas ====================== */
+/* ====================== Navigation and rendering ====================== */
+/* ====================== Tabs ====================== */
 const PM = window.PanelModules;
 const tabs = () => PM.tabList(SET.tabs);
 const tabViews = (t) => (t.cards || []).filter((c) => c.type === 'view').map((c) => c.view);
-/** Una pestaña que solo tiene vistas que no aplican (p. ej. Patinete sin patinete) no sale. */
+/** A tab that only has views that do not apply (e.g. Scooter without a scooter) does not show. */
 const tabVisible = (t) => {
   const v = tabViews(t);
   return !v.length || v.length < (t.cards || []).length || v.some((k) => !VIEW_VISIBLE[k] || VIEW_VISIBLE[k]());
 };
 const visibleTabs = () => tabs().filter(tabVisible);
-/** Pestaña para un destino: su id o la primera que contenga esa vista. */
+/** Tab for a destination: its id or the first one that contains that view. */
 function tabFor(key) {
   if (key === 'settings') return 'settings';
   const list = visibleTabs();
@@ -1970,7 +1970,7 @@ function renderRail() {
   const rail = $('#rail');
   rail.replaceChildren(...visibleTabs().map((t) => {
     const btn = h('button', { class: 'rail-btn' + (S.view === t.id ? ' active' : ''), onclick: () => go(t.id) }, icon(PM.mdi(t.icon) || 'mdi-tab'), t.title);
-    if (t.id === 'scooter' || tabViews(t).includes('scooter')) {          // mini rayo sobre el icono mientras el patinete carga
+    if (t.id === 'scooter' || tabViews(t).includes('scooter')) {          // tiny bolt over the icon while the scooter charges
       const k = scooterIds(), badge = h('span', { class: 'rail-badge hidden' }, icon('mdi-lightning-bolt'));
       btn.append(badge);
       bindMany('view', [k.charging_any, k.charged], () => {
@@ -1985,9 +1985,9 @@ function renderRail() {
     h('button', { class: 'rail-btn', onclick: showAmbient }, icon('mdi-image-filter-hdr'), I18N.t('panel.nav.ambient')));
 }
 
-/** Contenido de una pestaña: una rejilla de 12 columnas; cada tarjeta ocupa su ancho (c.width). */
+/** Content of a tab: a 12-column grid; each card takes its width (c.width). */
 function renderTab(t) { return [layout(t.cards)]; }
-/** Rejilla con tarjetas (también la de dentro de un componente Tarjeta). */
+/** Grid with cards (also the one inside a Card component). */
 function layout(cards) {
   return h('div', { class: 'layout' }, (cards || []).map((c) => {
     let kids;
@@ -1995,7 +1995,7 @@ function layout(cards) {
     kids = [].concat(kids || []).filter(Boolean);
     if (!kids.length) return null;
     const slot = h('div', { class: 'slot w-' + String(c.width || 'full').replace('/', '-') }, kids);
-    // «Mostrar solo si…»: se revisa al cambiar sus entidades y, si hay horas, modo noche o código, cada 20 s
+    // “Only show if…”: checked when its entities change and, with times, night mode or code, every 20 s
     if (c.when && (c.when.rules || []).length) {
       const deps = PM.whenDeps(c.when);
       const check = () => slot.classList.toggle('when-off', !PM.checkWhen(c.when, HA, screenFor('card')));
@@ -2008,7 +2008,7 @@ function layout(cards) {
 const anyTile = (id) => (['sensor', 'binary_sensor'].includes(domain(id)) ? sensorTile(id) : tile(id));
 function renderCard(c) {
   const title = c.title ? h('div', { class: 'section-title' }, c.title) : null;
-  // Vista antigua (o pestaña de serie sin guardar): se monta al vuelo con los mismos componentes que pone la web
+  // Old view (or unsaved built-in tab): built on the fly with the same components the web uses
   if (c.type === 'view') {
     if (VIEW_VISIBLE[c.view] && !VIEW_VISIBLE[c.view]()) return [];
     return [layout(PM.viewCards(c.view, HA, { visible: compVisible, favorites: CFG.favorites || [] }))];
@@ -2018,7 +2018,7 @@ function renderCard(c) {
   if (c.type === 'component') return componentCard(c, title);
   if (c.type === 'bubbles') {
     const box = h('div', { class: 'chips' });
-    const items = (c.items || []).filter((it) => it.script in MODULES).map((it) => ({ it, m: moduleOf(it.script) }));   // sin script (borrado): no sale
+    const items = (c.items || []).filter((it) => it.script in MODULES).map((it) => ({ it, m: moduleOf(it.script) }));   // no script (deleted): it does not show
     let watch = [];
     const paint = () => {
       watch = [];
@@ -2036,10 +2036,10 @@ function renderCard(c) {
   }
   return [];
 }
-/* ====================== Componentes ======================
- * Cada componente colocado es una tarjeta { type: 'component', component: 'button.js', width, config, cards? }.
- * Su script (type: 'card') dice sus campos, qué vigila, su HTML y su CSS; los valores de cada sitio van en config. */
-/** Ejecuta la acción de pulsar / mantener pulsado sobre una entidad. */
+/* ====================== Components ======================
+ * Each placed component is a card { type: 'component', component: 'button.js', width, config, cards? }.
+ * Its script (type: 'card') says its fields, what it watches, its HTML and its CSS; the values of each place go in config. */
+/** Runs the tap / hold action on an entity. */
 function runAction(a, id, el) {
   a = PM.actionOf(a);
   if (!a || a.action === 'none') return;
@@ -2054,21 +2054,21 @@ function runAction(a, id, el) {
   }
 }
 const hasAction = (a) => { a = PM.actionOf(a); return !!a && a.action !== 'none'; };
-/** Un componente colocado: ejecuta su script (type: 'card') y pinta su HTML con su CSS (lib/components.js). */
+/** A placed component: runs its script (type: 'card') and paints its HTML with its CSS (lib/components.js). */
 function componentCard(c, title) {
   const name = c.component, m = moduleOf(name);
   if (m.err) return [title, codeError(name, m.err)];
   if (m.mod.type !== 'card') return [title, codeError(name, I18N.t("web.editor.not_a_component"))];
   const host = h('div', { class: 'comp' });
-  // Los de dentro (<slot>) se crean una vez y se quedan en su sitio en cada repintado
+  // The inner ones (<slot>) are created once and stay in place on every repaint
   const kids = m.mod.children ? layout(c.cards) : null;
   let bound = null;
   const paint = () => {
     try {
       bound = m.mod.bind(c.config, HA);
       PanelComp.render(host, name, m.mod, [HA, screenFor('card'), bound.cfg], {
-        // Se engancha una vez; p.tap / p.hold se leen al pulsar (al repintar pueden cambiar).
-        // Mantener pulsado nunca cuenta como pulsar: si no tiene acción al mantener, no hace nada
+        // Hooked once; p.tap / p.hold are read on tap (they may change on repaint).
+        // Holding never counts as tapping: if it has no hold action, it does nothing
         press(el, p) {
           pressable(el, () => { if (isAct(p.tap)) pieceAction(p.tap, p, el); }, () => { if (isAct(p.hold)) pieceAction(p.hold, p, el); });
         },
@@ -2084,19 +2084,19 @@ function componentCard(c, title) {
     } catch (e) { host.replaceChildren(codeError(m.mod.name || name, e.message)); }
   };
   paint(); VIEW_CODE.push({ matches: (id) => !!bound && bound.matches(id), paint });
-  // refresh: segundos → se repinta solo (horas, fechas…); los temporizadores se paran al cambiar de pestaña
+  // refresh: seconds → it repaints by itself (times, dates…); the timers stop when the tab changes
   if (m.mod.refresh) S.viewTimers.push(setInterval(paint, Math.max(5, m.mod.refresh) * 1000));
   return [title, host];
 }
-/** Las fichas y tarjetas del panel que un componente pone con <ha-tile entity>, <ha-media>, <ha-printer device>… */
+/** The panel tiles and cards a component adds with <ha-tile entity>, <ha-media>, <ha-printer device>… */
 function componentWidget(e) {
   const t = e.tagName.toLowerCase(), id = e.getAttribute('entity'), has = id && S.states[id];
   const none = () => document.createTextNode('');
   if (t === 'ha-tile') return has ? tile(id) : none();
   if (t === 'ha-sensor') return has ? sensorTile(id) : none();
   if (t === 'ha-camera') {
-    // Por dirección (src): una imagen que se recarga cada pocos segundos. Si no es una imagen (p. ej. la página
-    // del reproductor de la cámara), se mete la página tal cual, como la tarjeta «página web» de Home Assistant
+    // By address (src): an image that reloads every few seconds. If it is not an image (e.g. the page
+    // of the camera player), the page goes in as it is, like Home Assistant's “web page” card
     const src = e.getAttribute('src');
     if (src) {
       const img = h('img', { alt: '' }), box = h('div', { class: 'cam' }, img);
@@ -2119,7 +2119,7 @@ function componentWidget(e) {
   }
   return none();
 }
-/** Al pulsar / mantener: una acción ('toggle', { action: 'navigate', go }…) o una función (ha, screen) */
+/** On tap / hold: an action ('toggle', { action: 'navigate', go }…) or a function (ha, screen) */
 const isAct = (a) => typeof a === 'function' || hasAction(a);
 function pieceAction(a, p, el) {
   if (typeof a === 'function') {
@@ -2130,11 +2130,11 @@ function pieceAction(a, p, el) {
   runAction(a, p.entity, el);
 }
 const codeError = (name, msg) => h('div', { class: 'code-error' }, icon('mdi-alert-circle-outline'), h('b', null, name + ': '), msg);
-/** Tarjetas y burbujas de la pestaña actual que se repintan al cambiar sus entidades. */
+/** Cards and bubbles of the current tab that repaint when their entities change. */
 let VIEW_CODE = [], viewCodeTimer;
 const VIEW_DIRTY = new Set();
 
-/** Sin conexión configurada/** Sin conexión configurada: QR de la web de configuración (si hay ayudante) o instrucciones. */
+/** No connection set up: QR of the configuration web (if there is a helper) or instructions. */
 async function showSetup() {
   $('#rail').replaceChildren();
   $('#view-title').textContent = I18N.t('panel.nav.set_up_panel');
@@ -2172,10 +2172,10 @@ function go(view) {
   render();
 }
 
-/* ====================== Asistente de voz ======================
- * Una barra abajo, encima de cualquier pantalla (Inicio, ambiente, «Sonando»…), mientras el satélite de Assist
- * elegido en Ajustes escucha, piensa o contesta. El texto (lo que has dicho y la respuesta) se lee de la
- * depuración de Assist en Home Assistant (solo lectura). También se puede mover desde fuera: panelVoice(fase, {heard, reply}). */
+/* ====================== Voice assistant ======================
+ * A bar at the bottom, over any screen (Home, ambient, “Now playing”…), while the Assist satellite
+ * chosen in Settings listens, thinks or answers. The text (what you said and the answer) is read from the
+ * Assist debug in Home Assistant (read only). It can also be driven from outside: panelVoice(stage, {heard, reply}). */
 const VOICE = { stage: 'idle', heard: '', reply: '', hideT: null, run: null };
 const VOICE_TEXT = { listening: 'panel.voice.listening', processing: 'panel.voice.one_moment', responding: '', error: 'panel.voice.not_understood' };
 function panelVoice(stage, data = {}) {
@@ -2188,14 +2188,14 @@ function panelVoice(stage, data = {}) {
     if (VOICE.stage === 'idle') return;
     VOICE.stage = 'idle';
     box.classList.remove('listening', 'processing', 'responding');
-    // deja leer la respuesta un rato y se va
+    // lets you read the answer for a while and goes away
     VOICE.hideT = setTimeout(() => box.classList.remove('show'), VOICE.reply || VOICE.heard ? 6000 : 400);
     return;
   }
   if (VOICE.stage === 'idle') { wakeScreen(); resetIdle(); }
   VOICE.stage = stage;
   const style = VOICE_STYLES.includes(SET.voiceStyle) ? SET.voiceStyle : 'wave';
-  // Si ya estaba a la vista, el cambio de alto (p. ej. al llegar la respuesta) se anima en vez de saltar
+  // If it was already visible, the height change (e.g. when the answer arrives) is animated instead of jumping
   const wasShown = box.classList.contains('show'), oldH = wasShown ? box.getBoundingClientRect().height : 0;
   const oldText = (box.querySelector('.voice-text') || {}).textContent || '';
   box.className = `voice show ${stage} vs-${style}`;
@@ -2203,14 +2203,14 @@ function panelVoice(stage, data = {}) {
     VOICE.heard ? h('div', { class: 'voice-heard' }, '«' + VOICE.heard + '»') : null,
     h('div', { class: 'voice-main' + (VOICE.reply ? '' : ' hint') }, VOICE.reply || VOICE_TEXT[stage] || ''));
   box.replaceChildren(voiceAnim(style), text);
-  if (wasShown && text.textContent !== oldText) text.classList.add('fresh');      // el texto nuevo entra suave
+  if (wasShown && text.textContent !== oldText) text.classList.add('fresh');      // the new text comes in softly
   if (wasShown) {
     clearTimeout(VOICE.sizeT);
     box.style.height = '';
     const newH = box.getBoundingClientRect().height;
     if (Math.abs(newH - oldH) > 1) {
       box.style.height = oldH + 'px';
-      void box.offsetHeight;                     // fija el alto viejo antes de animar
+      void box.offsetHeight;                     // fixes the old height before animating
       box.style.height = newH + 'px';
       VOICE.sizeT = setTimeout(() => (box.style.height = ''), 450);
     }
@@ -2219,12 +2219,12 @@ function panelVoice(stage, data = {}) {
   if (style === 'wave') voiceWave();
 }
 window.panelVoice = panelVoice;
-// Tocar la barra no debe tocar lo que hay debajo (luces, burbujas, el modo ambiente…)
+// Touching the bar must not touch what is underneath (lights, bubbles, ambient mode…)
 ['pointerdown', 'pointerup', 'click', 'touchstart', 'touchend'].forEach((t) => $('#voice').addEventListener(t, (e) => {
   e.stopPropagation();
   if (e.cancelable && t !== 'pointerdown') e.preventDefault();
 }));
-/** Animaciones de la barra (se eligen en Ajustes → Asistente de voz) */
+/** Bar animations (chosen in Settings → Voice assistant) */
 const VOICE_STYLES = ['wave', 'mic', 'light', 'eq'];
 function voiceAnim(style) {
   if (style === 'mic') return h('div', { class: 'voice-anim' }, h('div', { class: 'voice-mic' },
@@ -2236,7 +2236,7 @@ function voiceAnim(style) {
   svg.append(document.createElementNS('http://www.w3.org/2000/svg', 'path'));
   return h('div', { class: 'voice-anim' }, svg);
 }
-/** Onda: se dibuja mientras la barra está a la vista (más quieta al pensar, más viva al contestar) */
+/** Wave: drawn while the bar is visible (calmer when thinking, livelier when answering) */
 let waveRaf = 0, waveT = 0;
 function voiceWave() {
   if (waveRaf) return;
@@ -2260,15 +2260,15 @@ function onVoiceSat(old, st) {
   const stage = VOICE_STAGE[st && st.state] || 'idle';
   if (stage === 'listening' && VOICE.stage === 'idle') VOICE.run = Date.now();
   panelVoice(stage);
-  // En cuanto entiende la frase, se busca el texto en la depuración de Assist
+  // As soon as it understands the sentence, the text is looked up in the Assist debug
   if (stage === 'responding' || (stage === 'idle' && old && VOICE_STAGE[old.state])) voiceText();
 }
-/** Lo que se dijo y lo que contestó, de la última ejecución de Assist (assist_pipeline/pipeline_debug, solo lectura). */
+/** What was said and what it answered, from the last Assist run (assist_pipeline/pipeline_debug, read only). */
 async function voiceText() {
   const since = VOICE.run || 0;
   try {
     const sat = SET.voiceSatellite, dev = reg(sat).device_id;
-    // el asistente que usa el satélite: su select «Asistente» ('preferred' = el preferido)
+    // the assistant the satellite uses: its “Assistant” select ('preferred' = the preferred one)
     const sel = Object.keys(S.states).find((id) => domain(id) === 'select' && reg(id).device_id === dev && /pipeline|asistente/.test(id));
     const list = await conn.send({ type: 'assist_pipeline/pipeline/list' });
     const want = sel && S.states[sel].state;
@@ -2287,12 +2287,12 @@ async function voiceText() {
       }
       if (e.type === 'error' && VOICE.stage !== 'idle') { panelVoice('error'); return; }
     }
-    if (VOICE.run !== since) return;           // ya empezó otra frase
+    if (VOICE.run !== since) return;           // another sentence already started
     panelVoice(VOICE.stage === 'idle' ? 'responding' : VOICE.stage, { heard, reply });
     if (S.states[SET.voiceSatellite] && !VOICE_STAGE[S.states[SET.voiceSatellite].state]) panelVoice('idle');
   } catch (e) { console.warn('Texto de Assist:', e.message); }
 }
-/** Ajustes: qué satélite de voz se muestra en la pantalla. */
+/** Settings: which voice satellite shows on the screen. */
 function voiceCard() {
   const sats = Object.keys(S.states).filter((id) => domain(id) === 'assist_satellite')
     .sort((x, y) => nameOf(x, false).localeCompare(nameOf(y, false), I18N.locale()));
@@ -2310,7 +2310,7 @@ function voiceCard() {
       h('button', { class: 'big-action', onclick: voiceDemo }, icon('mdi-play'), I18N.t('panel.settings.preview'))),
     window.PANEL_HELPER ? voiceMicBlock() : null);
 }
-/** Todos los volúmenes juntos: el general (la salida de la Pi) y, dentro de él, cada cosa que suena. */
+/** All the volumes together: the general one (the Pi's output) and, inside it, each thing that plays. */
 function soundCard() {
   const pct = (v) => v + ' %';
   const card = h('div', { class: 'card set-card' }, h('div', { class: 'set-title' }, icon('mdi-volume-high'), I18N.t('panel.settings.sound')));
@@ -2320,15 +2320,15 @@ function soundCard() {
       if (r.error) throw new Error(r.error);
     } catch (e) { toast(I18N.t('panel.status.could_not_change_prefix') + e.message); }
   };
-  // El volumen principal es el de la música y lo multimedia (el altavoz del panel en Music Assistant).
-  // Sin altavoz, el de la salida de la Pi.
+  // The main volume is the music and media one (the panel speaker in Music Assistant).
+  // Without a speaker, the Pi's output.
   const music = speakerEntity();
   const main = h('div', { style: 'display:contents' });
   if (music && S.states[music]) {
     const m = slider({ min: 0, max: 100, step: 1, label: I18N.t('panel.settings.volume_music_media'), fmt: pct,
-      // cambiado desde aquí: no sale la barra flotante (ya lo estás viendo)
+      // changed from here: the floating bar does not show (you are already looking at it)
       onchange: (v) => { volMarkSent(v); call('media_player', 'volume_set', { volume_level: v / 100 }, music); } });
-    // Sigue al volumen real: si se cambia en Music Assistant, se mueve aquí también
+    // Follows the real volume: if it changes in Music Assistant, it moves here too
     bind('view', music, (st) => st && st.attributes.volume_level != null && m.set(Math.round(st.attributes.volume_level * 100)));
     main.append(m);
   }
@@ -2349,7 +2349,7 @@ function soundCard() {
   }).catch(() => {});
   return card;
 }
-/** El micro de la propia Pi (servicio panel-voice): micro, por dónde contesta y palabra para despertarlo. */
+/** The Pi's own mic (panel-voice service): mic, where it answers and the wake word. */
 function voiceMicBlock() {
   const box = h('div', null, h('div', { class: 'muted small' }, I18N.t('panel.settings.loading_panel_s')));
   const save = async (patch) => {
@@ -2373,7 +2373,7 @@ function voiceMicBlock() {
     .catch(() => box.replaceChildren(h('div', { class: 'muted small' }, I18N.t('panel.voice.mic_error'))));
   return box;
 }
-/** Ejemplo de la barra de voz, sin hablar con Home Assistant. */
+/** Example of the voice bar, without talking to Home Assistant. */
 const DEMO_T = [];
 function voiceDemo() {
   const at = (ms, f) => DEMO_T.push(setTimeout(f, ms));
@@ -2391,16 +2391,16 @@ function resetIdle() {
   clearTimeout(idleTimer);
   if (SET.idleSeconds > 0) idleTimer = setTimeout(() => !S.sheetId && !NP.id && !alertOpen() && showAmbient(), SET.idleSeconds * 1000);
 }
-/** Menú de los tres puntitos de arriba a la derecha: se despliega con una animación. */
-/* Mini reproductor del panel de acceso rápido: carátula, título y anterior / play / siguiente.
-   Tocar la carátula o el título abre «Sonando». Se repinta solo mientras el menú está abierto. */
+/** Menu of the three dots at the top right: it opens with an animation. */
+/* Mini player of the quick access panel: artwork, title and previous / play / next.
+   Tapping the artwork or the title opens “Now playing”. It repaints by itself while the menu is open. */
 const TM = { id: null, paint: null };
 function tmPlayer() {
   const id = ambientSpeaker() || speakerEntity();
   TM.id = null; TM.paint = null;
   if (!id || !S.states[id] || S.states[id].state === 'unavailable') return null;
-  // Tarjeta como la de música de Android: la carátula difuminada de fondo, la carátula a la izquierda,
-  // el título y el artista y debajo los controles. Tocar la tarjeta abre «Sonando».
+  // Card like Android's music one: the blurred artwork as background, the artwork on the left,
+  // the title and the artist and the controls below. Tapping the card opens “Now playing”.
   const art = h('div', { class: 'tm-art' }), title = h('div', { class: 'tm-ptitle' }), sub = h('div', { class: 'tm-psub' });
   const bg = h('div', { class: 'tm-bg' });
   const btn = (ic, svc, cls = '') => h('button', { class: 'tm-pbtn ' + cls, onclick: (e) => { e.stopPropagation(); call('media_player', svc, {}, id); } }, icon(ic));
@@ -2421,29 +2421,29 @@ function tmPlayer() {
   TM.paint();
   return box;
 }
-/* ====================== Panel de acceso rápido (como en Android) ======================
- * Arrastrando hacia abajo desde el borde de arriba baja el panel de acceso rápido, que sigue al dedo; al soltar se abre del todo
- * si has bajado más de un tercio (o lo has hecho rápido) y si no se recoge.
- * Dentro: la hora, apagar la pantalla y ajustes (arriba a la derecha), el mini reproductor, los volúmenes y el brillo.
- * Se cierra deslizando hacia arriba, tocando fuera o eligiendo algo. */
+/* ====================== Quick access panel (like on Android) ======================
+ * Dragging down from the top edge pulls down the quick access panel, which follows the finger; on release it opens fully
+ * if you went down more than a third (or did it fast), otherwise it goes back up.
+ * Inside: the time, turning the screen off and settings (top right), the mini player, the volumes and the brightness.
+ * It closes by swiping up, tapping outside or choosing something. */
 const SH = { open: false, sync: null, tab: 0, paintNotif: null };
-const shadeEdge = 30;   // alto (px) de la franja de arriba donde empieza el gesto
-/** Barra tipo Android: una píldora gruesa que se llena, con el símbolo dentro a la izquierda y el valor a la derecha.
- *  Se arrastra (o se toca) de lado a lado. onLive mientras arrastras, onEnd al soltar. */
+const shadeEdge = 30;   // height (px) of the top strip where the gesture starts
+/** Android-like bar: a thick pill that fills, with the symbol inside on the left and the value on the right.
+ *  Drag (or tap) from side to side. onLive while you drag, onEnd on release. */
 function pill(ic, { min = 0, max = 100, step = 1, value = 0, onLive, onEnd } = {}) {
   const fill = h('i'), val = h('span', { class: 'sp-val' });
   const el = h('div', { class: 'sh-pill' }, fill, h('span', { class: 'sp-ic' }, icon(ic)), val);
   const p = { el, v: value, drag: false };
   p.set = (v, force) => {
     if (p.drag && !force) return;
-    // El 0 está justo después del símbolo (la parte con el símbolo siempre se ve llena, como en Android)
+    // 0 is right after the symbol (the part with the symbol always looks filled, like on Android)
     const f = (v - min) / (max - min), base = el.offsetHeight || 70, w = el.offsetWidth;
     p.v = v; fill.style.width = `calc(${base}px + (100% - ${base}px) * ${f})`; val.textContent = v + ' %';
-    el.classList.toggle('full', w ? base + (w - base) * f > w - 80 : f > 0.86);   // el valor queda sobre la parte llena: en oscuro
+    el.classList.toggle('full', w ? base + (w - base) * f > w - 80 : f > 0.86);   // the value sits on the filled part: in dark
   };
   const at = (x) => {
     const r = el.getBoundingClientRect(), base = r.height;
-    const f = Math.max(0, Math.min(1, (x - r.left - base) / Math.max(1, r.width - base - 10)));   // el 100 sin apurar hasta el borde
+    const f = Math.max(0, Math.min(1, (x - r.left - base) / Math.max(1, r.width - base - 10)));   // 100 without reaching the very edge
     const v = Math.max(min, Math.min(max, Math.round((min + f * (max - min)) / step) * step));
     if (v !== p.v) { p.set(v, true); if (onLive) onLive(v); }
   };
@@ -2451,8 +2451,8 @@ function pill(ic, { min = 0, max = 100, step = 1, value = 0, onLive, onEnd } = {
   p.set(value);
   return p;
 }
-/* Ventanas del panel de acceso rápido que se deslizan de lado: avisos (izquierda) · controles (centro, la que sale al abrir)
- * · accesos rápidos (derecha, SET.quick). Se cambia deslizando el dedo o tocando las pestañas de arriba. */
+/* Windows of the quick access panel that slide sideways: notifications (left) · controls (centre, the one that shows when opening)
+ * · quick access (right, SET.quick). Change them by sliding the finger or tapping the tabs at the top. */
 const QUICK_KINDS = { light: 'panel.quick.lights', switch: 'panel.quick.plugs', input_boolean: 'panel.quick.switches', fan: 'panel.quick.fans', cover: 'panel.quick.covers',
   lock: 'panel.quick.locks', climate: 'panel.quick.climate', scene: 'panel.nav.scenes', script: 'panel.quick.scripts', button: 'panel.quick.buttons', input_button: 'panel.quick.buttons' };
 function shadeTabs(main) {
@@ -2462,7 +2462,7 @@ function shadeTabs(main) {
   const btns = [h('button', { class: 'sht-tab' }, h('span', { class: 'sht-bell' }, icon('mdi-bell'), badge), I18N.t('panel.quick.notifications')), h('button', { class: 'sht-tab' }, icon('mdi-tune-variant'), I18N.t('panel.quick.controls')),
     h('button', { class: 'sht-tab' }, icon('mdi-lightning-bolt'), I18N.t('panel.quick.quick_access'))];
   const bar = h('div', { class: 'sht-bar' }, btns);
-  // las listas no cuentan para el alto: el panel de acceso rápido mide lo que miden los controles y ellas se desplazan dentro
+  // the lists do not count for the height: the quick access panel is as tall as the controls and they scroll inside
   const notif = h('div', { class: 'sht-scroll' }), quick = h('div', { class: 'sht-scroll' });
   track.append(h('div', { class: 'sht-page scroll' }, notif), h('div', { class: 'sht-page sht-main' }, main), h('div', { class: 'sht-page scroll' }, quick));
 
@@ -2470,14 +2470,14 @@ function shadeTabs(main) {
     if (SH.tab === 0) { N.unread = 0; renderBell(); }
     badge.classList.toggle('on', N.unread > 0);
     if (!N.history.length) { notif.replaceChildren(h('div', { class: 'sht-empty' }, icon('mdi-bell-check-outline'), I18N.t('panel.quick.no_notifications'))); return; }
-    // tocar un aviso lo vuelve a abrir entero (con su imagen y sus botones); la × lo quita de la lista
+    // tapping a notification opens it again in full (with its image and its buttons); the × removes it from the list
     notif.replaceChildren(...N.history.map((n) => h('div', { class: 'hist-row tappable ' + n.level, onclick: () => { shade(false); reopenNotif(n); } }, icon(n.icono),
       h('div', { class: 'hist-text' }, h('b', null, n.title), n.message ? h('div', { class: 'muted small' }, n.message) : null),
       h('span', { class: 'muted small' }, hhmm(n.at)),
       h('button', { class: 'hist-x', title: I18N.t('panel.quick.remove'), onclick: (e) => { e.stopPropagation(); N.history = N.history.filter((x) => x !== n); renderBell(); paintNotif(); } }, icon('mdi-close')))),
     h('button', { class: 'sht-clear', onclick: () => { N.history = []; N.unread = 0; renderBell(); paintNotif(); } }, icon('mdi-delete-sweep'), I18N.t('panel.quick.clear_all')));
   };
-  // Accesos rápidos: los elegidos como baldosas y, al final, una para añadir o quitar
+  // Quick access: the chosen ones as tiles and, at the end, one to add or remove
   let editing = false, kind = null;
   const paintQuick = () => {
     B.shade.clear();
@@ -2517,20 +2517,20 @@ function shadeTabs(main) {
   };
   btns.forEach((b, i) => { b.onclick = () => goTab(i); });
 
-  // deslizar de lado sobre las páginas
+  // sliding sideways over the pages
   let sw = null, swallow = false;
-  const sBegin = (x, y, t) => { sw = t && t.closest('.sh-pill, input') ? null : { x, y, dx: 0, on: false }; };   // las barras se arrastran solas
+  const sBegin = (x, y, t) => { sw = t && t.closest('.sh-pill, input') ? null : { x, y, dx: 0, on: false }; };   // the bars are dragged on their own
   const sMove = (x, y, e) => {
     if (!sw) return;
     const dx = x - sw.x, dy = y - sw.y;
     if (!sw.on) {
       if (Math.abs(dx) < 10 && Math.abs(dy) < 10) return;
-      if (Math.abs(dy) >= Math.abs(dx)) { sw = null; return; }   // era para subir o bajar la lista
+      if (Math.abs(dy) >= Math.abs(dx)) { sw = null; return; }   // it was to scroll the list
       sw.on = true; track.classList.remove('anim');
     }
     if (e && e.cancelable) e.preventDefault();
     sw.dx = dx;
-    const edge = (SH.tab === 0 && dx > 0) || (SH.tab === 2 && dx < 0);   // en los extremos cuesta más
+    const edge = (SH.tab === 0 && dx > 0) || (SH.tab === 2 && dx < 0);   // harder at the ends
     track.style.transform = `translateX(calc(${(-SH.tab * 100) / 3}% + ${edge ? dx / 4 : dx / 3}px))`;
   };
   const sEnd = () => {
@@ -2553,8 +2553,8 @@ function shadeTabs(main) {
   paintQuick();
   SH.goTab = goTab;
   paintNotif.badge = () => { badge.classList.toggle('on', N.unread > 0); };
-  paintNotif.badge();   // avisos sin ver: un puntito en la campana de la pestaña, aunque abra en otra ventana
-  goTab(SH.startTab ?? 1, false);   // abre en los controles (la campana, en los avisos)
+  paintNotif.badge();   // unread notifications: a dot on the tab's bell, even if it opens in another window
+  goTab(SH.startTab ?? 1, false);   // it opens on the controls (the bell, on the notifications)
   SH.startTab = null;
   return h('div', { class: 'sht' }, bar, pages);
 }
@@ -2565,7 +2565,7 @@ function shadeFill() {
   const id = speakerEntity();
   let mus = null;
   if (id && S.states[id] && S.states[id].attributes.volume_level != null) {
-    // la música cambia mientras arrastras (como en «Sonando»)
+    // the music changes while you drag (like in “Now playing”)
     let last = -1, timer = null;
     const send = () => { if (mus.v === last) return; last = mus.v; volMarkSent(mus.v); call('media_player', 'volume_set', { volume_level: mus.v / 100 }, id); };
     mus = pill('mdi-music', { onLive: () => { if (!timer) { send(); timer = setInterval(send, 250); } }, onEnd: () => { clearInterval(timer); timer = null; send(); } });
@@ -2575,7 +2575,7 @@ function shadeFill() {
   const br = pill('mdi-brightness-6', { min: 5, step: 5, value: SET.brightness, onEnd: (v) => { SET.brightness = v; saveSettings(true); } });
   pills.append(av.el, br.el);
   const player = tmPlayer() || h('div', { class: 'tm-player sh-noplayer' }, icon('mdi-music-off'), I18N.t('panel.quick.nothing_playing'));
-  // lo que cambie mientras está abierta (la canción, el volumen desde el móvil…) se ve al momento
+  // what changes while it is open (the song, the volume from the phone…) shows at once
   SH.sync = (sid) => {
     if (sid === TM.id && TM.paint) TM.paint();
     if (mus && sid === id && S.states[id]) mus.set(Math.round((S.states[id].attributes.volume_level || 0) * 100));
@@ -2583,19 +2583,19 @@ function shadeFill() {
   SH.sync(id);
   const now = new Date();
   box.replaceChildren(
-    // arriba: la hora y la fecha, y a la derecha los botones pequeños (apagar la pantalla y ajustes)
+    // top: the time and the date, and on the right the small buttons (turn the screen off and settings)
     h('div', { class: 'sh-head' },
       h('div', { class: 'sh-when' }, h('b', null, now.toLocaleTimeString(I18N.locale(), { hour: '2-digit', minute: '2-digit' })),
         h('span', null, cap(now.toLocaleDateString(I18N.locale(), { weekday: 'long', day: 'numeric', month: 'long' })))),
       h('div', { class: 'sh-ibtns' },
         iconBtn('mdi-monitor-off', I18N.t('panel.quick.turn_off_screen'), () => { screenOffNow(); }),
-        iconBtn('mdi-cog', I18N.t('panel.nav.settings'), () => {   // desde el modo ambiente o «Sonando» también
+        iconBtn('mdi-cog', I18N.t('panel.nav.settings'), () => {   // from ambient mode or “Now playing” too
           if ($('#np').classList.contains('show')) hideNowPlaying(true);
           if (S.ambient) hideAmbient('settings'); else go('settings');
         }))),
     shadeTabs(h('div', { class: 'sh-body' }, player, pills)));
 }
-/** Abre (true) o cierra (false) el panel de acceso rápido con animación. Sin argumento: lo cambia. tab: ventana (0 avisos, 1 controles, 2 accesos). */
+/** Opens (true) or closes (false) the quick access panel with an animation. With no argument: toggles it. tab: window (0 notifications, 1 controls, 2 quick access). */
 function shade(open, tab) {
   if (open && SH.open && tab != null && SH.goTab) { SH.goTab(tab); return; }
   SH.startTab = tab;
@@ -2610,15 +2610,15 @@ function shade(open, tab) {
 }
 function shadeGestures() {
   const el = $('#shade'), bg = $('#shade-bg');
-  let g = null;   // gesto en curso: { y0, x0, t0, from (0 cerrada / 1 abierta), moved, p }
-  const blocked = () => alertOpen();   // en todas las pantallas (ambiente, «Sonando»…) menos con una alarma o un aviso importante
+  let g = null;   // gesture in progress: { y0, x0, t0, from (0 closed / 1 open), moved, p }
+  const blocked = () => alertOpen();   // on every screen (ambient, “Now playing”…) except with an alarm or an important notification
   const begin = (x, y, from) => { g = { x0: x, y0: y, t0: Date.now(), from, moved: false, p: from }; };
   const move = (x, y, e) => {
     if (!g) return;
     const dy = y - g.y0;
     if (!g.moved) {
       if (Math.abs(dy) < 8) return;
-      if (Math.abs(x - g.x0) > Math.abs(dy)) { g = null; return; }   // era un deslizamiento de lado
+      if (Math.abs(x - g.x0) > Math.abs(dy)) { g = null; return; }   // it was a sideways slide
       g.moved = true;
       if (g.from === 0) shadeFill();
       el.classList.add('dragging'); bg.classList.add('dragging');
@@ -2633,10 +2633,10 @@ function shadeGestures() {
     if (!g) return;
     const was = g; g = null;
     if (!was.moved) return;
-    const v = (y - was.y0) / Math.max(1, Date.now() - was.t0);   // px/ms (+ hacia abajo)
+    const v = (y - was.y0) / Math.max(1, Date.now() - was.t0);   // px/ms (+ downwards)
     shade(v > 0.5 ? true : v < -0.5 ? false : was.p > (was.from ? 0.66 : 0.33));
   };
-  // Abrir: desde la franja de arriba (con el dedo o con el ratón)
+  // Open: from the top strip (with the finger or the mouse)
   window.addEventListener('touchstart', (e) => {
     const t = e.touches[0];
     if (e.touches.length === 1 && !SH.open && t.clientY <= shadeEdge && !blocked()) begin(t.clientX, t.clientY, 0);
@@ -2644,7 +2644,7 @@ function shadeGestures() {
   window.addEventListener('pointerdown', (e) => {
     if (e.pointerType !== 'touch' && !SH.open && e.clientY <= shadeEdge && !blocked()) begin(e.clientX, e.clientY, 0);
   }, true);
-  // Cerrar: deslizando hacia arriba sobre el panel de acceso rápido (no sobre las barras ni los botones) o sobre el fondo
+  // Close: swiping up over the quick access panel (not over the bars or the buttons) or over the background
   const closeStart = (x, y, target) => { if (SH.open && !target.closest('input, button, .sh-pill, .sht-page.scroll')) begin(x, y, 1); };
   [el, bg].forEach((n) => {
     n.addEventListener('touchstart', (e) => { const t = e.touches[0]; closeStart(t.clientX, t.clientY, e.target); }, { passive: true });
@@ -2655,11 +2655,11 @@ function shadeGestures() {
   window.addEventListener('touchcancel', () => { if (g) { g = null; shade(SH.open); } }, true);
   window.addEventListener('pointermove', (e) => { if (g && e.pointerType !== 'touch') move(e.clientX, e.clientY, e); }, true);
   window.addEventListener('pointerup', (e) => { if (g && e.pointerType !== 'touch') end(e.clientY); }, true);
-  // tocar el fondo (sin arrastrar) la cierra
+  // tapping the background (without dragging) closes it
   bg.addEventListener('click', () => shade(false));
 }
 function showAmbient() {
-  setTimeout(reportState, 0);   // Home Assistant lo sabe al momento
+  setTimeout(reportState, 0);   // Home Assistant knows at once
   closeSheet();
   if (SH.open) shade(false);
   S.ambient = true;
@@ -2667,8 +2667,8 @@ function showAmbient() {
   if (photosOn()) nextBackground();
   $('#ambient').classList.add('show');
 }
-/** Tras salir del modo ambiente (o encender la pantalla) con un toque: hasta que se levanta el dedo no se hace nada,
- * ni pulsar lo que haya debajo (una luz…) ni desplazar la vista. */
+/** After leaving ambient mode (or turning the screen on) with a tap: nothing happens until the finger is lifted,
+ * neither tapping what is underneath (a light…) nor scrolling the view. */
 function swallowTouch() {
   const stop = (e) => { if (e.cancelable) e.preventDefault(); e.stopPropagation(); };
   const evs = ['click', 'touchmove', 'pointermove', 'pointerup', 'mousedown', 'mouseup', 'contextmenu', 'wheel'];
@@ -2680,13 +2680,13 @@ function swallowTouch() {
     if (done) return;
     done = true;
     ends.forEach((t) => window.removeEventListener(t, finish, true));
-    // un poco más: el «click» del toque llega justo después de levantar el dedo
+    // a bit more: the tap's “click” arrives right after lifting the finger
     setTimeout(() => evs.forEach((t) => window.removeEventListener(t, stop, opts)), 400);
   };
   ends.forEach((t) => window.addEventListener(t, finish, true));
-  setTimeout(finish, 8000);   // por si no llega el final del toque
+  setTimeout(finish, 8000);   // in case the end of the touch never arrives
 }
-/** Sale del modo ambiente a Inicio, o a la vista de la burbuja que se haya tocado. */
+/** Leaves ambient mode to Home, or to the view of the bubble that was tapped. */
 function hideAmbient(view = 'home') {
   setTimeout(reportState, 0);
   S.ambient = false;
@@ -2695,13 +2695,13 @@ function hideAmbient(view = 'home') {
   if (S.view !== view) go(view); else render();
   resetIdle();
 }
-/* ====================== Burbujas ======================
- * Todas son scripts: los de serie (lib/modules.js) y los que se crean o importan en la web de configuración,
- * que se guardan en la Pi y el panel descarga al arrancar. Se ejecutan aquí, en el navegador.
- * Cada burbuja dice si sale en el modo ambiente y/o en el resumen de Inicio (SET.bullets). */
-/* Lo que reciben las burbujas y tarjetas de código: render(ha, screen).
- * ha     → Home Assistant tal cual (estados y registro de entidades). Para pintar solo lee; ha.call() solo al tocar.
- * screen → la pantalla: dónde se pinta, brillo, modo noche/ambiente, alarmas del panel, ir a una pestaña. */
+/* ====================== Bubbles ======================
+ * They are all scripts: the built-in ones (lib/modules.js) and the ones created or imported in the configuration web,
+ * which are saved on the Pi and the panel downloads at start. They run here, in the browser.
+ * Each bubble says whether it shows in ambient mode and/or in the Home summary (SET.bullets). */
+/* What bubbles and code cards get: render(ha, screen).
+ * ha     → Home Assistant as it is (states and entity registry). To paint it only reads; ha.call() only on tap.
+ * screen → the screen: where it paints, brightness, night/ambient mode, panel alarms, go to a tab. */
 function entInfo(id) {
   const e = S.ents[id];
   if (!e) return {};
@@ -2724,7 +2724,7 @@ const HA_OPTS = {
     return width && domain(id) === 'camera' && !url.startsWith('data:') ? url + (url.includes('?') ? '&' : '?') + 'width=' + width : url;
   },
   icon: (id) => iconOf(S.states[id]),
-  /** Previsión: la guardada; si no hay o es vieja, se pide y se repinta lo que vigile esa entidad */
+  /** Forecast: the saved one; if there is none or it is old, it is requested and whatever watches that entity repaints */
   forecast(id) {
     const c = FORECASTS[id];
     if ((!c || Date.now() - c.t > 30 * 60e3) && S.states[id] && !FC_LOADING.has(id)) {
@@ -2742,7 +2742,7 @@ const HA_TAP = PM.makeHA(() => S.states, Object.assign({}, HA_OPTS, {
     return call(d, sv, data);
   },
 }));
-/** Datos de la pantalla (también se mandan a la web para probar). */
+/** Screen data (also sent to the web for testing). */
 function screenData(place) {
   return {
     place, brightness: SCREEN.level, on: !SCREEN.off, night: isNight(), ambient: !!S.ambient, light: null, favorites: CFG.favorites || [],
@@ -2762,8 +2762,8 @@ const screenFor = (place) => PM.makeScreen(screenData(place), {
   openNotices: () => shade(true, 0),
 });
 const bulletList = () => PM.bulletList(SET.bullets, SET.ambientChips);
-/* La web de configuración prueba las burbujas con lo mismo que ve el panel: le pasamos al ayudante
- * los datos de la pantalla (cada 15 s) y el registro de entidades (ha.info; cada 5 min). */
+/* The configuration web tests the bubbles with the same thing the panel sees: we pass the helper
+ * the screen data (every 15 s) and the entity registry (ha.info; every 5 min). */
 let infoSentAt = 0;
 function sendPanelData() {
   if (!window.PANEL_HELPER || !S.states || !Object.keys(S.states).length) return;
@@ -2774,13 +2774,13 @@ function sendPanelData() {
     infoSentAt = Date.now();
   }
   fetch(HELPER + '/data', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(d) })
-    .then((r) => r.json()).then((r) => { if (r && r.hasInfo === false) infoSentAt = 0; })   // el ayudante se reinició: se reenvía
+    .then((r) => r.json()).then((r) => { if (r && r.hasInfo === false) infoSentAt = 0; })   // the helper restarted: send it again
     .catch(() => {});
 }
 setInterval(sendPanelData, 15e3);
 setTimeout(sendPanelData, 5e3);
 
-/* Scripts de serie + los descargados de la Pi (window.PANEL_HELPER.scripts) o, sin ayudante, de config.js (modulos). */
+/* Built-in scripts + the ones downloaded from the Pi (window.PANEL_HELPER.scripts) or, without a helper, from config.js (scripts). */
 const MODULES = PM.allScripts((window.PANEL_HELPER && window.PANEL_HELPER.scripts) || CFG.scripts || CFG.modulos);
 const COMPILED = new Map();
 function moduleOf(name) {
@@ -2793,7 +2793,7 @@ function moduleOf(name) {
   }
   return m;
 }
-/** Un cambio de estado invalida las burbujas y tarjetas que lo vigilan. */
+/** A state change invalidates the bubbles and cards that watch it. */
 function markCode(id) {
   for (const m of COMPILED.values()) if (m.mod && Object.values(m.watch || {}).some((f) => f(id))) m.cache = {};
   VIEW_CODE.forEach((v, i) => { if (v.matches(id)) VIEW_DIRTY.add(i); });
@@ -2802,15 +2802,15 @@ function markCode(id) {
     viewCodeTimer = setTimeout(() => { if (!S.sheetId) VIEW_DIRTY.forEach((i) => VIEW_CODE[i] && VIEW_CODE[i].paint()); VIEW_DIRTY.clear(); }, 500);
   }
 }
-/** Lo que pintan las burbujas marcadas para el modo ambiente. */
+/** What the bubbles marked for ambient mode paint. */
 function bulletOutputs() {
   const list = bulletList().filter((b) => b.ambient), place = 'ambient';
   const out = [];
   for (const b of list) {
-    if (!(b.script in MODULES)) continue;            // su script se borró: no sale
+    if (!(b.script in MODULES)) continue;            // its script was deleted: it does not show
     const m = moduleOf(b.script), name = b.name || b.script;
-    // Se recalcula si cambia algo de su watch o si lleva más de un minuto (horas, alarmas…)
-    // Cada burbuja con sus ajustes (b.config); la misma caché se separa por burbuja y sitio
+    // Recalculated if something in its watch changes or after more than a minute (times, alarms…)
+    // Each bubble with its settings (b.config); the same cache is split by bubble and place
     const key = b.id + ':' + place;
     if (!m.err && (!m.cache[key] || Date.now() - m.cache[key].t > 60e3)) {
       try {
@@ -2825,7 +2825,7 @@ function bulletOutputs() {
   }
   return out;
 }
-/** Una burbuja en pantalla. Al tocarla: su acción o ir a su pestaña. */
+/** A bubble on screen. On tap: its action or go to its tab. */
 function bubbleEl(b, cls) {
   const el = h('div', { class: cls + (b.go || b.action || b.onTap ? ' tappable' : '') + (b.progress != null ? ' with-bar' : ''), style: b.color ? `--bc:${b.color}` : null },
     b.icon ? icon(b.icon, 'b-ic') : null, h('span', { style: b.textColor ? `color:${b.textColor}` : null }, b.text),
@@ -2835,7 +2835,7 @@ function bubbleEl(b, cls) {
   if (cls === 'chip' && (b.go || b.action || b.onTap)) el.addEventListener('click', () => runBubble(b));
   return el;
 }
-/** Al tocar: su onTap(ha, screen) o su action (lo único que manda algo a Home Assistant), o ir a su pestaña. */
+/** On tap: its onTap(ha, screen) or its action (the only thing that sends something to Home Assistant), or go to its tab. */
 function runBubble(b) {
   if (b.onTap) {
     try {
@@ -2858,16 +2858,16 @@ function renderAmbientChips() {
 }
 const paintBullets = renderAmbientChips;
 
-/* ---------- Mini reproductor del altavoz por defecto (modo ambiente, abajo a la derecha) ----------
- * Si está sonando algo en el altavoz de este panel, sale ese (aunque no sea el de por defecto);
- * tocar su carátula o el título vuelve a la pantalla «Sonando». */
-/** Altavoces del modo ambiente, por orden de prioridad (Ajustes → Altavoces del modo ambiente). */
+/* ---------- Mini player of the default speaker (ambient mode, bottom right) ----------
+ * If something is playing on this panel's speaker, that one shows (even if it is not the default);
+ * tapping its artwork or the title goes back to the “Now playing” screen. */
+/** Ambient mode speakers, by priority (Settings → Ambient mode speakers). */
 function ambientSpeakers() {
   const list = SET.ambientSpeakers || (SET.defaultSpeaker ? [SET.defaultSpeaker] : []);
   return [...new Set(list.map(resolveSpk))].filter((x) => x && S.states[x]);
 }
 function ambientSpeaker() {
-  // el primero de la lista que esté sonando; si no, el primero en pausa; si no, el primero que esté encendido
+  // the first on the list that is playing; otherwise the first paused; otherwise the first that is on
   const st = (x) => (S.states[x] || {}).state, l = ambientSpeakers();
   if (!l.length) { const w = watchedSpeakers(); return w.find((x) => st(x) === 'playing') || w.find((x) => st(x) === 'paused') || null; }
   return l.find((x) => st(x) === 'playing') || l.find((x) => st(x) === 'paused') ||
@@ -2884,7 +2884,7 @@ function renderAmbientPlayer() {
   const own = id === speakerEntity();
   const title = a.media_title || (own ? I18N.t('panel.ambient.panel') : nameOf(id));
   const sub = a.media_title ? (a.media_artist || a.app_name || nameOf(id)) : (T[st.state] || cap(st.state));
-  box.classList.add('own');   // tocar la carátula o el título abre «Sonando»
+  box.classList.add('own');   // tapping the artwork or the title opens “Now playing”
   const vol = a.volume_level != null ? Math.round(a.volume_level * 100) + ' %' : '';
   const btn = (act, ic, cls = '') => h('button', { class: 'amb-pbtn ' + cls, 'data-act': act }, icon(ic));
   box.replaceChildren(
@@ -2908,12 +2908,12 @@ function ambientPlayerAction(act) {
     call('media_player', 'volume_set', { volume_level: Math.round(Math.max(0, Math.min(1, v + (act === 'vol+' ? 0.05 : -0.05))) * 100) / 100 }, id);
 }
 
-/** Ajustes: elegir el altavoz por defecto. */
+/** Settings: choose the default speaker. */
 function speakerCard() {
   const players = dedupeMedia(ids((id) => domain(id) === 'media_player'))
     .sort((x, y) => (S.states[x].state === 'unavailable') - (S.states[y].state === 'unavailable') || nameOf(x).localeCompare(nameOf(y), I18N.locale()));
-  // «Este panel» sale siempre que el altavoz esté activado (web → Sonido → Altavoz), aunque Music Assistant
-  // aún no haya creado su reproductor en Home Assistant. Se guarda como '@panel'.
+  // “This panel” always shows when the speaker is on (web → Sound → Speaker), even if Music Assistant
+  // has not created its player in Home Assistant yet. It is saved as '@panel'.
   const own = speakerEntity();
   if (own && players.includes(own)) players.splice(players.indexOf(own), 1);
   const ownSub = !own ? I18N.t('panel.ambient.not_music_assistant') : S.states[own].state === 'unavailable' ? I18N.t('panel.states.unavailable') : I18N.t('panel.ambient.screen_s_speaker');
@@ -2921,7 +2921,7 @@ function speakerCard() {
   const options = ownRow.concat(players.map((id) => [id,
     nameOf(id), iconOf(S.states[id]), S.states[id].state === 'unavailable' ? I18N.t('panel.states.unavailable') : (S.areaById[areaOf(id)] || {}).name || '']));
   const box = h('div', { class: 'amb-list' });
-  // Lista con prioridad: sale el primero que esté sonando; si no suena ninguno, el primero en pausa; si no, el primero
+  // Priority list: the first one playing shows; if none plays, the first paused; otherwise, the first
   const cur = () => (SET.ambientSpeakers || (SET.defaultSpeaker ? [SET.defaultSpeaker] : [])).map((x) => (x === own && own ? '@panel' : x));
   const save = (arr) => { SET.ambientSpeakers = arr; SET.defaultSpeaker = arr[0] || ''; saveSettings(); paint(); renderAmbientPlayer(); };
   const paint = () => {
@@ -2945,7 +2945,7 @@ function speakerCard() {
     h('div', { class: 'muted small' }, I18N.t('panel.settings.its_controls_appear')),
     box);
 }
-/** Ajustes: qué burbujas salen en el modo ambiente y en Inicio, y en qué orden. */
+/** Settings: which bubbles show in ambient mode and on Home, and in what order. */
 function bulletsCard() {
   const list = h('div', { class: 'amb-list' });
   const save = (arr) => { SET.bullets = arr; saveSettings(); paint(); };
@@ -2970,12 +2970,12 @@ function bulletsCard() {
     h('div', { class: 'btn-row' }, h('button', { class: 'big-action', onclick: () => showAmbient() }, icon('mdi-image-filter-hdr'), I18N.t('panel.settings.show_ambient_mode'))));
 }
 
-// Fondo: fotos (sueltas o de un álbum de Immich) o degradado según la hora del día
-/* ---------- Fotos del modo ambiente ----------
- * En config.js → ambientPhotos se pueden poner URLs de fotos sueltas o un álbum de Immich, que se detecta solo:
- *   https://immich.casa/share/<clave>   enlace compartido (no necesita clave de API)
- *   https://immich.casa/s/<nombre>      enlace compartido con nombre personalizado
- *   https://immich.casa/albums/<id>     álbum privado (necesita immichApiKey en config.js)
+// Background: photos (single ones or from an Immich album) or a gradient for the time of day
+/* ---------- Ambient mode photos ----------
+ * In config.js → ambientPhotos you can put URLs of single photos or an Immich album, which is detected by itself:
+ *   https://immich.home/share/<key>   shared link (no API key needed)
+ *   https://immich.home/s/<name>      shared link with a custom name
+ *   https://immich.home/albums/<id>   private album (needs immichApiKey in config.js)
  */
 const IMMICH_SHARED = [
   [/^(https?:\/\/\S+?)\/share\/([\w-]+)\/?(\?.*)?$/, 'key'],
@@ -2984,7 +2984,7 @@ const IMMICH_SHARED = [
 const IMMICH_ALBUM = /^(https?:\/\/\S+?)\/albums\/([0-9a-f-]{36})/;
 let PHOTOS = [], photosAt = 0, photoIdx = 0;
 
-/** Lee JSON de Immich. Si el navegador lo bloquea por CORS (proxy sin cabeceras), lo pide al ayudante de la Pi. */
+/** Reads JSON from Immich. If the browser blocks it by CORS (proxy without headers), it asks the Pi's helper. */
 async function getJSON(url, headers) {
   let r;
   try { r = await fetch(url, { headers }); }
@@ -2997,11 +2997,11 @@ async function getJSON(url, headers) {
   return r.json();
 }
 const monthYear = (iso) => { const d = new Date(iso); return isNaN(d) ? '' : cap(d.toLocaleDateString(I18N.locale(), { month: 'long', year: 'numeric' })); };
-// size=preview: ~1440 px, suficiente para la pantalla y ligero para la Pi. c = thumbhash (como la web de Immich, para la caché)
+// size=preview: ~1440 px, enough for the screen and light for the Pi. c = thumbhash (like the Immich web, for the cache)
 const immichUrl = (base, id, thumbhash, auth) =>
   `${base}/api/assets/${id}/thumbnail?size=preview&edited=true${thumbhash ? '&c=' + encodeURIComponent(thumbhash) : ''}&${auth}`;
 
-/** Fotos de un álbum. Immich 1.x/2.x las trae en /albums/<id>; Immich 3 las da por la línea de tiempo (por meses). */
+/** Photos of an album. Immich 1.x/2.x has them in /albums/<id>; Immich 3 gives them through the timeline (by month). */
 async function immichAlbumPhotos(base, albumId, auth, headers) {
   const album = await getJSON(`${base}/api/albums/${albumId}?${auth}`, headers);
   if (album.assets && album.assets.length) {
@@ -3023,13 +3023,13 @@ async function immichAlbumPhotos(base, albumId, auth, headers) {
   }
   return Object.assign(out, { albumName: album.albumName || '' });
 }
-/* ---------- Conectores de fotos ----------
- * Cada fuente es { id, type, name, enabled, …su configuración } y se guarda en photoSources (web de configuración).
- *   immich   { url, apiKey? }   enlace compartido de un álbum, o álbum privado (…/albums/<id>) con clave API
- *   google   { url }            enlace de un álbum compartido de Google Fotos (lo lee el ayudante de la Pi)
- *   ha_media { folder }         carpeta de «Medios» de Home Assistant (solo lectura)
- *   urls     { urls: [] }       fotos sueltas por URL
- * Sin photoSources se usa el antiguo ambientPhotos (y se detectan los enlaces de Immich). */
+/* ---------- Photo connectors ----------
+ * Each source is { id, type, name, enabled, …its configuration } and is saved in photoSources (configuration web).
+ *   immich   { url, apiKey? }   shared link of an album, or private album (…/albums/<id>) with an API key
+ *   google   { url }            link of a Google Photos shared album (the Pi's helper reads it)
+ *   ha_media { folder }         Home Assistant “Media” folder (read only)
+ *   urls     { urls: [] }       single photos by URL
+ * Without photoSources the old ambientPhotos is used (and Immich links are detected). */
 const isImmichUrl = (u) => IMMICH_SHARED.some(([re]) => re.test(u)) || IMMICH_ALBUM.test(u);
 function photoSources() {
   if (Array.isArray(CFG.photoSources)) return CFG.photoSources.filter((x) => x && x.enabled !== false);
@@ -3073,7 +3073,7 @@ const CONNECTORS = {
       catch (e) { throw new Error(I18N.t('panel.photos.google_needs_helper')); }
       const j = await r.json();
       if (!r.ok) throw new Error(j.error || 'HTTP ' + r.status);
-      // =w1920-h1080: Google sirve la foto ya reducida al tamaño de pantalla
+      // =w1920-h1080: Google serves the photo already resized to the screen size
       return { photos: j.photos.map((u) => ({ url: u + '=w1920-h1080', caption: '' })), name: j.title };
     },
   },
@@ -3119,7 +3119,7 @@ async function loadPhotos() {
   }
   for (let i = out.length - 1; i > 0; i--) { const j = Math.floor(Math.random() * (i + 1)); [out[i], out[j]] = [out[j], out[i]]; }
   PHOTOS = out; photoIdx = 0; PHOTO_STATS = stats;
-  // Si no se pudo cargar (p. ej. el ayudante aún arrancando), se reintenta en 30 s en vez de en 1 h
+  // If it could not load (e.g. the helper still starting), retry in 30 s instead of 1 h
   if (!out.length && photoSources().length) photosAt = Date.now() - 3600e3 + 30e3;
   $('#amb-next').classList.toggle('hidden', !photosOn());
 }
@@ -3132,28 +3132,28 @@ const GRADIENTS = [
   [9, 'linear-gradient(160deg,#4facfe,#2b5876 70%,#1a2a44)'], [18, 'linear-gradient(160deg,#f7971e,#c0392b 50%,#3a1c4a)'],
   [21, 'linear-gradient(160deg,#141e30,#243b55)'],
 ];
-// los mismos momentos del día, en claro (tema claro y sin fotos)
+// the same moments of the day, in light (light theme and no photos)
 const GRADIENTS_LIGHT = [
   [0, 'linear-gradient(160deg,#e6e9f5,#d9def0 55%,#e3dbef)'], [6, 'linear-gradient(160deg,#fff1e4,#fcdcd6 60%,#efd9ee)'],
   [9, 'linear-gradient(160deg,#e7f3ff,#d6e8fb 60%,#e4eefa)'], [18, 'linear-gradient(160deg,#fff0dc,#fbd9cc 55%,#ead7ee)'],
   [21, 'linear-gradient(160deg,#e4e8f2,#d6dcea)'],
 ];
-/** Una capa del fondo: foto (rellenando, entera con fondo difuminado o entera) o nada. */
+/** A background layer: photo (filling, whole with a blurred background or whole) or nothing. */
 function setPhotoLayer(el, url, fit) {
   const v = url ? `url("${url}")` : '';
   el.style.backgroundImage = '';
   el.querySelector('.amb-fg').style.backgroundImage = v;
   el.querySelector('.amb-blur').style.backgroundImage = v;
-  el.dataset.srcfit = fit || '';                       // modo propio de la fuente (vacío = el general)
+  el.dataset.srcfit = fit || '';                       // the source's own mode (empty = the general one)
   el.dataset.fit = fit || SET.photos.fit || 'blur';
 }
-/** Al cambiar el modo general en Ajustes se aplica a la foto que ya se está viendo (si su fuente no tiene uno propio). */
+/** When the general mode changes in Settings it applies to the photo already showing (if its source has no mode of its own). */
 function refitPhotos() { document.querySelectorAll('.amb-bg').forEach((el) => { el.dataset.fit = el.dataset.srcfit || SET.photos.fit || 'blur'; }); }
 
 function nextBackground() {
   clearTimeout(bgTimer);
   bgTimer = setTimeout(nextBackground, (photosOn() ? SET.photos.seconds : photoSources().length && !PHOTOS.length ? 30 : 600) * 1000);
-  if (photoSources().length && Date.now() - photosAt > 3600e3) {   // los álbumes se refrescan cada hora
+  if (photoSources().length && Date.now() - photosAt > 3600e3) {   // albums refresh every hour
     const had = PHOTOS.length;
     loadPhotos().then(() => { if (!had && PHOTOS.length) nextBackground(); });
   }
@@ -3161,24 +3161,24 @@ function nextBackground() {
   const el = $('#amb-bg-' + back), front = $('#amb-bg-' + bgFront), caption = $('#amb-caption');
   $('#amb-next').classList.toggle('hidden', !photosOn());
   if (photosOn()) {
-    if (!S.ambient && front.classList.contains('photo')) return;   // solo se descargan fotos mientras se ven
+    if (!S.ambient && front.classList.contains('photo')) return;   // photos are only downloaded while they are seen
     let tries = 0;
     const show = () => {
       let p = PHOTOS[photoIdx++ % PHOTOS.length];
-      // las que ya fallaron antes no se vuelven a pedir
+      // the ones that failed before are not requested again
       for (let k = 0; p.bad && k < PHOTOS.length; k++) p = PHOTOS[photoIdx++ % PHOTOS.length];
       if (p.bad) return;
       const img = new Image();
       img.onload = () => {
         setPhotoLayer(el, img.src, p.fit);
         el.classList.add('photo', 'visible'); front.classList.remove('visible'); bgFront = back;
-        $('#ambient').classList.remove('lightbg');   // sobre una foto, siempre letras blancas
+        $('#ambient').classList.remove('lightbg');   // over a photo, always white text
         caption.replaceChildren(...[p.caption ? h('div', { class: 'cap-date' }, p.caption) : null,
           p.source ? h('div', { class: 'cap-src' }, p.source) : null].filter(Boolean));
       };
-      // Foto sin versión grande en el servidor (o caída): se salta, hasta 50 seguidas
+      // Photo without a large version on the server (or down): skipped, up to 50 in a row
       img.onerror = () => { p.bad = true; if (++tries < 50) show(); };
-      if (p.ha) {   // Medios de Home Assistant: URL firmada en el momento (solo lectura)
+      if (p.ha) {   // Home Assistant media: URL signed on the spot (read only)
         conn.send({ type: 'media_source/resolve_media', media_content_id: p.ha, expires: 3600 })
           .then((r) => { img.src = absUrl(r.url); }).catch(() => img.onerror());
       } else img.src = p.url;
@@ -3188,7 +3188,7 @@ function nextBackground() {
     caption.replaceChildren();
     const hr = new Date().getHours();
     const g = (themeIsLight() ? GRADIENTS_LIGHT : GRADIENTS).filter(([from]) => hr >= from).pop()[1];
-    $('#ambient').classList.toggle('lightbg', themeIsLight());   // sin foto: letras oscuras sobre fondo claro
+    $('#ambient').classList.toggle('lightbg', themeIsLight());   // no photo: dark text over a light background
     if (front.style.backgroundImage === g && !front.classList.contains('photo')) return;
     setPhotoLayer(el, null);
     el.style.backgroundImage = g;
@@ -3196,7 +3196,7 @@ function nextBackground() {
   }
 }
 
-/* ====================== Reloj y modo noche ====================== */
+/* ====================== Clock and night mode ====================== */
 const toMin = (s) => { const [hh, mm] = s.split(':').map(Number); return hh * 60 + mm; };
 function tick() {
   const now = new Date();
@@ -3207,12 +3207,12 @@ function tick() {
   const wid = weatherId();
   $('#weather-mini').replaceChildren(...(wid ? [icon(wIcon(S.states[wid].state)), ' ' + fmtNum(S.states[wid].attributes.temperature) + '°'] : []));
   checkAlarms(now);
-  screenTick();   // brillo, modo noche y apagado (con un aviso abierto, pantalla encendida y a tope)
+  screenTick();   // brightness, night mode and turning off (with a notification open, screen on and at full)
 }
 
-/* ====================== Web de configuración (ayudante de la Pi) ======================
- * La web http://<pi>.local:8080 guarda la configuración en el ayudante. El panel le pregunta cada 5 s:
- * si la versión cambia se recarga, y ejecuta las órdenes del «mando a distancia». */
+/* ====================== Configuration web (the Pi's helper) ======================
+ * The web http://<pi>.local:8080 saves the configuration in the helper. The panel asks it every 5 s:
+ * if the version changes it reloads, and it runs the “remote control” commands. */
 const REMOTE = { version: window.PANEL_HELPER ? window.PANEL_HELPER.version : null, reload: window.PANEL_HELPER ? window.PANEL_HELPER.reload || 0 : 0,
   command: null, seeded: false };
 const SEED_KEYS = ['haUrl', 'token', 'ambientPhotos', 'immichApiKey', 'favorites', 'hiddenEntities', 'weatherEntity',
@@ -3221,19 +3221,19 @@ async function seedHelper() {
   if (!window.PANEL_HELPER || REMOTE.seeded || NEEDS_SETUP) return;
   REMOTE.seeded = true;
   const h = window.PANEL_HELPER;
-  if (h.panel && h.panel.haUrl && h.settings && Object.keys(h.settings).length) return;   // ya tiene todo
+  if (h.panel && h.panel.haUrl && h.settings && Object.keys(h.settings).length) return;   // it already has everything
   const panel = {};
   for (const k of SEED_KEYS) if (CFG[k] !== undefined && CFG[k] !== '') panel[k] = CFG[k];
   try {
     const r = await fetch(HELPER + '/seed', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ panel, settings: SET }) });
     REMOTE.version = (await r.json()).version;
-  } catch (e) { /* sin ayudante */ }
+  } catch (e) { /* no helper */ }
 }
-/** Ajustes nuevos guardados desde la web: se aplican y se repinta lo que se ve, sin recargar el panel. */
+/** New settings saved from the web: they are applied and what shows repaints, without reloading the panel. */
 async function applyRemoteSettings() {
   let j;
   try { j = await (await fetch(HELPER + '/config', { cache: 'no-store' })).json(); } catch (e) { return; }
-  if (j.speaker && !SPK) { location.reload(); return; }        // el altavoz se acaba de activar: hay que arrancar con él
+  if (j.speaker && !SPK) { location.reload(); return; }        // the speaker was just turned on: it has to start with it
   if (SPK && j.speaker) Object.assign(SPK, j.speaker);
   const oldPhotos = JSON.stringify(SET.photos);
   SET = mergeSettings(j.settings || {});
@@ -3242,10 +3242,10 @@ async function applyRemoteSettings() {
   renderRail();
   if (!S.sheetId) render();
   renderAmbientChips();
-  if (SH.open) { SH.open = false; shade(true); }   // el panel de acceso rápido, con los accesos y colores nuevos
+  if (SH.open) { SH.open = false; shade(true); }   // the quick access panel, with the new quick access and colours
 }
-/* Estado del panel para Home Assistant (por MQTT, en el ayudante): se manda al ayudante cuando cambia.
- * El último toque, como mucho cada 30 s (para no estar mandándolo con cada dedo). */
+/* Panel state for Home Assistant (over MQTT, in the helper): sent to the helper when it changes.
+ * The last touch, at most every 30 s (so it is not sent with every finger). */
 let LAST_TOUCH = 0;
 const PSTATE = { sent: '', touch: 0 };
 function reportState() {
@@ -3267,17 +3267,17 @@ function runRemote(type, value) {
 }
 async function pollHelper() {
   if (!window.PANEL_HELPER) {
-    // En la Pi: si el ayudante arrancó después que el panel, recargar para usar su configuración
+    // On the Pi: if the helper started after the panel, reload to use its configuration
     if (location.protocol === 'file:') fetch(HELPER + '/status', { cache: 'no-store' }).then(() => location.reload()).catch(() => {});
     return;
   }
-  if (!SCREEN.helper) helperInit();     // por si al arrancar no respondió a tiempo
+  if (!SCREEN.helper) helperInit();     // in case it did not answer in time at start
   try {
     const r = await (await fetch(HELPER + '/poll', { cache: 'no-store' })).json();
-    if (REMOTE.command === null) REMOTE.command = r.command.id;          // al arrancar no se repiten órdenes viejas
+    if (REMOTE.command === null) REMOTE.command = r.command.id;          // old commands are not repeated at start
     else if (r.command.id !== REMOTE.command) { REMOTE.command = r.command.id; runRemote(r.command.type, r.command.value); }
-    // Cambiaron algo desde la web: si fue la conexión, las entidades, las fotos o el código, se recarga;
-    // si solo fueron ajustes (brillo, tema, sonido, burbujas, pestañas…), se aplican al momento sin recargar
+    // Something changed from the web: if it was the connection, the entities, the photos or the code, it reloads;
+    // if it was only settings (brightness, theme, sound, bubbles, tabs…), they apply at once without reloading
     if (REMOTE.version !== null && r.version !== REMOTE.version) {
       if ((r.reload || 0) !== REMOTE.reload) { location.reload(); return; }
       applyRemoteSettings();
@@ -3286,12 +3286,12 @@ async function pollHelper() {
     showPin(r.pin || null);
     if (r.update && r.update !== UPDATE_SEEN) toast(`Hay una actualización del panel: web de configuración → Actualizaciones`);
     UPDATE_SEEN = r.update || 0;
-  } catch (e) { /* ayudante reiniciándose */ }
+  } catch (e) { /* helper restarting */ }
 }
 let UPDATE_SEEN = 0;
 
-/* Código para emparejar el altavoz: Music Assistant lo pide al añadirlo; sale en grande hasta que se empareja.
- * Con la ✕ se esconde (vuelve a salir si cambia el código). */
+/* Code to pair the speaker: Music Assistant asks for it when adding it; it shows big until it is paired.
+ * The ✕ hides it (it shows again if the code changes). */
 const PIN = { code: null, hidden: null };
 function showPin(code) {
   const box = $('#pin');
@@ -3321,7 +3321,7 @@ async function loadAll() {
     safe(conn.send({ type: 'config/entity_registry/list' })),
     conn.send({ type: 'get_config' }).catch(() => ({})),
   ]);
-  if (haConf && haConf.language) { HA_LANG = haConf.language; setLanguage(); }   // «Automático» = el idioma de Home Assistant
+  if (haConf && haConf.language) { HA_LANG = haConf.language; setLanguage(); }   // “Automatic” = Home Assistant's language
   S.states = {}; S.ents = {}; S.devs = {};
   states.forEach((s) => (S.states[s.entity_id] = s));
   S.areas = areas; S.areaById = Object.fromEntries(areas.map((a) => [a.area_id, a]));
@@ -3341,7 +3341,7 @@ async function loadAll() {
 }
 
 function start() {
-  // El puntero solo se oculta en el kiosko de la Pi (abierto como file://) o con ?kiosk en la URL
+  // The pointer is only hidden in the Pi kiosk (opened as file://) or with ?kiosk in the URL
   if (CFG.hideCursor && (location.protocol === 'file:' || PARAMS.has('kiosk'))) document.body.classList.add('no-cursor');
   conn.onstatus = (ok, msg) => {
     S.connected = ok;
@@ -3353,12 +3353,12 @@ function start() {
 
   $('#view').replaceChildren(empty('mdi-home-assistant', I18N.t('panel.status.connecting')));
   $('#sheet').addEventListener('click', (e) => { if (e.target.id === 'sheet') closeSheet(); });
-  $('#bell').addEventListener('click', () => shade(true, 0));   // el panel de acceso rápido, en los avisos
+  $('#bell').addEventListener('click', () => shade(true, 0));   // the quick access panel, on the notifications
   shadeGestures();
-  // Tocar el fondo vuelve a Inicio; tocar una burbuja abre su vista (patinete, impresoras, música…)
+  // Tapping the background goes back to Home; tapping a bubble opens its view (scooter, printers, music…)
   $('#ambient').addEventListener('pointerdown', (e) => {
     e.preventDefault();
-    if (e.clientY <= shadeEdge) return;   // ahí empieza el panel de acceso rápido: no se sale del modo ambiente
+    if (e.clientY <= shadeEdge) return;   // that is where the quick access panel starts: it does not leave ambient mode
     if (e.target.closest('#amb-next')) { e.stopPropagation(); nextBackground(); resetIdle(); return; }
     const act = e.target.closest('[data-act]');
     if (act) { e.stopPropagation(); ambientPlayerAction(act.dataset.act); resetIdle(); return; }
@@ -3372,11 +3372,11 @@ function start() {
   document.addEventListener('pointerdown', () => { SCREEN.lastTouch = LAST_TOUCH = Date.now(); resetIdle(); }, true);
   $('#blackout').addEventListener('pointerdown', (e) => { e.preventDefault(); e.stopPropagation(); swallowTouch(); wakeScreen(); });
   helperInit();
-  setInterval(pollHelper, 1000);   // órdenes del mando y de Home Assistant, al momento
+  setInterval(pollHelper, 1000);   // commands from the remote and from Home Assistant, at once
 
   tick(); setInterval(tick, 5000);
   if (photoSources().length) loadPhotos().then(nextBackground); else nextBackground();
-  // Refresca textos relativos ("hace 5 min") y el saludo de vez en cuando
+  // Refreshes relative texts ("5 min ago") and the greeting from time to time
   setInterval(() => !S.sheetId && !S.ambient && render(), 5 * 60e3);
   if (PARAMS.has('ambient')) showAmbient(); else resetIdle();
 }
