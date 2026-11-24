@@ -15,6 +15,8 @@ Una pantalla bonita para el escritorio que decora con tus fotos y desde la que v
 - 🔔 **Avisos con botones**: «llaman al telefonillo → Abrir puerta» ([cómo](AVISOS.md)).
 - 🫧 **Toda la información de un solo golpe**: burbujas en la pantalla de inicio y en el modo ambiente con el tiempo, las luces encendidas, el coche cargando, la impresora… Eliges cuáles salen y en qué orden, y puedes crear las tuyas ([cómo configurarlas](SCRIPTS.md)).
 - 🧩 **Pestañas a tu gusto**, con componentes que puedes crear tú ([cómo](SCRIPTS.md#componentes)).
+- ⬇️ **Cortina como en Android**: desliza desde arriba para la música, el volumen, el brillo, los avisos y tus accesos rápidos.
+- 🌗 **Modo claro, oscuro o automático** (claro de día, oscuro de noche) y el **color** que quieras.
 
 ## Qué puedes controlar
 
@@ -38,6 +40,18 @@ Una pantalla bonita para el escritorio que decora con tus fotos y desde la que v
 <p align="center">
   <img src="docs/aviso.png" width="49%"> <img src="docs/aviso-info.png" width="49%">
 </p>
+
+## La cortina
+
+Desliza hacia abajo desde el borde de arriba, en cualquier pantalla (también en el modo ambiente y en «Sonando»). Tiene tres ventanas que se cambian deslizando de lado o con sus pestañas:
+
+| ← Avisos | Controles (sale al abrir) | Accesos rápidos → |
+|---|---|---|
+| Los últimos avisos. Tocar uno lo vuelve a abrir; la × lo quita. Un puntito en la campana marca los que no has visto. | Hora, apagar la pantalla, ⚙ Ajustes, la música que suena y las barras de volumen, avisos y brillo. | Luces, enchufes, escenas… los que elijas («Editar»). Un toque los enciende o apaga; mantener abre su detalle. |
+
+La campana de la barra de arriba abre la cortina directamente en los avisos. Se cierra deslizando hacia arriba o tocando fuera.
+
+**Volumen:** si cambias el volumen del panel desde Home Assistant o Music Assistant, sale arriba una burbuja con el número. En «Sonando», si lo que suena es **otro** altavoz, abajo a la derecha tienes un botón con su volumen.
 
 ## Qué necesitas
 
@@ -69,24 +83,27 @@ Una pantalla bonita para el escritorio que decora con tus fotos y desde la que v
 
 ## Ajustes
 
-Se cambian en la cortina (desliza hacia abajo desde el borde de arriba → ⚙) o desde la web del móvil:
+En la pantalla: cortina → ⚙. Desde el móvil: la web de configuración (el QR del arranque), ordenada en pestañas:
 
 <p align="center"><img src="docs/settings.png" width="60%"></p>
 
-| | |
+| Pestaña de la web | Qué hay |
 |---|---|
-| **Pantalla** | brillo, cuándo pasa a modo ambiente, cuándo se apaga |
-| **Modo noche** | horario, brillo bajo o pantalla apagada |
-| **Fotos** | álbumes, cada cuánto cambian y cómo se ven |
-| **Modo ambiente** | qué burbujas salen y en qué orden, altavoz por defecto |
-| **Avisos y alarmas** | sonido, volumen, alarmas con hora y días |
-| **Qué se ve** | favoritos, ocultar dispositivos, enchufes de las impresoras |
-| **Red** | WiFi, IP y nombre del panel |
-| **Altavoz** | nombre, salida de audio y qué altavoces abren «Sonando» |
-| **Asistente de voz** | qué satélite de Assist se muestra y su animación |
-| **Actualizaciones** | avisar o actualizar sola a una hora |
+| 🏠 **General** | mando a distancia, Home Assistant, favoritos y entidades ocultas, accesos rápidos de la cortina |
+| 🖥️ **Pantalla** | brillo, tema (oscuro, claro o automático), color, cuándo pasa a modo ambiente y cuándo se apaga, modo noche |
+| 🖼️ **Modo ambiente** | altavoces por prioridad, fotos (álbumes, cada cuánto cambian, cómo se ven) y burbujas |
+| 🔊 **Sonido** | por dónde suena la Pi y su volumen (el límite), música, avisos y alarmas, altavoz de Music Assistant, «Sonando», voz en la pantalla y asistente de voz |
+| 🗂️ **Pestañas** | las pestañas del panel y qué lleva cada una |
+| 🧩 **Componentes** | crear y editar componentes |
+| 🛠️ **Sistema** | red (WiFi, IP, nombre) y actualizaciones |
 
-**Asistente de voz:** con un micro USB, `bash ~/ha-panel/setup-voz.sh` convierte la Pi en satélite de Assist («Okay Nabu»). En Home Assistant necesitas un motor de voz a texto (Speech-to-Phrase o Whisper) y añadir la Pi en la integración **Wyoming**. Luego elígela en Ajustes → Asistente de voz y saldrá una barra encima de la pantalla mientras escucha y contesta.
+Todo se guarda con **Guardar**, abajo. La red y los botones del mando a distancia son acciones al momento.
+
+**Altavoces por prioridad:** tanto el reproductor del modo ambiente como la pantalla «Sonando» usan una lista ordenada de altavoces («Este panel» incluido):
+- **Modo ambiente:** sale el primero de la lista que esté sonando; si no suena ninguno, el primero en pausa y, si no, el primero.
+- **«Sonando»:** se abre al empezar a sonar uno de la lista. Si ya se ve otro, cambia solo si el nuevo está más arriba o si el que se ve no suena. Al parar, pasa al siguiente que siga sonando o se cierra sola (tiempo a elegir).
+
+**Asistente de voz:** con un micro USB, `bash ~/ha-panel/setup-voz.sh` convierte la Pi en satélite de Assist («Okay Nabu»). En Home Assistant necesitas un motor de voz a texto (Speech-to-Phrase o Whisper) y añadir la Pi en la integración **Wyoming**. Luego elígela en Ajustes → Asistente de voz (o en la web → Sonido → Voz en la pantalla) y saldrá una barra encima de la pantalla mientras escucha y contesta.
 
 **Altavoz:** si no lo instalaste con `install.sh`, lanza `bash ~/ha-panel/setup-sendspin.sh` y actívalo en la web → Sonido → Altavoz.
 

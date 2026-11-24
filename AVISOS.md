@@ -14,7 +14,7 @@ Cualquier automatización de Home Assistant puede mostrar un aviso en el panel l
 | `aviso` | Ventana en el centro. Saca el panel del modo ambiente y quita el modo noche | "Ding-dong" cada 6 s durante 30 s | A los 120 s |
 | `critico` | Pantalla en rojo parpadeando | Pitido continuo hasta cerrarlo | No: hay que tocarlo |
 
-Mientras hay un aviso abierto, el panel no pasa al modo ambiente y la pantalla no se oscurece. Los últimos 30 avisos quedan en la **campana** de la barra superior.
+Mientras hay un aviso abierto, el panel no pasa al modo ambiente y la pantalla no se oscurece. Los últimos 30 avisos quedan en la **cortina**, ventana **Avisos** (desliza desde arriba o toca la campana de la barra superior): tocar uno lo vuelve a abrir con sus botones y la × lo quita.
 
 ## Datos del evento
 

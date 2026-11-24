@@ -6,7 +6,7 @@ Las burbujas y los componentes de las pestañas (botones, tarjetas, tiempo…) s
 - **Dónde:** en la web de configuración, pestaña **🖼️ Modo ambiente** (tarjeta 🫧 Burbujas). Cada burbuja tiene un título; al tocarla se despliega su **funcionamiento** (el código), que puedes editar, **probar** con los datos actuales de tu casa, descargar o, en las de serie, restaurar.
 - **Nuevas:** pon un título y «Crear», tráela de una URL o sube un archivo `.js`. Después pulsa **Guardar**.
 - **Cómo funcionan:** se guardan en la Pi; el panel las descarga y las ejecuta **en el navegador**. Para pintar solo leen; a Home Assistant solo se manda algo cuando tocas la burbuja o el botón (`onTap`).
-- **Componentes:** en **🧩 Componentes** (los de serie: `boton.js`, `informacion.js`, `lista.js`, `tarjeta.js`, `tarjeta-tiempo.js`, `tarjeta-vehiculo.js`, `saludo.js`, `escenas.js`, `impresora.js`, `reproductor.js`, `camara.js`, `deslizador.js` y `resumen-ejemplo.js`). Se colocan en **🗂️ Pantallas**. Ver [Componentes](#componentes).
+- **Componentes:** en **🧩 Componentes** (los de serie: `boton.js`, `informacion.js`, `lista.js`, `tarjeta.js`, `tarjeta-tiempo.js`, `tarjeta-vehiculo.js`, `saludo.js`, `escenas.js`, `impresora.js`, `reproductor.js`, `camara.js`, `deslizador.js` y `resumen-ejemplo.js`). Se colocan en **🗂️ Pestañas**. Ver [Componentes](#componentes).
 
 ## Forma de un script
 
@@ -155,22 +155,22 @@ actions: { apagar: (ha, screen) => ha.call('light.turn_off', { entity_id: 'all' 
 Para pintar, además de lo de siempre: `ha.mediaOrder(ids)` (reproductores sin repetidos, lo que suena primero), `ha.printers()` (cada impresora con su estado y sus entidades: `e.progress`, `e.camera`, `e.pause`…), `ha.picture(id)` (dirección de su imagen: carátula, miniatura…), `screen.favorites` (Favoritos de los Ajustes), `ha.text(id)` (estado traducido: «Encendido», «21,5 °C»), `ha.icon(id)`, `ha.active(id)`, `ha.color(id)` (`{ bg, ink }`: color real de una luz encendida), `ha.forecast(id)` (previsión diaria).
 
 - **Dónde:** **🧩 Componentes**. Cada uno se despliega con «Probar con estos ajustes», cómo se ve y su código. Para crear uno: desde cero, copiando otro, de una URL o subiendo un `.js`. Se guardan en la Pi y el panel los descarga solo.
-- **Colocarlos:** **🗂️ Pantallas → + Añadir**. Cada sitio donde lo pones tiene sus propios ajustes y su ancho (completo, 3/4, 2/3, 1/2, 1/3, 1/4).
+- **Colocarlos:** **🗂️ Pestañas → + Añadir**. Cada sitio donde lo pones tiene sus propios ajustes y su ancho (completo, 3/4, 2/3, 1/2, 1/3, 1/4).
 - Campos de más: `icon` (un icono `mdi:…`) y `action` (qué hacer al pulsar).
 - `refresh: 60`: se repinta solo cada esos segundos (para horas y fechas), aunque no cambie nada de su `watch`.
 
-## Pantallas
+## Pestañas
 
-En **🗂️ Pantallas** eliges las pestañas de la barra lateral y, en cada una, una rejilla con lo que lleva: componentes, filas de burbujas, dispositivos o una cámara. Toca una tarjeta para cambiar su ancho, sus ajustes, moverla, duplicarla o borrarla.
+En **🗂️ Pestañas** eliges las pestañas de la barra lateral y, en cada una, una rejilla con lo que lleva: componentes, filas de burbujas, dispositivos o una cámara. Toca una tarjeta para cambiar su ancho, sus ajustes, moverla, duplicarla o borrarla.
 
 Las pestañas de serie (Inicio, Casa, Sensores, Multimedia, Impresoras y Patinete) se montan con tus datos y con los componentes de siempre, uno por cosa:
 Casa = una **Tarjeta** por zona con un **Botón** por aparato; Sensores = una Tarjeta por zona con una **Información** por sensor; Multimedia = un **Reproductor** y una **Cámara** por cada uno; Impresoras = una **Impresora** por cada una; Patinete = **Vehículo** y Tarjetas con Información, **Deslizador** y Botones; Inicio = Saludo, burbujas, Tiempo, Vehículo, Escenas y una Tarjeta de Favoritos.
 
-Las pestañas antiguas («vistas del panel») se convierten así al abrir **🗂️ Pantallas**; pulsa **Guardar** para quedártelas y cambiar lo que quieras. Hasta entonces, el panel las monta igual por su cuenta.
+Las pestañas antiguas («vistas del panel») se convierten así al abrir **🗂️ Pestañas**; pulsa **Guardar** para quedártelas y cambiar lo que quieras. Hasta entonces, el panel las monta igual por su cuenta.
 
 ## Mostrar solo si…
 
-Cada tarjeta colocada (en **🗂️ Pantallas**, al tocarla) puede llevar condiciones para aparecer o no:
+Cada tarjeta colocada (en **🗂️ Pestañas**, al tocarla) puede llevar condiciones para aparecer o no:
 
 | Condición | Ejemplo |
 |---|---|
