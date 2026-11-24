@@ -764,8 +764,6 @@ go = 'home' | 'rooms' | 'sensors' | 'media' | 'printers' | 'scooter' | 'settings
 </div>
 
 <script src="/translations/i18n.js"></script>
-<script src="/translations/es.js"></script>
-<script src="/translations/en.js"></script>
 <script src="/lib/modulos.js"></script>
 <script src="/lib/componentes.js"></script>
 <script>
@@ -1879,7 +1877,7 @@ function fill(cfg) {
   Object.keys(lists).forEach(renderChips);
   $('#theme').value = a.theme || 'oscuro';
   const ls = $('#language');
-  if (ls.options.length === 1) for (const [code, name] of Object.entries(I18N.langs)) ls.append(new Option(name, code));   // translations/*.js
+  if (ls.options.length === 1) for (const [code, name] of Object.entries(I18N.langs)) ls.append(new Option(name, code));   // translations/languages.json
   ls.value = a.language || 'auto';
   webLanguage(a.language);
   accent = a.accent || 'azul'; renderAccents();

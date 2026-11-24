@@ -1465,11 +1465,24 @@ class Base(BaseHTTPRequestHandler):
         self.end_headers()
         self.wfile.write(data)
 
+    def _translations(self, path):
+        data = read_translation(path)
+        return self._json(200, data) if data is not None else self._json(404, {'error': 'no existe'})
+
     def _body(self):
         n = int(self.headers.get('Content-Length') or 0)
         if n > 256 * 1024:
             raise ValueError('demasiado grande')
         return json.loads(self.rfile.read(n) or b'{}') if n else {}
+
+
+def read_translation(path):
+    """translations/xx.json (los idiomas del panel y de la web), o None si no existe o está mal escrito."""
+    try:
+        return json.loads((HERE / path.lstrip('/')).read_text(encoding='utf-8'))
+    except (OSError, ValueError) as e:
+        print('translations:', path, e, flush=True)
+        return None
 
 
 class LocalHandler(Base):
@@ -1508,6 +1521,8 @@ class LocalHandler(Base):
                                         'web': WEB_PORT, 'password': PASS_FILE.exists()})
             return self._json(200, {'backlight': bool(BACKLIGHT), 'power': bool(BACKLIGHT or outs), 'outputs': outs,
                                     'web': WEB_PORT, 'password': PASS_FILE.exists()})
+        if re.fullmatch(r'/translations/[a-z0-9_-]+\.json', u.path):
+            return self._translations(u.path)
         if u.path == '/config':
             return self._json(200, dict(load_config(), modulos=list_scripts(), altavoz=speaker_panel()))
         if u.path == '/red':
@@ -1640,7 +1655,9 @@ class WebHandler(Base):
             self.wfile.write(data)
             return
         # mismo código que usa el panel, para probar burbujas y componentes en la web
-        if u.path in ('/lib/modulos.js', '/lib/componentes.js') or re.fullmatch(r'/translations/[a-z0-9_-]+\.js', u.path):
+        if re.fullmatch(r'/translations/[a-z0-9_-]+\.json', u.path):
+            return self._translations(u.path)
+        if u.path in ('/lib/modulos.js', '/lib/componentes.js', '/translations/i18n.js'):
             data = (HERE / u.path.lstrip('/')).read_bytes()
             self.send_response(200)
             self.send_header('Content-Type', ('text/css' if u.path.endswith('.css') else 'text/javascript') + '; charset=utf-8')

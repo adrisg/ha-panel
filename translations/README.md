@@ -4,16 +4,34 @@ Los textos del panel y de la web de configuración están en español en el cód
 
 | Archivo | Qué es |
 |---|---|
-| `i18n.js` | El motor: `t('Texto')` devuelve el texto en el idioma elegido. |
-| `es.js` | Español. Solo pone nombre al idioma, porque los textos ya están en español. |
-| `en.js` | Inglés: una parte para el panel y otra para la web. |
+| `languages.json` | La lista de idiomas: `{"es": "Español", "en": "English"}` |
+| `es.json` | Español. No tiene textos, porque ya están en español en el código |
+| `en.json` | Inglés |
+| `i18n.js` | El motor: carga el JSON del idioma elegido y `t('Texto')` devuelve la traducción |
+
+## Formato de un idioma
+
+```json
+{
+  "name": "English",
+  "locale": "en-GB",
+  "texts": {
+    "panel": { "states": { "Encendido": "On" } },
+    "web": { "general": { "Guardar": "Save" } }
+  },
+  "patterns": {
+    "panel": [["^(\\d+) encendidas?$", "$1 on"], ["^(-?[\\d.,]+°) (.+)$", "$1 {t:$2}"]]
+  }
+}
+```
+
+- **`texts`**: las claves son los textos en español. Los grupos (`panel`, `states`…) solo sirven para ordenar y se pueden anidar como quieras.
+- **`patterns`**: para textos con números o nombres. Cada patrón es `[expresión regular, reemplazo]` y, si hace falta, un tercer valor con las banderas (`"u"`). En el reemplazo, `$1` pone el trozo tal cual y `{t:$1}` lo pone traducido.
+- **`locale`**: el formato de fechas y números.
 
 ## Añadir un idioma
 
-1. Copia `en.js` como `xx.js`, donde `xx` es el código del idioma (`fr`, `de`…), y traduce los valores. Las claves son los textos en español; no las cambies.
-2. En el último bloque, cambia el nombre y el formato de fechas y números: `{ name: 'Français', locale: 'fr-FR' }`.
-3. Añade `<script src="translations/xx.js"></script>` en `index.html` y `<script src="/translations/xx.js"></script>` en `config.html`, detrás de `en.js`.
+1. Copia `en.json` como `xx.json`, donde `xx` es el código del idioma (`fr`, `de`…). Traduce los valores y cambia `name` y `locale`.
+2. Añádelo a `languages.json`: `"fr": "Français"`.
 
-El idioma nuevo aparece solo en la lista de idiomas del panel y de la web. Los textos sin traducir salen en español.
-
-**Textos con números o nombres:** se traducen con patrones, por ejemplo `[/^(\d+) encendidas?$/, '$1 allumées']`.
+El idioma aparece solo en la lista de idiomas del panel y de la web. Lo que no esté traducido sale en español.
