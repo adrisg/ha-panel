@@ -129,7 +129,9 @@
         "sure_tap_again": "¿Seguro? Toca otra vez",
         "test_notification": "Aviso de prueba",
         "send_test_notification": "Probar aviso",
-        "test_message": "Así se ven los avisos que lances desde Home Assistant"
+        "test_message": "Así se ven los avisos que lances desde Home Assistant",
+        "more_one": "+{n} aviso más",
+        "more": "+{n} avisos más"
       },
       "sheets": {
         "brightness": "Brillo",
@@ -171,7 +173,9 @@
         "running_prefix": "En marcha: ",
         "cleaning_prefix": "Limpiando: ",
         "no_changes_24h": "Sin cambios en 24 h",
-        "history_unavailable": "Historial no disponible"
+        "history_unavailable": "Historial no disponible",
+        "clean_rooms_one": "Limpiar {n} habitación",
+        "clean_rooms": "Limpiar {n} habitaciones"
       },
       "ambient": {
         "panel": "Este panel",
@@ -355,7 +359,9 @@
         "helper": "Ayudante",
         "software": "Software",
         "snooze_9": "Posponer 9 min",
-        "edit_alarm": "Editar alarma"
+        "edit_alarm": "Editar alarma",
+        "update_available": "Hay una actualización del panel: web de configuración → Actualizaciones",
+        "will_ring": "Sonará {when}"
       },
       "time": {
         "minutes_ago": "hace {n} min",
@@ -388,7 +394,8 @@
         "does_not_exist": "No existe",
         "loading_error_prefix": "Error cargando datos: ",
         "connecting": "Conectando con Home Assistant…",
-        "ha_connection": "Conexión con Home Assistant"
+        "ha_connection": "Conexión con Home Assistant",
+        "not_available": "{name} no está disponible"
       },
       "setup": {
         "title": "Conecta el panel con Home Assistant",
@@ -397,7 +404,8 @@
         "token_where": "El token se crea en Home Assistant → tu perfil → Seguridad → Tokens de acceso de larga duración.",
         "also_phone": "Con el ayudante (panel-helper.py) en marcha también puedes configurarlo desde el móvil.",
         "starts_by_itself": "En cuanto lo guardes, el panel se pondrá en marcha solo.",
-        "then_reload": "Después recarga el panel (o reinicia la Pi)."
+        "then_reload": "Después recarga el panel (o reinicia la Pi).",
+        "token_where_full": "El token se crea en Home Assistant → tu perfil → Seguridad → Tokens de acceso de larga duración."
       },
       "voice": {
         "one_moment": "Un momento…",
@@ -408,7 +416,8 @@
         "not_installed": "Sin instalar: bash ~/ha-panel/scripts/setup-voz.sh",
         "mic_error": "No se pudo leer el micro de este panel.",
         "demo_heard": "Enciende la luz del salón",
-        "demo_reply": "Hecho, he encendido la luz del salón"
+        "demo_reply": "Hecho, he encendido la luz del salón",
+        "assist_text": "Texto de Assist:"
       },
       "photos": {
         "cors": "tu servidor no deja leer el álbum desde el navegador (CORS) y el ayudante de la Pi no está en marcha",
@@ -530,6 +539,10 @@
         "choose_a_weather_entity": "Elige una entidad del tiempo",
         "choose_a_printer": "Elige una impresora",
         "turn_on": "Encender"
+      },
+      "printers": {
+        "finished": "{name}: impresión terminada",
+        "failed": "{name}: error en la impresión"
       }
     },
     "web": {
@@ -547,7 +560,8 @@
         "logged_out": "Sesión cerrada",
         "no_password_yet": "Aún no hay contraseña. En la Pi ejecuta: python3 ~/ha-panel/panel-helper.py --set-password",
         "could_not_connect": "No se pudo conectar con el panel",
-        "page_title": "Panel Hogar · Configuración"
+        "page_title": "Panel Hogar · Configuración",
+        "log_in_again": "Panel actualizado ✓ Vuelve a entrar."
       },
       "tabs": {
         "general": "General",
@@ -622,7 +636,9 @@
         "sure_will_have": "¿Seguro? Habrá que volver a vincularlo",
         "they_appear_quick": "Salen en el panel de acceso rápido (desliza hacia abajo desde arriba → ventana de la derecha). Un toque los enciende o apaga.",
         "saved_but": "Guardado, pero: {errors}",
-        "entities_error_prefix": "No se pudo leer la lista de entidades: "
+        "entities_error_prefix": "No se pudo leer la lista de entidades: ",
+        "entities_to_choose": "{n} entidades de Home Assistant para elegir.",
+        "sent": "Enviado: {what}"
       },
       "screen": {
         "ambient_mode_after": "Modo ambiente tras",
@@ -883,7 +899,16 @@
         "remove_tab": "Quitar pestaña",
         "remove_question": "¿Quitar?",
         "sure_lose_yours": "¿Seguro? Se pierden las tuyas. Toca otra vez",
-        "bubbles_error_prefix": "No se pudo leer el funcionamiento de las burbujas: "
+        "bubbles_error_prefix": "No se pudo leer el funcionamiento de las burbujas: ",
+        "not_exists_name": "{name} (no existe)",
+        "removed_from_rows_one": "(y quitada de {n} fila de burbujas de las pestañas)",
+        "removed_from_rows": "(y quitada de {n} filas de burbujas de las pestañas)",
+        "sure_used": "¿Seguro? Se usa en {n} sitio(s). Toca otra vez",
+        "component_code_in": "Componente {name}: su código está en 🧩 Componentes.",
+        "panel_off_no_areas_text": "⚠ El panel no está encendido: sin zonas.",
+        "deleted_f": "Borrada",
+        "test_ok": "✓ Sin errores · {ms} ms · se actualiza con: {watch}",
+        "watch_any": "cualquier cambio"
       },
       "system": {
         "pi_network": "Red de la Pi",
@@ -934,7 +959,12 @@
         "restarting_new": "Reiniciando el panel con la versión nueva…",
         "updates_error_prefix": "No se pudieron leer las actualizaciones: ",
         "new_version": "Hay versión nueva.",
-        "update_confirm": "¿Actualizar ahora? El panel se reiniciará unos segundos."
+        "update_confirm": "¿Actualizar ahora? El panel se reiniciará unos segundos.",
+        "networks_found": "{n} redes encontradas. Toca una para conectarte.",
+        "connect_confirm": "¿Conectar la Pi a «{ssid}»? Si la contraseña está mal, la Pi puede quedarse sin red hasta volver a conectarla a mano.",
+        "static_ip_confirm": "¿Poner la IP fija {ip}? Después tendrás que entrar en http://{ip}:8080",
+        "rename_confirm": "¿Cambiar el nombre de la Pi a «{name}»?",
+        "sudo_hint": "Para que pueda instalar los paquetes del sistema que necesite una versión nueva, lanza esto una vez en la Pi:"
       },
       "helper": {
         "invalid_name_lowercase_letters": "nombre no válido: letras minúsculas, números, - y _ (p. ej. temperatura-salon)",

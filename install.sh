@@ -1,15 +1,15 @@
 #!/usr/bin/env bash
-# Instalador completo del Panel Hogar: instala el panel (setup-kiosk.sh) y pregunta si quieres el altavoz
-# de Music Assistant (setup-sendspin.sh) y el asistente de voz (setup-voice.sh). Al final ofrece reiniciar.
-# Uso (como tu usuario, no con sudo delante):  bash ~/ha-panel/install.sh
+# Full Panel Hogar installer: installs the panel (setup-kiosk.sh) and asks whether you want the Music Assistant
+# speaker (setup-sendspin.sh) and the voice assistant (setup-voice.sh). At the end it offers to restart.
+# Usage (as your user, without sudo in front):  bash ~/ha-panel/install.sh
 set -euo pipefail
 
 PANEL_DIR="$(cd "$(dirname "$0")" && pwd)"
 
-# Pregunta sí/no. $2 = respuesta por defecto (s/n) si solo se pulsa Enter.
+# Yes/no question. $2 = default answer (y/n) if only Enter is pressed.
 ask() {
   local def="$2" hint r
-  [ "$def" = s ] && hint="[S/n]" || hint="[s/N]"
+  [ "$def" = y ] && hint="[Y/n]" || hint="[y/N]"
   read -r -p "$1 $hint " r || r=""
   r="${r:-$def}"
   [[ "$r" =~ ^[sSyY] ]]
@@ -19,35 +19,35 @@ echo "=================== Panel Hogar ==================="
 bash "$PANEL_DIR/scripts/setup-kiosk.sh"
 
 echo
-echo "=================== Altavoz (opcional) ==================="
-echo "La Pi puede sonar como un altavoz más de Music Assistant (Sendspin), por el jack, HDMI o USB."
-if ask "¿Instalar el altavoz?" s; then
+echo "=================== Speaker (optional) ==================="
+echo "The Pi can play as one more Music Assistant speaker (Sendspin), through the jack, HDMI or USB."
+if ask "Install the speaker?" y; then
   bash "$PANEL_DIR/scripts/setup-sendspin.sh"
-  # Si nunca se ha configurado, se deja activado con la salida de audio por defecto
-  # (nombre y salida se cambian en la web: Ajustes → Altavoz)
+  # If it was never set up, it is left on with the default audio output
+  # (name and output are changed in the web: Settings → Speaker)
   SETTINGS="$HOME/.config/panel-hogar/sendspin.json"
   if [ ! -f "$SETTINGS" ]; then
     mkdir -p "$(dirname "$SETTINGS")"
     echo '{"enabled": true}' > "$SETTINGS"
   fi
   systemctl --user enable panel-sendspin.service >/dev/null 2>&1 || true
-  echo "==> Altavoz instalado y activado. Sale en Music Assistant al reiniciar."
+  echo "==> Speaker installed and on. It shows up in Music Assistant after restarting."
 else
-  echo "==> Sin altavoz. Si lo quieres más adelante:  bash $PANEL_DIR/scripts/setup-sendspin.sh"
+  echo "==> No speaker. If you want it later:  bash $PANEL_DIR/scripts/setup-sendspin.sh"
 fi
 
 echo
-echo "=============== Asistente de voz (opcional, en BETA) ==============="
-echo "Con un micro USB, la Pi escucha «Okay Nabu» y habla con Assist de Home Assistant."
-echo "Está en pruebas: funciona, pero puede fallar o cambiar en próximas versiones."
-if arecord -l 2>/dev/null | grep -q '^card' && ask "¿Instalar el asistente de voz (beta)?" n; then
+echo "=============== Voice assistant (optional, in BETA) ==============="
+echo "With a USB mic, the Pi listens for \"Okay Nabu\" and talks to Home Assistant's Assist."
+echo "It is being tested: it works, but it may fail or change in future versions."
+if arecord -l 2>/dev/null | grep -q '^card' && ask "Install the voice assistant (beta)?" n; then
   bash "$PANEL_DIR/scripts/setup-voice.sh"
 else
-  echo "==> Sin asistente de voz. Si lo quieres más adelante:  bash $PANEL_DIR/scripts/setup-voice.sh"
+  echo "==> No voice assistant. If you want it later:  bash $PANEL_DIR/scripts/setup-voice.sh"
 fi
 
 echo
-echo "Listo. Si aún no has puesto Home Assistant, al arrancar sale un QR para configurarlo desde el móvil."
-if ask "¿Reiniciar ahora?" s; then
+echo "Done. If you have not set up Home Assistant yet, a QR shows at start to set it up from your phone."
+if ask "Restart now?" y; then
   sudo reboot
 fi

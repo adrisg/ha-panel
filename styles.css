@@ -1,4 +1,4 @@
-/* Panel Hogar — pensado para Raspberry Pi 2: sin blur, pocas sombras, animaciones solo con opacity/transform */
+/* Panel Hogar — made for a Raspberry Pi 2: no blur, few shadows, animations only with opacity/transform */
 :root {
   --bg: #0e1014;
   --surface: #191c22;
@@ -9,8 +9,8 @@
   --accent: #8ab4f8;
   --danger: #f28b82;
   --ok: #81c995;
-  --accent-ink: #0b1d3a;     /* texto sobre el acento */
-  --accent-soft: #1d3354;    /* fondo de lo elegido */
+  --accent-ink: #0b1d3a;     /* text over the accent */
+  --accent-soft: #1d3354;    /* background of what is chosen */
   --danger-ink: #2b0906;
   --danger-soft: #4a1d1a;
   --ok-soft: #1f3b2a;
@@ -23,7 +23,7 @@
   --radius: 20px;
   --rail: 84px;
 
-  /* Colores de "encendido" por tipo (fondo claro + texto oscuro, estilo Nest) */
+  /* "On" colours per kind (light background + dark text, Nest style) */
   --on-light: #ffe0a3;   --on-light-ink: #3b2a06;
   --on-climate: #ffcba4; --on-climate-ink: #44210a;
   --on-media: #d9c8ff;   --on-media-ink: #261847;
@@ -32,7 +32,7 @@
   --on-default: #c4d9ff; --on-default-ink: #0f2547;
 }
 
-/* Modo claro (Ajustes → Pantalla → Tema). El modo ambiente, «Sonando» y la voz siguen oscuros: van sobre fotos. */
+/* Light mode (Settings → Screen → Theme). Ambient mode, “Now playing” and the voice stay dark: they go over photos. */
 :root.light {
   color-scheme: light;
   --bg: #eef1f6;
@@ -61,7 +61,7 @@
 :root.light .shade-bg { background: rgba(20,24,32,.35); }
 :root.light .banner .mdi { color: var(--accent); }
 
-/* Modo ambiente en claro: con foto se queda igual (letras blancas); sin foto, fondo claro y letras oscuras */
+/* Ambient mode in light: with a photo it stays the same (white text); without a photo, light background and dark text */
 :root.light .ambient.lightbg { color: #1b1e24; }
 :root.light .ambient.lightbg .amb-content, :root.light .ambient.lightbg .amb-caption { text-shadow: none; }
 :root.light .ambient.lightbg .amb-chip { background: rgba(255,255,255,.6); }
@@ -74,7 +74,7 @@
 :root.light .ambient.lightbg .amb-bar { background: rgba(0,0,0,.12); }
 :root.light .ambient.lightbg .amb-bar span { background: #1b1e24; }
 
-/* «Sonando» en claro: la carátula difuminada, aclarada, y los controles oscuros */
+/* “Now playing” in light: the blurred artwork, lightened, and dark controls */
 :root.light .np { background: #f3f5f9; color: #15181d; }
 :root.light .np-bg { filter: blur(60px) brightness(1.2) saturate(1.3); opacity: .5; }
 :root.light .np-close { background: rgba(0,0,0,.08); }
@@ -167,7 +167,7 @@ main { display: flex; flex-direction: column; min-width: 0; min-height: 0; heigh
 .tile.pending .tile-icon { animation: pulse 1s infinite; }
 @keyframes pulse { 50% { opacity: .4; } }
 
-/* Fichas de sensores: valor grande */
+/* Sensor tiles: big value */
 .tile.sensor { flex-direction: column; align-items: flex-start; gap: 6px; min-height: 92px; }
 .tile.sensor .tile-top { display: flex; align-items: center; gap: 8px; color: var(--muted); font-size: 13px; width: 100%; }
 .tile.sensor .tile-top .mdi { font-size: 20px; }
@@ -228,7 +228,7 @@ main { display: flex; flex-direction: column; min-width: 0; min-height: 0; heigh
 .cam img { width: 100%; height: 100%; object-fit: cover; display: block; }
 .cam-label { position: absolute; left: 10px; bottom: 8px; background: rgba(0,0,0,.6); padding: 4px 10px; border-radius: 10px; font-size: 13px; }
 
-/* ---------- Hoja de detalle ---------- */
+/* ---------- Details sheet ---------- */
 .sheet { position: fixed; inset: 0; background: rgba(0,0,0,.6); display: flex; align-items: flex-end; justify-content: center; z-index: 20; }
 .sheet-card {
   width: min(640px, 100%); max-height: 92%; overflow-y: auto;
@@ -276,7 +276,7 @@ main { display: flex; flex-direction: column; min-width: 0; min-height: 0; heigh
 
 /* ---------- Modo ambiente ---------- */
 .ambient {
-  position: fixed; inset: 0; z-index: 30; background: #000; color: #fff; touch-action: none;   /* tocarlo nunca desplaza la vista */
+  position: fixed; inset: 0; z-index: 30; background: #000; color: #fff; touch-action: none;   /* touching it never scrolls the view */
   opacity: 0; pointer-events: none; transition: opacity .8s;
 }
 .ambient.show { opacity: 1; pointer-events: auto; }
@@ -290,7 +290,7 @@ main { display: flex; flex-direction: column; min-width: 0; min-height: 0; heigh
 .amb-chip { display: flex; align-items: center; gap: 8px; padding: 8px 14px; border-radius: 999px; background: rgba(0,0,0,.35); font-size: 17px; }
 .amb-chip .mdi { font-size: 22px; }
 
-/* ---------- Sonando (altavoz del panel) ---------- */
+/* ---------- Now playing (panel speaker) ---------- */
 .np { position: fixed; inset: 0; z-index: 32; background: #000; color: #fff; overflow: hidden; touch-action: none; opacity: 0; pointer-events: none; transition: opacity .6s; }
 .np.show { opacity: 1; pointer-events: auto; }
 .np-bg { position: absolute; inset: -12%; background: center/cover no-repeat; filter: blur(60px) brightness(.42) saturate(1.3); }
@@ -306,11 +306,11 @@ main { display: flex; flex-direction: column; min-width: 0; min-height: 0; heigh
 .np-info { flex: 1; min-width: 0; display: flex; flex-direction: column; align-items: center; text-align: center; gap: 10px; }
 .np-info > * { max-width: 100%; }
 .np-title { font-size: min(7vh, 4.6vw); font-weight: 600; line-height: 1.12; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden;
-  overflow-wrap: anywhere; }   /* una palabra larga se parte en vez de cortarse */
+  overflow-wrap: anywhere; }   /* a long word breaks instead of being cut */
 .np-sub { font-size: min(4vh, 2.8vw); opacity: .78; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .np-prog { position: absolute; left: 5%; right: 5%; bottom: 28px; }
 .np-times { display: flex; justify-content: space-between; padding: 0 2px 8px; font-size: 15px; opacity: .75; font-variant-numeric: tabular-nums; }
-.np-seek { position: relative; padding: 16px 0; margin: -16px 0; touch-action: none; }   /* más alto que la barra: fácil de tocar */
+.np-seek { position: relative; padding: 16px 0; margin: -16px 0; touch-action: none; }   /* taller than the bar: easy to touch */
 .np-knob { position: absolute; top: 50%; left: 0; width: 24px; height: 24px; margin: -12px 0 0 -12px; border-radius: 50%; background: #fff;
   box-shadow: 0 2px 8px rgba(0,0,0,.4); transition: left 1s linear, transform .15s; display: none; }
 .np-seek.can .np-knob { display: block; cursor: grab; }
@@ -325,15 +325,15 @@ main { display: flex; flex-direction: column; min-width: 0; min-height: 0; heigh
 .np-seek.drag .np-bar i, .np-seek.instant .np-bar i, .np-seek.instant .np-knob { transition: none; }
 .np.no-prog .np-prog { display: none; }
 .np-ctrls { display: flex; align-items: center; justify-content: center; gap: clamp(8px, 2vw, 22px); margin: 10px 0 4px; }
-/* tamaño fijo (flex: none): en pantallas estrechas no se aplastan los círculos; se hacen más pequeños con la pantalla */
+/* fixed size (flex: none): on narrow screens the circles are not squashed; they get smaller with the screen */
 .np-ctrls button { flex: none; width: clamp(52px, 7vw, 72px); aspect-ratio: 1; height: auto; border-radius: 50%; border: 0; background: none; color: inherit;
   font-size: clamp(34px, 4.3vw, 44px); display: grid; place-items: center; }
 .np-ctrls .np-play { width: clamp(68px, 8.8vw, 90px); background: #fff; color: #000; font-size: clamp(38px, 4.9vw, 50px); }
-/* Volumen: la de «Sonando» y la flotante son la misma barra. Sube desde el botón 🔊 (y baja al esconderse). */
-/* los demás volúmenes: se despliegan a la izquierda con los tres puntitos */
-/* el símbolo arriba y el número abajo, dentro de la barra; se invierten de color al quedar sobre la parte llena */
-/* burbuja con el volumen nuevo cuando cambia desde fuera: arriba en el centro, en el hueco de la barra de arriba */
-/* Volumen de otros altavoces en «Sonando»: botón abajo a la derecha que despliega una barra vertical */
+/* Volume: the “Now playing” one and the floating one are the same bar. It rises from the 🔊 button (and goes down when hidden). */
+/* the other volumes: they open to the left with the three dots */
+/* the symbol on top and the number below, inside the bar; they invert colour over the filled part */
+/* bubble with the new volume when it changes from outside: top centre, in the gap of the top bar */
+/* Volume of other speakers in “Now playing”: button at the bottom right that opens a vertical bar */
 .np.has-vol .np-main { right: 130px; }
 .np-vol { position: absolute; right: 34px; bottom: 96px; top: 90px; display: flex; flex-direction: column; align-items: flex-end; justify-content: flex-end; gap: 14px; pointer-events: none; }
 .np-vbtn { pointer-events: auto; flex: none; width: 60px; height: 60px; margin-right: 3px; border-radius: 50%; border: 0; background: #3a3a3c; box-shadow: 0 4px 18px rgba(0,0,0,.45);
@@ -371,7 +371,7 @@ main { display: flex; flex-direction: column; min-width: 0; min-height: 0; heigh
   .np-sub { font-size: min(3vh, 4.4vw); }
 }
 
-/* ---------- Código para emparejar el altavoz con Music Assistant ---------- */
+/* ---------- Code to pair the speaker with Music Assistant ---------- */
 .pin-ov { position: fixed; inset: 0; z-index: 35; display: grid; place-items: center; background: rgba(0,0,0,.72); backdrop-filter: blur(8px);
   opacity: 0; pointer-events: none; transition: opacity .3s; }
 .pin-ov.show { opacity: 1; pointer-events: auto; }
@@ -383,20 +383,20 @@ main { display: flex; flex-direction: column; min-width: 0; min-height: 0; heigh
 .pin-name { color: var(--muted); font-size: 15px; }
 .pin-card .icon-btn { position: absolute; top: 14px; right: 14px; }
 
-/* Asistente de voz: barra abajo, encima de cualquier pantalla (y del oscurecido de noche) */
+/* Voice assistant: bar at the bottom, over any screen (and over the night dimming) */
 .voice { position: fixed; left: 50%; bottom: 18px; z-index: 52; width: min(760px, calc(100% - 32px));
   display: flex; align-items: center; gap: 20px; padding: 16px 24px; border-radius: 30px; color: #fff;
   background: rgba(22, 24, 32, .88); backdrop-filter: blur(18px); -webkit-backdrop-filter: blur(18px);
   box-shadow: 0 12px 40px rgba(0,0,0,.55); border: 1px solid rgba(255,255,255,.08);
   transform: translate(-50%, calc(100% + 40px)); opacity: 0; pointer-events: none;
   transition: transform .4s cubic-bezier(.2,.8,.2,1), opacity .4s, height .4s cubic-bezier(.2,.8,.2,1); }
-.voice.show { transform: translate(-50%, 0); opacity: 1; pointer-events: auto; touch-action: none; }   /* a la vista: los toques se quedan en la barra */
+.voice.show { transform: translate(-50%, 0); opacity: 1; pointer-events: auto; touch-action: none; }   /* visible: touches stay in the bar */
 .voice { overflow: hidden; }
 .voice-anim { flex: none; width: 56px; height: 44px; display: grid; place-items: center; }
-/* 1 · Onda (la dibuja voiceWave) */
+/* 1 · Wave (voiceWave draws it) */
 .voice-wave { width: 56px; height: 44px; }
 .voice-wave path { fill: none; stroke: #9db8ff; stroke-width: 2.6; stroke-linecap: round; stroke-linejoin: round; }
-/* 2 · Micrófono con latido; al pensar, un aro gira; al contestar, altavoz */
+/* 2 · Microphone with a beat; when thinking, a ring spins; when answering, speaker */
 .voice-mic { position: relative; width: 40px; height: 40px; border-radius: 50%; border: 2px solid #9db8ff; display: grid; place-items: center;
   font-size: 22px; color: #9db8ff; }
 .voice.listening .voice-mic { animation: voice-beat 1.4s ease-in-out infinite; }
@@ -405,14 +405,14 @@ main { display: flex; flex-direction: column; min-width: 0; min-height: 0; heigh
 .voice.processing .voice-mic .mdi { animation: voice-spin .8s linear infinite reverse; }
 @keyframes voice-beat { 0%, 100% { box-shadow: 0 0 0 0 rgba(157,184,255,.5); } 50% { box-shadow: 0 0 0 10px rgba(157,184,255,0); } }
 @keyframes voice-spin { to { transform: rotate(360deg); } }
-/* 3 · Línea de luz arriba, sin icono */
+/* 3 · Light line on top, no icon */
 .voice-light { position: absolute; left: 0; right: 0; top: 0; height: 3px; background: linear-gradient(90deg, transparent, #9db8ff, transparent) no-repeat;
   background-size: 40% 100%; opacity: 0; transition: opacity .3s; }
 .voice.listening .voice-light, .voice.processing .voice-light { opacity: 1; }
 .voice.listening .voice-light { animation: voice-sweep 1.6s ease-in-out infinite alternate; }
 .voice.processing .voice-light { animation: voice-sweep .6s ease-in-out infinite alternate; }
-/* contestando: todo el borde de arriba encendido (sigue la curva de las esquinas) */
-/* ya contestó (la barra se queda unos segundos): el borde sigue encendido, quieto */
+/* answering: the whole top edge lit (it follows the curve of the corners) */
+/* already answered (the bar stays a few seconds): the edge stays lit, still */
 .voice.vs-light:not(.listening):not(.processing) { box-shadow: inset 0 3px 0 rgba(157,184,255,.75), 0 -3px 14px rgba(157,184,255,.25), 0 12px 40px rgba(0,0,0,.55); }
 .voice.vs-light.responding { animation: voice-glow 1.4s ease-in-out infinite; }
 @keyframes voice-sweep { from { background-position: 0 0; } to { background-position: 100% 0; } }
@@ -420,7 +420,7 @@ main { display: flex; flex-direction: column; min-width: 0; min-height: 0; heigh
   0%, 100% { box-shadow: inset 0 3px 0 rgba(157,184,255,.75), 0 -3px 14px rgba(157,184,255,.25), 0 12px 40px rgba(0,0,0,.55); }
   50% { box-shadow: inset 0 3px 0 #9db8ff, 0 -4px 22px rgba(157,184,255,.5), 0 12px 40px rgba(0,0,0,.55); } }
 .voice.vs-light { padding-left: 28px; }
-/* 4 · Ecualizador fino blanco */
+/* 4 · Thin white equaliser */
 .voice-eq { display: flex; gap: 4px; align-items: center; justify-content: center; }
 .voice-eq i { width: 3px; height: 6px; border-radius: 2px; background: #fff; }
 .voice.listening .voice-eq i { animation: voice-eq 1s ease-in-out infinite; }
@@ -453,7 +453,7 @@ main { display: flex; flex-direction: column; min-width: 0; min-height: 0; heigh
 .amb-bar { display: block; width: 100%; height: 5px; border-radius: 3px; background: rgba(255,255,255,.25); overflow: hidden; }
 .amb-bar span { display: block; height: 100%; background: #fff; }
 
-/* ---------- Avisos desde Home Assistant ---------- */
+/* ---------- Notifications from Home Assistant ---------- */
 .bell { position: relative; font-size: 22px; color: var(--text); line-height: 1; }
 #bell-count:not(:empty) { position: absolute; top: -6px; right: -8px; min-width: 18px; height: 18px; padding: 0 4px; border-radius: 9px;
   background: var(--danger); color: var(--danger-ink); font-size: 11px; font-weight: 700; display: grid; place-items: center; }
@@ -487,7 +487,7 @@ main { display: flex; flex-direction: column; min-width: 0; min-height: 0; heigh
 /* ---------- Ajustes ---------- */
 .settings { display: flex; flex-direction: column; gap: 10px; }
 .set-card { display: flex; flex-direction: column; gap: 14px; }
-.set-body { display: contents; }   /* contenido que se rellena después, con el mismo espaciado */
+.set-body { display: contents; }   /* content filled in later, with the same spacing */
 .set-title { display: flex; align-items: center; gap: 10px; font-size: 17px; font-weight: 600; }
 .set-title .mdi { font-size: 22px; color: var(--accent); }
 .set-row { display: flex; align-items: center; justify-content: space-between; gap: 14px; }
@@ -529,7 +529,7 @@ main { display: flex; flex-direction: column; min-width: 0; min-height: 0; heigh
 .ring-actions { display: flex; gap: 12px; flex-wrap: wrap; justify-content: center; }
 .ring-actions .big-action { padding: 18px 26px; font-size: 18px; min-width: 200px; }
 
-/* Ajustes: burbujas del modo ambiente */
+/* Settings: ambient mode bubbles */
 .amb-list { display: flex; flex-direction: column; }
 .amb-item { display: flex; align-items: center; gap: 10px; padding: 6px 0; }
 .amb-item + .amb-item { border-top: 1px solid var(--surface-2); }
@@ -542,7 +542,7 @@ main { display: flex; flex-direction: column; min-width: 0; min-height: 0; heigh
 .round-btn.small { width: 36px; height: 36px; font-size: 20px; }
 .round-btn:disabled { opacity: .3; }
 
-/* ---------- Altavoz por defecto ---------- */
+/* ---------- Default speaker ---------- */
 .speaker-list { display: flex; flex-direction: column; gap: 6px; }
 .speaker-opt { display: flex; align-items: center; gap: 12px; padding: 10px 14px; border-radius: 14px; background: var(--surface-2);
   border: 2px solid transparent; text-align: left; }
@@ -551,14 +551,14 @@ main { display: flex; flex-direction: column; min-width: 0; min-height: 0; heigh
 .speaker-opt.on > .mdi { color: var(--accent); }
 .speaker-text { flex: 1; min-width: 0; }
 .speaker-check { margin-left: auto; }
-/* Desplegable de los Ajustes (altavoz por defecto, asistente de voz) */
+/* Settings dropdown (default speaker, voice assistant) */
 .pick { display: flex; flex-direction: column; gap: 6px; }
 .pick-head { border-color: var(--accent); }
 .pick-chevron { margin-left: auto; font-size: 24px; color: var(--muted); transition: transform .25s; }
 .pick-head.open .pick-chevron { transform: rotate(180deg); }
 .pick-list { display: none; flex-direction: column; gap: 6px; max-height: 300px; overflow-y: auto; padding-left: 14px; border-left: 2px solid var(--surface-2); }
 .pick-list.open { display: flex; }
-/* Mini reproductor del modo ambiente (abajo a la derecha) */
+/* Ambient mode mini player (bottom right) */
 .amb-player.own .amb-pinfo { cursor: pointer; }
 .amb-player { position: absolute; right: 4%; bottom: 7%; width: 290px; padding: 12px 14px; border-radius: 20px;
   background: rgba(0,0,0,.42); display: flex; flex-direction: column; gap: 10px; }
@@ -575,7 +575,7 @@ main { display: flex; flex-direction: column; min-width: 0; min-height: 0; heigh
 .amb-pbtn:active { background: rgba(255,255,255,.2); }
 .amb-pbtn.main:active { background: #ddd; }
 .amb-pvol { position: absolute; top: 12px; right: 14px; font-size: 12px; opacity: .6; }
-.amb-player:has(.amb-pvol) .amb-pinfo { padding-right: 38px; }   /* que el título no pise el % */
+.amb-player:has(.amb-pvol) .amb-pinfo { padding-right: 38px; }   /* so the title does not overlap the % */
 .ambient.has-player .amb-content { right: calc(4% + 310px); }
 .ambient.has-player .amb-next { top: 38%; }
 @media (max-width: 640px) {
@@ -583,7 +583,7 @@ main { display: flex; flex-direction: column; min-width: 0; min-height: 0; heigh
   .ambient.has-player .amb-content { right: 6%; bottom: 150px; }
 }
 
-/* Modos de foto: rellenar (cover), entera con fondo difuminado (blur) o entera (contain) */
+/* Photo modes: fill (cover), whole with a blurred background (blur) or whole (contain) */
 .amb-blur, .amb-fg { position: absolute; inset: 0; background-repeat: no-repeat; background-position: center; }
 .amb-fg { background-size: cover; }
 .amb-blur { display: none; background-size: cover; filter: blur(28px) brightness(.55) saturate(1.2); transform: scale(1.15); }
@@ -605,7 +605,7 @@ main { display: flex; flex-direction: column; min-width: 0; min-height: 0; heigh
 .amb-head { background: transparent !important; padding-top: 0; padding-bottom: 0; }
 .amb-col { width: 64px; display: flex; justify-content: center; font-size: 12px; color: var(--muted); flex: none; }
 
-/* ---------- Pantallas pequeñas (3.5" 480x320) ---------- */
+/* ---------- Small screens (3.5" 480x320) ---------- */
 @media (max-width: 560px), (max-height: 340px) {
   :root { --rail: 58px; --radius: 16px; }
   .rail-btn { width: 50px; font-size: 0; gap: 0; }
@@ -623,20 +623,20 @@ main { display: flex; flex-direction: column; min-width: 0; min-height: 0; heigh
   .w-icon { font-size: 44px; } .w-temp { font-size: 32px; }
 }
 
-/* Barra lateral: con muchas vistas, compacta y con scroll si no cabe */
+/* Side bar: with many views, compact and scrolling if it does not fit */
 #rail { overflow-y: auto; gap: 2px; padding: 10px 0; }
 #rail::-webkit-scrollbar { width: 0; }
 .rail-btn { flex: none; padding: 5px 0 4px; }
 @media (max-height: 520px) { .rail-btn .mdi { font-size: 24px; padding: 3px 14px; } }
 
-/* Patinete cargando: rayo sobre su icono en el menú (verde si ya llegó al límite) */
+/* Scooter charging: bolt over its icon in the menu (green if it already reached the limit) */
 .rail-btn { position: relative; }
 .rail-badge { position: absolute; top: 2px; left: 50%; margin-left: 10px; width: 18px; height: 18px; border-radius: 50%;
   background: #fdd663; color: #3b2a06; display: grid; place-items: center; box-shadow: 0 0 0 2px var(--bg); }
 .rail-badge .mdi { font-size: 13px !important; padding: 0 !important; background: none !important; color: inherit !important; line-height: 1; }
 .rail-badge.charged { background: var(--ok); color: #0d2a17; }
 
-/* Reproductor del panel de acceso rápido (como la tarjeta de música de Android) */
+/* Quick access panel player (like Android's music card) */
 .tm-player { position: relative; overflow: hidden; isolation: isolate; cursor: pointer;
   display: grid; grid-template-columns: auto minmax(0, 1fr); grid-template-rows: 1fr auto; column-gap: 20px; row-gap: 18px; }
 .tm-bg { position: absolute; inset: -30px; z-index: -1; background: center/cover no-repeat; filter: blur(26px) brightness(.5) saturate(1.4); opacity: 0; transition: opacity .4s; }
@@ -659,7 +659,7 @@ main { display: flex; flex-direction: column; min-width: 0; min-height: 0; heigh
 .tm-pbtn { width: 44px; height: 44px; border-radius: 50%; display: grid; place-items: center; font-size: 28px; color: var(--text); }
 .tm-pbtn.main { width: 50px; height: 50px; background: var(--play-bg); color: var(--play-ink); font-size: 30px; }
 .tm-pbtn:active { background: var(--surface-3); }
-/* Panel de acceso rápido que baja desde arriba (como en Android) */
+/* Quick access panel coming down from the top (like on Android) */
 .shade-bg { position: fixed; inset: 0; z-index: 36; background: rgba(0,0,0,.55); opacity: 0; pointer-events: none; transition: opacity .3s; }
 .shade-bg.open { opacity: 1; pointer-events: auto; }
 .shade-bg.dragging { transition: none; pointer-events: auto; }
@@ -667,7 +667,7 @@ main { display: flex; flex-direction: column; min-width: 0; min-height: 0; heigh
   background: var(--surface); border-radius: 0 0 28px 28px; box-shadow: 0 18px 48px rgba(0,0,0,.6);
   transform: translateY(-100%); transition: transform .34s cubic-bezier(.2,.8,.2,1); touch-action: none; }
 .shade.open { transform: none; }
-/* la sombra, solo si se ve: recogida asoma por arriba (en el tema claro se nota) */
+/* the shadow, only if it shows: when folded it peeks from the top (noticeable in the light theme) */
 .shade:not(.open):not(.dragging) { box-shadow: none; transition: transform .34s cubic-bezier(.2,.8,.2,1), box-shadow 0s .34s; }
 .shade.dragging { transition: none; }
 .shade-in { max-width: 900px; margin: 0 auto; padding: 22px 26px 6px; display: flex; flex-direction: column; gap: 20px; }
@@ -683,14 +683,14 @@ main { display: flex; flex-direction: column; min-width: 0; min-height: 0; heigh
 .sh-body .tm-player { flex: 1; min-width: 0; margin: 0; padding: 22px 22px; border: 0; border-radius: 24px; background: var(--surface-2); }
 .sh-noplayer { display: flex !important; align-items: center; gap: 12px; color: var(--muted); font-size: 16px; cursor: default; }
 .sh-noplayer .mdi { font-size: 26px; }
-/* barras tipo Android: píldora que se llena, símbolo dentro a la izquierda y valor a la derecha */
+/* Android-like bars: a pill that fills, symbol inside on the left and value on the right */
 .sh-pills { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 16px; justify-content: center; }
 .sh-pill { position: relative; height: 70px; border-radius: 35px; background: var(--surface-3); overflow: hidden; touch-action: none; cursor: pointer; }
 .sh-pill > i { position: absolute; left: 0; top: 0; bottom: 0; background: var(--accent); border-radius: 35px; min-width: 70px; }
 .sp-ic { position: absolute; left: 23px; top: 50%; transform: translateY(-50%); font-size: 24px; color: var(--accent-ink); pointer-events: none; }
 .sp-val { position: absolute; right: 20px; top: 50%; transform: translateY(-50%); font-size: 15px; font-weight: 600; color: var(--text); pointer-events: none; font-variant-numeric: tabular-nums; }
 .sh-pill.full .sp-val { color: var(--accent-ink); }
-/* Pestañas del panel de acceso rápido: avisos | accesos rápidos */
+/* Tabs of the quick access panel: notifications | quick access */
 .sht { display: flex; flex-direction: column; gap: 10px; }
 .sht-bar { display: flex; gap: 8px; }
 .sht-tab { flex: 1; display: flex; align-items: center; justify-content: center; gap: 8px; height: 42px; border-radius: 21px;
@@ -736,18 +736,18 @@ main { display: flex; flex-direction: column; min-width: 0; min-height: 0; heigh
   .sh-body { flex-direction: column; }
 }
 
-/* Pie de foto del modo ambiente (fecha y ciudad de Immich) */
+/* Ambient mode photo caption (date and city from Immich) */
 .amb-caption { position: absolute; top: 5%; right: 5%; font-size: 15px; text-align: right; text-shadow: 0 1px 8px rgba(0,0,0,.7); }
 .amb-caption .cap-date { opacity: .85; }
 .amb-caption .cap-src { font-size: 12px; color: rgba(255,255,255,.55); margin-top: 2px; }
 .amb-caption:empty { display: none; }
 
-/* Botón para pasar de foto en el modo ambiente */
+/* Button to change photo in ambient mode */
 .amb-next { position: absolute; right: 3%; top: 50%; transform: translateY(-50%); width: 56px; height: 56px; border-radius: 50%;
   display: grid; place-items: center; font-size: 34px; color: #fff; background: rgba(0,0,0,.3); opacity: .7; }
 .amb-next:active { background: rgba(0,0,0,.55); opacity: 1; }
 
-/* Red y QR de la web de configuración */
+/* Network and QR of the configuration web */
 .net-val { font-weight: 600; text-align: right; word-break: break-all; }
 .qr-body { align-items: center; text-align: center; }
 .qr { width: min(260px, 70vw); background: #fff; border-radius: 16px; padding: 6px; }
@@ -757,7 +757,7 @@ main { display: flex; flex-direction: column; min-width: 0; min-height: 0; heigh
 .qr-steps div { display: flex; align-items: center; gap: 10px; color: var(--muted); }
 .qr-steps .mdi { font-size: 22px; color: var(--accent); }
 
-/* Aspirador: rayito al cargar y selección de habitaciones */
+/* Vacuum: small bolt when charging and room selection */
 .tile-icon { position: relative; }
 .tile.charging .tile-icon::after { content: "\F140B"; font-family: "Material Design Icons"; position: absolute; right: -4px; top: -4px;
   width: 18px; height: 18px; border-radius: 50%; background: #fdd663; color: #3b2a06; font-size: 13px; line-height: 18px; text-align: center;
@@ -774,7 +774,7 @@ main { display: flex; flex-direction: column; min-width: 0; min-height: 0; heigh
 .vac-shortcuts { flex-wrap: wrap; }
 .vac-shortcuts .chip { background: var(--surface-2); }
 
-/* Barras de scroll finas, redondeadas y del color del tema (en lugar de las grises de Chromium) */
+/* Thin, rounded scrollbars in the theme colour (instead of Chromium's grey ones) */
 * { scrollbar-width: thin; scrollbar-color: var(--surface-3) transparent; }
 ::-webkit-scrollbar { width: 6px; height: 6px; }
 ::-webkit-scrollbar-track { background: transparent; }
@@ -783,11 +783,11 @@ main { display: flex; flex-direction: column; min-width: 0; min-height: 0; heigh
 ::-webkit-scrollbar-corner { background: transparent; }
 .sheet-card::-webkit-scrollbar-track { margin: 18px 0; }
 
-/* Reproductores: los botones redondos nunca se aplastan */
+/* Players: the round buttons are never squashed */
 .round-btn { flex: none; }
 .media-card { container-type: inline-size; }
 .mc-ctrls { flex-wrap: wrap; }
-/* Tarjeta estrecha: carátula y botones algo más pequeños en lugar de deformarse */
+/* Narrow card: artwork and buttons a bit smaller instead of deforming */
 @container (max-width: 380px) {
   .mc-art { width: 84px; height: 84px; }
   .mc-ctrls { gap: 6px; }
@@ -798,14 +798,14 @@ main { display: flex; flex-direction: column; min-width: 0; min-height: 0; heigh
   .mc-art { width: 64px; height: 64px; }
 }
 
-/* Detalle de un dispositivo sin conexión: aviso y controles desactivados */
+/* Details of a device with no connection: notice and disabled controls */
 .unavail-notice { display: flex; align-items: center; gap: 10px; padding: 10px 14px; margin-bottom: 14px; border-radius: 14px;
   background: var(--warn-bg); color: var(--warn); font-size: 14px; }
 .unavail-notice .mdi { font-size: 22px; }
 .sheet-body.disabled button, .sheet-body.disabled input, .sheet-body.disabled select { opacity: .4; pointer-events: none; filter: grayscale(.6); }
 .sheet-body.disabled .big-toggle { opacity: .55; }
 
-/* Pantalla «Conecta el panel con Home Assistant» */
+/* “Connect the panel to Home Assistant” screen */
 .setup { max-width: 520px; margin: 10px auto; display: flex; flex-direction: column; align-items: center; gap: 10px; text-align: center; }
 .setup h2 { margin: 0; font-size: 22px; }
 .setup p { margin: 0; }
@@ -813,10 +813,10 @@ main { display: flex; flex-direction: column; min-width: 0; min-height: 0; heigh
 #sheet-card .chip { background: var(--surface-2); }
 #sheet-card .chip.sel { background: var(--accent-soft); color: var(--accent); }
 
-/* Pantalla de la Pi: sin puntero del ratón (en el modo prueba del ordenador se sigue viendo) */
+/* The Pi's screen: no mouse pointer (in the computer test mode it still shows) */
 .kiosk, .kiosk * { cursor: none !important; }
 
-/* ---------- Rejilla de las pestañas (12 columnas) y componentes ---------- */
+/* ---------- Tabs grid (12 columns) and components ---------- */
 .layout { display: grid; grid-template-columns: repeat(12, minmax(0, 1fr)); gap: 10px; align-items: start; }
 .slot { grid-column: span 12; min-width: 0; }
 .slot.w-3-4 { grid-column: span 9; } .slot.w-2-3 { grid-column: span 8; } .slot.w-1-2 { grid-column: span 6; }
@@ -827,9 +827,9 @@ main { display: flex; flex-direction: column; min-width: 0; min-height: 0; heigh
   .slot.w-3-4, .slot.w-2-3, .slot.w-1-2, .slot.w-1-3 { grid-column: span 12; }
   .slot.w-1-4 { grid-column: span 6; }
 }
-/* sin nada que mostrar o con «Mostrar solo si…» que no se cumple: no ocupan sitio */
+/* nothing to show or with an unmet “Only show if…”: they take no room */
 .slot:has(> .cmp-empty), .slot.when-off { display: none; }
 
-/* Detalle de las entidades sin detalle propio: su estado en grande */
+/* Details of entities without their own details: their state, big */
 .sheet-state { font-size: 28px; font-weight: 600; padding: 4px 2px 10px; }
 .cam-frame { width: 100%; height: 100%; border: 0; display: block; background: #000; pointer-events: none; }

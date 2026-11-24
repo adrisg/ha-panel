@@ -276,7 +276,7 @@ function dedupeMedia(list) {
 }
 
 /* ====================== Textos e iconos ====================== */
-const T_ES = {
+const T_KEYS = {
   on: 'panel.states.on', off: 'panel.states.off', unavailable: 'panel.states.unavailable', unknown: '—', open: 'panel.states.open',
   closed: 'panel.states.closed', opening: 'panel.states.opening', closing: 'panel.states.closing', locked: 'panel.states.locked',
   unlocked: 'panel.states.open', locking: 'panel.states.locking', unlocking: 'panel.states.unlocking', jammed: 'panel.states.jammed',
@@ -286,7 +286,7 @@ const T_ES = {
   cleaning: 'panel.states.cleaning', docked: 'panel.states.docked', returning: 'panel.states.returning', error: 'panel.states.error',
 };
 /** States in the panel language (T.on → “On” / “Encendido”). */
-const T = new Proxy(T_ES, { get: (o, k) => (o[k] != null ? t(o[k]) : undefined) });
+const T = new Proxy(T_KEYS, { get: (o, k) => (o[k] != null ? t(o[k]) : undefined) });
 const BIN = {
   door: ['panel.states.closed_f', 'panel.states.open_f'], window: ['panel.states.closed_f', 'panel.states.open_f'], garage_door: ['panel.states.closed_f', 'panel.states.open_f'],
   opening: ['panel.states.closed', 'panel.states.open'], motion: ['panel.settings.no_motion', 'panel.settings.motion'], occupancy: ['panel.states.clear', 'panel.states.occupied'],
@@ -428,7 +428,7 @@ function tap(id, el) {
   const d = domain(id);
   // A switch with no connection is not turned on: its details open (or it says so)
   if (S.states[id] && S.states[id].state === 'unavailable' && TOGGLE.includes(d)) {
-    if (HAS_SHEET.includes(d)) openSheet(id); else toast(`${nameOf(id)} no está disponible`, true);
+    if (HAS_SHEET.includes(d)) openSheet(id); else toast(I18N.t('panel.status.not_available', { name: nameOf(id) }), true);
     return;
   }
   if (TOGGLE.includes(d)) {
@@ -659,7 +659,7 @@ const SHEETS = {
       const sel = new Set();
       const go = h('button', { class: 'big-action primary' }, icon('mdi-play'), h('span'));
       const paint = () => {
-        go.lastChild.textContent = sel.size ? `Limpiar ${sel.size} habitaci${sel.size > 1 ? 'ones' : 'ón'}` : I18N.t('panel.sheets.choose_rooms');
+        go.lastChild.textContent = sel.size ? I18N.t(sel.size > 1 ? 'panel.sheets.clean_rooms' : 'panel.sheets.clean_rooms_one', { n: sel.size }) : I18N.t('panel.sheets.choose_rooms');
         go.classList.toggle('disabled', !sel.size);
       };
       go.addEventListener('click', () => {
@@ -1153,8 +1153,8 @@ function onPrinterStatus(id, old, st) {
   if (!p) return;
   const was = PSTATUS[old ? old.state : 'unavailable'], now = PSTATUS[st ? st.state : 'unavailable'];
   if (was === now) return;
-  if (ACTIVE_P.includes(was) && now === 'finished') toast(`${p.name}: impresión terminada`);
-  if (ACTIVE_P.includes(was) && now === 'error') toast(`${p.name}: error en la impresión`, true);
+  if (ACTIVE_P.includes(was) && now === 'finished') toast(I18N.t('panel.printers.finished', { name: p.name }));
+  if (ACTIVE_P.includes(was) && now === 'error') toast(I18N.t('panel.printers.failed', { name: p.name }), true);
   clearTimeout(structTimer);
   structTimer = setTimeout(() => !S.sheetId && render(), 300);
 }
@@ -1286,7 +1286,7 @@ function showNotif() {
     return h('button', { class: cls, onclick: run }, a.icon ? icon(a.icon) : null, a.title);
   })));
   const more = N.queue.filter((n) => n.level !== 'info').length - 1;
-  if (more > 0) parts.push(h('div', { class: 'alert-more' }, `+${more} aviso${more > 1 ? 's' : ''} más`));
+  if (more > 0) parts.push(h('div', { class: 'alert-more' }, I18N.t(more > 1 ? 'panel.notices.more' : 'panel.notices.more_one', { n: more })));
   card.replaceChildren(...parts);
   modal.classList.remove('hidden');
 }
@@ -1664,7 +1664,7 @@ function updatesCard() {
     clearTimeout(timer);
     if (!u) { body.replaceChildren(h('div', { class: 'muted small' }, I18N.t('panel.settings.available_on_pi'))); return; }
     const n = u.available.length;
-    const estado = u.applying ? I18N.t('web.system.updating') : u.checking ? I18N.t('web.system.checking') : n ? I18N.t(n > 1 ? 'panel.settings.new_updates' : 'panel.settings.new_updates_one', { n }) : I18N.t('panel.settings.up_date');
+    const status = u.applying ? I18N.t('web.system.updating') : u.checking ? I18N.t('web.system.checking') : n ? I18N.t(n > 1 ? 'panel.settings.new_updates' : 'panel.settings.new_updates_one', { n }) : I18N.t('panel.settings.up_date');
     const val = (t) => h('span', { class: 'net-val', style: 'white-space: nowrap' }, t);
     let hour = u.settings.hour;
     const hourLab = h('span', { class: 'time-val' }, String(hour).padStart(2, '0') + ':00');
@@ -1674,7 +1674,7 @@ function updatesCard() {
     };
     body.replaceChildren(...[
       setRow(I18N.t('panel.sheets.version'), u.current ? u.current.subject : null, val(u.current ? u.current.hash : '¿?')),
-      setRow(I18N.t('panel.sheets.status'), u.error || null, h('span', { class: 'pill' + (n || u.error ? '' : ' ok') }, estado)),
+      setRow(I18N.t('panel.sheets.status'), u.error || null, h('span', { class: 'pill' + (n || u.error ? '' : ' ok') }, status)),
       n ? h('div', { class: 'upd-list muted small' }, ...u.available.slice(0, 6).map((c) => h('div', null, '• ' + c.subject))) : null,
       setBlock(I18N.t('panel.settings.when_there_new'), u.settings.mode === 'auto' ? I18N.t('panel.settings.auto_update_hint') : I18N.t('panel.settings.tells_update_button'),
         segmented([['notify', I18N.t('panel.settings.notify_me')], ['auto', I18N.t('panel.settings.automatic')]], u.settings.mode,
@@ -1911,7 +1911,7 @@ function openAlarmEditor(existing) {
     delete RING.snooze[al.id];
     saveSettings(); closeSheet(); render();
     const n = nextOccurrence(al);
-    if (n) toast(`Sonará ${whenText(n).toLowerCase()}`);
+    if (n) toast(I18N.t('panel.settings.will_ring', { when: whenText(n).toLowerCase() }));
   };
   const del = () => { SET.alarms = (SET.alarms || []).filter((x) => x.id !== al.id); saveSettings(); closeSheet(); render(); toast(I18N.t('panel.settings.alarm_deleted')); };
   paint();
@@ -2147,7 +2147,7 @@ async function showSetup() {
       svg ? h('div', { class: 'qr', html: svg }) : null, h('div', { class: 'qr-url' }, net.urls[0]));
   } else {
     box.append(h('p', { class: 'muted' }, I18N.t('panel.setup.config_js')),
-      h('p', { class: 'muted small' }, 'El token se crea en Home Assistant → tu perfil → Seguridad → Tokens de acceso de larga duración. ' +
+      h('p', { class: 'muted small' }, I18N.t('panel.setup.token_where_full') + ' ' +
         I18N.t('panel.setup.also_phone')));
   }
   box.append(h('p', { class: 'muted small' }, net ? I18N.t('panel.setup.starts_by_itself') : I18N.t('panel.setup.then_reload')));
@@ -2290,7 +2290,7 @@ async function voiceText() {
     if (VOICE.run !== since) return;           // another sentence already started
     panelVoice(VOICE.stage === 'idle' ? 'responding' : VOICE.stage, { heard, reply });
     if (S.states[SET.voiceSatellite] && !VOICE_STAGE[S.states[SET.voiceSatellite].state]) panelVoice('idle');
-  } catch (e) { console.warn('Texto de Assist:', e.message); }
+  } catch (e) { console.warn(I18N.t('panel.voice.assist_text'), e.message); }
 }
 /** Settings: which voice satellite shows on the screen. */
 function voiceCard() {
@@ -2332,9 +2332,9 @@ function soundCard() {
     bind('view', music, (st) => st && st.attributes.volume_level != null && m.set(Math.round(st.attributes.volume_level * 100)));
     main.append(m);
   }
-  const avisos = slider({ min: 10, max: 100, step: 10, label: I18N.t('panel.settings.notifications_alarms'), fmt: pct, onchange: (v) => { SET.sound.volume = v; saveSettings(); tone([784, 622], 0.4); } });
-  avisos.set(SET.sound.volume);
-  card.append(main, avisos);
+  const notices = slider({ min: 10, max: 100, step: 10, label: I18N.t('panel.settings.notifications_alarms'), fmt: pct, onchange: (v) => { SET.sound.volume = v; saveSettings(); tone([784, 622], 0.4); } });
+  notices.set(SET.sound.volume);
+  card.append(main, notices);
   if (!window.PANEL_HELPER) return card;
   fetch(HELPER + '/sound', { cache: 'no-store' }).then((r) => r.json()).then((r) => {
     if (!main.childNodes.length && r.master.available) {
@@ -2361,10 +2361,10 @@ function voiceMicBlock() {
   };
   const paint = (r) => {
     const s = r.settings;
-    const estado = !r.installed ? I18N.t('panel.voice.not_installed') : r.active ? I18N.t('web.sound.listening') : s.enabled ? I18N.t('panel.settings.not_working_see') : I18N.t('panel.states.off');
+    const status = !r.installed ? I18N.t('panel.voice.not_installed') : r.active ? I18N.t('web.sound.listening') : s.enabled ? I18N.t('panel.settings.not_working_see') : I18N.t('panel.states.off');
     const opts = (list, ic) => list.map((o) => [o.id, o.name, ic, '']);
     box.replaceChildren(
-      setBlock(I18N.t('panel.settings.listen_panel_s'), estado, switchBtn(s.enabled, (v) => save({ enabled: v }))),
+      setBlock(I18N.t('panel.settings.listen_panel_s'), status, switchBtn(s.enabled, (v) => save({ enabled: v }))),
       setBlock(I18N.t('panel.settings.microphone'), null, pickList(opts(r.inputs, 'mdi-microphone'), s.mic, (v) => save({ mic: v }))),
       setBlock(I18N.t('panel.settings.answers_through'), null, pickList(opts(r.outputs, 'mdi-speaker'), s.output, (v) => save({ output: v }))),
       setBlock(I18N.t('panel.settings.wake_word'), null, segmented(r.wakeWords.map((w) => [w.id, w.name]), s.wake, (v) => save({ wake: v }))));
@@ -3113,8 +3113,8 @@ async function loadPhotos() {
       stats.push({ label, count: photos.length });
     } catch (e) {
       console.warn(I18N.t('panel.photos.photos'), src, e);
-      stats.push({ label: src.name || I18N.t(c.label), error: e.message });
-      toast(`${I18N.t(c.label)}: ` + (e.message === 'Failed to fetch' ? I18N.t('panel.photos.could_not_connect') : e.message), true);
+      stats.push({ label: src.name || I18N.t(c.label), error: I18N.t(e.message) });
+      toast(`${I18N.t(c.label)}: ` + (e.message === 'Failed to fetch' ? I18N.t('panel.photos.could_not_connect') : I18N.t(e.message)), true);
     }
   }
   for (let i = out.length - 1; i > 0; i--) { const j = Math.floor(Math.random() * (i + 1)); [out[i], out[j]] = [out[j], out[i]]; }
@@ -3284,7 +3284,7 @@ async function pollHelper() {
     }
     REMOTE.version = r.version; REMOTE.reload = r.reload || 0;
     showPin(r.pin || null);
-    if (r.update && r.update !== UPDATE_SEEN) toast(`Hay una actualización del panel: web de configuración → Actualizaciones`);
+    if (r.update && r.update !== UPDATE_SEEN) toast(I18N.t('panel.settings.update_available'));
     UPDATE_SEEN = r.update || 0;
   } catch (e) { /* helper restarting */ }
 }

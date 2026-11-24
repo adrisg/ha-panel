@@ -1,31 +1,31 @@
 #!/usr/bin/env bash
-# Altavoz Sendspin: la Pi suena como un altavoz más de Music Assistant (opcional).
-# Instala el programa «sendspin» y un servicio de tu usuario que arranca con la Pi.
-# Se activa, se le pone nombre y se elige la salida (jack, HDMI, USB…) en la web: Ajustes → Altavoz.
-# Uso (como tu usuario, no con sudo delante):  bash ~/ha-panel/scripts/setup-sendspin.sh
+# Sendspin speaker: the Pi plays as one more Music Assistant speaker (optional).
+# Installs the "sendspin" program and a service of your user that starts with the Pi.
+# It is turned on, named and its output (jack, HDMI, USB…) chosen in the web: Settings → Speaker.
+# Usage (as your user, without sudo in front):  bash ~/ha-panel/scripts/setup-sendspin.sh
 set -euo pipefail
 
-PANEL_DIR="$(cd "$(dirname "$0")/.." && pwd)"   # la carpeta del panel (estos scripts van en scripts/)
+PANEL_DIR="$(cd "$(dirname "$0")/.." && pwd)"   # the panel folder (these scripts live in scripts/)
 VENV="$HOME/.local/share/panel-hogar/sendspin"
 
-echo "==> Librería de audio (PortAudio)..."
+echo "==> Audio library (PortAudio)..."
 sudo apt-get install -y --no-install-recommends libportaudio2 alsa-utils python3-venv
 
-echo "==> Instalando sendspin en $VENV ..."
+echo "==> Installing sendspin in $VENV ..."
 python3 -m venv "$VENV"
 "$VENV/bin/pip" install -q --upgrade pip
 "$VENV/bin/pip" install -q --upgrade sendspin
 "$VENV/bin/sendspin" --version
 
-echo "==> Servicio panel-sendspin (de tu usuario)..."
+echo "==> panel-sendspin service (of your user)..."
 mkdir -p "$HOME/.config/systemd/user"
 cat > "$HOME/.config/systemd/user/panel-sendspin.service" <<EOF
 [Unit]
-Description=Panel Hogar - altavoz Sendspin
+Description=Panel Hogar - Sendspin speaker
 After=network-online.target sound.target
 
 [Service]
-# Lee nombre y salida de ~/.config/panel-hogar/sendspin.json (los pone la web)
+# Reads name and output from ~/.config/panel-hogar/sendspin.json (the web sets them)
 ExecStart=/usr/bin/python3 $PANEL_DIR/panel-helper.py --sendspin
 Restart=on-failure
 RestartSec=10
@@ -33,10 +33,10 @@ RestartSec=10
 [Install]
 WantedBy=default.target
 EOF
-# Que el servicio siga funcionando aunque se reinicie el kiosko (sin sesión abierta)
+# Keep the service running even if the kiosk restarts (with no session open)
 sudo loginctl enable-linger "$USER"
 sudo usermod -aG audio "$USER" || true
 systemctl --user daemon-reload
 
-echo "==> Hecho. Actívalo en la web del panel: Ajustes → Altavoz."
-echo "    Aparecerá en Music Assistant como un reproductor Sendspin con el nombre que le pongas."
+echo "==> Done. Turn it on in the panel web: Settings → Speaker."
+echo "    It will show up in Music Assistant as a Sendspin player with the name you give it."

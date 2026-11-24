@@ -5,12 +5,12 @@
   <meta name="google" content="notranslate">
   <meta name="viewport" content="width=device-width, initial-scale=1, user-scalable=no">
   <title data-i18n="web.login.panel_hogar">Panel Hogar</title>
-  <!-- Iconos Material Design. El script de instalación los descarga a vendor/ para funcionar sin internet. -->
+  <!-- Material Design icons. The install script downloads them to vendor/ to work without internet. -->
   <link rel="stylesheet" href="vendor/mdi/css/materialdesignicons.min.css"
         onerror="this.onerror=null;this.href='https://cdn.jsdelivr.net/npm/@mdi/font@7.4.47/css/materialdesignicons.min.css'">
   <link rel="stylesheet" href="styles.css">
   <script src="config.js" onerror="window.PANEL_CONFIG = null"></script>
-  <!-- Configuración guardada desde la web del ayudante de la Pi (manda sobre config.js) -->
+  <!-- Configuration saved from the Pi helper's web (it wins over config.js) -->
   <script src="boot.js"></script>
   <script src="translations/i18n.js"></script>
     <script src="lib/qrcode.js" defer></script>
@@ -19,14 +19,14 @@
   <script src="app.js" defer></script>
 </head>
 <body>
-  <!-- Pantalla ambiente (reloj / fotos) cuando nadie toca el panel -->
+  <!-- Ambient screen (clock / photos) when nobody touches the panel -->
   <div id="ambient" class="ambient">
     <div class="amb-bg" id="amb-bg-a"><div class="amb-blur"></div><div class="amb-fg"></div></div>
     <div class="amb-bg" id="amb-bg-b"><div class="amb-blur"></div><div class="amb-fg"></div></div>
     <div class="amb-caption" id="amb-caption"></div>
-    <!-- Pasar a la siguiente foto (solo se ve si hay fotos) -->
+    <!-- Go to the next photo (only shows if there are photos) -->
     <button class="amb-next hidden" id="amb-next" title="Next photo"><i class="mdi mdi-chevron-right"></i></button>
-    <!-- Controles del altavoz por defecto -->
+    <!-- Controls of the default speaker -->
     <div class="amb-player hidden" id="amb-player"></div>
     <div class="amb-content">
       <div class="amb-clock" id="amb-clock">--:--</div>
@@ -35,9 +35,9 @@
     </div>
   </div>
 
-  <!-- Sonando: lo que suena en el altavoz del panel (Music Assistant), a pantalla completa -->
+  <!-- Now playing: what plays on the panel speaker (Music Assistant), full screen -->
   <div id="np" class="np"></div>
-  <!-- Código para emparejar el altavoz con Music Assistant (mientras lo pide) -->
+  <!-- Code to pair the speaker with Music Assistant (while it asks for it) -->
   <div id="pin" class="pin-ov"></div>
 
   <div id="app">
@@ -56,7 +56,7 @@
     </main>
   </div>
 
-  <!-- Panel de acceso rápido: baja desde el borde de arriba (o con el botón ⋮) -->
+  <!-- Quick access panel: it comes down from the top edge -->
   <div id="shade-bg" class="shade-bg"></div>
   <div id="shade" class="shade"><div id="shade-in" class="shade-in"></div><div class="shade-grip"></div></div>
 
@@ -64,19 +64,19 @@
     <div class="sheet-card" id="sheet-card"></div>
   </div>
 
-  <!-- Avisos enviados desde Home Assistant (event: panel_notificacion) -->
+  <!-- Notifications sent from Home Assistant (event: panel_notification) -->
   <div id="alert" class="alert hidden"><div class="alert-card" id="alert-card"></div></div>
   <div id="banner" class="banner"></div>
 
   <!-- Alarma sonando -->
   <div id="ring" class="ring-overlay hidden"></div>
 
-  <!-- Asistente de voz: barra abajo, encima de cualquier pantalla -->
+  <!-- Voice assistant: bar at the bottom, over any screen -->
   <div id="voice" class="voice"></div>
 
   <div id="toast" class="toast"></div>
   <div id="dim"></div>
-  <!-- Pantalla "apagada" (si hay ayudante, además se apaga de verdad) -->
+  <!-- "Off" screen (with the helper, it also really turns off) -->
   <div id="blackout" class="blackout hidden"></div>
 </body>
 </html>

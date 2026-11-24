@@ -1,17 +1,17 @@
 #!/usr/bin/env python3
-"""Arranca el Panel Hogar completo en el ordenador para probarlo, sin Raspberry Pi.
+"""Runs the whole Panel Hogar on the computer to try it, without a Raspberry Pi.
 
     python dev.py
 
-- Panel:                 http://127.0.0.1:8765        (solo este ordenador: lleva el token)
-  con --lan también desde otros equipos: http://<IP-del-PC>:8765 (¡cualquiera de tu red verá el token!)
-- Web de configuración:  http://127.0.0.1:8080        contraseña de pruebas: «panel»
-  y desde el móvil, en la misma WiFi: http://<IP-del-PC>:8080 (si el cortafuegos lo deja)
+- Panel:                 http://127.0.0.1:8765        (only this computer: it carries the token)
+  with --lan also from other devices: http://<PC-IP>:8765 (anyone on your network will see the token!)
+- Configuration web:     http://127.0.0.1:8080        test password: "panel"
+  and from the phone, on the same WiFi: http://<PC-IP>:8080 (if the firewall allows it)
 
-El ayudante va en MODO SIMULACIÓN: brillo, apagado de pantalla, WiFi, IP y nombre del equipo
-funcionan pero no cambian nada del ordenador. Los datos de prueba se guardan en .dev-data/
-(no se sube a git). Para empezar de cero: python dev.py --reset
-Ctrl+C lo para todo.
+The helper runs in SIMULATION MODE: brightness, screen off, WiFi, IP and device name
+work but change nothing on the computer. The test data is saved in .dev-data/
+(not pushed to git). To start from scratch: python dev.py --reset
+Ctrl+C stops everything.
 """
 import argparse
 import functools
@@ -35,7 +35,7 @@ DEV_PASSWORD = 'panel'
 
 
 class NoCache(http.server.SimpleHTTPRequestHandler):
-    """Sirve el panel sin caché, para ver siempre los últimos cambios al recargar."""
+    """Serves the panel without cache, to always see the latest changes on reload."""
 
     def end_headers(self):
         self.send_header('Cache-Control', 'no-store')
@@ -44,7 +44,7 @@ class NoCache(http.server.SimpleHTTPRequestHandler):
     def log_message(self, *args):
         pass
 
-    # --lan: el panel abierto desde otro equipo llega al ayudante (solo escucha en 127.0.0.1) por /_helper/…
+    # --lan: the panel opened from another device reaches the helper (it only listens on 127.0.0.1) through /_helper/…
     def _proxy(self):
         if not self.path.startswith('/_helper/'):
             return False
@@ -95,15 +95,15 @@ def lan_ip():
 
 
 def main():
-    ap = argparse.ArgumentParser(description='Panel Hogar en el ordenador (modo pruebas)')
-    ap.add_argument('--reset', action='store_true', help='borra los datos de prueba (.dev-data) y empieza de cero')
-    ap.add_argument('--no-browser', action='store_true', help='no abrir el navegador')
-    ap.add_argument('--lan', action='store_true', help='abrir también el panel a otros equipos de tu red (ven el token de HA)')
+    ap = argparse.ArgumentParser(description='Panel Hogar on the computer (test mode)')
+    ap.add_argument('--reset', action='store_true', help='deletes the test data (.dev-data) and starts from scratch')
+    ap.add_argument('--no-browser', action='store_true', help='do not open the browser')
+    ap.add_argument('--lan', action='store_true', help='also open the panel to other devices on your network (they see the HA token)')
     args = ap.parse_args()
 
     for port in (PANEL_PORT, 8766, 8080):
         if not port_free(port):
-            sys.exit(f'El puerto {port} ya está en uso. ¿Tienes otra copia abierta? Ciérrala e inténtalo otra vez.')
+            sys.exit(f'Port {port} is already in use. Do you have another copy open? Close it and try again.')
 
     if args.reset and DATA.exists():
         shutil.rmtree(DATA)
@@ -121,19 +121,19 @@ def main():
     time.sleep(0.8)
 
     if not (HERE / 'config.js').exists():
-        print('Aviso: no hay config.js → el panel te pedirá conectarlo con Home Assistant.')
-        print('       Pon la dirección y el token desde la web de configuración, o copia config.example.js a config.js.\n')
+        print('Note: there is no config.js → the panel will ask you to connect it to Home Assistant.')
+        print('      Enter the address and the token from the configuration web, or copy config.example.js to config.js.\n')
     ip = lan_ip()
     print(f'''
-  Panel Hogar en marcha (modo pruebas)
+  Panel Hogar running (test mode)
 
   Panel ............... http://127.0.0.1:{PANEL_PORT}
-  Configuración ....... http://127.0.0.1:8080     contraseña: {DEV_PASSWORD}
-  Desde el móvil ...... http://{ip}:8080   (misma WiFi; quizá tengas que permitirlo en el cortafuegos)
-''' + (f'''  Panel en tu red ..... http://{ip}:{PANEL_PORT}   (--lan: cualquiera de tu red ve el token de HA)
+  Configuration ....... http://127.0.0.1:8080     password: {DEV_PASSWORD}
+  From the phone ...... http://{ip}:8080   (same WiFi; you may have to allow it in the firewall)
+''' + (f'''  Panel on your LAN ... http://{ip}:{PANEL_PORT}    (--lan: anyone on your network sees the HA token)
 ''' if args.lan else '') + f'''
-  Pantalla y red simuladas: no se cambia nada del ordenador.
-  Ctrl+C para parar.
+  Simulated screen and network: nothing on the computer changes.
+  Ctrl+C to stop.
 ''', flush=True)
     if not args.no_browser:
         webbrowser.open(f'http://127.0.0.1:{PANEL_PORT}')
@@ -141,7 +141,7 @@ def main():
     try:
         while proc.poll() is None:
             time.sleep(0.5)
-        print('El ayudante se ha parado.')
+        print('The helper has stopped.')
     except KeyboardInterrupt:
         print('\nParando…')
     finally:

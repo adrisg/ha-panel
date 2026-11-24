@@ -129,7 +129,9 @@
         "sure_tap_again": "Sure? Tap again",
         "test_notification": "Test notification",
         "send_test_notification": "Test notification",
-        "test_message": "This is how the notifications you send from Home Assistant look"
+        "test_message": "This is how the notifications you send from Home Assistant look",
+        "more_one": "+{n} more notification",
+        "more": "+{n} more notifications"
       },
       "sheets": {
         "brightness": "Brightness",
@@ -171,7 +173,9 @@
         "running_prefix": "Running: ",
         "cleaning_prefix": "Cleaning: ",
         "no_changes_24h": "No changes in 24 h",
-        "history_unavailable": "History unavailable"
+        "history_unavailable": "History unavailable",
+        "clean_rooms_one": "Clean {n} room",
+        "clean_rooms": "Clean {n} rooms"
       },
       "ambient": {
         "panel": "This panel",
@@ -224,9 +228,9 @@
         "ambient_mode_speakers": "Ambient mode speakers",
         "add_speaker": "Add a speaker…",
         "its_controls_appear": "Its controls appear at the bottom right. The first one on the list that is playing wins; if none is playing, the first paused one, otherwise the first one.",
-        "none_one_playing": "None: the one playing among those that open «Now playing».",
+        "none_one_playing": "None: the one playing among those that open “Now playing”.",
         "bubbles": "Bubbles",
-        "choose_which_ones": "Choose which ones appear under the clock (ambient mode). They only show when they have something to tell. In tabs, add them with a «Bubble row». Edit and create them in the configuration web.",
+        "choose_which_ones": "Choose which ones appear under the clock (ambient mode). They only show when they have something to tell. In tabs, add them with a “Bubble row”. Edit and create them in the configuration web.",
         "weather": "Weather",
         "next_alarm": "Next alarm",
         "bambu_lab_printers": "Bambu Lab printers",
@@ -281,7 +285,7 @@
         "ip": "IP",
         "reading_network": "Reading the network…",
         "reading": "Reading…",
-        "pi_s_wifi": "The Pi's WiFi, IP and name are changed in that web, under «Pi network».",
+        "pi_s_wifi": "The Pi's WiFi, IP and name are changed in that web, under “Pi network”.",
         "updates": "Updates",
         "when_there_new": "When there is a new version",
         "notify_me": "Notify me",
@@ -355,7 +359,9 @@
         "helper": "Helper",
         "software": "Software",
         "snooze_9": "Snooze 9 min",
-        "edit_alarm": "Edit alarm"
+        "edit_alarm": "Edit alarm",
+        "update_available": "There is a panel update: configuration web → Updates",
+        "will_ring": "It will ring {when}"
       },
       "time": {
         "minutes_ago": "{n} min ago",
@@ -388,7 +394,8 @@
         "does_not_exist": "Does not exist",
         "loading_error_prefix": "Error loading data: ",
         "connecting": "Connecting to Home Assistant…",
-        "ha_connection": "Connection to Home Assistant"
+        "ha_connection": "Connection to Home Assistant",
+        "not_available": "{name} is not available"
       },
       "setup": {
         "title": "Connect the panel to Home Assistant",
@@ -397,7 +404,8 @@
         "token_where": "You create the token in Home Assistant → your profile → Security → Long-lived access tokens.",
         "also_phone": "With the helper (panel-helper.py) running you can also set it up from your phone.",
         "starts_by_itself": "As soon as you save it, the panel will start by itself.",
-        "then_reload": "Then reload the panel (or restart the Pi)."
+        "then_reload": "Then reload the panel (or restart the Pi).",
+        "token_where_full": "You create the token in Home Assistant → your profile → Security → Long-lived access tokens."
       },
       "voice": {
         "one_moment": "One moment…",
@@ -408,7 +416,8 @@
         "not_installed": "Not installed: bash ~/ha-panel/scripts/setup-voice.sh",
         "mic_error": "Could not read the microphone of this panel.",
         "demo_heard": "Turn on the living room light",
-        "demo_reply": "Done, I turned on the living room light"
+        "demo_reply": "Done, I turned on the living room light",
+        "assist_text": "Assist text:"
       },
       "photos": {
         "cors": "your server does not let the browser read the album (CORS) and the Pi's helper is not running",
@@ -530,6 +539,10 @@
         "choose_a_weather_entity": "Choose a weather entity",
         "choose_a_printer": "Choose a printer",
         "turn_on": "Turn on"
+      },
+      "printers": {
+        "finished": "{name}: print finished",
+        "failed": "{name}: print error"
       }
     },
     "web": {
@@ -547,7 +560,8 @@
         "logged_out": "Logged out",
         "no_password_yet": "There is no password yet. On the Pi run: python3 ~/ha-panel/panel-helper.py --set-password",
         "could_not_connect": "Could not connect to the panel",
-        "page_title": "Panel Hogar · Settings"
+        "page_title": "Panel Hogar · Settings",
+        "log_in_again": "Panel updated ✓ Log in again."
       },
       "tabs": {
         "general": "General",
@@ -561,7 +575,7 @@
       "general": {
         "live_screen": "Live screen",
         "what_pi_screen": "What the Pi screen shows right now.",
-        "tap_view_start": "Tap «View» to start.",
+        "tap_view_start": "Tap “View” to start.",
         "view": "View",
         "screen_cannot_shown": "The screen cannot be shown (it only works on the Pi).",
         "remote_control": "Remote control",
@@ -589,7 +603,7 @@
         "how_panel_connects": "How the panel connects",
         "token_access_all": "With a token (access to all of Home Assistant)",
         "integration_only_what": "With the integration (only what you choose)",
-        "no_token_add": "No token: add the «Panel Hogar» integration in Home Assistant and, in its options, choose which entities the panel sees and controls.",
+        "no_token_add": "No token: add the “Panel Hogar” integration in Home Assistant and, in its options, choose which entities the panel sees and controls.",
         "panel_sees_controls": "The panel sees and controls all of Home Assistant with a long-lived token.",
         "no_connection_home": "No connection with the Home Assistant integration",
         "no_answer_from": "No answer from Home Assistant",
@@ -606,9 +620,9 @@
         "integrations_not_shown": "Integrations not shown on the panel",
         "their_cameras_are": "(their cameras are)",
         "printer_plugs": "Printer plugs",
-        "only_if_not": "(only if not detected; «Name = switch.x», one per line)",
+        "only_if_not": "(only if not detected; “Name = switch.x”, one per line)",
         "home_assistant_integration": "Home Assistant integration",
-        "install_panel_hogar": "Install the «Panel Hogar» integration: Home Assistant finds the panel on your network by itself. When you add it, a code appears on the panel screen; type it in Home Assistant.",
+        "install_panel_hogar": "Install the “Panel Hogar” integration: Home Assistant finds the panel on your network by itself. When you add it, a code appears on the panel screen; type it in Home Assistant.",
         "what_home_assistant": "What Home Assistant sees",
         "off_brightness": "(on/off and brightness)",
         "last_touched": "Last touched",
@@ -622,7 +636,9 @@
         "sure_will_have": "Sure? It will have to be linked again",
         "they_appear_quick": "They appear in the quick access panel (swipe down from the top → right window). One tap turns them on or off.",
         "saved_but": "Saved, but: {errors}",
-        "entities_error_prefix": "Could not read the list of entities: "
+        "entities_error_prefix": "Could not read the list of entities: ",
+        "entities_to_choose": "{n} Home Assistant entities to choose from.",
+        "sent": "Sent: {what}"
       },
       "screen": {
         "ambient_mode_after": "Ambient mode after",
@@ -653,7 +669,7 @@
         "photos_by_url": "Photos by URL",
         "shared_album_link": "Shared album link: in Immich → album → Share → Create link.",
         "google_photos_album": "In Google Photos → album → Share → Create link. The Pi helper reads it.",
-        "those_marked_ambient": "Those marked «Ambient» appear under the clock, in this order, only when they have something to tell. In tabs, add them with a «Bubble row» (🗂️ Tabs). Tap one to change its title and how it works.",
+        "those_marked_ambient": "Those marked “Ambient” appear under the clock, in this order, only when they have something to tell. In tabs, add them with a “Bubble row” (🗂️ Tabs). Tap one to change its title and how it works.",
         "title_new_bubble": "Title of the new bubble (e.g. Living room temperature)",
         "shows_something": "That shows something",
         "does_something_when": "That does something when tapped",
@@ -683,7 +699,7 @@
         "name_optional": "Name (optional; otherwise the album's)",
         "key_saved": "API key saved (type to change it)",
         "key_placeholder": "API key (only for private albums …/albums/<id>)",
-        "folder_placeholder": "Folder, e.g. photos (empty = all of «My media»)",
+        "folder_placeholder": "Folder, e.g. photos (empty = all of “My media”)",
         "ha_media_hint": "Photos you upload to Home Assistant → Media → My media. They are only read.",
         "urls_placeholder": "One photo URL per line"
       },
@@ -714,7 +730,7 @@
         "music_assistant_code": "Music Assistant code",
         "now_playing": "Now playing",
         "screen_large_cover": "The screen with the large cover that appears when music plays.",
-        "when_paused_or": "When paused or stopped, close «Now playing»",
+        "when_paused_or": "When paused or stopped, close “Now playing”",
         "immediately": "Immediately",
         "after_30_seconds": "After 30 seconds",
         "after_minute": "After a minute",
@@ -722,9 +738,9 @@
         "after_5_minutes": "After 5 minutes",
         "never_close": "Never (close with ✕)",
         "speakers_open_by": "Speakers that open it, by priority",
-        "when_one_starts": "When one starts playing, its «Now playing» appears. If another one is shown, it only switches if the new one is higher on the list or the shown one is not playing; when it stops, it moves to the next one still playing.",
-        "none_now_playing": "None: «Now playing» does not open by itself",
-        "none_one_playing": "None: the one playing among those that open «Now playing»",
+        "when_one_starts": "When one starts playing, its “Now playing” appears. If another one is shown, it only switches if the new one is higher on the list or the shown one is not playing; when it stops, it moves to the next one still playing.",
+        "none_now_playing": "None: “Now playing” does not open by itself",
+        "none_one_playing": "None: the one playing among those that open “Now playing”",
         "voice_screen": "Voice on screen",
         "assist_satellite_what": "(Assist satellite: what you say and its answer appear on the screen)",
         "voice_animation": "Voice animation",
@@ -741,7 +757,7 @@
         "listen_pi_microphone": "Listen with the Pi microphone",
         "name_home_assistant": "Name in Home Assistant",
         "home_assistant_added": "In Home Assistant it is added with the integration",
-        "usually_appears_by": "(it usually appears by itself under «Discovered»).",
+        "usually_appears_by": "(it usually appears by itself under “Discovered”).",
         "port_wyoming": "Port (Wyoming)",
         "voice_error_prefix": "Could not read the voice assistant: "
       },
@@ -752,7 +768,7 @@
         "add": "+ Add",
         "add_inside": "+ Add inside",
         "back_default_tabs": "Back to the default tabs",
-        "tap_card_change": "Tap a card to change it, or «+ Add».",
+        "tap_card_change": "Tap a card to change it, or “+ Add”.",
         "add_component": "Add a component",
         "components_are_created": "Components are created and changed in 🧩 Components.",
         "others": "Others",
@@ -791,11 +807,11 @@
         "card": "Card",
         "chosen_one": "{n} chosen · add or remove…",
         "chosen": "{n} chosen · add or remove…",
-        "copy_of": "Copy «{name}»",
-        "created_bubble": "Created «{name}».",
-        "created_component": "Created «{name}». You can now place it in 🗂️ Tabs.",
-        "saved_not_component": "Saved «{name}», but it is not a component (it lacks type: 'card').",
-        "nothing_matches": "Nothing matches «{q}»",
+        "copy_of": "Copy “{name}”",
+        "created_bubble": "Created “{name}”.",
+        "created_component": "Created “{name}”. You can now place it in 🗂️ Tabs.",
+        "saved_not_component": "Saved “{name}”, but it is not a component (it lacks type: 'card').",
+        "nothing_matches": "Nothing matches “{q}”",
         "not_a_component": "it is not a component (it lacks type: 'card')",
         "field_entity": "Entity",
         "field_device": "Device",
@@ -883,7 +899,16 @@
         "remove_tab": "Remove tab",
         "remove_question": "Remove?",
         "sure_lose_yours": "Sure? Yours are lost. Tap again",
-        "bubbles_error_prefix": "Could not read how the bubbles work: "
+        "bubbles_error_prefix": "Could not read how the bubbles work: ",
+        "not_exists_name": "{name} (does not exist)",
+        "removed_from_rows_one": "(and removed from {n} row of bubbles in the tabs)",
+        "removed_from_rows": "(and removed from {n} rows of bubbles in the tabs)",
+        "sure_used": "Sure? It is used in {n} place(s). Tap again",
+        "component_code_in": "Component {name}: its code is in 🧩 Components.",
+        "panel_off_no_areas_text": "⚠ The panel is not on: no areas.",
+        "deleted_f": "Deleted",
+        "test_ok": "✓ No errors · {ms} ms · updates with: {watch}",
+        "watch_any": "any change"
       },
       "system": {
         "pi_network": "Pi network",
@@ -934,7 +959,12 @@
         "restarting_new": "Restarting the panel with the new version…",
         "updates_error_prefix": "Could not read the updates: ",
         "new_version": "There is a new version.",
-        "update_confirm": "Update now? The panel will restart for a few seconds."
+        "update_confirm": "Update now? The panel will restart for a few seconds.",
+        "networks_found": "{n} networks found. Tap one to connect.",
+        "connect_confirm": "Connect the Pi to “{ssid}”? If the password is wrong, the Pi may lose the network until you connect it again by hand.",
+        "static_ip_confirm": "Set the static IP {ip}? Then you will have to go to http://{ip}:8080",
+        "rename_confirm": "Rename the Pi to “{name}”?",
+        "sudo_hint": "So it can install the system packages a new version needs, run this once on the Pi:"
       },
       "helper": {
         "invalid_name_lowercase_letters": "invalid name: lowercase letters, numbers, - and _ (e.g. living-room-temperature)",
@@ -1037,15 +1067,15 @@
       ["^(\\d+) elegidas? · añadir o quitar…$", "$1 chosen · add or remove…"],
       ["^por defecto \\((.+)\\)$", "default ({t:$1})"],
       ["^Cómo se ve: (.+)$", "How it looks: {t:$1}"],
-      ["^Copiar «(.+)»$", "Copy «{t:$1}»"],
+      ["^Copiar “(.+)”$", "Copy “{t:$1}”"],
       ["^Sin conexión desde (.+)$", "Offline since $1"],
       ["^Guardado, pero: (.+)$", "Saved, but: $1"],
       ["^(.+) \\(automática\\)$", "$1 (automatic)"],
       ["^(.+) · señal (\\d+) %$", "$1 · signal $2 %"],
       ["^(\\d+) cambios? nuevos?$", "$1 new changes"],
-      ["^Creada «(.+)»\\.$", "Created «$1»."],
-      ["^Creado «(.+)»\\. Ya lo puedes colocar en 🗂️ Pestañas\\.$", "Created «$1». You can now place it in 🗂️ Tabs."],
-      ["^No hay nada con «(.*)»$", "Nothing matches «$1»"]
+      ["^Creada “(.+)”\\.$", "Created “$1”."],
+      ["^Creado “(.+)”\\. Ya lo puedes colocar en 🗂️ Pestañas\\.$", "Created “$1”. You can now place it in 🗂️ Tabs."],
+      ["^No hay nada con “(.*)”$", "Nothing matches “$1”"]
     ]
   }
 }

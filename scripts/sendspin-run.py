@@ -1,10 +1,10 @@
-"""Arranca el altavoz Sendspin (sendspin daemon) para el Panel Hogar.
+"""Runs the Sendspin speaker (sendspin daemon) for Panel Hogar.
 
-Igual que «sendspin daemon …», pero además guarda en un archivo el código para emparejar con
-Music Assistant (el PIN que pide al añadir el altavoz), para que el panel lo enseñe en pantalla.
-El archivo se borra cuando termina el emparejamiento.
+Like "sendspin daemon …", but it also saves in a file the code to pair with
+Music Assistant (the PIN it asks for when adding the speaker), so the panel shows it on screen.
+The file is deleted when pairing ends.
 
-Lo lanza «panel-helper.py --sendspin» con el Python del entorno de sendspin (ver setup-sendspin.sh).
+"panel-helper.py --sendspin" starts it with the Python of the sendspin environment (see setup-sendspin.sh).
 """
 import json
 import os
@@ -24,7 +24,7 @@ def _save_pin(grouped):
         else:
             PIN_FILE.unlink(missing_ok=True)
     except OSError as e:
-        print(f'No se pudo guardar el código de emparejamiento: {e}', flush=True)
+        print(f'Could not save the pairing code: {e}', flush=True)
 
 
 def main():
@@ -38,8 +38,8 @@ def main():
             await original(self, pairing_code, grouped=grouped)
 
         SendspinDaemon._show_pairing_code = show_pairing_code
-    except (ImportError, AttributeError) as e:   # otra versión de sendspin: suena igual, pero el código solo sale en el registro
-        print(f'El código de emparejamiento no saldrá en la pantalla: {e}', flush=True)
+    except (ImportError, AttributeError) as e:   # another sendspin version: it plays the same, but the code only shows in the log
+        print(f'The pairing code will not show on the screen: {e}', flush=True)
     from sendspin.cli import main as cli
     sys.argv = ['sendspin'] + sys.argv[1:]
     sys.exit(cli())

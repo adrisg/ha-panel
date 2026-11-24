@@ -1,15 +1,15 @@
-# Traducciones
+# Translations
 
-En el código, los textos se escriben con claves: `I18N.t('panel.states.on')` devuelve «Encendido» o «On» según el idioma. En el HTML fijo se usa `data-i18n="clave"`.
+The code uses keys: `I18N.t('panel.states.on')` gives "On" or "Encendido" depending on the language. The static HTML uses `data-i18n="key"`. English is the base language: if a key is missing in another language, the English text shows.
 
-| Archivo | Qué es |
+| File | What it is |
 |---|---|
-| `languages.json` | La lista de idiomas: `{"es": "Español", "en": "English"}` |
-| `es.json` | Español: todas las claves |
-| `en.json` | Inglés: las mismas claves |
-| `i18n.js` | El motor: carga el JSON del idioma elegido y traduce |
+| `languages.json` | The list of languages: `{"en": "English", "es": "Español"}` |
+| `en.json` | English: every key (the base) |
+| `es.json` | Spanish: the same keys |
+| `i18n.js` | The engine: loads the JSON of the chosen language and translates |
 
-## Formato
+## Format
 
 ```json
 {
@@ -23,29 +23,31 @@ En el código, los textos se escriben con claves: `I18N.t('panel.states.on')` de
       "general": { "save": "Save" }
     }
   },
-  "patterns": [["^(\\d+) encendidas?$", "$1 on"]]
+  "patterns": [["^(\\d+) on$", "$1 encendidas"]]
 }
 ```
 
-- **Claves:** la ruta dentro de `texts` (`panel.states.on`). `panel` es la pantalla y `web` la web de configuración.
-- **Variables:** `I18N.t('panel.states.open_percent', { n: 70 })` → «Open 70 %».
-- **`locale`:** el formato de fechas y números.
-- **`patterns`:** solo traducen textos que llegan ya en español desde fuera del código (el ayudante de la Pi o los scripts de burbujas). Cada patrón es `[expresión regular, reemplazo]`. `$1` pone el trozo tal cual y `{t:$1}` lo pone traducido.
+- **Keys:** the path inside `texts` (`panel.states.on`). `panel` is the screen and `web` the configuration web.
+- **Variables:** `I18N.t('panel.states.open_percent', { n: 70 })` → "Open 70 %".
+- **`locale`:** the format of dates and numbers.
+- **`patterns`:** they only translate texts that arrive already composed in English from outside the code (the Pi's helper or the bubble scripts). Each pattern is `[regular expression, replacement]`. `$1` puts the piece as it is and `{t:$1}` puts it translated.
 
-Si a un idioma le falta una clave, sale el texto en español. Los tests (`tests/test_translations.py`) comprueban tres cosas:
-- todos los idiomas tienen las mismas claves;
-- cada clave que usa el código existe;
-- las variables coinciden.
+Plain texts that reach `t()` (static HTML, helper messages, old settings saved in Spanish) are found by their English or Spanish text.
 
-## Añadir un texto
+The tests (`tests/test_translations.py`) check three things:
+- every language has the same keys;
+- every key the code uses exists;
+- the variables match.
 
-1. Pon la clave en `es.json` y en `en.json`, en su grupo.
-2. Úsala en el código: `I18N.t('web.general.mi_texto')`.
+## Adding a text
 
-## Añadir un idioma
+1. Add the key to `en.json` and to `es.json`, in its group.
+2. Use it in the code: `I18N.t('web.general.my_text')`.
 
-1. Copia `en.json` como `xx.json`, donde `xx` es el código del idioma (`fr`, `de`…).
-2. Traduce los valores y cambia `name` y `locale`.
-3. Añádelo a `languages.json`: `"fr": "Français"`.
+## Adding a language
 
-El idioma nuevo aparece solo en la lista de idiomas del panel y de la web.
+1. Copy `en.json` as `xx.json`, where `xx` is the language code (`fr`, `de`…).
+2. Translate the values and change `name` and `locale`.
+3. Add it to `languages.json`: `"fr": "Français"`.
+
+The new language shows by itself in the language list of the panel and the web.

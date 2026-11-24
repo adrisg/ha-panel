@@ -154,7 +154,7 @@ def test_brightness_and_volumes(helper):
     assert wait(lambda: helper.SIM_SOUND['master'] == 55 and broker.published.get(base + '/volume/state') == '55')
     broker.send(base + '/music_volume/set', '25.0')
     assert wait(lambda: helper.SIM_SOUND['music'] == 25 and broker.published.get(base + '/music_volume/state') == '25')
-    helper.master_set(30)                                   # desde la web
+    helper.master_set(30)                                   # from the web
     assert wait(lambda: broker.published.get(base + '/volume/state') == '30')
     helper.MQTT['client'].stop()
 

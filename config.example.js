@@ -1,64 +1,64 @@
-// Copia este archivo como config.js y rellena tus datos.
-// En la Raspberry Pi lo normal es configurarlo todo desde la web (http://<pi>.local:8080): lo que pongas allí
-// manda sobre este archivo. Sin dirección o sin token, el panel muestra cómo conectarlo (con un QR).
+// Copy this file as config.js and fill in your data.
+// On the Raspberry Pi the normal thing is to set everything up from the web (http://<pi>.local:8080): what you put there
+// wins over this file. With no address or no token, the panel shows how to connect it (with a QR).
 window.PANEL_CONFIG = {
-  // Dirección de tu Home Assistant (sin barra al final)
+  // Your Home Assistant address (no slash at the end)
   haUrl: "http://homeassistant.local:8123",
 
-  // Token de larga duración: en HA → tu perfil → Seguridad → "Tokens de acceso de larga duración"
+  // Long-lived token: in HA → your profile → Security → "Long-lived access tokens"
   token: "PEGA_AQUI_TU_TOKEN",
 
-  // Valores iniciales: luego se cambian desde Ajustes del panel o la web (se guardan en la Pi, nunca en HA).
-  // Segundos sin tocar la pantalla antes de pasar al modo ambiente (reloj/fotos). 0 = nunca.
+  // Initial values: then they are changed from the panel Settings or the web (saved on the Pi, never in HA).
+  // Seconds without touching the screen before going to ambient mode (clock/photos). 0 = never.
   idleSeconds: 90,
 
-  // Entidades que aparecen en "Inicio". Vacío = se eligen solas (escenas, luces, clima).
+  // Entities shown on "Home". Empty = chosen by themselves (scenes, lights, climate).
   favorites: [
     // "light.salon", "scene.cine", "climate.salon",
   ],
 
-  // Entidades que no quieres ver nunca en el panel
+  // Entities you never want to see on the panel
   hiddenEntities: [],
 
-  // Oculta lo que esté "No disponible" o sin datos
+  // Hides whatever is "Unavailable" or has no data
   hideUnavailable: true,
 
-  // Integraciones técnicas que no quieres en el panel (sus cámaras sí se muestran).
-  // El nombre es el de la integración, p. ej. "bambu_lab", "moonraker", "mobile_app"
+  // Technical integrations you do not want on the panel (their cameras do show).
+  // The name is the integration's, e.g. "bambu_lab", "moonraker", "mobile_app"
   excludePlatforms: [],
 
-  // Tipos de sensor que salen en "Sensores" (los favoritos salen siempre).
-  // Quita o añade: temperature, humidity, power, energy, battery, door, window, motion…
+  // Sensor kinds shown in "Sensors" (favourites always show).
+  // Remove or add: temperature, humidity, power, energy, battery, door, window, motion…
   // sensorClasses: ["temperature", "humidity", "power", "door", "window", "motion"],
 
-  // Entidad de tiempo. Vacío = la primera weather.* que encuentre
+  // Weather entity. Empty = the first weather.* it finds
   weatherEntity: "",
 
-  // Fotos del modo ambiente: mejor desde la web de configuración → Fuentes de fotos
-  // (Immich, Google Fotos, carpeta de Medios de Home Assistant o URLs). Formato:
+  // Ambient mode photos: better from the configuration web → Photo sources
+  // (Immich, Google Photos, Home Assistant Media folder or URLs). Format:
   // photoSources: [
   //   { id: "s1", type: "immich", url: "https://immich.casa/share/XXXX", enabled: true },
   //   { id: "s2", type: "google", url: "https://photos.app.goo.gl/XXXX", enabled: true, fit: "blur" },
   //   { id: "s3", type: "ha_media", folder: "fotos", enabled: true },
   //   { id: "s4", type: "urls", urls: ["http://homeassistant.local:8123/local/fotos/1.jpg"], enabled: true },
   // ],
-  // Formato antiguo (sigue funcionando): ambientPhotos con enlaces de Immich o URLs, e immichApiKey.
+  // Old format (still works): ambientPhotos with Immich links or URLs, and immichApiKey.
   ambientPhotos: [],
   photoSeconds: 30,
 
-  // Modo noche: oscurece la pantalla entre estas horas (dim = 0 sin efecto, 0.9 casi negro)
+  // Night mode: darkens the screen between these times (dim = 0 no effect, 0.9 almost black)
   night: { start: "23:00", end: "07:00", dim: 0.6 },
 
-  // Refresco de las cámaras en la vista Multimedia (segundos)
+  // Camera refresh in the Media view (seconds)
   cameraRefreshSeconds: 10,
 
-  // Integración del patinete (custom_components/mi_scooter_ble)
+  // Scooter integration (custom_components/mi_scooter_ble)
   scooterPlatform: "mi_scooter_ble",
 
-  // Enchufe de cada impresora 3D. Se detecta solo si el switch acaba igual que el nombre
-  // de la impresora (p. ej. switch.ikea_plug_bambu_p1s). Si no, ponlo aquí a mano:
+  // Plug of each 3D printer. It is detected by itself if the switch ends like the name
+  // of the printer (e.g. switch.ikea_plug_bambu_p1s). Otherwise, put it here by hand:
   // printerPlugs: { "Bambu P1S": "switch.enchufe_bambu_p1s" },
 
-  // Oculta el puntero del ratón en la Pi (solo en el kiosko; en el PC por http:// se sigue viendo)
+  // Hides the mouse pointer on the Pi (only in the kiosk; on the PC over http:// it still shows)
   hideCursor: true,
 };

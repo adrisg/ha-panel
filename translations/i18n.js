@@ -1,8 +1,8 @@
 /* Panel Hogar — translation engine, shared by the panel and the configuration web.
- * The code uses keys: I18N.t('panel.states.on') → «On» / «Encendido». English (en.json) is the base language:
+ * The code uses keys: I18N.t('panel.states.on') → “On” / “Encendido”. English (en.json) is the base language:
  * a key missing in another language shows the English text. Each language is a JSON file in this folder
  * (see README.md): languages.json lists them, and {"panel": {"states": {"on": "On"}}} is the key panel.states.on.
- * Texts with variables: I18N.t('key', { n: 3 }) and «{n} on».
+ * Texts with variables: I18N.t('key', { n: 3 }) and “{n} on”.
  * Plain texts that reach t() (static HTML, messages from the Pi's helper, old saved settings in Spanish) are found
  * by their English or Spanish text. Composed ones (from bubble scripts, the helper…) are matched by the language's
  * patterns: ["^(\\d+) on$", "$1 encendidas"] ({t:$2} translates a piece). */
@@ -27,7 +27,7 @@
     }
     return out;
   }
-  /** "Copy «{t:$1}»" → the group translated; "$1" → as it is */
+  /** "Copy “{t:$1}”" → the group translated; "$1" → as it is */
   function replacer(repl) {
     return (...m) => repl.replace(/\{t:\$(\d)\}|\$(\d)/g, (x, tn, n) => (tn ? I18N.t(m[+tn] || '') : m[+n] || ''));
   }
@@ -44,7 +44,7 @@
     for (const [k, v] of Object.entries(DICTS[lang])) { const n = norm(v); if (!(n in BY_TEXT)) BY_TEXT[n] = k; }
   }
   const norm = (s) => s.trim().replace(/\s+/g, ' ');              // the HTML line breaks don't count
-  const BY_TEXT = {};                                              // «On» / «Encendido» → panel.states.on
+  const BY_TEXT = {};                                              // “On” / “Encendido” → panel.states.on
   const DONE = new Set();                                          // already translated (t of t('…') stays the same)
   const LANGS = getJSON('languages.json') || { en: 'English' };    // {"en": "English", "es": "Español", …}
   load(BASE);
@@ -78,7 +78,7 @@
       const n = norm(s), dict = DICTS[I18N.lang] || EN;
       let key = has(EN, n) ? n : BY_TEXT[n];
       let r = s;
-      if (!key) {   // «🔊 Sonido»: an emoji or symbol before a known text
+      if (!key) {   // “🔊 Sonido”: an emoji or symbol before a known text
         const m = /^([^\p{L}\p{N}\s]+\s+)(.+)$/u.exec(n);
         const k = m && (has(EN, m[2]) ? m[2] : BY_TEXT[m[2]]);
         if (k) return s.replace(s.trim(), m[1] + I18N.t(k, vars));

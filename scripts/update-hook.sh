@@ -23,7 +23,7 @@ if [ ${#missing[@]} -gt 0 ]; then
   fi
 fi
 
-# Voice assistant from older versions: service «panel-voz» and folder «voz» → «panel-voice» and «voice»
+# Voice assistant from older versions: service "panel-voz" and folder "voz" → "panel-voice" and "voice"
 if [ -f "$UNITS/panel-voz.service" ]; then
   echo "Renaming the voice assistant service to panel-voice..."
   systemctl --user disable --now panel-voz.service 2>/dev/null

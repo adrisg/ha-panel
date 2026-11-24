@@ -4,13 +4,13 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Panel Hogar · Settings</title>
-<!-- Iconos, para ver las burbujas como en el panel al probarlas -->
+<!-- Icons, to see the bubbles like on the panel when testing them -->
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@mdi/font@7.4.47/css/materialdesignicons.min.css">
 <style>
   :root {
     --bg: #0e1014; --surface: #191c22; --surface-2: #232730; --surface-3: #2d323d;
     --text: #eef0f4; --muted: #98a1ad; --accent: #8ab4f8; --ok: #81c995; --danger: #f28b82;
-    /* los mismos que el panel, para ver los componentes igual */
+    /* the same as the panel, to see the components the same way */
     --radius: 20px;
     --on-light: #ffe0a3; --on-light-ink: #3b2a06; --on-climate: #ffcba4; --on-climate-ink: #44210a;
     --on-media: #d9c8ff; --on-media-ink: #261847; --on-cover: #a6e3d8; --on-cover-ink: #0b3530;
@@ -39,7 +39,7 @@
   input[type=range] { width: 100%; accent-color: var(--accent); }
   .row input[type=time] { width: 130px; }
   .row select { width: auto; min-width: 140px; }
-  /* desplegables propios (ver fancySelect) */
+  /* own dropdowns (see fancySelect) */
   .fs-native { display: none !important; }
   .fs-btn { width: 100%; display: flex; align-items: center; gap: 8px; background: var(--surface-2); border: 1px solid var(--surface-3);
     border-radius: 10px; padding: 10px 12px; text-align: left; cursor: pointer; min-width: 0; }
@@ -106,7 +106,7 @@
   #msg { color: var(--muted); font-size: 14px; }
   #msg.ok { color: var(--ok); } #msg.err { color: var(--danger); }
   .login { max-width: 360px; margin: 12vh auto; padding: 0 16px; }
-  /* Barras de scroll finas y del color del tema */
+  /* Thin scrollbars in the theme colour */
   * { scrollbar-width: thin; scrollbar-color: var(--surface-3) transparent; }
   ::-webkit-scrollbar { width: 8px; height: 8px; }
   ::-webkit-scrollbar-track { background: transparent; }
@@ -128,7 +128,7 @@
   .src-body { display: flex; flex-direction: column; gap: 6px; }
   .src-body input, .src-body textarea { background: var(--surface); }
   .pages { display: flex; gap: 6px; margin-bottom: 12px; position: sticky; top: 0; z-index: 5; background: var(--bg, #0e1014); padding: 6px 0;
-    flex-wrap: wrap; }   /* todas las pestañas a la vista: si no caben, bajan a otra fila */
+    flex-wrap: wrap; }   /* all the tabs visible: if they do not fit, they wrap to another row */
   .pages button { flex: none; white-space: nowrap; border: 0; border-radius: 12px; padding: 9px 13px; background: var(--surface); cursor: pointer; font-weight: 600; color: var(--muted); }
   .pages button.on { background: var(--accent); color: #0b1d3a; }
   .bubs { display: flex; flex-direction: column; gap: 8px; margin-top: 10px; }
@@ -244,7 +244,7 @@
   .preview { margin-top: 8px; background: #0b0d11; border-radius: 10px; padding: 10px; font-size: 13px; }
   .preview pre, .help pre { margin: 6px 0 0; white-space: pre-wrap; word-break: break-word; font-size: 12px; color: var(--muted); }
   .preview .err { color: var(--danger); }
-  /* Vista previa de burbujas: igual que en el panel */
+  /* Bubble preview: like on the panel */
   .bprev { display: grid; grid-template-columns: auto 1fr; gap: 10px 12px; align-items: center; margin-top: 10px; }
   .bprev > .hint { font-size: 12px; }
   .bprev-row { display: flex; flex-wrap: wrap; gap: 8px; padding: 10px; border-radius: 12px; min-height: 40px; align-items: center; }
@@ -291,7 +291,7 @@
 </head>
 <body>
 
-<!-- Inicio de sesión -->
+<!-- Log in -->
 <div id="login" class="login hidden">
   <div class="card">
     <h2>🔒 Panel Hogar</h2>
@@ -304,7 +304,7 @@
   </div>
 </div>
 
-<!-- Configuración -->
+<!-- Configuration -->
 <div id="app" class="hidden">
   <div class="wrap">
     <header>
@@ -388,7 +388,7 @@
 
     <div class="card">
       <h2>🫧 Bubbles</h2>
-      <div class="hint" data-i18n="web.ambient.those_marked_ambient">Those marked «Ambient» appear under the clock, in this order, only when they have something to tell. In tabs, add them with a «Bubble row» (🗂️ Tabs). Tap one to change its title and how it works.</div>
+      <div class="hint" data-i18n="web.ambient.those_marked_ambient">Those marked “Ambient” appear under the clock, in this order, only when they have something to tell. In tabs, add them with a “Bubble row” (🗂️ Tabs). Tap one to change its title and how it works.</div>
       <div id="bullets" class="bubs amb-web"></div>
       <div class="add" style="margin-top:12px">
         <input id="bullet-title" type="text" placeholder="Title of the new bubble (e.g. Living room temperature)">
@@ -402,40 +402,40 @@
       </div>
       <div id="bullet-msg" class="hint" style="margin-top:6px"></div>
       <details class="help"><summary data-i18n="web.ambient.how_write_how">How to write how it works</summary>
-<pre>render(ha, screen, config) → lo que se pinta
+<pre>render(ha, screen, config) → what it paints
 
-config (ajustes que se rellenan aquí, en «Ajustes» de la burbuja)
-  config: { entity: { type: 'entity', domain: 'weather', label: 'Entidad' },
-            showText: { type: 'bool', default: true } }      tipos: entity, device, text, number, bool, select
+config (settings filled in here, in the bubble “Settings”)
+  config: { entity: { type: 'entity', domain: 'weather', label: 'Entity' },
+            showText: { type: 'bool', default: true } }      kinds: entity, device, text, number, bool, select
   watch: (config) => [config.entity]
 
 ha (Home Assistant)
   ha.state(id)  ha.num(id)  ha.attr(id, 'x')  ha.name(id)  ha.fmt(id)  ha.entity(id)  ha.states
   ha.isOn(id)  ha.ok(id)  ha.minutesSince(id)
   ha.find('light.*', (s, id) => …)  ha.count('light.*', 'on')
-  ha.info(id) → { platform, device, deviceId, area, areaId, key }   de qué integración y aparato es
-  ha.devices('bambu_lab') → [{ id, name, area, entities }]   aparatos de una integración
-  ha.number(21.46) → '21,5'   ha.duration(4800) → '1 h 20 min'
-  ha.call('light.turn_off', { entity_id: 'light.x' })   solo dentro de onTap
+  ha.info(id) → { platform, device, deviceId, area, areaId, key }   which integration and device it belongs to
+  ha.devices('bambu_lab') → [{ id, name, area, entities }]   devices of an integration
+  ha.number(21.46) → '21.5'   ha.duration(4800) → '1 h 20 min'
+  ha.call('light.turn_off', { entity_id: 'light.x' })   only inside onTap
 
-screen (la pantalla)
+screen (the screen)
   screen.place → 'ambient' | 'home' | 'card'      screen.brightness  screen.on  screen.night  screen.ambient
-  screen.alarms  screen.nextAlarm() → { name, when, text }      screen.light (sensor de luz, futuro)
+  screen.alarms  screen.nextAlarm() → { name, when, text }      screen.light (light sensor, future)
   screen.visible(id)  screen.go('media')  screen.nowPlaying(id)  screen.now()
 
-Burbuja → { icon, text, color, textColor, iconEnd, iconEndColor, progress, go, onTap }  (o una lista, o null)
-Tarjeta → [ { title }, { text, size: 'big'|'small' }, { tiles: [ids] },
-            { stats: [{ icon, value, label }] }, { chips: [burbujas] },
+Bubble → { icon, text, color, textColor, iconEnd, iconEndColor, progress, go, onTap }  (or a list, or null)
+Card   → [ { title }, { text, size: 'big'|'small' }, { tiles: [ids] },
+            { stats: [{ icon, value, label }] }, { chips: [bubbles] },
             { button: { text, icon, go, onTap } } ]
-onTap: (ha, screen) => ha.call('light.toggle', { entity_id: 'light.salon' })
-go = 'home' | 'rooms' | 'sensors' | 'media' | 'printers' | 'scooter' | 'settings' | id de pestaña</pre></details>
+onTap: (ha, screen) => ha.call('light.toggle', { entity_id: 'light.living_room' })
+go = 'home' | 'rooms' | 'sensors' | 'media' | 'printers' | 'scooter' | 'settings' | tab id</pre></details>
     </div>
     </div>
     <div data-pg="general">
     <div class="card">
       <h2>📺 Live screen</h2>
       <span class="hint" data-i18n="web.general.what_pi_screen">What the Pi screen shows right now.</span>
-      <div class="live" id="live"><img id="live-img" alt=""><div id="live-msg" class="hint" data-i18n="web.general.tap_view_start">Tap «View» to start.</div></div>
+      <div class="live" id="live"><img id="live-img" alt=""><div id="live-msg" class="hint" data-i18n="web.general.tap_view_start">Tap “View” to start.</div></div>
       <div class="btns"><button class="btn primary" type="button" id="live-btn" data-i18n="web.general.view">View</button></div>
     </div>
 
@@ -447,7 +447,7 @@ go = 'home' | 'rooms' | 'sensors' | 'media' | 'printers' | 'scooter' | 'settings
         <button class="btn" data-command="ambient">🖼️ Ambient mode</button>
         <button class="btn" data-command="screen_on">💡 Turn on screen</button>
         <button class="btn" data-command="screen_off">🌙 Turn off screen</button>
-        <button class="btn" id="aviso">🔔 Test notification</button>
+        <button class="btn" id="notify-test">🔔 Test notification</button>
       </div>
     </div>
 
@@ -462,16 +462,16 @@ go = 'home' | 'rooms' | 'sensors' | 'media' | 'printers' | 'scooter' | 'settings
         <input id="token" type="password" autocomplete="off" placeholder="Type a new one only if you want to change it">
         <span class="hint" data-i18n="web.general.security_saved_token">For security the saved token is never shown. Create it in Home Assistant → your profile → Security.</span>
       </div>
-      <div class="btns"><button class="btn" id="probar" data-i18n="web.general.test_connection">Test connection</button><span id="probar-msg" class="hint" style="align-self:center"></span></div>
+      <div class="btns"><button class="btn" id="test-connection" data-i18n="web.general.test_connection">Test connection</button><span id="test-msg" class="hint" style="align-self:center"></span></div>
     </div>
 
     <div class="card">
       <h2>⭐ Home and entities</h2>
-      <datalist id="entidades"></datalist>
+      <datalist id="entities"></datalist>
       <div class="field">
         <label>Favourites on Home <span class="hint" data-i18n="web.general.empty_picked_automatically">(empty = picked automatically)</span></label>
         <div class="chips" id="favorites"></div>
-        <div class="add"><input list="entidades" placeholder="light.living_room…" data-add="favorites"><button class="btn" data-add-btn="favorites" data-i18n="panel.quick.add">Add</button></div>
+        <div class="add"><input list="entities" placeholder="light.living_room…" data-add="favorites"><button class="btn" data-add-btn="favorites" data-i18n="panel.quick.add">Add</button></div>
       </div>
       <div class="field">
         <label for="weatherEntity" data-i18n="web.general.weather_entity">Weather entity</label>
@@ -480,7 +480,7 @@ go = 'home' | 'rooms' | 'sensors' | 'media' | 'printers' | 'scooter' | 'settings
       <div class="field">
         <label data-i18n="web.general.hidden_entities">Hidden entities</label>
         <div class="chips" id="hiddenEntities"></div>
-        <div class="add"><input list="entidades" placeholder="camera.lava_gui…" data-add="hiddenEntities"><button class="btn" data-add-btn="hiddenEntities" data-i18n="panel.quick.add">Add</button></div>
+        <div class="add"><input list="entities" placeholder="camera.lava_gui…" data-add="hiddenEntities"><button class="btn" data-add-btn="hiddenEntities" data-i18n="panel.quick.add">Add</button></div>
       </div>
       <div class="field">
         <label>Integrations not shown on the panel <span class="hint" data-i18n="web.general.their_cameras_are">(their cameras are)</span></label>
@@ -488,10 +488,10 @@ go = 'home' | 'rooms' | 'sensors' | 'media' | 'printers' | 'scooter' | 'settings
         <div class="add"><input placeholder="bambu_lab, moonraker…" data-add="excludePlatforms"><button class="btn" data-add-btn="excludePlatforms" data-i18n="panel.quick.add">Add</button></div>
       </div>
       <div class="field">
-        <label for="printerPlugs">Printer plugs <span class="hint" data-i18n="web.general.only_if_not">(only if not detected; «Name = switch.x», one per line)</span></label>
+        <label for="printerPlugs">Printer plugs <span class="hint" data-i18n="web.general.only_if_not">(only if not detected; “Name = switch.x”, one per line)</span></label>
         <textarea id="printerPlugs" placeholder="Bambu P1S = switch.enchufe_bambu"></textarea>
       </div>
-      <div id="entidades-msg" class="hint"></div>
+      <div id="entities-msg" class="hint"></div>
     </div>
 
     <div class="card">
@@ -523,7 +523,7 @@ go = 'home' | 'rooms' | 'sensors' | 'media' | 'printers' | 'scooter' | 'settings
       <div class="hint" data-i18n="web.general.they_appear_quick">They appear in the quick access panel (swipe down from the top → right window). One tap turns them on or off.</div>
       <div class="field">
         <div class="chips" id="quick"></div>
-        <div class="add"><input list="entidades" placeholder="light.living_room…" data-add="quick"><button class="btn" data-add-btn="quick" data-i18n="panel.quick.add">Add</button></div>
+        <div class="add"><input list="entities" placeholder="light.living_room…" data-add="quick"><button class="btn" data-add-btn="quick" data-i18n="panel.quick.add">Add</button></div>
       </div>
     </div>
     </div>
@@ -631,7 +631,7 @@ go = 'home' | 'rooms' | 'sensors' | 'media' | 'printers' | 'scooter' | 'settings
       <h2>▶️ Now playing</h2>
       <span class="hint" data-i18n="web.sound.screen_large_cover">The screen with the large cover that appears when music plays.</span>
       <div class="field">
-        <label for="spk-close" data-i18n="web.sound.when_paused_or">When paused or stopped, close «Now playing»</label>
+        <label for="spk-close" data-i18n="web.sound.when_paused_or">When paused or stopped, close “Now playing”</label>
         <select id="spk-close">
           <option value="0" data-i18n="web.sound.immediately">Immediately</option><option value="30" data-i18n="web.sound.after_30_seconds">After 30 seconds</option><option value="60" data-i18n="web.sound.after_minute">After a minute</option>
           <option value="120" data-i18n="web.sound.after_2_minutes">After 2 minutes</option><option value="300" data-i18n="web.sound.after_5_minutes">After 5 minutes</option><option value="-1" data-i18n="web.sound.never_close">Never (close with ✕)</option>
@@ -640,7 +640,7 @@ go = 'home' | 'rooms' | 'sensors' | 'media' | 'printers' | 'scooter' | 'settings
       <div class="field">
         <label data-i18n="web.sound.speakers_open_by">Speakers that open it, by priority</label>
         <div id="np-speakers"></div>
-        <span class="hint" data-i18n="web.sound.when_one_starts">When one starts playing, its «Now playing» appears. If another one is shown, it only switches if the new one is higher on the list or the shown one is not playing; when it stops, it moves to the next one still playing.</span>
+        <span class="hint" data-i18n="web.sound.when_one_starts">When one starts playing, its “Now playing” appears. If another one is shown, it only switches if the new one is higher on the list or the shown one is not playing; when it stops, it moves to the next one still playing.</span>
       </div>
     </div>
 
@@ -663,36 +663,36 @@ go = 'home' | 'rooms' | 'sensors' | 'media' | 'printers' | 'scooter' | 'settings
 
     <div class="card">
       <h2>🎙️ Voice assistant (Pi microphone)</h2>
-      <dl class="info" id="voz-info"><dt data-i18n="panel.sheets.status">Status</dt><dd data-i18n="web.login.loading">Loading…</dd></dl>
-      <div id="voz-install" class="hint hidden">Falta instalarlo una vez en la Pi: <code>bash ~/ha-panel/scripts/setup-voice.sh</code></div>
-      <div class="row"><label for="voz-enabled" data-i18n="web.beta.listen_pi_microphone">Listen with the Pi microphone</label><label class="switch"><input id="voz-enabled" type="checkbox"><span></span></label></div>
+      <dl class="info" id="voice-info"><dt data-i18n="panel.sheets.status">Status</dt><dd data-i18n="web.login.loading">Loading…</dd></dl>
+      <div id="voice-install" class="hint hidden">Falta instalarlo una vez en la Pi: <code>bash ~/ha-panel/scripts/setup-voice.sh</code></div>
+      <div class="row"><label for="voz-enabled" data-i18n="web.beta.listen_pi_microphone">Listen with the Pi microphone</label><label class="switch"><input id="voice-enabled" type="checkbox"><span></span></label></div>
       <div class="field">
         <label for="voz-name" data-i18n="web.beta.name_home_assistant">Name in Home Assistant</label>
-        <input id="voz-name" type="text" maxlength="60">
+        <input id="voice-name" type="text" maxlength="60">
       </div>
       <div class="field">
         <label for="voz-mic" data-i18n="panel.settings.microphone">Microphone</label>
-        <select id="voz-mic"></select>
+        <select id="voice-mic"></select>
       </div>
       <div class="field">
         <label for="voz-out" data-i18n="panel.settings.answers_through">Answers through</label>
-        <select id="voz-out"></select>
+        <select id="voice-out"></select>
       </div>
       <div class="field">
         <label for="voz-wake" data-i18n="panel.settings.wake_word">Wake word</label>
-        <select id="voz-wake"></select>
+        <select id="voice-wake"></select>
       </div>
-      <span class="hint">In Home Assistant it is added with the integration <b>Wyoming</b> (it usually appears by itself under «Discovered»).</span>
-      <div id="voz-msg" class="hint"></div>
-      <details id="voz-log-box" class="hidden"><summary data-i18n="web.sound.log">Log</summary><pre id="voz-log"></pre></details>
+      <span class="hint">In Home Assistant it is added with the integration <b>Wyoming</b> (it usually appears by itself under “Discovered”).</span>
+      <div id="voice-msg" class="hint"></div>
+      <details id="voice-log-box" class="hidden"><summary data-i18n="web.sound.log">Log</summary><pre id="voice-log"></pre></details>
     </div>
     </div>
 
     <div data-pg="system" class="hidden">
     <div class="card">
       <h2>📶 Pi network</h2>
-      <dl class="info" id="red-info"><dt data-i18n="panel.sheets.status">Status</dt><dd data-i18n="web.login.loading">Loading…</dd></dl>
-      <div id="red-controles">
+      <dl class="info" id="net-info"><dt data-i18n="panel.sheets.status">Status</dt><dd data-i18n="web.login.loading">Loading…</dd></dl>
+      <div id="net-controls">
         <div class="field">
           <label data-i18n="panel.settings.wifi">WiFi</label>
           <div class="btns"><button class="btn" id="wifi-buscar" data-i18n="web.system.find_networks">Find networks</button></div>
@@ -721,7 +721,7 @@ go = 'home' | 'rooms' | 'sensors' | 'media' | 'printers' | 'scooter' | 'settings
           <span class="hint" data-i18n="web.system.one_address_http">It is the one in the address http://&lt;name&gt;.local:8080</span>
         </div>
       </div>
-      <div id="red-msg" class="hint"></div>
+      <div id="net-msg" class="hint"></div>
     </div>
 
     <div class="card">
@@ -743,7 +743,7 @@ go = 'home' | 'rooms' | 'sensors' | 'media' | 'printers' | 'scooter' | 'settings
         <select id="upd-hour"></select>
         <span class="hint" data-i18n="web.system.better_at_night">Better at night: the panel restarts for a few seconds when updating.</span>
       </div>
-      <div id="upd-sudo" class="hint hidden">Para que pueda instalar paquetes del sistema que necesite una versión nueva, vuelve a lanzar una vez <code>bash ~/ha-panel/scripts/setup-kiosk.sh</code> en la Pi.</div>
+      <div id="upd-sudo" class="hint hidden"><span data-i18n="web.system.sudo_hint">So it can install the system packages a new version needs, run this once on the Pi:</span> <code>bash ~/ha-panel/scripts/setup-kiosk.sh</code></div>
       <div class="btns">
         <button class="btn" id="upd-check" data-i18n="web.system.check_now">Check now</button>
         <button class="btn primary hidden" id="upd-apply" data-i18n="web.system.update">Update</button>
@@ -770,13 +770,13 @@ go = 'home' | 'rooms' | 'sensors' | 'media' | 'printers' | 'scooter' | 'settings
 I18N.page(document.body);
 document.title = I18N.t(document.title);
 const $ = (s) => document.querySelector(s);
-const DEF = {   // mismos valores por defecto que el panel
+const DEF = {   // the same defaults as the panel
   idleSeconds: 90, screenOffMinutes: 0, brightness: 100,
   night: { enabled: true, start: '23:00', end: '07:00', brightness: 40, screenOff: false },
   sound: { enabled: true, volume: 70 }, photos: { enabled: true, seconds: 30, fit: 'blur' },
 };
 const lists = { favorites: [], hiddenEntities: [], excludePlatforms: [], quick: [] };
-// colores de acento del panel (el tono de tema oscuro, como esta web)
+// accent colours of the panel (the dark theme shade, like this web)
 const ACCENTS = { blue: ['panel.settings.blue', '#8ab4f8'], teal: ['panel.settings.teal', '#78d9ec'], green: ['panel.settings.green', '#81c995'], yellow: ['panel.settings.yellow', '#fdd663'],
   orange: ['panel.settings.orange', '#fcad70'], pink: ['panel.settings.pink', '#ff8bcb'], purple: ['panel.settings.purple', '#c58af9'] };
 let accent = 'blue';
@@ -785,7 +785,7 @@ function renderAccents() {
     style: `background:${c};color:#111`, onclick: () => { accent = k; renderAccents(); dirty(); } }, k === accent ? el('i', { class: 'mdi mdi-check' }) : null)));
 }
 const PM = window.PanelModules;
-/** Una opción de un desplegable, con el texto traducido. */
+/** An option of a dropdown, with its text translated. */
 const tOption = (text, value) => new Option(typeof text === 'string' ? t(text) : text, value);
 const el = (tag, props = {}, ...kids) => {
   const e = document.createElement(tag);
@@ -802,8 +802,8 @@ const switchEl = (checked, onchange) => {
   const sw = el('label', { class: 'switch' }, el('input', { type: 'checkbox', checked, onchange: (e) => onchange(e.target.checked) }), el('span'));
   return sw;
 };
-/** Botón que pide confirmación en la propia página: el primer toque cambia el texto y hay que tocar otra vez.
- *  (No usa la ventana confirm() del navegador, que algunos navegadores bloquean.) */
+/** Button that asks for confirmation on the page itself: the first tap changes the text and you have to tap again.
+ *  (It does not use the browser's confirm() window, which some browsers block.) */
 function sureBtn(props, text, sure, onYes) {
   let armed = null;
   const b = el('button', Object.assign({ type: 'button' }, props, { textContent: text, onclick: (e) => {
@@ -817,12 +817,12 @@ function sureBtn(props, text, sure, onYes) {
 const moveBtns = (arr, i, after) => [-1, 1].map((d) => el('button', { type: 'button', class: 'btn mv', textContent: d < 0 ? '↑' : '↓', disabled: !arr[i + d],
   onclick: () => { [arr[i], arr[i + d]] = [arr[i + d], arr[i]]; after(); dirty(); } }));
 
-/* ---------- páginas de la web ---------- */
+/* ---------- web pages ---------- */
 function showPage(p) {
   document.body.classList.toggle('wide', p === 'tabs');
   document.querySelectorAll('[data-pg]').forEach((x) => x.classList.toggle('hidden', x.dataset.pg !== p));
   document.querySelectorAll('.pages button').forEach((x) => x.classList.toggle('on', x.dataset.page === p));
-  const on = document.querySelector(`.pages button[data-page="${p}"]`);   // en el móvil, la pestaña elegida a la vista
+  const on = document.querySelector(`.pages button[data-page="${p}"]`);   // on the phone, the chosen tab in view
   if (on) on.scrollIntoView({ inline: 'center', block: 'nearest' });
 }
 document.querySelectorAll('.pages button').forEach((x) => (x.onclick = () => {
@@ -830,33 +830,33 @@ document.querySelectorAll('.pages button').forEach((x) => (x.onclick = () => {
 }));
 const PAGES = [...document.querySelectorAll('.pages button')].map((b) => b.dataset.page);
 const OLD_PAGES = { burbujas: 'ambient', ajustes: 'general', pantalla: 'screen', ambiente: 'ambient', sonido: 'sound', pantallas: 'tabs',
-  componentes: 'components', sistema: 'system' };   // enlaces de antes
+  componentes: 'components', sistema: 'system' };   // links from before
 const want = location.hash.slice(1);
 showPage(PAGES.includes(want) ? want : OLD_PAGES[want] || 'general');
 
-/* Idioma de esta web: el elegido en los ajustes (o el del navegador). Los textos fijos se traducen una vez al cargar;
- * si al leer los ajustes resulta que es otro, se recarga en ese idioma. */
+/* Language of this web: the one chosen in the settings (or the browser's). The fixed texts are translated once on load;
+ * if reading the settings shows it is another one, it reloads in that language. */
 function webLanguage(choice) {
   const want = I18N.resolve(choice, navigator.language);
   let saved = null;
-  try { saved = localStorage.getItem('panel_lang'); localStorage.setItem('panel_lang', want); } catch (e) { /* sin almacenamiento */ }
+  try { saved = localStorage.getItem('panel_lang'); localStorage.setItem('panel_lang', want); } catch (e) { /* no storage */ }
   if (want !== I18N.lang && saved !== want) location.reload();
 }
 
-/* ---------- código (archivos .js guardados en la Pi; los de serie vienen en lib/modules.js) ---------- */
+/* ---------- code (.js files saved on the Pi; the built-in ones come in lib/modules.js) ---------- */
 let scripts = {}, files = {}, states = null, panelData = null;
-/** Para probar: ha con los estados reales de Home Assistant y el registro de entidades que manda el panel;
- *  screen con los datos de la pantalla que manda el panel (cada 15 s). Aquí ha.call no hace nada. */
+/** For testing: ha with the real Home Assistant states and the entity registry the panel sends;
+ *  screen with the screen data the panel sends (every 15 s). Here ha.call does nothing. */
 function testHA() {
   const info = (panelData && panelData.info) || {}, fc = (panelData && panelData.forecasts) || {};
   return PM.makeHA(() => states || {}, { info: (id) => info[id],
     forecast: (id) => fc[id] || (states && states[id] && states[id].attributes.forecast) || [] });
 }
-/** Script compilado (con lo que haya sin guardar) o null */
+/** Compiled script (with whatever is unsaved) or null */
 const compOf = (name) => { try { return name in scripts || name in drafts ? PM.compile(drafts[name] ?? scripts[name]) : null; } catch (e) { return null; } };
 const isCard = (name) => (compOf(name) || {}).type === 'card';
 const actText = (a) => (typeof a === 'function' ? I18N.t('web.editor.does_something') : I18N.t(PM.ACTIONS[(PM.actionOf(a) || {}).action] || ''));
-/** Un componente dibujado como en el panel (mismo HTML y CSS). Al pasar el ratón dice qué hace al pulsar. */
+/** A component drawn like on the panel (same HTML and CSS). On hover it says what it does on tap. */
 function compPreview(name, mod, values) {
   const ha = testHA(), b = mod.bind(values || {}, ha), host = el('div', {});
   PanelComp.render(host, name, mod, [ha, testScreen('card'), b.cfg], {
@@ -867,7 +867,7 @@ function compPreview(name, mod, values) {
   });
   return { node: el('div', { class: 'cmp-prev' }, host), bound: b };
 }
-/** Pinta un componente con unos ajustes: { node } o { err } */
+/** Paints a component with some settings: { node } or { err } */
 function renderComp(name, values) {
   const m = compOf(name);
   if (!m) return { err: name in scripts ? I18N.t('web.editor.has_error') : 'no existe ' + name };
@@ -877,18 +877,18 @@ function renderComp(name, values) {
 function testScreen(place) {
   return PM.makeScreen(Object.assign({}, (panelData && panelData.screen) || {}, { place }));
 }
-const drafts = {};            // cambios sin guardar del código, para no perderlos al repintar
+const drafts = {};            // unsaved code changes, so they are not lost on repaint
 const isDefault = (name) => name in PM.DEFAULT_SCRIPTS;
 async function loadScripts() {
   files = await api('GET', '/api/scripts'); scripts = PM.allScripts(files);
-  // Para los Ajustes de las burbujas: estados (device_class) y aparatos (los manda el panel)
+  // For the bubble Settings: states (device_class) and devices (the panel sends them)
   [states, panelData] = await Promise.all([api('GET', '/api/states').catch(() => states), api('GET', '/api/panel-data').catch(() => panelData)]);
   renderBullets(); renderCardScripts(); renderTabs();
 }
 const slug = (t) => String(t || '').normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase()
   .replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '').slice(0, 34) || 'burbuja';
 function freeName(t) { const base = slug(t); let n = base + '.js', i = 2; while (n in scripts) n = `${base}-${i++}.js`; return n; }
-/** ¿Cuántas veces se usa un script en las pestañas? (componentes, también dentro de otros, y filas de burbujas) */
+/** How many times is a script used in the tabs? (components, also inside others, and rows of bubbles) */
 function usesOf(name) {
   let n = 0;
   const walk = (cards) => (cards || []).forEach((c) => {
@@ -906,137 +906,137 @@ async function deleteCode(name) {
   delete files[name]; delete drafts[name]; scripts = PM.allScripts(files);
 }
 
-/* ---------- editor de código: Monaco (el de VS Code) si se puede; si no, el cuadro de texto ---------- */
+/* ---------- code editor: Monaco (VS Code's) if possible; otherwise, the text box ---------- */
 const MONACO = 'https://cdn.jsdelivr.net/npm/monaco-editor@0.52.2/min/vs';
-// Lo que hay en un script, para que Monaco autocomplete ha., screen., html`…`, campos de config…
+// What a script has, so Monaco autocompletes ha., screen., html`…`, config fields…
 const SCRIPT_TYPES = `
 /** Acceso a Home Assistant */
 interface HA {
-  /** Todos los estados: { entity_id: estado completo } */
+  /** All the states: { entity_id: full state } */
   readonly states: Record<string, HAState>;
   /** Estado completo: { entity_id, state, attributes, last_changed } */
   entity(id: string): HAState | null;
-  /** Estado como texto ('on', '21.5', 'playing'…) o null si no existe */
+  /** State as text ('on', '21.5', 'playing'…) or null if it does not exist */
   state(id: string): string | null;
-  /** Estado como número (NaN si no lo es) */
+  /** State as a number (NaN if it is not one) */
   num(id: string): number;
-  /** Un atributo: ha.attr('light.salon', 'brightness') */
+  /** An attribute: ha.attr('light.living_room', 'brightness') */
   attr(id: string, name: string): any;
   /** Nombre visible */
   name(id: string): string;
-  /** ¿Encendida / abierta / reproduciendo? */
+  /** On / open / playing? */
   isOn(id: string): boolean;
-  /** ¿Existe y está disponible? */
+  /** Does it exist and is it available? */
   ok(id: string): boolean;
-  /** Estado con su unidad: '21,5 °C' */
+  /** State with its unit: '21.5 °C' */
   fmt(id: string, decimals?: number): string;
-  /** Estado para mostrar, traducido: 'Encendido', 'Abierta', '21,5 °C' */
+  /** State to show, translated: 'On', 'Open', '21.5 °C' */
   text(id: string): string;
-  /** Icono de la entidad: 'mdi:lightbulb' */
+  /** Icon of the entity: 'mdi:lightbulb' */
   icon(id: string): string;
-  /** ¿Activa? (para pintarla encendida) */
+  /** Active? (to paint it as on) */
   active(id: string): boolean;
-  /** Tipo según el dominio: 'light', 'media', 'climate', 'cover', 'lock' o '' */
+  /** Kind for the domain: 'light', 'media', 'climate', 'cover', 'lock' or '' */
   kind(id: string): string;
-  /** Color real de una luz encendida: { bg, ink } o null */
+  /** Real colour of a light that is on: { bg, ink } or null */
   color(id: string): { bg: string; ink: string } | null;
-  /** Previsión diaria de una entidad weather */
+  /** Daily forecast of a weather entity */
   forecast(id: string): { datetime: string; condition: string; temperature: number; templow?: number; precipitation_probability?: number }[];
-  /** Número con coma decimal: ha.number(21.46) → '21,5' */
+  /** Number in the panel's format: ha.number(21.46) → '21.5' (or '21,5') */
   number(n: number, decimals?: number): string;
   /** Segundos → '1 h 20 min' */
   duration(seconds: number): string;
-  /** Entidades que coinciden: ha.find('light.*'), ha.find('sensor.*', (s, id) => …) */
+  /** Matching entities: ha.find('light.*'), ha.find('sensor.*', (s, id) => …) */
   find(pattern: string | string[], filter?: (state: HAState, id: string) => boolean): string[];
-  /** Cuántas cumplen: ha.count('light.*', 'on') */
+  /** How many match: ha.count('light.*', 'on') */
   count(pattern: string | string[], state?: string | ((state: HAState) => boolean)): number;
-  /** Minutos desde el último cambio */
+  /** Minutes since the last change */
   minutesSince(id: string): number;
-  /** De qué es: integración, aparato, zona y clave */
+  /** What it belongs to: integration, device, area and key */
   info(id: string): { platform?: string; device?: string; deviceId?: string; area?: string; areaId?: string; key?: string };
-  /** Aparatos de una integración: [{ id, name, area, entities }] */
+  /** Devices of an integration: [{ id, name, area, entities }] */
   devices(platform?: string): { id: string; name: string; area: string | null; entities: string[] }[];
-  /** Reproductores sin repetidos y con lo que suena primero (sin lista: todos) */
+  /** Players without duplicates and with what is playing first (without a list: all) */
   mediaOrder(ids?: string[]): string[];
-  /** Impresoras 3D con su estado y sus entidades (e.status, e.progress, e.remaining, e.camera, e.screen, e.cover, e.pause, e.resume, e.stop, e.light, e.plug, e.plugPower, e.bed…) */
+  /** 3D printers with their state and their entities (e.status, e.progress, e.remaining, e.camera, e.screen, e.cover, e.pause, e.resume, e.stop, e.light, e.plug, e.plugPower, e.bed…) */
   printers(): { device: string; name: string; platform: string; state: 'printing' | 'paused' | 'preparing' | 'finished' | 'error' | 'cancelled' | 'idle' | 'offline' | 'off'; active: boolean; e: Record<string, string>; nozzles: { label: string; cur: string; tgt?: string; fil?: string }[] }[];
-  /** Dirección de la imagen de una entidad (carátula, cámara, miniatura) o '' */
+  /** Address of the image of an entity (artwork, camera, thumbnail) or '' */
   picture(id: string, width?: number): string;
-  /** Mandar a Home Assistant: ha.call('light.turn_off', { entity_id: 'light.salon' }). Solo al pulsar (tap/hold/onTap) */
+  /** Send to Home Assistant: ha.call('light.turn_off', { entity_id: 'light.living_room' }). Only on tap (tap/hold/onTap) */
   call(service: string, data?: Record<string, any>): Promise<any>;
 }
 interface HAState { entity_id: string; state: string; attributes: Record<string, any>; last_changed: string; last_updated: string }
-/** La pantalla (lo que no es de Home Assistant) */
+/** The screen (what does not belong to Home Assistant) */
 interface Screen {
-  /** Dónde se pinta: 'ambient' (debajo del reloj), 'home' (Inicio) o 'card' (en una pestaña) */
+  /** Where it paints: 'ambient' (under the clock), 'home' (Home) or 'card' (in a tab) */
   place: 'ambient' | 'home' | 'card';
   /** Brillo actual (0–100) */
   brightness: number | null;
-  /** ¿Pantalla encendida? */
+  /** Is the screen on? */
   on: boolean;
-  /** ¿Modo noche? */
+  /** Night mode? */
   night: boolean;
-  /** ¿Se ve el modo ambiente? */
+  /** Is ambient mode showing? */
   ambient: boolean;
-  /** Luz ambiente del sensor de la pantalla (null si no hay) */
+  /** Ambient light from the screen sensor (null if there is none) */
   light: number | null;
-  /** Alarmas del panel */
+  /** Panel alarms */
   alarms: { name: string; time: string; days: number[]; enabled: boolean; when: Date | null; text: string | null }[];
-  /** La próxima alarma o null */
+  /** The next alarm or null */
   nextAlarm(): { name: string; when: Date; text: string } | null;
-  /** ¿La entidad no está oculta en el panel? */
+  /** Is the entity not hidden on the panel? */
   visible(id: string): boolean;
-  /** Ir a una pestaña: 'home', 'rooms', 'media'… o el id de una tuya */
+  /** Go to a tab: 'home', 'rooms', 'media'… or the id of one of yours */
   go(tab: string): void;
-  /** Abrir la pantalla «Sonando» (a pantalla completa) de un reproductor */
+  /** Open the “Now playing” screen (full screen) of a player */
   nowPlaying(entity: string): void;
   /** Hora actual */
   now(): Date;
-  /** Favoritos elegidos en los Ajustes del panel */
+  /** Favourites chosen in the panel Settings */
   favorites: string[];
 }
 interface HtmlResult { __html: string }
-/** html\\\`<div>\\\${…}</div>\\\`: lo de \\\${…} se escapa solo. Atributos: tap, hold, entity. <ha-icon icon="mdi:…">, <slot>.
- *  Fichas del panel: <ha-tile entity>, <ha-sensor entity>, <ha-camera entity>. En un <input>: change=\${(ha, screen, valor) => …} */
-interface Html { (strings: TemplateStringsArray, ...values: any[]): HtmlResult; /** HTML sin escapar */ raw(html: string): HtmlResult }
+/** html\\\`<div>\\\${…}</div>\\\`: what is in \\\${…} is escaped by itself. Attributes: tap, hold, entity. <ha-icon icon="mdi:…">, <slot>.
+ *  Panel tiles: <ha-tile entity>, <ha-sensor entity>, <ha-camera entity>. In an <input>: change=\${(ha, screen, value) => …} */
+interface Html { (strings: TemplateStringsArray, ...values: any[]): HtmlResult; /** Unescaped HTML */ raw(html: string): HtmlResult }
 type ActionName = 'toggle' | 'more-info' | 'navigate' | 'call' | 'none';
 type Action = ActionName | { action: ActionName; go?: string; service?: string; data?: Record<string, any>; entity?: string } | ((ha: HA, screen: Screen) => any);
 interface Field {
-  /** entity, device, text, number, bool, select, icon o action */
+  /** entity, device, text, number, bool, select, icon or action */
   type: 'entity' | 'device' | 'text' | 'number' | 'bool' | 'select' | 'icon' | 'action';
   label?: string; hint?: string; default?: any;
   /** entity: dominio ('light', 'sensor'…) */ domain?: string;
   /** entity: device_class ('temperature', 'door'…) */ deviceClass?: string | string[];
   /** entity/device: elegir varias */ multiple?: boolean;
-  /** entity/device: false = sin elegir no coge ninguna */ auto?: boolean;
-  /** device: integración ('bambu_lab'…) */ integration?: string;
-  /** device: que tenga esta entidad */ has?: { key?: string; suffix?: string };
+  /** entity/device: false = with nothing chosen it takes none */ auto?: boolean;
+  /** device: integration ('bambu_lab'…) */ integration?: string;
+  /** device: that has this entity */ has?: { key?: string; suffix?: string };
   /** select */ options?: (string | { value: string; label: string })[];
   min?: number; max?: number; step?: number;
 }
-/** Una burbuja */
+/** A bubble */
 interface Bubble { icon?: string; text?: string; color?: string; textColor?: string; iconEnd?: string; iconEndColor?: string; progress?: number; go?: string; onTap?: (ha: HA, screen: Screen) => any }
-/** Un script: burbuja (sin type) o componente (type: 'card') */
+/** A script: bubble (no type) or component (type: 'card') */
 interface PanelScript {
-  /** 'card' = componente para las pestañas; sin type = burbuja */
+  /** 'card' = component for the tabs; no type = bubble */
   type?: 'card';
-  /** Nombre del componente */ name?: string;
-  /** Icono del componente: 'mdi:…' */ icon?: string;
-  /** Ancho al añadirlo */ width?: 'full' | '3/4' | '2/3' | '1/2' | '1/3' | '1/4';
-  /** Lleva otros componentes dentro (van en <slot>) */ children?: boolean;
-  /** Repintar solo cada estos segundos */ refresh?: number;
-  /** Campos que se rellenan en la web */ config?: Record<string, Field>;
-  /** Entidades que lo actualizan (admite *). null = cualquier cambio */
+  /** Name of the component */ name?: string;
+  /** Icon of the component: 'mdi:…' */ icon?: string;
+  /** Width when added */ width?: 'full' | '3/4' | '2/3' | '1/2' | '1/3' | '1/4';
+  /** It holds other components inside (they go in <slot>) */ children?: boolean;
+  /** Repaint by itself every these seconds */ refresh?: number;
+  /** Fields filled in in the web */ config?: Record<string, Field>;
+  /** Entities that update it (* allowed). null = any change */
   watch?: string[] | null | ((config: any, ha: HA) => string[]);
-  /** CSS del componente (solo le afecta a él) */ style?: string;
-  /** Funciones para tap="nombre" */ actions?: Record<string, (ha: HA, screen: Screen) => any>;
-  /** Lo que se pinta: componentes → html\\\`…\\\`; burbujas → { icon, text… } o null */
+  /** CSS of the component (it only affects it) */ style?: string;
+  /** Functions for tap="name" */ actions?: Record<string, (ha: HA, screen: Screen) => any>;
+  /** What it paints: components → html\\\`…\\\`; bubbles → { icon, text… } or null */
   render(ha: HA, screen: Screen, config: any, html: Html): HtmlResult | Bubble | Bubble[] | string | null;
 }
 `;
 const PREFIX = '/** @type {PanelScript} */ (', SUFFIX = ')';
 let monacoP = null;
-const useMonaco = () => !(matchMedia('(pointer: coarse)').matches && innerWidth < 900);   // en el móvil, el cuadro de texto
+const useMonaco = () => !(matchMedia('(pointer: coarse)').matches && innerWidth < 900);   // on the phone, the text box
 function loadMonaco() {
   if (monacoP) return monacoP;
   monacoP = new Promise((resolve, reject) => {
@@ -1062,14 +1062,14 @@ function loadMonaco() {
   monacoP.catch(() => {});
   return monacoP;
 }
-/** Cambia el cuadro de texto por Monaco (si carga). El cuadro sigue siendo la fuente: ta.value siempre al día.
- *  keys: { save, test } para Ctrl+S y Ctrl+Enter */
+/** Swaps the text box for Monaco (if it loads). The box is still the source: ta.value always up to date.
+ *  keys: { save, test } for Ctrl+S and Ctrl+Enter */
 function upgradeEditor(ta, onChange, keys) {
   if (!useMonaco()) return;
   const box = el('div', { class: 'monaco' });
   ta.after(box);
   loadMonaco().then((m) => {
-    // El código va dentro de /** @type {PanelScript} */ ( … ) para que sepa qué es ha, screen…; esas líneas no se ven
+    // The code goes inside /** @type {PanelScript} */ ( … ) so it knows what ha, screen… are; those lines are not shown
     const model = m.editor.createModel(PREFIX + '\n' + ta.value + '\n' + SUFFIX, 'javascript');
     const ed = m.editor.create(box, { model, theme: 'panel', automaticLayout: true, minimap: { enabled: false }, fontSize: 13,
       tabSize: 2, scrollBeyondLastLine: false, wordWrap: 'off', renderLineHighlight: 'line', fixedOverflowWidgets: true,
@@ -1078,7 +1078,7 @@ function upgradeEditor(ta, onChange, keys) {
     hide();
     const body = () => { const n = model.getLineCount(); return model.getValueInRange(new m.Range(2, 1, n - 1, model.getLineMaxColumn(n - 1))); };
     model.onDidChangeContent(() => {
-      // que no se puedan borrar las líneas escondidas
+      // so the hidden lines cannot be deleted
       if (model.getLineContent(1) !== PREFIX || model.getLineContent(model.getLineCount()) !== SUFFIX) { model.undo(); return; }
       ta.value = body(); onChange(ta.value); hide();
     });
@@ -1087,10 +1087,10 @@ function upgradeEditor(ta, onChange, keys) {
     ed.setPosition({ lineNumber: 2, column: 1 });
     ta.classList.add('hidden');
     box.classList.add('ready');
-  }).catch(() => box.remove());   // sin Monaco: se queda el cuadro de texto
+  }).catch(() => box.remove());   // without Monaco: the text box stays
 }
 
-/** Editor del funcionamiento: texto + Guardar, Probar, Descargar y Restaurar (las de serie). */
+/** Script editor: text + Save, Test, Download and Restore (the built-in ones). */
 function codeEditor(name, say, getValues = () => ({})) {
   const def = isDefault(name);
   const ta = el('textarea', { class: 'code', spellcheck: false, value: drafts[name] ?? scripts[name] ?? '' });
@@ -1120,7 +1120,7 @@ function codeEditor(name, say, getValues = () => ({})) {
         preview = el('div', { class: 'bprev' }, ...row('ambient', I18N.t('panel.nav.ambient')), ...row('home', I18N.t('panel.nav.home')));
       }
       out.replaceChildren(...[
-        el('div', { class: 'hint', textContent: `✓ Sin errores · ${ms.toFixed(1)} ms · se actualiza con: ${!bound.watch ? 'cualquier cambio' : bound.watch.length ? bound.watch.join(', ') : I18N.t('web.editor.watch_nothing')}` }),
+        el('div', { class: 'hint', textContent: I18N.t('web.editor.test_ok', { ms: ms.toFixed(1), watch: !bound.watch ? I18N.t('web.editor.watch_any') : bound.watch.length ? bound.watch.join(', ') : I18N.t('web.editor.watch_nothing') }) }),
         panelData && panelData.t ? null : el('div', { class: 'hint', textContent: I18N.t('web.editor.panel_off_hint') }),
         preview,
         el('details', { style: 'margin-top:8px' }, el('summary', { class: 'hint', style: 'cursor:pointer', textContent: I18N.t('web.ambient.see_what_returns') }),
@@ -1147,7 +1147,7 @@ function codeEditor(name, say, getValues = () => ({})) {
     el('button', { type: 'button', class: 'btn', textContent: I18N.t('web.ambient.download'), onclick: download }),
     def && name in files ? el('button', { type: 'button', class: 'btn', textContent: I18N.t('web.ambient.restore_default'), onclick: restore }) : null), out);
 }
-/** Una burbuja dibujada como en el panel. place: 'ambient' | 'home' */
+/** A bubble drawn like on the panel. place: 'ambient' | 'home' */
 function bubblePreview(b, place) {
   const cls = place === 'ambient' ? 'amb' : 'home';
   const e = el('div', { class: `bchip ${cls}` + (b.progress != null ? ' bar' : ''), title: b.onTap ? I18N.t('web.editor.on_tap_does') : b.action ? I18N.t('web.editor.on_touch_prefix') + (b.action.service || '') : b.go ? I18N.t('web.editor.on_tap_go_prefix') + b.go : '' });
@@ -1160,7 +1160,7 @@ function bubblePreview(b, place) {
 }
 function renderAll() { renderBullets(); renderCardScripts(); renderTabs(); }
 
-/* ---------- burbujas: título, dónde salen, orden y funcionamiento ---------- */
+/* ---------- bubbles: title, where they show, order and script ---------- */
 let bullets = [], openBullet = null;
 const bmsg = (t, kind = '') => { $('#bullet-msg').textContent = I18N.t(t); $('#bullet-msg').className = 'hint ' + kind; };
 function renderBullets() {
@@ -1186,7 +1186,7 @@ function renderBullets() {
     return card;
   }));
 }
-/** Aparatos de una integración, con lo que manda el panel (ha.info). */
+/** Devices of an integration, with what the panel sends (ha.info). */
 function deviceList(platform, f = {}) {
   const info = (panelData && panelData.info) || {}, out = {};
   for (const [id, i] of Object.entries(info))
@@ -1195,7 +1195,7 @@ function deviceList(platform, f = {}) {
   return Object.values(out).filter((d) => PM.deviceHas(f, d.entities, (id) => info[id]))
     .sort((a, b) => String(a.name).localeCompare(b.name));
 }
-/** «Ajustes» de una burbuja: los campos que declara su script en config. Se guardan en la burbuja (b.config). */
+/** “Settings” of a bubble: the fields its script declares in config. Saved in the bubble (b.config). */
 function configForm(b) {
   let schema = {};
   try { schema = PM.compile(drafts[b.script] ?? scripts[b.script]).config; } catch (e) { return null; }
@@ -1204,13 +1204,13 @@ function configForm(b) {
     ...fieldsForm(schema, () => b.config || {}, (k, v) => { b.config = Object.assign({}, b.config, { [k]: v }); dirty(); }, 'cfg-' + b.id));
 }
 let fieldSeq = 0;
-/** Opciones de un campo entity / device: [{ value, label }] */
+/** Options of an entity / device field: [{ value, label }] */
 function fieldOptions(f) {
   if (f.type === 'device') return deviceList(f.integration, f).map((d) => ({ value: d.id, label: d.name + (d.area ? ' · ' + d.area : '') }));
   const ok = PM.entityMatch(f), st = states || {};
   return Object.keys(names).filter((x) => ok(st[x] || (f.deviceClass ? null : {}), x)).sort().map((x) => ({ value: x, label: `${names[x]} (${x})` }));
 }
-/** Formulario de unos campos (config de un script o de un componente). get() → valores; set(clave, valor). */
+/** Form for some fields (config of a script or a component). get() → values; set(key, value). */
 function fieldsForm(schema, get, set, prefix) {
   const cur = (k) => get()[k];
   return Object.keys(schema).map((k) => {
@@ -1237,21 +1237,21 @@ function fieldsForm(schema, get, set, prefix) {
     return el('div', { class: 'field' }, el('label', { for: id, textContent: label }), input, f.hint ? el('div', { class: 'hint', textContent: f.hint }) : null);
   });
 }
-/** Elegir entidades o aparatos. Pocas opciones: desplegable / casillas. Muchas: buscador. */
+/** Choose entities or devices. Few options: dropdown / checkboxes. Many: search. */
 function entityInput(f, id, v, set) {
   const opts = fieldOptions(f);
   const auto = f.auto === false ? I18N.t('web.editor.none_option') : I18N.t('web.general.automatic_first_one');
   if (!opts.length) return el('div', { class: 'hint', textContent: f.type === 'device' ? I18N.t('web.editor.no_devices_prefix') + ([].concat(f.integration || '?').join(' / ')) + I18N.t('web.editor.or_panel_off') : I18N.t('web.editor.no_matching_entities') });
-  // Varias: desplegable de selección múltiple con buscador
+  // Several: multiple selection dropdown with search
   if (f.multiple) return multiSelect(opts, [].concat(v || []), set, f.auto === false ? I18N.t('panel.settings.none_f') : f.type === 'device' ? I18N.t('web.editor.none_chosen_all') : I18N.t('web.editor.none_chosen_all_f'));
-  // Una: desplegable (con buscador si hay muchas)
+  // One: dropdown (with search if there are many)
   const s = el('select', { id, onchange: (e) => set(e.target.value) }, el('option', { value: '', textContent: auto }),
     ...opts.map((o) => el('option', { value: o.value, textContent: o.label })),
-    v && !opts.some((o) => o.value === v) ? el('option', { value: v, textContent: `${v} (no existe)` }) : null);
+    v && !opts.some((o) => o.value === v) ? el('option', { value: v, textContent: I18N.t('web.editor.not_exists_name', { name: v }) }) : null);
   s.value = v || '';
   return s;
 }
-/** Elegir varias: etiquetas con × y un desplegable con buscador donde se marcan y desmarcan (no se cierra al marcar). */
+/** Choose several: tags with × and a dropdown with search where they are ticked and unticked (it does not close on ticking). */
 function multiSelect(opts, list, set, emptyText) {
   list = list.slice();
   const labelOf = (x) => (opts.find((o) => o.value === x) || { label: x + I18N.t('web.editor.not_exists_suffix') }).label;
@@ -1271,7 +1271,7 @@ function multiSelect(opts, list, set, emptyText) {
   paint();
   return el('div', { class: 'ms' }, chips, btn);
 }
-/** Lista con orden (prioridad): cada elegido con su número, subir, bajar y quitar; abajo, añadir. */
+/** Ordered list (priority): each chosen one with its number, up, down and remove; below, add. */
 function orderSelect(opts, list, set, emptyText) {
   list = list.slice();
   const labelOf = (x) => (opts.find((o) => o.value === x) || { label: x + I18N.t('web.editor.not_exists_suffix') }).label;
@@ -1294,7 +1294,7 @@ function orderSelect(opts, list, set, emptyText) {
   paint();
   return el('div', { class: 'ms' }, rows, btn);
 }
-/** Altavoces para las listas: este panel y los media_player de Home Assistant. */
+/** Speakers for the lists: this panel and Home Assistant's media_players. */
 const speakerOpts = () => [{ value: '@panel', label: I18N.t('panel.ambient.panel') }]
   .concat(Object.keys(names).filter((id) => id.startsWith('media_player.')).map((id) => ({ value: id, label: names[id] || id })));
 let ambSpk = [], npSpk = [];
@@ -1336,7 +1336,7 @@ function msShow(btn, opts, getList, toggle) {
   place();
   (search || pop).focus();
 }
-/** Qué hace al pulsar / mantener: acción y, según cuál, a dónde ir o qué servicio. */
+/** What it does on tap / hold: action and, depending on which, where to go or what service. */
 function actionInput(f, v, set) {
   let a = Object.assign({}, PM.actionOf(v) || PM.actionOf(f.default) || { action: 'none' });
   const box = el('div', { class: 'act' });
@@ -1369,7 +1369,7 @@ function actionInput(f, v, set) {
 async function delBullet(i) {
   const b = bullets[i];
   bullets.splice(i, 1); openBullet = null;
-  // También fuera de las Filas de burbujas de las pestañas (también las de dentro de una Tarjeta)
+  // Also outside the Rows of bubbles of the tabs (also the ones inside a Card)
   let rows = 0;
   if (!bullets.some((x) => x.script === b.script)) {
     const walk = (cards) => (cards || []).forEach((c) => {
@@ -1381,9 +1381,9 @@ async function delBullet(i) {
   try {
     if (b.script in files && !isDefault(b.script) && !bullets.some((x) => x.script === b.script) && !usedInTabs(b.script)) await deleteCode(b.script);
   } catch (e) { bmsg(e.message, 'err'); }
-  renderAll(); dirty(); bmsg(`Borrada${rows ? ` (y quitada de ${rows} fila${rows > 1 ? 's' : ''} de burbujas de las pestañas)` : ''}.`);
+  renderAll(); dirty(); bmsg(I18N.t('web.editor.deleted_f') + (rows ? ' ' + I18N.t(rows > 1 ? 'web.editor.removed_from_rows' : 'web.editor.removed_from_rows_one', { n: rows }) : '') + '.');
 }
-/** Nueva burbuja con su funcionamiento (código nuevo, de una URL o de un archivo). */
+/** New bubble with its script (new code, from a URL or from a file). */
 async function addBullet(title, code, viaUrl) {
   title = String(title || '').trim();
   if (!title) throw new Error(I18N.t('web.editor.give_title'));
@@ -1412,9 +1412,9 @@ $('#bullet-file').onchange = async (e) => {
   try { await addBullet(f.name.replace(/\.js$/i, ''), await f.text()); } catch (err) { bmsg(err.message, 'err'); }
 };
 
-/* ---------- componentes: scripts con type: 'card' ---------- */
+/* ---------- components: scripts with type: 'card' ---------- */
 let openCard = null;
-const testVals = {};          // ajustes de prueba de cada componente (no se guardan)
+const testVals = {};          // test settings of each component (not saved)
 const cmsg = (t, kind = '') => { $('#cscript-msg').textContent = I18N.t(t); $('#cscript-msg').className = 'hint ' + kind; };
 const EMPTY_CARD = (name) => `{
   type: 'card', name: '${name.replace(/'/g, '')}', icon: 'mdi:star-outline', width: '1/2',
@@ -1443,7 +1443,7 @@ const EMPTY_CARD = (name) => `{
 `;
 function renderCardScripts() {
   const list = PM.componentList(scripts);
-  // plantillas para crear: vacío o copiar uno que ya existe
+  // templates to create from: empty or copy an existing one
   const tpl = $('#cscript-tpl'), cur = tpl.value;
   tpl.replaceChildren(el('option', { value: '', textContent: I18N.t('web.editor.start_from_scratch') }), ...list.map((c) => el('option', { value: c.script, textContent: I18N.t('web.editor.copy_of', { name: I18N.t(c.name) }) })));
   tpl.value = [...tpl.options].some((o) => o.value === cur) ? cur : '';
@@ -1467,12 +1467,12 @@ function renderCardScripts() {
         el('div', { class: 'cfg' }, ...fieldsForm(m.config, () => testVals[name] || {}, (k, v) => { testVals[name] = Object.assign({}, testVals[name], { [k]: v }); paint(); }, 't-' + name))) : null,
       el('div', { class: 'sub', textContent: I18N.t('web.editor.how_looks') }), prev,
       el('details', { class: 'func' }, el('summary', { class: 'sub', textContent: I18N.t('web.ambient.how_works_code') }), codeEditor(name, say, () => testVals[name] || {})),
-      c.builtin ? null : el('div', { class: 'btns' }, sureBtn({ class: 'btn danger' }, I18N.t('web.editor.delete_component'), uses ? `¿Seguro? Se usa en ${uses} sitio(s). Toca otra vez` : I18N.t('panel.notices.sure_tap_again'), del))));
+      c.builtin ? null : el('div', { class: 'btns' }, sureBtn({ class: 'btn danger' }, I18N.t('web.editor.delete_component'), uses ? I18N.t('web.editor.sure_used', { n: uses }) : I18N.t('panel.notices.sure_tap_again'), del))));
     paint();
     return card;
   }));
 }
-/** Nuevo componente: desde cero, copiando otro, de una dirección o de un archivo */
+/** New component: from scratch, copying another, from an address or from a file */
 async function addComp(title, code, viaUrl) {
   title = String(title || '').trim();
   if (!title) throw new Error(I18N.t('web.editor.give_name'));
@@ -1499,7 +1499,7 @@ $('#cscript-file').onchange = async (e) => {
   try { await addComp(f.name.replace(/\.js$/i, ''), await f.text()); } catch (err) { cmsg(err.message, 'err'); }
 };
 
-/* ---------- pestañas ---------- */
+/* ---------- tabs ---------- */
 let tabs = [];
 function cardFields(c) {
   const f = [];
@@ -1512,18 +1512,18 @@ function cardFields(c) {
   }
   return f;
 }
-/* ---------- editor de pantallas: pestañas → rejilla de tarjetas y componentes ---------- */
-let edTab = 0, edSel = null, edAdd = null;   // pestaña abierta; ruta de la tarjeta elegida; dónde se añade
+/* ---------- tabs editor: tabs → grid of cards and components ---------- */
+let edTab = 0, edSel = null, edAdd = null;   // open tab; path of the chosen card; where it is added
 const TYPE_ICONS = { view: 'mdi-view-dashboard-outline', entities: 'mdi-view-grid-outline', camera: 'mdi-cctv' };
 const samePath = (x, y) => !!x && !!y && x.length === y.length && x.every((v, i) => v === y[i]);
-/** Lista de tarjetas en una ruta ([] = la pestaña; [i] = dentro de la tarjeta i…) */
+/** List of cards at a path ([] = the tab; [i] = inside card i…) */
 function listAt(path) {
   let list = (tabs[edTab] || {}).cards;
   for (const i of path) list = list[i].cards || (list[i].cards = []);
   return list;
 }
 const cardAt = (path) => listAt(path.slice(0, -1))[path[path.length - 1]];
-/** Resumen de una tarjeta para la rejilla: { icon, title, sub, body } */
+/** Summary of a card for the grid: { icon, title, sub, body } */
 function cardSummary(c) {
   if (c.type === 'component') {
     const m = compOf(c.component), g = c.config || {};
@@ -1551,14 +1551,14 @@ function cardSummary(c) {
     : c.type === 'entities' ? (c.entities || []).length + ' entidades' : c.type === 'camera' ? c.entity || '' : '';
   return { icon: TYPE_ICONS[c.type] || 'mdi-card-outline', title: c.title || kind, sub, kind };
 }
-/** Rejilla de una lista de tarjetas (recursiva para las Tarjetas que agrupan) */
+/** Grid of a list of cards (recursive for the grouping Cards) */
 function edGrid(list, base) {
   const grid = el('div', { class: 'ed-layout', 'data-list': JSON.stringify(base) });
   list.forEach((c, i) => {
     const path = base.concat(i), s = cardSummary(c), sel = samePath(edSel, path);
     const hasWhen = !!(c.when && (c.when.rules || []).length);
     let whenNow = true;
-    if (hasWhen && states) try { whenNow = PM.checkWhen(c.when, testHA(), testScreen('card')); } catch (e) { /* sin datos */ }
+    if (hasWhen && states) try { whenNow = PM.checkWhen(c.when, testHA(), testScreen('card')); } catch (e) { /* no data */ }
     const box = el('div', { class: 'ed-slot w-' + String(c.width || 'full').replace('/', '-') + (sel ? ' sel' : '') + (c.type === 'component' && (compOf(c.component) || {}).children ? ' group' : '') + (whenNow ? '' : ' when-off'),
       onclick: (e) => { e.stopPropagation(); if (dragJustEnded()) return; edSel = path; edAdd = null; renderTabs(); } },
       el('div', { class: 'ed-head' }, el('span', { class: 'ed-handle', title: I18N.t('web.editor.drag_to_move') }, el('i', { class: 'mdi mdi-drag' })),
@@ -1576,15 +1576,15 @@ function edGrid(list, base) {
     onclick: (e) => { e.stopPropagation(); if (dragJustEnded()) return; edAdd = base; edSel = null; renderTabs(); }, 'data-list': JSON.stringify(base) }));
   return grid;
 }
-/* ---------- arrastrar y soltar tarjetas en la rejilla (ratón y dedo) ----------
- * Se cogen por su asa (⠿). Mientras se arrastra no se mueve nada: una barra azul marca si cae antes o después de la
- * tarjeta de debajo, o se resalta el «+ Añadir (dentro)» (= al final de esa lista: así se mete o se saca de una Tarjeta). */
+/* ---------- drag and drop cards in the grid (mouse and finger) ----------
+ * They are picked by their handle (⠿). Nothing moves while dragging: a blue bar marks whether it lands before or after the
+ * card below, or the “+ Add (inside)” lights up (= at the end of that list: that is how it goes in or out of a Card). */
 let drag = null, dragEndAt = 0;
 const dragJustEnded = () => Date.now() - dragEndAt < 250;
-/** ¿Esa lista es la de dentro de la tarjeta (o de alguna de las suyas)? No se puede soltar una Tarjeta dentro de sí misma */
+/** Is that list the one inside the card (or one of its own)? A Card cannot be dropped inside itself */
 const isInside = (card, list) => !!card.cards && (card.cards === list || card.cards.some((c) => isInside(c, list)));
 function dragClear() { document.querySelectorAll('.drop-before, .drop-after, .drop-in').forEach((x) => x.classList.remove('drop-before', 'drop-after', 'drop-in')); }
-/** Dónde caería: { list, ref, after, el, kind } */
+/** Where it would land: { list, ref, after, el, kind } */
 function dropTarget(x, y) {
   drag.ghost.style.display = 'none';
   const under = document.elementFromPoint(x, y);
@@ -1595,7 +1595,7 @@ function dropTarget(x, y) {
   const slot = under.closest('#ed-grid .ed-slot[data-path]');
   if (!slot || slot === drag.el || drag.el.contains(slot)) return null;
   const path = JSON.parse(slot.dataset.path), list = listAt(path.slice(0, -1)), r = slot.getBoundingClientRect();
-  // tarjetas anchas: arriba / abajo; estrechas: izquierda / derecha
+  // wide cards: above / below; narrow ones: left / right
   const wide = r.width > slot.parentElement.getBoundingClientRect().width * 0.6;
   const after = wide ? y > r.top + r.height / 2 : x > r.left + r.width / 2;
   return { list, ref: list[path[path.length - 1]], after, el: slot, kind: (wide ? (after ? 'below' : 'above') : (after ? 'after' : 'before')) };
@@ -1606,7 +1606,7 @@ document.getElementById('ed-grid').addEventListener('pointerdown', (e) => {
   e.preventDefault(); e.stopPropagation();
   const slot = handle.closest('.ed-slot[data-path]');
   drag = { el: slot, path: JSON.parse(slot.dataset.path), x: e.clientX, y: e.clientY, on: false, id: e.pointerId };
-  try { handle.setPointerCapture(e.pointerId); } catch (x) { /* nada */ }
+  try { handle.setPointerCapture(e.pointerId); } catch (x) { /* nothing */ }
 });
 addEventListener('pointermove', (e) => {
   if (!drag || e.pointerId !== drag.id) return;
@@ -1630,7 +1630,7 @@ addEventListener('pointermove', (e) => {
   drag.target = t && !isInside(drag.card, t.list) ? t : null;
   if (drag.target) t.el.classList.add(t.kind === 'in' ? 'drop-in' : t.kind === 'above' || t.kind === 'before' ? 'drop-before' : 'drop-after');
   if (drag.target && (t.kind === 'above' || t.kind === 'below')) t.el.classList.add('drop-v');
-  // la página se desplaza sola cerca de los bordes
+  // the page scrolls by itself near the edges
   const edge = 70;
   if (e.clientY < edge) scrollBy(0, -14); else if (e.clientY > innerHeight - edge) scrollBy(0, 14);
 }, { passive: false });
@@ -1653,14 +1653,14 @@ function dragEnd(e) {
 }
 addEventListener('pointerup', dragEnd);
 addEventListener('pointercancel', dragEnd);
-/** Nueva tarjeta de un tipo */
+/** New card of a kind */
 function newCard(kind) {
   if (kind === 'bubbles') return { type: 'bubbles', width: 'full', items: [] };
   const m = compOf(kind);
   if (m && m.type === 'card') return Object.assign({ type: 'component', component: kind, width: m.width || 'full', config: {} }, m.children ? { cards: [] } : {});
   return kind === 'view' ? { type: 'view', view: 'home' } : kind === 'entities' ? { type: 'entities', entities: [] } : { type: kind };
 }
-/** Panel para elegir qué añadir */
+/** Panel to choose what to add */
 function edAddPanel() {
   const pick = (kind) => { const list = listAt(edAdd); list.push(newCard(kind)); edSel = edAdd.concat(list.length - 1); edAdd = null; renderTabs(); dirty(); };
   const opt = (kind, label, ic, hint) => el('button', { type: 'button', class: 'ed-opt', onclick: () => pick(kind) },
@@ -1674,14 +1674,14 @@ function edAddPanel() {
       opt('camera', I18N.t('web.editor.camera'), TYPE_ICONS.camera)),
     el('div', { class: 'btns' }, el('button', { type: 'button', class: 'btn', textContent: I18N.t('web.editor.cancel'), onclick: () => { edAdd = null; renderTabs(); } })));
 }
-/** Las burbujas de una fila, cada una con sus ajustes */
+/** The bubbles of a row, each with its settings */
 function bubbleItems(c) {
   c.items = c.items || [];
   const names2 = Object.keys(scripts).filter((n) => !isCard(n)).sort();
   const label = (n) => I18N.t((PM.BUILTINS.find((x) => x.script === n) || {}).label || n.replace(/\.js$/, ''));
   return el('div', { class: 'bubs' }, ...c.items.map((it, i) => {
     let schema = {};
-    try { schema = PM.compile(scripts[it.script]).config; } catch (e) { /* sin ajustes */ }
+    try { schema = PM.compile(scripts[it.script]).config; } catch (e) { /* no settings */ }
     const s = el('select', { onchange: (e) => { c.items[i] = { script: e.target.value, config: {} }; renderTabs(); dirty(); } },
       ...names2.map((n) => el('option', { value: n, textContent: label(n) })));
     s.value = it.script;
@@ -1690,7 +1690,7 @@ function bubbleItems(c) {
       Object.keys(schema).length ? el('div', { class: 'bub-body' }, ...fieldsForm(schema, () => it.config || {}, (k, v) => { it.config = Object.assign({}, it.config, { [k]: v }); dirty(); })) : null);
   }), el('button', { type: 'button', class: 'btn mini', textContent: I18N.t('web.editor.bubble'), onclick: () => { c.items.push({ script: 'weather.js', config: {} }); renderTabs(); dirty(); } }));
 }
-/** Panel de la tarjeta elegida: ancho, ajustes y mover / duplicar / borrar */
+/** Panel of the chosen card: width, settings and move / duplicate / delete */
 function edCardPanel() {
   const c = cardAt(edSel);
   if (!c) { edSel = null; return null; }
@@ -1705,7 +1705,7 @@ function edCardPanel() {
     else {
       body = fieldsForm(m.config, () => c.config || {}, (k, v) => { c.config = Object.assign({}, c.config, { [k]: v }); dirty(); clearTimeout(edTimer); edTimer = setTimeout(paintGrid, 400); }, 'c');
       if (m.children) body.push(el('div', { class: 'hint', textContent: I18N.t('web.editor.what_inside_edited') }));
-      body.push(el('div', { class: 'hint', textContent: `Componente ${c.component}: su código está en 🧩 Componentes.` }));
+      body.push(el('div', { class: 'hint', textContent: I18N.t('web.editor.component_code_in', { name: c.component }) }));
     }
   } else if (c.type === 'bubbles') body = [bubbleItems(c)];
   else body = cardFields(c);
@@ -1722,7 +1722,7 @@ function edCardPanel() {
     c.type === 'component' || c.type === 'bubbles' ? null : el('div', { class: 'hint', textContent: I18N.t('web.editor.old_cards_hint') }),
     ...body);
 }
-/** «Mostrar solo si…»: condiciones de esta tarjeta en este sitio (c.when) */
+/** “Only show if…”: conditions of this card in this place (c.when) */
 function whenEditor(c) {
   const w = c.when && Array.isArray(c.when.rules) ? c.when : { mode: 'all', rules: [] };
   const box = el('div', { class: 'when' });
@@ -1759,7 +1759,7 @@ function whenEditor(c) {
         oninput: (e) => { r.code = e.target.value; save(); }, onchange: () => paint() }));
     }
     let ok = null;
-    try { ok = PM.checkWhen({ rules: [r] }, testHA(), testScreen('card')); } catch (e) { /* sin datos */ }
+    try { ok = PM.checkWhen({ rules: [r] }, testHA(), testScreen('card')); } catch (e) { /* no data */ }
     return el('div', { class: 'when-rule' }, el('div', { class: 'when-head' }, kind,
       states ? el('span', { class: 'pill' + (ok ? ' ok' : ''), textContent: ok ? I18N.t('web.editor.now_yes') : I18N.t('web.editor.now_no') }) : null,
       el('button', { type: 'button', class: 'btn danger mv', textContent: '×', title: I18N.t('web.editor.remove_condition'), onclick: () => { w.rules.splice(i, 1); save(true); } })), ...f);
@@ -1779,7 +1779,7 @@ function whenEditor(c) {
 }
 let edTimer;
 function paintGrid() { const t = tabs[edTab]; if (t) $('#ed-grid').replaceChildren(edGrid(t.cards || (t.cards = []), [])); }
-/** Las vistas antiguas (y las pestañas de serie) se convierten en componentes cuando ya hay datos de Home Assistant */
+/** The old views (and the built-in tabs) become components once there is Home Assistant data */
 function convertViews() {
   if (!states || !Object.keys(states).length || !tabs.some((t) => (t.cards || []).some((c) => c && c.type === 'view'))) return;
   const info = (panelData && panelData.info) || {};
@@ -1787,7 +1787,7 @@ function convertViews() {
     visible: (id) => !lists.hiddenEntities.includes(id) && !lists.excludePlatforms.includes((info[id] || {}).platform) && (info[id] || {}).platform !== 'mi_scooter_ble' };
   tabs.forEach((t) => { t.cards = PM.expandViews(t.cards, testHA(), opts); });
   dirty();
-  msg((panelData && panelData.info ? '' : '⚠ El panel no está encendido: sin zonas. ') + I18N.t('web.editor.tabs_built'));
+  msg((panelData && panelData.info ? '' : I18N.t('web.editor.panel_off_no_areas_text') + ' ') + I18N.t('web.editor.tabs_built'));
 }
 function renderTabs() {
   convertViews();
@@ -1817,7 +1817,7 @@ async function api(method, path, body) {
   const r = await fetch(path, { method, credentials: 'same-origin',
     headers: { 'Content-Type': 'application/json', 'X-Panel': '1' }, body: body ? JSON.stringify(body) : undefined });
   const data = await r.json().catch(() => ({}));
-  if (r.status === 401 && path !== '/api/login') { showLogin(); throw new Error('Inicia sesión'); }
+  if (r.status === 401 && path !== '/api/login') { showLogin(); throw new Error('LOGIN'); }
   if (!r.ok) throw new Error(data.error || 'Error ' + r.status);
   return data;
 }
@@ -1865,7 +1865,7 @@ function fill(cfg) {
   $('#sound-enabled').checked = a.sound.enabled; $('#sound-volume').value = a.sound.volume;
   $('#photos-enabled').checked = a.photos.enabled; $('#photos-seconds').value = String(a.photos.seconds);
   $('#photos-fit').value = a.photos.fit || 'blur';
-  renderSources();   // para que «por defecto (…)» muestre el modo general ya cargado
+  renderSources();   // so “default (…)” shows the general mode already loaded
   sources = Array.isArray(p.photoSources) ? p.photoSources.map((x) => ({ ...x })) : legacySources(p);
   renderSources();
   $('#printerPlugs').value = Object.entries(p.printerPlugs || {}).map(([k, v]) => `${k} = ${v}`).join('\n');
@@ -1927,9 +1927,9 @@ function collect() {
   return { panel, settings };
 }
 let isDirty = false;
-let FILLING = 0;   // mientras se rellenan los campos con lo de la Pi no cuenta como cambio
-/* Lo que no va en la configuración del panel sino en servicios de la Pi (sonido, altavoz, voz, actualizaciones).
- * snap = cómo estaba al cargar: al pulsar Guardar solo se manda lo que ha cambiado. */
+let FILLING = 0;   // while the fields are filled with what is on the Pi it does not count as a change
+/* What does not go in the panel configuration but in Pi services (sound, speaker, voice, updates).
+ * snap = how it was on load: pressing Save only sends what changed. */
 const EXTRA = {
   sound: { label: 'panel.settings.sound', snap: null,
     get: () => ({ music: +$('#snd-music-vol').value, master: +$('#snd-master-vol').value, voiceVolume: +$('#snd-voice-vol').value, micGain: +$('#snd-mic').value }),
@@ -1939,8 +1939,8 @@ const EXTRA = {
       closeAfter: +$('#spk-close').value, npSpeakers: npSpk.slice() }),
     save: async (cur) => { const r = await api('POST', '/api/speaker', cur); spkMsg(r.message, true); } },
   voice: { label: I18N.t('panel.settings.voice_assistant'), snap: null,
-    get: () => ({ enabled: $('#voz-enabled').checked, name: $('#voz-name').value.trim(), mic: $('#voz-mic').value, output: $('#voz-out').value, wake: $('#voz-wake').value }),
-    save: async (cur) => { const r = await api('POST', '/api/voice', cur); vozMsg(r.message, true); } },
+    get: () => ({ enabled: $('#voice-enabled').checked, name: $('#voice-name').value.trim(), mic: $('#voice-mic').value, output: $('#voice-out').value, wake: $('#voice-wake').value }),
+    save: async (cur) => { const r = await api('POST', '/api/voice', cur); voiceMsg(r.message, true); } },
   upd: { label: I18N.t('panel.settings.updates'), snap: null,
     get: () => ({ mode: $('#upd-mode').value, hour: +$('#upd-hour').value }),
     save: async (cur) => { await api('POST', '/api/updates', { action: 'settings', ...cur }); } },
@@ -1951,7 +1951,7 @@ async function loadEntities() {
   try {
     const ents = await api('GET', '/api/entities');
     names = Object.fromEntries(ents.map((e) => [e.id, e.name]));
-    $('#entidades').replaceChildren(...ents.map((e) => { const o = document.createElement('option'); o.value = e.id; o.label = e.name; return o; }));
+    $('#entities').replaceChildren(...ents.map((e) => { const o = document.createElement('option'); o.value = e.id; o.label = e.name; return o; }));
     const sel = $('#weatherEntity'), cur = sel.dataset.value;
     sel.replaceChildren(tOption(I18N.t('web.general.automatic_first_one'), ''),
       ...ents.filter((e) => e.id.startsWith('weather.')).map((e) => tOption(`${e.name} (${e.id})`, e.id)));
@@ -1962,12 +1962,12 @@ async function loadEntities() {
     vs.value = curVs;
     spkEntities();
     Object.keys(lists).forEach(renderChips);
-    $('#entidades-msg').textContent = `${ents.length} entidades de Home Assistant para elegir.`;
-  } catch (e) { $('#entidades-msg').textContent = I18N.t('web.general.entities_error_prefix') + e.message; }
+    $('#entities-msg').textContent = I18N.t('web.general.entities_to_choose', { n: ents.length });
+  } catch (e) { $('#entities-msg').textContent = I18N.t('web.general.entities_error_prefix') + e.message; }
 }
-/* ---------- el panel en Home Assistant por MQTT ---------- */
+/* ---------- the panel in Home Assistant over MQTT ---------- */
 const EXPOSE_KEYS = ['screen', 'brightness', 'volume', 'music_volume', 'ambient', 'last_touch', 'reload'];
-/* ---------- pantalla en directo: una captura cada segundo mientras se mira ---------- */
+/* ---------- live screen: one capture per second while it is watched ---------- */
 const LIVE = { on: false, timer: null };
 function liveTick() {
   if (!LIVE.on) return;
@@ -1988,17 +1988,17 @@ $('#live-btn').onclick = () => {
   if (LIVE.on) liveTick();
 };
 async function loadMqtt() {
-  let estado;
+  let status;
   try {
     const r = await api('GET', '/api/mqtt');
-    estado = { connected: I18N.t('panel.settings.connected'), connecting: I18N.t('web.general.connecting'), off: I18N.t('web.sound.off') }[r.status] || (I18N.t('panel.status.error_prefix') + (r.error || r.status));
+    status = { connected: I18N.t('panel.settings.connected'), connecting: I18N.t('web.general.connecting'), off: I18N.t('web.sound.off') }[r.status] || (I18N.t('panel.status.error_prefix') + (r.error || r.status));
     const pre = $('#mqtt-log'), atEnd = pre.scrollTop + pre.clientHeight >= pre.scrollHeight - 4;
     pre.textContent = (r.log || []).join(String.fromCharCode(10)) || t('web.general.nothing_has_happened');
     if (atEnd) pre.scrollTop = pre.scrollHeight;
-  } catch (e) { estado = I18N.t('panel.status.error_prefix') + e.message; }
-  $('#mqtt-info').replaceChildren(el('dt', { textContent: I18N.t('panel.sheets.status') }), el('dd', { textContent: estado }));
+  } catch (e) { status = I18N.t('panel.status.error_prefix') + e.message; }
+  $('#mqtt-info').replaceChildren(el('dt', { textContent: I18N.t('panel.sheets.status') }), el('dd', { textContent: status }));
 }
-// con el registro abierto se va actualizando (cada 3 s)
+// with the log open it keeps updating (every 3 s)
 setInterval(() => { if ($('#mqtt-log-box').open && !document.hidden && !$('#app').classList.contains('hidden')) loadMqtt(); }, 3000);
 $('#mqtt-log-box').addEventListener('toggle', () => { if ($('#mqtt-log-box').open) loadMqtt(); });
 $('#mqtt-log-copy').onclick = () => { navigator.clipboard && navigator.clipboard.writeText($('#mqtt-log').textContent); msg(I18N.t('web.general.log_copied'), 'ok'); };
@@ -2008,13 +2008,13 @@ async function load() {
   $('#login').classList.add('hidden'); $('#app').classList.remove('hidden');
   loadEntities();
   loadRed();
-  loadSpk(); loadVoz(); loadSnd();
+  loadSpk(); loadVoice(); loadSnd();
   loadUpd();
   loadMqtt(); setTimeout(loadMqtt, 4000);
   loadScripts().catch((e) => bmsg(I18N.t('web.editor.bubbles_error_prefix') + e.message, 'err'));
 }
 
-/* ---------- fuentes de fotos (conectores) ---------- */
+/* ---------- photo sources (connectors) ---------- */
 const SRC_TYPES = {
   immich: { icon: '🖼️', label: 'web.ambient.immich' },
   google: { icon: '🟦', label: 'web.ambient.google_photos' },
@@ -2023,7 +2023,7 @@ const SRC_TYPES = {
 };
 let sources = [];
 const newId = () => 's' + Date.now().toString(36) + Math.random().toString(36).slice(2, 5);
-/** Configuración antigua (ambientPhotos) → fuentes. */
+/** Old configuration (ambientPhotos) → sources. */
 function legacySources(p) {
   const out = [], urls = [];
   for (const u of p.ambientPhotos || []) {
@@ -2057,7 +2057,7 @@ function renderSources() {
     head.append(title, sw, del);
     const body = document.createElement('div'); body.className = 'src-body';
     body.append(input(src.name, I18N.t('web.ambient.name_optional'), (v) => { src.name = v; }));
-    // Modo de visualización propio de esta fuente (vacío = el de por defecto)
+    // Display mode of this source (empty = the default one)
     const fit = document.createElement('select');
     const defLabel = $('#photos-fit').selectedOptions[0] ? $('#photos-fit').selectedOptions[0].textContent : '';
     [['', I18N.t('web.ambient.fit_default', { mode: defLabel })], ['cover', I18N.t('web.ambient.fit_cover')], ['blur', I18N.t('web.ambient.fit_blur')], ['contain', I18N.t('web.ambient.fit_contain')]]
@@ -2091,7 +2091,7 @@ $('#src-add').onclick = () => {
 
 /* ---------- red ---------- */
 let wifiSel = null;
-function redMsg(t, ok) { const m = $('#red-msg'); m.textContent = I18N.t(t); m.style.color = ok === false ? 'var(--danger)' : ok ? 'var(--ok)' : ''; }
+function netMsg(t, ok) { const m = $('#net-msg'); m.textContent = I18N.t(t); m.style.color = ok === false ? 'var(--danger)' : ok ? 'var(--ok)' : ''; }
 async function loadRed() {
   try {
     const r = await api('GET', '/api/network');
@@ -2101,10 +2101,10 @@ async function loadRed() {
     if (r.gateway) rows.push([I18N.t('web.system.gateway'), r.gateway]);
     if (r.dns) rows.push(['DNS', r.dns]);
     rows.push([I18N.t('web.system.web'), r.urls.join('  ·  ')]);
-    $('#red-info').replaceChildren(...rows.flatMap(([k, v]) => { const dt = document.createElement('dt'), dd = document.createElement('dd'); dt.textContent = t(k); dd.textContent = t(v); return [dt, dd]; }));
-    $('#red-controles').classList.toggle('hidden', !r.nmcli);
-    if (!r.nmcli) redMsg(I18N.t('web.system.no_networkmanager'));
-    else if (r.simulated) redMsg(I18N.t('web.system.simulated_network_changes'));
+    $('#net-info').replaceChildren(...rows.flatMap(([k, v]) => { const dt = document.createElement('dt'), dd = document.createElement('dd'); dt.textContent = t(k); dd.textContent = t(v); return [dt, dd]; }));
+    $('#net-controls').classList.toggle('hidden', !r.nmcli);
+    if (!r.nmcli) netMsg(I18N.t('web.system.no_networkmanager'));
+    else if (r.simulated) netMsg(I18N.t('web.system.simulated_network_changes'));
     $('#hostname').value = r.hostname;
     const m = (r.ipv4 && r.ipv4.method) || 'auto';
     document.querySelector(`input[name=ipm][value=${m}]`).checked = true;
@@ -2112,10 +2112,10 @@ async function loadRed() {
     if (r.ipv4 && r.ipv4.addresses) { const [a, p] = r.ipv4.addresses.split(',')[0].split('/'); $('#ip-address').value = a; $('#ip-prefix').value = p || 24; }
     $('#ip-gateway').value = (r.ipv4 && r.ipv4.gateway) || r.gateway || '';
     $('#ip-dns').value = (r.ipv4 && r.ipv4.dns) || '';
-  } catch (e) { redMsg(I18N.t('web.system.network_error_prefix') + e.message, false); }
+  } catch (e) { netMsg(I18N.t('web.system.network_error_prefix') + e.message, false); }
 }
 $('#wifi-buscar').onclick = async () => {
-  redMsg(I18N.t('web.system.scanning_wifi'));
+  netMsg(I18N.t('web.system.scanning_wifi'));
   try {
     const nets = await api('POST', '/api/network/scan');
     $('#wifi-list').replaceChildren(...nets.map((n) => {
@@ -2126,26 +2126,26 @@ $('#wifi-buscar').onclick = async () => {
         $('#wifi-ssid').textContent = n.ssid; $('#wifi-pass').classList.toggle('hidden', !n.secure); $('#wifi-form').classList.remove('hidden'); };
       return b;
     }));
-    redMsg(nets.length ? `${nets.length} redes encontradas. Toca una para conectarte.` : I18N.t('web.system.no_networks'));
-  } catch (e) { redMsg(e.message, false); }
+    netMsg(nets.length ? I18N.t('web.system.networks_found', { n: nets.length }) : I18N.t('web.system.no_networks'));
+  } catch (e) { netMsg(e.message, false); }
 };
 $('#wifi-ok').onclick = async () => {
-  if (!wifiSel || !confirm(`¿Conectar la Pi a «${wifiSel.ssid}»? Si la contraseña está mal, la Pi puede quedarse sin red hasta volver a conectarla a mano.`)) return;
-  try { const r = await api('POST', '/api/network/wifi', { ssid: wifiSel.ssid, password: $('#wifi-pass').value }); redMsg(r.message, true); $('#wifi-pass').value = ''; }
-  catch (e) { redMsg(e.message, false); }
+  if (!wifiSel || !confirm(I18N.t('web.system.connect_confirm', { ssid: wifiSel.ssid }))) return;
+  try { const r = await api('POST', '/api/network/wifi', { ssid: wifiSel.ssid, password: $('#wifi-pass').value }); netMsg(r.message, true); $('#wifi-pass').value = ''; }
+  catch (e) { netMsg(e.message, false); }
 };
 document.querySelectorAll('input[name=ipm]').forEach((r) => (r.onchange = () => $('#ip-manual').classList.toggle('hidden', r.value !== 'manual' || !r.checked)));
 $('#ip-ok').onclick = async () => {
   const method = document.querySelector('input[name=ipm]:checked').value;
   const body = { method, address: $('#ip-address').value.trim(), prefix: +$('#ip-prefix').value || 24, gateway: $('#ip-gateway').value.trim(), dns: $('#ip-dns').value.trim() };
-  const txt = method === 'manual' ? `¿Poner la IP fija ${body.address}? Después tendrás que entrar en http://${body.address}:8080` : I18N.t('web.system.back_to_dhcp');
+  const txt = method === 'manual' ? I18N.t('web.system.static_ip_confirm', { ip: body.address }) : I18N.t('web.system.back_to_dhcp');
   if (!confirm(txt)) return;
-  try { const r = await api('POST', '/api/network/ip', body); redMsg(r.message, true); } catch (e) { redMsg(e.message, false); }
+  try { const r = await api('POST', '/api/network/ip', body); netMsg(r.message, true); } catch (e) { netMsg(e.message, false); }
 };
 $('#host-ok').onclick = async () => {
   const name = $('#hostname').value.trim();
-  if (!confirm(`¿Cambiar el nombre de la Pi a «${name}»?`)) return;
-  try { const r = await api('POST', '/api/network/hostname', { hostname: name }); redMsg(r.message, true); } catch (e) { redMsg(e.message, false); }
+  if (!confirm(I18N.t('web.system.rename_confirm', { name }))) return;
+  try { const r = await api('POST', '/api/network/hostname', { hostname: name }); netMsg(r.message, true); } catch (e) { netMsg(e.message, false); }
 };
 
 /* ---------- altavoz (Sendspin) ---------- */
@@ -2153,8 +2153,8 @@ function spkMsg(t, ok) { const m = $('#spk-msg'); m.textContent = I18N.t(t); m.s
 function spkFill(r) {
   FILLING++;
   const s = r.settings;
-  const estado = !r.installed ? I18N.t('web.sound.not_installed') : r.active ? I18N.t('web.sound.running') : s.enabled ? I18N.t('web.sound.but_not_working') : I18N.t('web.sound.off');
-  const rows = [[I18N.t('panel.sheets.status'), estado], [I18N.t('panel.sheets.name'), s.name || r.defaultName]];
+  const status = !r.installed ? I18N.t('web.sound.not_installed') : r.active ? I18N.t('web.sound.running') : s.enabled ? I18N.t('web.sound.but_not_working') : I18N.t('web.sound.off');
+  const rows = [[I18N.t('panel.sheets.status'), status], [I18N.t('panel.sheets.name'), s.name || r.defaultName]];
   if (r.pin) rows.push([I18N.t('web.sound.music_assistant_code'), r.pin]);
   $('#spk-info').replaceChildren(...rows.flatMap(([k, v]) => { const dt = document.createElement('dt'), dd = document.createElement('dd'); dt.textContent = t(k); dd.textContent = t(v); return [dt, dd]; }));
   $('#spk-install').classList.toggle('hidden', r.installed);
@@ -2163,7 +2163,7 @@ function spkFill(r) {
   const sel = $('#spk-device');
   const outs = r.outputs.slice();
   if (s.device && !outs.some((o) => o.id === s.device)) outs.push({ id: s.device, name: s.device + I18N.t('web.sound.not_connected_f') });
-  sel.replaceChildren(...outs.map((o) => { const op = document.createElement('option'); op.value = o.id; op.textContent = o.name; return op; }));
+  sel.replaceChildren(...outs.map((o) => tOption(o.name, o.id)));
   sel.value = s.device; sel.dispatchEvent(new Event('change'));
   spkEntity = s.entity; npSpk = (s.npSpeakers || []).slice(); spkEntities();
   const cl = $('#spk-close');
@@ -2186,7 +2186,7 @@ function spkEntities() {
 async function loadSpk() {
   try { spkFill(await api('GET', '/api/speaker')); } catch (e) { spkMsg(I18N.t('web.sound.speaker_error_prefix') + e.message, false); }
 }
-/* ---------- sonido: respuestas del asistente y micro (se aplican al soltar) ---------- */
+/* ---------- sound: assistant answers and mic (applied on release) ---------- */
 function sndFill(r) {
   FILLING++;
   const set = (id, v) => { const i = $('#' + id); i.value = v; i.dispatchEvent(new Event('input')); };
@@ -2208,33 +2208,33 @@ async function loadSnd() {
 }
 ['snd-music-vol', 'snd-master-vol', 'snd-voice-vol', 'snd-mic'].forEach(bindRange);
 
-/* ---------- asistente de voz (micro de la Pi) ---------- */
-function vozMsg(t, ok) { const m = $('#voz-msg'); m.textContent = I18N.t(t); m.style.color = ok === false ? 'var(--danger)' : ok ? 'var(--ok)' : ''; }
-function vozSelect(sel, list, value, missing) {
+/* ---------- voice assistant (the Pi's mic) ---------- */
+function voiceMsg(t, ok) { const m = $('#voice-msg'); m.textContent = I18N.t(t); m.style.color = ok === false ? 'var(--danger)' : ok ? 'var(--ok)' : ''; }
+function voiceSelect(sel, list, value, missing) {
   const opts = list.slice();
   if (value && !opts.some((o) => o.id === value)) opts.push({ id: value, name: value + ' ' + missing });
   sel.replaceChildren(...opts.map((o) => tOption(o.name, o.id)));
   sel.value = value; sel.dispatchEvent(new Event('change'));
 }
-function vozFill(r) {
+function voiceFill(r) {
   FILLING++;
   const s = r.settings;
-  const estado = !r.installed ? I18N.t('web.sound.not_installed') : r.active ? I18N.t('web.sound.listening') : s.enabled ? I18N.t('web.sound.but_not_working') : I18N.t('web.sound.off');
-  const rows = [[I18N.t('panel.sheets.status'), estado], [I18N.t('panel.sheets.name'), s.name || r.defaultName], [I18N.t('web.beta.port_wyoming'), String(r.port)]];
-  $('#voz-info').replaceChildren(...rows.flatMap(([k, v]) => { const dt = document.createElement('dt'), dd = document.createElement('dd'); dt.textContent = t(k); dd.textContent = t(v); return [dt, dd]; }));
-  $('#voz-install').classList.toggle('hidden', r.installed);
-  $('#voz-enabled').checked = s.enabled;
-  $('#voz-name').value = s.name; $('#voz-name').placeholder = r.defaultName;
-  vozSelect($('#voz-mic'), r.inputs, s.mic, '(no está conectado)');
-  vozSelect($('#voz-out'), r.outputs, s.output, '(no está conectada)');
-  vozSelect($('#voz-wake'), r.wakeWords, s.wake, '');
-  $('#voz-log').textContent = r.log || '';
-  $('#voz-log-box').classList.toggle('hidden', !r.log);
+  const status = !r.installed ? I18N.t('web.sound.not_installed') : r.active ? I18N.t('web.sound.listening') : s.enabled ? I18N.t('web.sound.but_not_working') : I18N.t('web.sound.off');
+  const rows = [[I18N.t('panel.sheets.status'), status], [I18N.t('panel.sheets.name'), s.name || r.defaultName], [I18N.t('web.beta.port_wyoming'), String(r.port)]];
+  $('#voice-info').replaceChildren(...rows.flatMap(([k, v]) => { const dt = document.createElement('dt'), dd = document.createElement('dd'); dt.textContent = t(k); dd.textContent = t(v); return [dt, dd]; }));
+  $('#voice-install').classList.toggle('hidden', r.installed);
+  $('#voice-enabled').checked = s.enabled;
+  $('#voice-name').value = s.name; $('#voice-name').placeholder = r.defaultName;
+  voiceSelect($('#voice-mic'), r.inputs, s.mic, '(no está conectado)');
+  voiceSelect($('#voice-out'), r.outputs, s.output, '(no está conectada)');
+  voiceSelect($('#voice-wake'), r.wakeWords, s.wake, '');
+  $('#voice-log').textContent = r.log || '';
+  $('#voice-log-box').classList.toggle('hidden', !r.log);
   FILLING--;
   EXTRA.voice.snap = JSON.stringify(EXTRA.voice.get());
 }
-async function loadVoz() {
-  try { vozFill(await api('GET', '/api/voice')); } catch (e) { vozMsg(I18N.t('web.beta.voice_error_prefix') + e.message, false); }
+async function loadVoice() {
+  try { voiceFill(await api('GET', '/api/voice')); } catch (e) { voiceMsg(I18N.t('web.beta.voice_error_prefix') + e.message, false); }
 }
 
 /* ---------- actualizaciones ---------- */
@@ -2265,13 +2265,13 @@ function updFill(r) {
   updFilling = false; FILLING--;
   EXTRA.upd.snap = JSON.stringify(EXTRA.upd.get());
   clearTimeout(updTimer);
-  if (r.applying || r.checking) updTimer = setTimeout(loadUpd, 2000);   // mientras trabaja, se va mirando
+  if (r.applying || r.checking) updTimer = setTimeout(loadUpd, 2000);   // while it works, keep checking
 }
 async function loadUpd() {
   try { const r = await api('GET', '/api/updates'); if (r_applying && r.error) r_applying = false; updFill(r); }
   catch (e) {
-    if (r_applying && e.message === 'Inicia sesión') { r_applying = false; showLogin('Panel actualizado ✓ Vuelve a entrar.'); }   // tras reiniciar hay que entrar otra vez
-    else if (r_applying) { updMsg(I18N.t('web.system.restarting_new')); clearTimeout(updTimer); updTimer = setTimeout(loadUpd, 3000); }   // el ayudante se reinicia
+    if (r_applying && e.message === 'LOGIN') { r_applying = false; showLogin(I18N.t('web.login.log_in_again')); }   // after restarting you have to log in again
+    else if (r_applying) { updMsg(I18N.t('web.system.restarting_new')); clearTimeout(updTimer); updTimer = setTimeout(loadUpd, 3000); }   // the helper restarts
     else updMsg(I18N.t('web.system.updates_error_prefix') + e.message, false);
   }
 }
@@ -2312,21 +2312,21 @@ $('#guardar').onclick = async () => {
     else msg(I18N.t('web.login.saved'), 'ok');
   } catch (e) { msg(e.message, 'err'); }
 };
-$('#probar').onclick = async () => {
-  const m = $('#probar-msg'); m.textContent = I18N.t('web.general.testing');
+$('#test-connection').onclick = async () => {
+  const m = $('#test-msg'); m.textContent = I18N.t('web.general.testing');
   try { const r = await api('POST', '/api/test', { haUrl: $('#haUrl').value.trim(), token: $('#token').value.trim() }); m.textContent = (r.ok ? '✓ ' : '✗ ') + r.message; }
   catch (e) { m.textContent = '✗ ' + e.message; }
 };
-$('#aviso').onclick = async () => {
+$('#notify-test').onclick = async () => {
   try { const r = await api('POST', '/api/notify'); msg(r.message, r.ok ? 'ok' : 'err'); } catch (e) { msg(e.message, 'err'); }
 };
 document.querySelectorAll('[data-command]').forEach((b) => (b.onclick = async () => {
-  try { await api('POST', '/api/command', { type: b.dataset.command }); msg(`Enviado: ${b.textContent.trim()}`, 'ok'); } catch (e) { msg(e.message, 'err'); }
+  try { await api('POST', '/api/command', { type: b.dataset.command }); msg(I18N.t('web.general.sent', { what: b.textContent.trim() }), 'ok'); } catch (e) { msg(e.message, 'err'); }
 }));
 document.querySelectorAll('[data-add-btn]').forEach((b) => (b.onclick = () => addChip(b.dataset.addBtn)));
 document.querySelectorAll('[data-add]').forEach((i) => i.addEventListener('keydown', (e) => { if (e.key === 'Enter') { e.preventDefault(); addChip(i.dataset.add); } }));
 document.querySelectorAll('#app input, #app select, #app textarea').forEach((el) => el.addEventListener('input', () => {
-  if (!FILLING && !el.dataset.add && !el.closest('#red-controles') && !el.closest('[data-nodirty]')) dirty();
+  if (!FILLING && !el.dataset.add && !el.closest('#net-controls') && !el.closest('[data-nodirty]')) dirty();
 }));
 window.addEventListener('beforeunload', (e) => { if (isDirty) e.preventDefault(); });
 
@@ -2340,9 +2340,9 @@ window.addEventListener('beforeunload', (e) => { if (isDirty) e.preventDefault()
   } catch (e) { showLogin(I18N.t('web.login.could_not_connect')); }
 })();
 
-/* ---------- desplegables con estilo y buscador ----------
- * Cada <select> (menos los múltiples) se cambia por un botón y una lista con buscador. El <select> sigue ahí,
- * escondido, y manda: el resto del código lo usa igual (value, change, options…). Se aplica solo, también a los nuevos. */
+/* ---------- styled dropdowns with search ----------
+ * Each <select> (except multiple ones) becomes a button and a list with search. The <select> is still there,
+ * hidden, and it rules: the rest of the code uses it the same way (value, change, options…). It applies by itself, also to new ones. */
 const fold = (t) => String(t || '').normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase();
 let fsOpen = null;   // { sel, pop, btn }
 function fsClose() { if (!fsOpen) return; fsOpen.pop.remove(); fsOpen.btn.classList.remove('open'); fsOpen = null; }
@@ -2364,7 +2364,7 @@ function fancySelect(sel) {
   paint();
   new MutationObserver(paint).observe(sel, { childList: true, subtree: true, characterData: true, attributes: true });
   sel.addEventListener('change', paint);
-  // Cuando el código cambia value o selectedIndex directamente, también se repinta
+  // When the code changes value or selectedIndex directly, it repaints too
   for (const k of ['value', 'selectedIndex']) {
     const d = Object.getOwnPropertyDescriptor(HTMLSelectElement.prototype, k);
     Object.defineProperty(sel, k, { configurable: true, get() { return d.get.call(this); }, set(v) { d.set.call(this, v); paint(); } });
@@ -2397,7 +2397,7 @@ function fsShow(sel, btn) {
   };
   const mark = () => [...list.children].forEach((c, i) => c.classList.toggle('fs-act', i === active));
   const place = () => {
-    // Debajo del botón si cabe; si no, donde haya más sitio. La altura se ajusta al hueco (nunca se sale de la pantalla)
+    // Below the button if it fits; otherwise, where there is more room. The height fits the gap (it never goes off screen)
     const r = btn.getBoundingClientRect(), below = innerHeight - r.bottom - 12, above = r.top - 12;
     const up = below < Math.min(300, pop.scrollHeight) && above > below;
     pop.style.maxHeight = Math.max(120, Math.min(380, up ? above : below)) + 'px';
@@ -2424,9 +2424,9 @@ function fsShow(sel, btn) {
   const cur = list.querySelector('.sel'); if (cur) cur.scrollIntoView({ block: 'center' });
   (search || pop).focus();
 }
-// composedPath: aunque la fila tocada ya se haya repintado, el clic cuenta como dentro de la lista
+// composedPath: even if the tapped row has already repainted, the click counts as inside the list
 document.addEventListener('click', (e) => { if (fsOpen && !e.composedPath().includes(fsOpen.pop)) fsClose(); });
-// Al hacer scroll o cambiar el tamaño (p. ej. el teclado del móvil) la lista se recoloca junto a su botón
+// On scroll or resize (e.g. the phone keyboard) the list moves back next to its button
 const fsPlace = (e) => { if (fsOpen && !(e && e.target && fsOpen.pop.contains(e.target))) fsOpen.place(); };
 addEventListener('resize', fsPlace);
 document.addEventListener('scroll', fsPlace, true);
@@ -2438,9 +2438,9 @@ new MutationObserver((muts) => {
   }
 }).observe(document.body, { childList: true, subtree: true });
 
-/* ---------- sugerencias al escribir (sustituyen a las del navegador, <datalist>, que no se pueden estilizar) ----------
- * Cada <input list="…"> pasa a tener su propia lista con el estilo de los desplegables. Con data-csv completa
- * solo lo que va después de la última coma. Al elegir: se rellena y se lanzan input, change y Enter (para «Añadir»). */
+/* ---------- suggestions while typing (they replace the browser ones, <datalist>, which cannot be styled) ----------
+ * Each <input list="…"> gets its own list with the dropdown style. With data-csv it completes
+ * only what comes after the last comma. On choosing: it fills in and fires input, change and Enter (for “Add”). */
 let acOpen = null;   // { inp, pop }
 function acClose() { if (acOpen) { acOpen.pop.remove(); acOpen = null; } }
 function placePop(pop, anchor) {
@@ -2467,7 +2467,7 @@ function fancyInput(inp) {
     acClose();
     inp.dispatchEvent(new Event('input', { bubbles: true }));
     inp.dispatchEvent(new Event('change', { bubbles: true }));
-    inp.dispatchEvent(new KeyboardEvent('keydown', { key: 'Enter', bubbles: true }));   // los campos con «Añadir» lo añaden
+    inp.dispatchEvent(new KeyboardEvent('keydown', { key: 'Enter', bubbles: true }));   // the fields with “Add” add it
   };
   const show = () => {
     const q = fold(token());
@@ -2486,7 +2486,7 @@ function fancyInput(inp) {
   inp.addEventListener('input', () => { active = 0; show(); });
   inp.addEventListener('focus', () => { active = 0; show(); });
   inp.addEventListener('blur', () => setTimeout(() => { if (acOpen && acOpen.inp === inp) acClose(); }, 120));
-  // en captura: va antes que los «Enter = Añadir» del propio campo, para que añadan lo elegido
+  // in capture: it goes before the field's own “Enter = Add”, so they add what was chosen
   inp.addEventListener('keydown', (e) => {
     if (!e.isTrusted || !acOpen || acOpen.inp !== inp) return;
     const rows = acOpen.pop.firstChild.children;
