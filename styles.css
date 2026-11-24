@@ -636,7 +636,7 @@ main { display: flex; flex-direction: column; min-width: 0; min-height: 0; heigh
 .rail-badge .mdi { font-size: 13px !important; padding: 0 !important; background: none !important; color: inherit !important; line-height: 1; }
 .rail-badge.charged { background: var(--ok); color: #0d2a17; }
 
-/* Reproductor de la cortina (como la tarjeta de música de Android) */
+/* Reproductor del panel de acceso rápido (como la tarjeta de música de Android) */
 .tm-player { position: relative; overflow: hidden; isolation: isolate; cursor: pointer;
   display: grid; grid-template-columns: auto minmax(0, 1fr); grid-template-rows: 1fr auto; column-gap: 20px; row-gap: 18px; }
 .tm-bg { position: absolute; inset: -30px; z-index: -1; background: center/cover no-repeat; filter: blur(26px) brightness(.5) saturate(1.4); opacity: 0; transition: opacity .4s; }
@@ -659,7 +659,7 @@ main { display: flex; flex-direction: column; min-width: 0; min-height: 0; heigh
 .tm-pbtn { width: 44px; height: 44px; border-radius: 50%; display: grid; place-items: center; font-size: 28px; color: var(--text); }
 .tm-pbtn.main { width: 50px; height: 50px; background: var(--play-bg); color: var(--play-ink); font-size: 30px; }
 .tm-pbtn:active { background: var(--surface-3); }
-/* Cortina que baja desde arriba (como en Android) */
+/* Panel de acceso rápido que baja desde arriba (como en Android) */
 .shade-bg { position: fixed; inset: 0; z-index: 36; background: rgba(0,0,0,.55); opacity: 0; pointer-events: none; transition: opacity .3s; }
 .shade-bg.open { opacity: 1; pointer-events: auto; }
 .shade-bg.dragging { transition: none; pointer-events: auto; }
@@ -690,7 +690,7 @@ main { display: flex; flex-direction: column; min-width: 0; min-height: 0; heigh
 .sp-ic { position: absolute; left: 23px; top: 50%; transform: translateY(-50%); font-size: 24px; color: var(--accent-ink); pointer-events: none; }
 .sp-val { position: absolute; right: 20px; top: 50%; transform: translateY(-50%); font-size: 15px; font-weight: 600; color: var(--text); pointer-events: none; font-variant-numeric: tabular-nums; }
 .sh-pill.full .sp-val { color: var(--accent-ink); }
-/* Pestañas de la cortina: avisos | accesos rápidos */
+/* Pestañas del panel de acceso rápido: avisos | accesos rápidos */
 .sht { display: flex; flex-direction: column; gap: 10px; }
 .sht-bar { display: flex; gap: 8px; }
 .sht-tab { flex: 1; display: flex; align-items: center; justify-content: center; gap: 8px; height: 42px; border-radius: 21px;

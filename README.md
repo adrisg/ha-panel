@@ -15,7 +15,7 @@ Una pantalla bonita para el escritorio que decora con tus fotos y desde la que v
 - 🔔 **Avisos con botones**: «llaman al telefonillo → Abrir puerta» ([cómo](AVISOS.md)).
 - 🫧 **Toda la información de un solo golpe**: burbujas en la pantalla de inicio y en el modo ambiente con el tiempo, las luces encendidas, el coche cargando, la impresora… Eliges cuáles salen y en qué orden, y puedes crear las tuyas ([cómo configurarlas](SCRIPTS.md)).
 - 🧩 **Pestañas a tu gusto**, con componentes que puedes crear tú ([cómo](SCRIPTS.md#componentes)).
-- ⬇️ **Cortina como en Android**: desliza desde arriba para la música, el volumen, el brillo, los avisos y tus accesos rápidos.
+- ⬇️ **Panel de acceso rápido como en Android**: desliza desde arriba para la música, el volumen, el brillo, los avisos y tus accesos rápidos.
 - 🎨 **Totalmente configurable a tu gusto**: el aspecto, qué sale en cada pantalla y cómo se comporta.
 
 ## Qué puedes controlar
@@ -41,7 +41,7 @@ Una pantalla bonita para el escritorio que decora con tus fotos y desde la que v
   <img src="docs/aviso.png" width="49%"> <img src="docs/aviso-info.png" width="49%">
 </p>
 
-## La cortina
+## Panel de acceso rápido
 
 Desliza hacia abajo desde el borde de arriba, en cualquier pantalla (también en el modo ambiente y en «Sonando»). Tiene tres ventanas que se cambian deslizando de lado o con sus pestañas:
 
@@ -49,7 +49,7 @@ Desliza hacia abajo desde el borde de arriba, en cualquier pantalla (también en
 |---|---|---|
 | Los últimos avisos. Tocar uno lo vuelve a abrir; la × lo quita. Un puntito en la campana marca los que no has visto. | Hora, apagar la pantalla, ⚙ Ajustes, la música que suena y las barras de volumen, avisos y brillo. | Luces, enchufes, escenas… los que elijas («Editar»). Un toque los enciende o apaga; mantener abre su detalle. |
 
-La campana de la barra de arriba abre la cortina directamente en los avisos. Se cierra deslizando hacia arriba o tocando fuera.
+La campana de la barra de arriba abre el panel de acceso rápido directamente en los avisos. Se cierra deslizando hacia arriba o tocando fuera.
 
 **Volumen:** si cambias el volumen del panel desde Home Assistant o Music Assistant, sale arriba una burbuja con el número. En «Sonando», si lo que suena es **otro** altavoz, abajo a la derecha tienes un botón con su volumen.
 
@@ -83,13 +83,13 @@ La campana de la barra de arriba abre la cortina directamente en los avisos. Se 
 
 ## Ajustes
 
-En la pantalla: cortina → ⚙. Desde el móvil: la web de configuración (el QR del arranque), ordenada en pestañas:
+En la pantalla: panel de acceso rápido → ⚙. Desde el móvil: la web de configuración (el QR del arranque), ordenada en pestañas:
 
 <p align="center"><img src="docs/settings.png" width="60%"></p>
 
 | Pestaña de la web | Qué hay |
 |---|---|
-| 🏠 **General** | mando a distancia, Home Assistant, favoritos y entidades ocultas, accesos rápidos de la cortina |
+| 🏠 **General** | mando a distancia, Home Assistant, favoritos y entidades ocultas, accesos rápidos |
 | 🖥️ **Pantalla** | brillo, aspecto, cuándo pasa a modo ambiente y cuándo se apaga, modo noche |
 | 🖼️ **Modo ambiente** | altavoces por prioridad, fotos (álbumes, cada cuánto cambian, cómo se ven) y burbujas |
 | 🔊 **Sonido** | por dónde suena la Pi y su volumen (el límite), música, avisos y alarmas, altavoz de Music Assistant, «Sonando» y voz en la pantalla |

@@ -785,7 +785,7 @@ function onSpeaker(id, old, st) {
   }
 }
 
-/* Pantalla «Sonando»: carátula grande con el fondo difuminado, título, progreso y controles (el volumen, en la cortina) */
+/* Pantalla «Sonando»: carátula grande con el fondo difuminado, título, progreso y controles (el volumen, en el panel de acceso rápido) */
 const NP = { id: null, timer: null, closeTimer: null, fromAmbient: false };
 const npPlaying = () => !!NP.id && (S.states[NP.id] || {}).state === 'playing';
 function fmtTime(s) {
@@ -814,7 +814,7 @@ function dragOn(el, { start, move, end }) {
 }
 /* Símbolo del altavoz según el volumen (para la burbuja). */
 const volIconOf = (v) => v <= 0 ? 'mdi-volume-off' : v < 34 ? 'mdi-volume-low' : v < 67 ? 'mdi-volume-medium' : 'mdi-volume-high';
-/* Volumen en «Sonando» para OTROS altavoces (el del panel se cambia en la cortina): un botón con el altavoz
+/* Volumen en «Sonando» para OTROS altavoces (el del panel se cambia en el panel de acceso rápido): un botón con el altavoz
  * abajo a la derecha que despliega una barra vertical con el número. Solo sale si ese altavoz deja cambiar el volumen. */
 const canSetVolume = (st) => !!st && st.attributes.volume_level != null && ((st.attributes.supported_features || 0) & 4) !== 0;
 function npVolume(id) {
@@ -916,7 +916,7 @@ function showNowPlaying(id) {
   const clock = h('span', { class: 'np-clock' });
   const svc = (s) => () => call('media_player', s, {}, id);
   const play = h('button', { class: 'np-play', onclick: svc('media_play_pause') });
-  // si es otro altavoz (no el del panel), su volumen aquí mismo; el del panel está en la cortina
+  // si es otro altavoz (no el del panel), su volumen aquí mismo; el del panel está en el panel de acceso rápido
   const vol = id !== speakerEntity() ? npVolume(id) : null;
   const root = $('#np');
   root.classList.toggle('has-vol', !!vol);
@@ -1376,7 +1376,7 @@ const DEFAULTS = () => ({
   voiceStyle: 'onda',   // animación de la barra de voz: onda | micro | luz | eq
   defaultSpeaker: '',   // (de antes) el primero de ambientSpeakers
   ambientSpeakers: null,   // altavoces del modo ambiente por prioridad ('@panel' = el de este panel); null = [defaultSpeaker]
-  quick: [],            // accesos rápidos de la cortina (entity_id)
+  quick: [],            // accesos rápidos (entity_id)
   bullets: null,        // burbujas (integradas y de script); null = las de siempre
   tabs: null,           // pestañas con sus tarjetas; null = una por cada vista
 });
@@ -2368,7 +2368,7 @@ function resetIdle() {
   if (SET.idleSeconds > 0) idleTimer = setTimeout(() => !S.sheetId && !NP.id && !alertOpen() && showAmbient(), SET.idleSeconds * 1000);
 }
 /** Menú de los tres puntitos de arriba a la derecha: se despliega con una animación. */
-/* Mini reproductor de la cortina: carátula, título y anterior / play / siguiente.
+/* Mini reproductor del panel de acceso rápido: carátula, título y anterior / play / siguiente.
    Tocar la carátula o el título abre «Sonando». Se repinta solo mientras el menú está abierto. */
 const TM = { id: null, paint: null };
 function tmPlayer() {
@@ -2397,8 +2397,8 @@ function tmPlayer() {
   TM.paint();
   return box;
 }
-/* ====================== Cortina (como en Android) ======================
- * Arrastrando hacia abajo desde el borde de arriba baja una cortina que sigue al dedo; al soltar se abre del todo
+/* ====================== Panel de acceso rápido (como en Android) ======================
+ * Arrastrando hacia abajo desde el borde de arriba baja el panel de acceso rápido, que sigue al dedo; al soltar se abre del todo
  * si has bajado más de un tercio (o lo has hecho rápido) y si no se recoge.
  * Dentro: la hora, apagar la pantalla y ajustes (arriba a la derecha), el mini reproductor, los volúmenes y el brillo.
  * Se cierra deslizando hacia arriba, tocando fuera o eligiendo algo. */
@@ -2427,7 +2427,7 @@ function pill(ic, { min = 0, max = 100, step = 1, value = 0, onLive, onEnd } = {
   p.set(value);
   return p;
 }
-/* Ventanas de la cortina que se deslizan de lado: avisos (izquierda) · controles (centro, la que sale al abrir)
+/* Ventanas del panel de acceso rápido que se deslizan de lado: avisos (izquierda) · controles (centro, la que sale al abrir)
  * · accesos rápidos (derecha, SET.quick). Se cambia deslizando el dedo o tocando las pestañas de arriba. */
 const QUICK_KINDS = { light: 'Luces', switch: 'Enchufes', input_boolean: 'Interruptores', fan: 'Ventiladores', cover: 'Persianas',
   lock: 'Cerraduras', climate: 'Clima', scene: 'Escenas', script: 'Scripts', button: 'Botones', input_button: 'Botones' };
@@ -2438,7 +2438,7 @@ function shadeTabs(main) {
   const btns = [h('button', { class: 'sht-tab' }, h('span', { class: 'sht-bell' }, icon('mdi-bell'), badge), 'Avisos'), h('button', { class: 'sht-tab' }, icon('mdi-tune-variant'), 'Controles'),
     h('button', { class: 'sht-tab' }, icon('mdi-lightning-bolt'), 'Accesos rápidos')];
   const bar = h('div', { class: 'sht-bar' }, btns);
-  // las listas no cuentan para el alto: la cortina mide lo que miden los controles y ellas se desplazan dentro
+  // las listas no cuentan para el alto: el panel de acceso rápido mide lo que miden los controles y ellas se desplazan dentro
   const notif = h('div', { class: 'sht-scroll' }), quick = h('div', { class: 'sht-scroll' });
   track.append(h('div', { class: 'sht-page scroll' }, notif), h('div', { class: 'sht-page sht-main' }, main), h('div', { class: 'sht-page scroll' }, quick));
 
@@ -2571,7 +2571,7 @@ function shadeFill() {
         }))),
     shadeTabs(h('div', { class: 'sh-body' }, player, pills)));
 }
-/** Abre (true) o cierra (false) la cortina con animación. Sin argumento: la cambia. tab: ventana (0 avisos, 1 controles, 2 accesos). */
+/** Abre (true) o cierra (false) el panel de acceso rápido con animación. Sin argumento: lo cambia. tab: ventana (0 avisos, 1 controles, 2 accesos). */
 function shade(open, tab) {
   if (open && SH.open && tab != null && SH.goTab) { SH.goTab(tab); return; }
   SH.startTab = tab;
@@ -2620,7 +2620,7 @@ function shadeGestures() {
   window.addEventListener('pointerdown', (e) => {
     if (e.pointerType !== 'touch' && !SH.open && e.clientY <= shadeEdge && !blocked()) begin(e.clientX, e.clientY, 0);
   }, true);
-  // Cerrar: deslizando hacia arriba sobre la cortina (no sobre las barras ni los botones) o sobre el fondo
+  // Cerrar: deslizando hacia arriba sobre el panel de acceso rápido (no sobre las barras ni los botones) o sobre el fondo
   const closeStart = (x, y, target) => { if (SH.open && !target.closest('input, button, .sh-pill, .sht-page.scroll')) begin(x, y, 1); };
   [el, bg].forEach((n) => {
     n.addEventListener('touchstart', (e) => { const t = e.touches[0]; closeStart(t.clientX, t.clientY, e.target); }, { passive: true });
@@ -3216,7 +3216,7 @@ async function applyRemoteSettings() {
   renderRail();
   if (!S.sheetId) render();
   renderAmbientChips();
-  if (SH.open) { SH.open = false; shade(true); }   // la cortina, con los accesos y colores nuevos
+  if (SH.open) { SH.open = false; shade(true); }   // el panel de acceso rápido, con los accesos y colores nuevos
 }
 function runRemote(type) {
   if (type === 'recargar') location.reload();
@@ -3311,12 +3311,12 @@ function start() {
 
   $('#view').replaceChildren(empty('mdi-home-assistant', 'Conectando con Home Assistant…'));
   $('#sheet').addEventListener('click', (e) => { if (e.target.id === 'sheet') closeSheet(); });
-  $('#bell').addEventListener('click', () => shade(true, 0));   // la cortina, en los avisos
+  $('#bell').addEventListener('click', () => shade(true, 0));   // el panel de acceso rápido, en los avisos
   shadeGestures();
   // Tocar el fondo vuelve a Inicio; tocar una burbuja abre su vista (patinete, impresoras, música…)
   $('#ambient').addEventListener('pointerdown', (e) => {
     e.preventDefault();
-    if (e.clientY <= shadeEdge) return;   // ahí empieza la cortina: no se sale del modo ambiente
+    if (e.clientY <= shadeEdge) return;   // ahí empieza el panel de acceso rápido: no se sale del modo ambiente
     if (e.target.closest('#amb-next')) { e.stopPropagation(); nextBackground(); resetIdle(); return; }
     const act = e.target.closest('[data-act]');
     if (act) { e.stopPropagation(); ambientPlayerAction(act.dataset.act); resetIdle(); return; }
