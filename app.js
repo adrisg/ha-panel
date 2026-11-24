@@ -1651,7 +1651,7 @@ function updatesCard() {
       u.settings.mode === 'auto' ? setRow('Hora', null, h('div', { class: 'stepper' },
         h('button', { class: 'round-btn', onclick: () => stepHour(-1) }, icon('mdi-minus')), hourLab,
         h('button', { class: 'round-btn', onclick: () => stepHour(1) }, icon('mdi-plus')))) : null,
-      !u.sudo ? h('div', { class: 'muted small' }, 'Para instalar paquetes nuevos sin pedir contraseña, lanza una vez setup-kiosk.sh en la Pi.') : null,
+      !u.sudo ? h('div', { class: 'muted small' }, 'Para instalar paquetes nuevos sin pedir contraseña, lanza una vez scripts/setup-kiosk.sh en la Pi.') : null,
       h('div', { class: 'btn-row' },
         h('button', { class: 'big-action', onclick: () => { toast('Comprobando…'); updApi({ accion: 'comprobar' }).then((i) => { fill(i); toast(i.error ? i.error : i.available.length ? 'Hay una versión nueva' : 'Ya está al día ✓', !!i.error); }).catch((e) => toast(e.message, true)); } },
           icon('mdi-cloud-search'), 'Comprobar'),
@@ -2328,7 +2328,7 @@ function voiceMicBlock() {
   };
   const paint = (r) => {
     const s = r.settings;
-    const estado = !r.installed ? 'Sin instalar: bash ~/ha-panel/setup-voz.sh' : r.active ? 'Escuchando' : s.enabled ? 'No está funcionando (mira el registro en la web)' : 'Apagado';
+    const estado = !r.installed ? 'Sin instalar: bash ~/ha-panel/scripts/setup-voz.sh' : r.active ? 'Escuchando' : s.enabled ? 'No está funcionando (mira el registro en la web)' : 'Apagado';
     const opts = (list, ic) => list.map((o) => [o.id, o.name, ic, '']);
     box.replaceChildren(
       setBlock('Escuchar con el micro de este panel', estado, switchBtn(s.enabled, (v) => save({ enabled: v }))),

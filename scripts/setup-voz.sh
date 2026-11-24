@@ -3,11 +3,11 @@
 # Instala wyoming-satellite y un detector de palabra de activación (microWakeWord), como servicio de tu usuario.
 # Después, en Home Assistant: Ajustes → Dispositivos → Wyoming (suele aparecer solo) y en el panel:
 # Ajustes → Asistente de voz.
-# Uso (como tu usuario, no con sudo delante):  bash ~/ha-panel/setup-voz.sh
+# Uso (como tu usuario, no con sudo delante):  bash ~/ha-panel/scripts/setup-voz.sh
 # Micro, por dónde contesta y palabra («Okay Nabu», «Hey Jarvis»…) se cambian en la web o en el panel: Ajustes → Asistente de voz.
 set -euo pipefail
 
-PANEL_DIR="$(cd "$(dirname "$0")" && pwd)"
+PANEL_DIR="$(cd "$(dirname "$0")/.." && pwd)"   # la carpeta del panel (estos scripts van en scripts/)
 VENV="$HOME/.local/share/panel-hogar/voz"
 
 echo "==> Programas de audio..."

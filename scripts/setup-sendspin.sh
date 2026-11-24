@@ -2,10 +2,10 @@
 # Altavoz Sendspin: la Pi suena como un altavoz más de Music Assistant (opcional).
 # Instala el programa «sendspin» y un servicio de tu usuario que arranca con la Pi.
 # Se activa, se le pone nombre y se elige la salida (jack, HDMI, USB…) en la web: Ajustes → Altavoz.
-# Uso (como tu usuario, no con sudo delante):  bash ~/ha-panel/setup-sendspin.sh
+# Uso (como tu usuario, no con sudo delante):  bash ~/ha-panel/scripts/setup-sendspin.sh
 set -euo pipefail
 
-PANEL_DIR="$(cd "$(dirname "$0")" && pwd)"
+PANEL_DIR="$(cd "$(dirname "$0")/.." && pwd)"   # la carpeta del panel (estos scripts van en scripts/)
 VENV="$HOME/.local/share/panel-hogar/sendspin"
 
 echo "==> Librería de audio (PortAudio)..."

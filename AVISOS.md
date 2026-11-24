@@ -144,5 +144,5 @@ actions:
 
 ## Notas
 
-- En la Pi el sonido suena sin tocar antes la pantalla, gracias a una opción que pone `setup-kiosk.sh` en Chromium. La Pi necesita un altavoz, ya sea por el jack o por HDMI si tu pantalla tiene.
+- En la Pi el sonido suena sin tocar antes la pantalla, gracias a una opción que pone `scripts/setup-kiosk.sh` en Chromium. La Pi necesita un altavoz, ya sea por el jack o por HDMI si tu pantalla tiene.
 - Los botones ejecutan lo que diga la automatización con el token del panel. Pon solo acciones que te parezca bien que cualquiera delante de la pantalla pueda pulsar. Para las delicadas usa `confirmar: true`.

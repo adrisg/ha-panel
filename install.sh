@@ -16,13 +16,13 @@ ask() {
 }
 
 echo "=================== Panel Hogar ==================="
-bash "$PANEL_DIR/setup-kiosk.sh"
+bash "$PANEL_DIR/scripts/setup-kiosk.sh"
 
 echo
 echo "=================== Altavoz (opcional) ==================="
 echo "La Pi puede sonar como un altavoz más de Music Assistant (Sendspin), por el jack, HDMI o USB."
 if ask "¿Instalar el altavoz?" s; then
-  bash "$PANEL_DIR/setup-sendspin.sh"
+  bash "$PANEL_DIR/scripts/setup-sendspin.sh"
   # Si nunca se ha configurado, se deja activado con la salida de audio por defecto
   # (nombre y salida se cambian en la web: Ajustes → Altavoz)
   SETTINGS="$HOME/.config/panel-hogar/sendspin.json"
@@ -33,16 +33,16 @@ if ask "¿Instalar el altavoz?" s; then
   systemctl --user enable panel-sendspin.service >/dev/null 2>&1 || true
   echo "==> Altavoz instalado y activado. Sale en Music Assistant al reiniciar."
 else
-  echo "==> Sin altavoz. Si lo quieres más adelante:  bash $PANEL_DIR/setup-sendspin.sh"
+  echo "==> Sin altavoz. Si lo quieres más adelante:  bash $PANEL_DIR/scripts/setup-sendspin.sh"
 fi
 
 echo
 echo "=================== Asistente de voz (opcional) ==================="
 echo "Con un micro USB, la Pi escucha «Okay Nabu» y habla con Assist de Home Assistant."
 if arecord -l 2>/dev/null | grep -q '^card' && ask "¿Instalar el asistente de voz?" n; then
-  bash "$PANEL_DIR/setup-voz.sh"
+  bash "$PANEL_DIR/scripts/setup-voz.sh"
 else
-  echo "==> Sin asistente de voz. Si lo quieres más adelante:  bash $PANEL_DIR/setup-voz.sh"
+  echo "==> Sin asistente de voz. Si lo quieres más adelante:  bash $PANEL_DIR/scripts/setup-voz.sh"
 fi
 
 echo

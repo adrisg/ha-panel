@@ -571,7 +571,7 @@ go = 'home' | 'rooms' | 'sensors' | 'media' | 'printers' | 'scooter' | 'settings
     <div class="card">
       <h2>🔊 Altavoz (Music Assistant)</h2>
       <dl class="info" id="spk-info"><dt>Estado</dt><dd>Cargando…</dd></dl>
-      <div id="spk-install" class="hint hidden">Falta instalarlo una vez en la Pi: <code>bash ~/ha-panel/setup-sendspin.sh</code></div>
+      <div id="spk-install" class="hint hidden">Falta instalarlo una vez en la Pi: <code>bash ~/ha-panel/scripts/setup-sendspin.sh</code></div>
       <div class="row"><label for="spk-enabled">Usar la Pi como altavoz</label><label class="switch"><input id="spk-enabled" type="checkbox"><span></span></label></div>
       <div class="field">
         <label for="spk-name">Nombre en Music Assistant</label>
@@ -622,7 +622,7 @@ go = 'home' | 'rooms' | 'sensors' | 'media' | 'printers' | 'scooter' | 'settings
     <div class="card">
       <h2>🎙️ Asistente de voz (micro de la Pi)</h2>
       <dl class="info" id="voz-info"><dt>Estado</dt><dd>Cargando…</dd></dl>
-      <div id="voz-install" class="hint hidden">Falta instalarlo una vez en la Pi: <code>bash ~/ha-panel/setup-voz.sh</code></div>
+      <div id="voz-install" class="hint hidden">Falta instalarlo una vez en la Pi: <code>bash ~/ha-panel/scripts/setup-voz.sh</code></div>
       <div class="row"><label for="voz-enabled">Escuchar con el micro de la Pi</label><label class="switch"><input id="voz-enabled" type="checkbox"><span></span></label></div>
       <div class="field">
         <label for="voz-name">Nombre en Home Assistant</label>
@@ -701,7 +701,7 @@ go = 'home' | 'rooms' | 'sensors' | 'media' | 'printers' | 'scooter' | 'settings
         <select id="upd-hour"></select>
         <span class="hint">Mejor de madrugada: el panel se reinicia unos segundos al actualizar.</span>
       </div>
-      <div id="upd-sudo" class="hint hidden">Para que pueda instalar paquetes del sistema que necesite una versión nueva, vuelve a lanzar una vez <code>bash ~/ha-panel/setup-kiosk.sh</code> en la Pi.</div>
+      <div id="upd-sudo" class="hint hidden">Para que pueda instalar paquetes del sistema que necesite una versión nueva, vuelve a lanzar una vez <code>bash ~/ha-panel/scripts/setup-kiosk.sh</code> en la Pi.</div>
       <div class="btns">
         <button class="btn" id="upd-check">Comprobar ahora</button>
         <button class="btn primary hidden" id="upd-apply">Actualizar</button>

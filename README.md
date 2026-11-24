@@ -77,7 +77,7 @@ La campana de la barra de arriba abre la cortina directamente en los avisos. Se 
    bash ~/ha-panel/install.sh
    ```
    Te pide una contraseña para la web de configuración, si quieres el **altavoz** de Music Assistant y si reiniciar al acabar.
-   (Por partes: `setup-kiosk.sh` instala el panel y `setup-sendspin.sh` el altavoz.)
+   (Por partes, en `scripts/`: `setup-kiosk.sh` instala el panel, `setup-sendspin.sh` el altavoz y `setup-voz.sh` el asistente de voz.)
 3. Al arrancar, la pantalla muestra un **QR**. Escanéalo con el móvil, entra con la contraseña y pon la dirección de tu Home Assistant y el token.
 4. ¡Listo! Todo se guarda con el botón **Guardar**. El panel aplica los ajustes al momento; solo se recarga si cambias la conexión, las entidades, las fotos o el código.
 
@@ -103,9 +103,9 @@ Todo se guarda con **Guardar**, abajo. La red y los botones del mando a distanci
 - **Modo ambiente:** sale el primero de la lista que esté sonando; si no suena ninguno, el primero en pausa y, si no, el primero.
 - **«Sonando»:** se abre al empezar a sonar uno de la lista. Si ya se ve otro, cambia solo si el nuevo está más arriba o si el que se ve no suena. Al parar, pasa al siguiente que siga sonando o se cierra sola (tiempo a elegir).
 
-**Asistente de voz:** con un micro USB, `bash ~/ha-panel/setup-voz.sh` convierte la Pi en satélite de Assist («Okay Nabu»). En Home Assistant necesitas un motor de voz a texto (Speech-to-Phrase o Whisper) y añadir la Pi en la integración **Wyoming**. Luego elígela en Ajustes → Asistente de voz (o en la web → Sonido → Voz en la pantalla) y saldrá una barra encima de la pantalla mientras escucha y contesta.
+**Asistente de voz:** con un micro USB, `bash ~/ha-panel/scripts/setup-voz.sh` convierte la Pi en satélite de Assist («Okay Nabu»). En Home Assistant necesitas un motor de voz a texto (Speech-to-Phrase o Whisper) y añadir la Pi en la integración **Wyoming**. Luego elígela en Ajustes → Asistente de voz (o en la web → Sonido → Voz en la pantalla) y saldrá una barra encima de la pantalla mientras escucha y contesta.
 
-**Altavoz:** si no lo instalaste con `install.sh`, lanza `bash ~/ha-panel/setup-sendspin.sh` y actívalo en la web → Sonido → Altavoz.
+**Altavoz:** si no lo instalaste con `install.sh`, lanza `bash ~/ha-panel/scripts/setup-sendspin.sh` y actívalo en la web → Sonido → Altavoz.
 
 ## Probarlo en el ordenador
 

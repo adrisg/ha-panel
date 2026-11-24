@@ -417,7 +417,7 @@ def set_speaker(body):
         SIM_SPEAKER['active'] = new['enabled']
         return '[Simulación] Guardado (no suena nada en el PC).'
     if not SENDSPIN_BIN.exists():
-        return 'Guardado. Falta instalarlo en la Pi: bash ~/ha-panel/setup-sendspin.sh'
+        return 'Guardado. Falta instalarlo en la Pi: bash ~/ha-panel/scripts/setup-sendspin.sh'
     if new['enabled']:
         _user_ctl('enable', SENDSPIN_UNIT)
         code, _, err = _user_ctl('restart', SENDSPIN_UNIT)
@@ -435,7 +435,7 @@ def run_speaker():
         print('Altavoz desactivado en la web (Ajustes → Altavoz).', flush=True)
         return
     # sendspin-run.py = sendspin daemon + guarda el código de emparejamiento para enseñarlo en el panel
-    args = [str(SENDSPIN_BIN.parent / 'python3'), str(HERE / 'sendspin-run.py'), 'daemon', '--name', s['name'] or speaker_default_name(),
+    args = [str(SENDSPIN_BIN.parent / 'python3'), str(HERE / 'scripts' / 'sendspin-run.py'), 'daemon', '--name', s['name'] or speaker_default_name(),
             '--settings-dir', str(DATA / 'sendspin'), '--hardware-volume', 'false', '--disable-mpris',
             '--product-name', 'Panel Hogar']
     if s['device']:
@@ -532,7 +532,7 @@ def set_voice(body):
         SIM_VOICE['active'] = new['enabled']
         return '[Simulación] Guardado (en el PC no se escucha nada).'
     if not VOICE_PY.exists():
-        return 'Guardado. Falta instalarlo en la Pi: bash ~/ha-panel/setup-voz.sh'
+        return 'Guardado. Falta instalarlo en la Pi: bash ~/ha-panel/scripts/setup-voz.sh'
     if new['enabled']:
         _user_ctl('enable', VOICE_UNIT)
         code, _, err = _user_ctl('restart', VOICE_UNIT)
@@ -691,7 +691,7 @@ def set_sound(body):
 # solo avisar (botón «Actualizar») o actualizar sola cada día a una hora. Tras actualizar se lanza update-hook.sh
 # (paquetes nuevos del sistema, etc.) y se reinician el kiosko (panel + este ayudante) y el altavoz.
 UPDATES_FILE = DATA / 'actualizaciones.json'
-UPDATE_HOOK = HERE / 'update-hook.sh'
+UPDATE_HOOK = HERE / 'scripts' / 'update-hook.sh'
 UPDATE_EVERY = 3 * 3600
 UPD = {'checking': False, 'applying': False, 'lastCheck': 0, 'available': [], 'error': '', 'log': '', 'lastAuto': ''}
 UPD_LOCK = threading.Lock()
@@ -770,7 +770,7 @@ def _restart_after_update(before):
     El altavoz solo se reinicia si ha cambiado lo suyo (para no cortar la música sin necesidad)."""
     changed = _git('diff', '--name-only', before, 'HEAD')[1].splitlines()
     hunks = _git('diff', '-U0', before, 'HEAD', '--', 'panel-helper.py')[1]
-    speaker = 'sendspin-run.py' in changed or 'def run_speaker' in hunks or 'SENDSPIN' in hunks
+    speaker = 'scripts/sendspin-run.py' in changed or 'def run_speaker' in hunks or 'SENDSPIN' in hunks
     bump_version()                 # el panel ve la versión nueva en /poll y recarga la página
     if SIMULATE:
         return

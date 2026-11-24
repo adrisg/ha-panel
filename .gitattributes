@@ -1,2 +1,2 @@
-# Saltos de línea Linux siempre (setup-kiosk.sh se ejecuta en la Raspberry Pi)
+# Saltos de línea Linux siempre (los scripts de scripts/ se ejecutan en la Raspberry Pi)
 * text=auto eol=lf

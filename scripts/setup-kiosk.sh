@@ -1,10 +1,10 @@
 #!/usr/bin/env bash
 # Instala el panel en modo kiosko en una Raspberry Pi con Raspberry Pi OS Lite.
 # Usa Chromium: hace falta una Pi 3, 4 o 5 (recomendada la Pi 4). En Pi 1 / Zero Chromium no funciona.
-# Uso: copia esta carpeta a la Pi (p. ej. ~/ha-panel) y ejecuta:  bash ~/ha-panel/setup-kiosk.sh
+# Uso: copia esta carpeta a la Pi (p. ej. ~/ha-panel) y ejecuta:  bash ~/ha-panel/scripts/setup-kiosk.sh
 set -euo pipefail
 
-PANEL_DIR="$(cd "$(dirname "$0")" && pwd)"
+PANEL_DIR="$(cd "$(dirname "$0")/.." && pwd)"   # la carpeta del panel (estos scripts van en scripts/)
 echo "==> Panel en: $PANEL_DIR"
 
 sudo apt-get update
