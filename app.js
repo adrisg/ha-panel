@@ -2316,18 +2316,21 @@ function tmPlayer() {
   const id = ambientSpeaker() || speakerEntity();
   TM.id = null; TM.paint = null;
   if (!id || !S.states[id] || S.states[id].state === 'unavailable') return null;
+  // Tarjeta como la de música de Android: la carátula difuminada de fondo, la carátula a la izquierda,
+  // el título y el artista y debajo los controles. Tocar la tarjeta abre «Sonando».
   const art = h('div', { class: 'tm-art' }), title = h('div', { class: 'tm-ptitle' }), sub = h('div', { class: 'tm-psub' });
+  const bg = h('div', { class: 'tm-bg' });
   const btn = (ic, svc, cls = '') => h('button', { class: 'tm-pbtn ' + cls, onclick: (e) => { e.stopPropagation(); call('media_player', svc, {}, id); } }, icon(ic));
   const play = btn('mdi-play', 'media_play_pause', 'main');
-  const box = h('div', { class: 'tm-player' },
-    h('div', { class: 'tm-pinfo', onclick: () => { shade(false); showNowPlaying(id); } }, art, h('div', { class: 'tm-ptext' }, title, sub)),
+  const box = h('div', { class: 'tm-player', onclick: () => { shade(false); showNowPlaying(id); } }, bg, art,
+    h('div', { class: 'tm-ptext' }, h('div', { class: 'tm-pspk' }, icon('mdi-speaker'), nameOf(id, false)), title, sub),
     h('div', { class: 'tm-pctrls' }, btn('mdi-skip-previous', 'media_previous_track'), play, btn('mdi-skip-next', 'media_next_track')));
   TM.id = id;
   TM.paint = () => {
     const st = S.states[id]; if (!st) return;
     const a = st.attributes, pic = a.entity_picture ? absUrl(a.entity_picture) : '';
-    art.style.backgroundImage = pic ? `url("${pic}")` : '';
-    art.classList.toggle('empty', !pic);
+    art.style.backgroundImage = bg.style.backgroundImage = pic ? `url("${pic}")` : '';
+    art.classList.toggle('empty', !pic); box.classList.toggle('has-art', !!pic);
     title.textContent = a.media_title || nameOf(id);
     sub.textContent = a.media_title ? (a.media_artist || a.app_name || nameOf(id)) : (T[st.state] || cap(st.state));
     play.replaceChildren(icon(st.state === 'playing' ? 'mdi-pause' : 'mdi-play'));

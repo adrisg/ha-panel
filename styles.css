@@ -612,16 +612,28 @@ main { display: flex; flex-direction: column; min-width: 0; min-height: 0; heigh
 .rail-badge .mdi { font-size: 13px !important; padding: 0 !important; background: none !important; color: inherit !important; line-height: 1; }
 .rail-badge.charged { background: var(--ok); color: #0d2a17; }
 
-.tm-player { padding: 10px 10px 12px; margin-bottom: 4px; border-bottom: 1px solid var(--line); }
-.tm-pinfo { display: flex; align-items: center; gap: 12px; min-width: 0; cursor: pointer; }
-.tm-art { flex: none; width: 52px; height: 52px; border-radius: 10px; background: var(--surface-3) center/cover no-repeat; }
-.tm-art.empty::after { content: "\F075A"; font-family: "Material Design Icons"; font-size: 26px; display: grid; place-items: center; height: 100%; opacity: .6; }
-.tm-ptext { min-width: 0; flex: 1; }
-.tm-ptitle { font-weight: 600; font-size: 16px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-.tm-psub { font-size: 13px; color: var(--muted); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-.tm-pctrls { display: flex; align-items: center; justify-content: center; gap: 22px; margin-top: 10px; }
-.tm-pbtn { width: 44px; height: 44px; border-radius: 50%; display: grid; place-items: center; font-size: 26px; color: var(--text); }
-.tm-pbtn.main { width: 52px; height: 52px; background: var(--play-bg); color: var(--play-ink); font-size: 30px; }
+/* Reproductor de la cortina (como la tarjeta de música de Android) */
+.tm-player { position: relative; overflow: hidden; isolation: isolate; cursor: pointer;
+  display: grid; grid-template-columns: auto minmax(0, 1fr); grid-template-rows: 1fr auto; column-gap: 16px; row-gap: 10px; }
+.tm-bg { position: absolute; inset: -30px; z-index: -1; background: center/cover no-repeat; filter: blur(26px) brightness(.5) saturate(1.4); opacity: 0; transition: opacity .4s; }
+.tm-player.has-art .tm-bg { opacity: 1; }
+.tm-player.has-art { color: #fff; }
+.tm-player.has-art .tm-psub, .tm-player.has-art .tm-pspk { color: rgba(255,255,255,.75); }
+.tm-player.has-art .tm-pbtn { color: #fff; }
+.tm-player.has-art .tm-pbtn.main { background: #fff; color: #111; }
+.tm-player.has-art .tm-pbtn:active { background: rgba(255,255,255,.18); }
+.tm-art { grid-row: 1 / 3; align-self: center; flex: none; width: 112px; height: 112px; border-radius: 16px; background: var(--surface-3) center/cover no-repeat;
+  box-shadow: 0 6px 18px rgba(0,0,0,.3); }
+.tm-art.empty { box-shadow: none; }
+.tm-art.empty::after { content: "\F075A"; font-family: "Material Design Icons"; font-size: 44px; display: grid; place-items: center; height: 100%; opacity: .5; }
+.tm-ptext { min-width: 0; align-self: end; }
+.tm-pspk { display: flex; align-items: center; gap: 6px; font-size: 13px; color: var(--muted); margin-bottom: 6px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.tm-pspk .mdi { font-size: 16px; }
+.tm-ptitle { font-weight: 700; font-size: 19px; line-height: 1.2; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
+.tm-psub { font-size: 14px; color: var(--muted); margin-top: 3px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.tm-pctrls { display: flex; align-items: center; gap: 14px; margin-left: -8px; }
+.tm-pbtn { width: 44px; height: 44px; border-radius: 50%; display: grid; place-items: center; font-size: 28px; color: var(--text); }
+.tm-pbtn.main { width: 50px; height: 50px; background: var(--play-bg); color: var(--play-ink); font-size: 30px; }
 .tm-pbtn:active { background: var(--surface-3); }
 /* Cortina que baja desde arriba (como en Android) */
 .shade-bg { position: fixed; inset: 0; z-index: 36; background: rgba(0,0,0,.55); opacity: 0; pointer-events: none; transition: opacity .3s; }
@@ -644,9 +656,8 @@ main { display: flex; flex-direction: column; min-width: 0; min-height: 0; heigh
 .sh-ibtn { width: 48px; height: 48px; border-radius: 50%; display: grid; place-items: center; font-size: 24px; color: var(--text); background: var(--surface-2); }
 .sh-ibtn:active { background: var(--surface-3); }
 .sh-body { display: flex; gap: 16px; align-items: stretch; }
-.sh-body .tm-player { flex: 1; min-width: 0; margin: 0; padding: 16px; border: 0; border-radius: 24px; background: var(--surface-2);
-  display: flex; flex-direction: column; justify-content: center; }
-.sh-noplayer { flex-direction: row !important; align-items: center; justify-content: flex-start !important; gap: 12px; color: var(--muted); font-size: 16px; }
+.sh-body .tm-player { flex: 1; min-width: 0; margin: 0; padding: 16px 18px; border: 0; border-radius: 24px; background: var(--surface-2); }
+.sh-noplayer { display: flex !important; align-items: center; gap: 12px; color: var(--muted); font-size: 16px; cursor: default; }
 .sh-noplayer .mdi { font-size: 26px; }
 /* barras tipo Android: píldora que se llena, símbolo dentro a la izquierda y valor a la derecha */
 .sh-pills { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 12px; justify-content: center; }
