@@ -1309,6 +1309,7 @@ const DEFAULTS = () => ({
     screenOff: false,                      // apagar la pantalla de noche cuando no se usa
   },
   theme: 'oscuro',      // oscuro | claro | auto (claro de día y oscuro de noche)
+  accent: 'azul',       // color de acento (ACCENTS)
   sound: { enabled: true, volume: 70 },
   photos: { enabled: true, seconds: CFG.photoSeconds || 30, fit: 'blur' },   // fit: cover | blur | contain
   alarms: [],
@@ -1367,11 +1368,41 @@ function themeIsLight() {
   const hr = new Date().getHours();
   return hr >= 8 && hr < 20;
 }
+/* Colores de acento: [nombre, en oscuro (color, letra encima, fondo suave), en claro (lo mismo)] */
+const ACCENTS = {
+  azul:     ['Azul',     ['#8ab4f8', '#0b1d3a', '#1d3354'], ['#1a66d6', '#ffffff', '#d5e3fa']],
+  turquesa: ['Turquesa', ['#78d9ec', '#00363f', '#1b3d45'], ['#00838f', '#ffffff', '#d0f0f3']],
+  verde:    ['Verde',    ['#81c995', '#0d2a17', '#1f3b2a'], ['#1e8e3e', '#ffffff', '#d6f0dd']],
+  amarillo: ['Amarillo', ['#fdd663', '#3b2a06', '#4a3f1a'], ['#b58100', '#ffffff', '#fdf0c8']],
+  naranja:  ['Naranja',  ['#fcad70', '#3d1c00', '#4a3020'], ['#d96a00', '#ffffff', '#ffe5cc']],
+  rosa:     ['Rosa',     ['#ff8bcb', '#4a0a2c', '#4a2238'], ['#c2185b', '#ffffff', '#fbdbe8']],
+  morado:   ['Morado',   ['#c58af9', '#2a0a47', '#3a2554'], ['#8430ce', '#ffffff', '#ecdcfb']],
+};
+let accentApplied = '';
 function applyTheme() {
   const light = themeIsLight();
+  const name = ACCENTS[SET.accent] ? SET.accent : 'azul', key = name + (light ? ':claro' : ':oscuro');
+  if (key !== accentApplied) {
+    accentApplied = key;
+    const [c, ink, soft] = ACCENTS[name][light ? 2 : 1], st = document.documentElement.style;
+    st.setProperty('--accent', c); st.setProperty('--accent-ink', ink); st.setProperty('--accent-soft', soft);
+  }
   if (document.documentElement.classList.contains('light') === light) return;
   document.documentElement.classList.toggle('light', light);
   try { if (!photosOn()) nextBackground(); } catch (e) { /* aún arrancando */ }   // el fondo sin fotos del modo ambiente cambia con el tema
+}
+
+/** Círculos para elegir el color de acento (se ven en el tono del tema actual). */
+function accentPicker() {
+  const wrap = h('div', { class: 'accents' });
+  const paint = () => wrap.replaceChildren(...Object.entries(ACCENTS).map(([k, [label, dark, light]]) => {
+    const [c, ink] = themeIsLight() ? light : dark, on = (SET.accent || 'azul') === k;
+    return h('button', { class: 'accent-sw' + (on ? ' on' : ''), title: label, style: `background:${c};color:${ink}`,
+      onclick: () => { SET.accent = k; saveSettings(); paint(); } }, on ? icon('mdi-check') : null);
+  }));
+  paint();
+  accentPicker.paint = paint;
+  return wrap;
 }
 
 function isNight(now = new Date()) {
@@ -1599,7 +1630,8 @@ function renderSettings() {
     h('div', { class: 'card set-card' }, h('div', { class: 'set-title' }, icon('mdi-monitor'), 'Pantalla'),
       bright,
       setBlock('Tema', 'Automático: claro de día y oscuro de noche (con la salida y la puesta del sol)',
-        segmented([['oscuro', 'Oscuro'], ['claro', 'Claro'], ['auto', 'Automático']], SET.theme || 'oscuro', (v) => { SET.theme = v; saveSettings(); })),
+        segmented([['oscuro', 'Oscuro'], ['claro', 'Claro'], ['auto', 'Automático']], SET.theme || 'oscuro', (v) => { SET.theme = v; saveSettings(); if (accentPicker.paint) accentPicker.paint(); })),   // los círculos, en el tono del tema
+      setBlock('Color', 'El de los botones, las barras y la burbuja del volumen', accentPicker()),
       setBlock('Modo ambiente', 'Tiempo sin tocar la pantalla hasta mostrar el reloj',
         segmented([[0, 'Nunca'], [30, '30 s'], [60, '1 min'], [90, '1,5 min'], [180, '3 min'], [300, '5 min'], [600, '10 min']],
           SET.idleSeconds, (v) => { SET.idleSeconds = v; saveSettings(); })),
