@@ -2359,13 +2359,15 @@ function pill(ic, { min = 0, max = 100, step = 1, value = 0, onLive, onEnd } = {
   const p = { el, v: value, drag: false };
   p.set = (v, force) => {
     if (p.drag && !force) return;
-    const f = (v - min) / (max - min);
-    p.v = v; fill.style.width = f * 100 + '%'; val.textContent = v + ' %';
-    el.classList.toggle('full', f > 0.86);   // el valor queda sobre la parte llena: en oscuro
+    // El 0 está justo después del símbolo (la parte con el símbolo siempre se ve llena, como en Android)
+    const f = (v - min) / (max - min), base = el.offsetHeight || 70, w = el.offsetWidth;
+    p.v = v; fill.style.width = `calc(${base}px + (100% - ${base}px) * ${f})`; val.textContent = v + ' %';
+    el.classList.toggle('full', w ? base + (w - base) * f > w - 80 : f > 0.86);   // el valor queda sobre la parte llena: en oscuro
   };
   const at = (x) => {
-    const r = el.getBoundingClientRect();
-    const v = Math.max(min, Math.min(max, Math.round((min + ((x - r.left) / r.width) * (max - min)) / step) * step));
+    const r = el.getBoundingClientRect(), base = r.height;
+    const f = Math.max(0, Math.min(1, (x - r.left - base) / Math.max(1, r.width - base - 10)));   // el 100 sin apurar hasta el borde
+    const v = Math.max(min, Math.min(max, Math.round((min + f * (max - min)) / step) * step));
     if (v !== p.v) { p.set(v, true); if (onLive) onLive(v); }
   };
   dragOn(el, { start: (x) => { p.drag = true; at(x); }, move: (x) => at(x), end: () => { p.drag = false; if (onEnd) onEnd(p.v); } });

@@ -662,7 +662,7 @@ main { display: flex; flex-direction: column; min-width: 0; min-height: 0; heigh
 /* barras tipo Android: píldora que se llena, símbolo dentro a la izquierda y valor a la derecha */
 .sh-pills { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 16px; justify-content: center; }
 .sh-pill { position: relative; height: 70px; border-radius: 35px; background: var(--surface-3); overflow: hidden; touch-action: none; cursor: pointer; }
-.sh-pill > i { position: absolute; left: 0; top: 0; bottom: 0; background: var(--accent); border-radius: 35px 0 0 35px; min-width: 70px; }
+.sh-pill > i { position: absolute; left: 0; top: 0; bottom: 0; background: var(--accent); border-radius: 35px; min-width: 70px; }
 .sp-ic { position: absolute; left: 23px; top: 50%; transform: translateY(-50%); font-size: 24px; color: var(--accent-ink); pointer-events: none; }
 .sp-val { position: absolute; right: 20px; top: 50%; transform: translateY(-50%); font-size: 15px; font-weight: 600; color: var(--text); pointer-events: none; font-variant-numeric: tabular-nums; }
 .sh-pill.full .sp-val { color: var(--accent-ink); }
