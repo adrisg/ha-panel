@@ -1,0 +1,42 @@
+{
+  "config": {
+    "flow_title": "{name}",
+    "step": {
+      "user": {
+        "title": "Add a panel",
+        "description": "Panels on your network are found automatically. If yours does not appear, enter its address.",
+        "data": { "host": "Address (IP or name.local)", "port": "Port" }
+      },
+      "discovery_confirm": {
+        "title": "Panel found",
+        "description": "Add **{name}**? A code will appear on its screen."
+      },
+      "pair": {
+        "title": "Code on the panel",
+        "description": "Type the code shown on the screen of **{name}**.",
+        "data": { "code": "Code" }
+      },
+      "reauth_confirm": {
+        "title": "Link again",
+        "description": "**{name}** was unlinked. A new code will appear on its screen."
+      }
+    },
+    "error": {
+      "cannot_connect": "Could not connect to the panel.",
+      "invalid_code": "Wrong code.",
+      "code_expired": "The code expired. A new one is now on the panel."
+    },
+    "abort": {
+      "already_configured": "This panel is already added.",
+      "cannot_connect": "Could not connect to the panel.",
+      "not_panel": "This device is not a Panel Hogar.",
+      "reauth_successful": "Linked again."
+    }
+  },
+  "entity": {
+    "light": { "screen": { "name": "Screen" } },
+    "switch": { "ambient": { "name": "Ambient mode" } },
+    "sensor": { "last_touch": { "name": "Last touched" } },
+    "button": { "reload": { "name": "Reload" } }
+  }
+}

@@ -485,6 +485,20 @@ go = 'home' | 'rooms' | 'sensors' | 'media' | 'printers' | 'scooter' | 'settings
     </div>
 
     <div class="card">
+      <h2>🔗 Integración de Home Assistant</h2>
+      <span class="hint">Instala la integración «Panel Hogar»: Home Assistant encuentra el panel solo en tu red. Al añadirlo, sale un código en la pantalla del panel; escríbelo en Home Assistant.</span>
+      <dl class="info" id="hakey-info"><dt>Estado</dt><dd>Cargando…</dd></dl>
+      <div class="btns" data-nodirty><span id="hakey-new"></span></div>
+      <div class="field">
+        <label>Qué ve Home Assistant</label>
+      <div class="row"><label for="expose-screen">Pantalla <span class="hint">(encendida y brillo)</span></label><label class="switch"><input id="expose-screen" type="checkbox"><span></span></label></div>
+      <div class="row"><label for="expose-ambient">Modo ambiente</label><label class="switch"><input id="expose-ambient" type="checkbox"><span></span></label></div>
+      <div class="row"><label for="expose-last_touch">Última vez que se tocó</label><label class="switch"><input id="expose-last_touch" type="checkbox"><span></span></label></div>
+      <div class="row"><label for="expose-reload">Recargar el panel <span class="hint">(botón)</span></label><label class="switch"><input id="expose-reload" type="checkbox"><span></span></label></div>
+      </div>
+    </div>
+
+    <div class="card">
       <h2>⚡ Accesos rápidos</h2>
       <div class="hint">Salen en el panel de acceso rápido (desliza hacia abajo desde arriba → ventana de la derecha). Un toque los enciende o apaga.</div>
       <div class="field">
@@ -1817,6 +1831,7 @@ function fill(cfg) {
   lists.hiddenEntities = [...(p.hiddenEntities || [])];
   lists.excludePlatforms = [...(p.excludePlatforms || [])];
   lists.quick = [...(a.quick || [])];
+  for (const k of EXPOSE_KEYS) $('#expose-' + k).checked = !a.haExpose || a.haExpose[k] !== false;
   Object.keys(lists).forEach(renderChips);
   $('#theme').value = a.theme || 'oscuro';
   accent = a.accent || 'azul'; renderAccents();
@@ -1859,6 +1874,7 @@ function collect() {
     voiceSatellite: $('#voiceSatellite').value,
     voiceStyle: $('#voiceStyle').value,
     theme: $('#theme').value, accent, quick: lists.quick,
+    haExpose: Object.fromEntries(EXPOSE_KEYS.map((k) => [k, $('#expose-' + k).checked])),
   };
   return { panel, ajustes };
 }
@@ -1901,6 +1917,20 @@ async function loadEntities() {
     $('#entidades-msg').textContent = `${ents.length} entidades de Home Assistant para elegir.`;
   } catch (e) { $('#entidades-msg').textContent = 'No se pudo leer la lista de entidades: ' + e.message; }
 }
+/* ---------- integración de Home Assistant: dirección y clave ---------- */
+const EXPOSE_KEYS = ['screen', 'ambient', 'last_touch', 'reload'];
+async function loadHaKey() {
+  let estado;
+  try {
+    const r = await api('GET', '/api/ha-key');
+    estado = r.linked ? 'Conectado' : r.lastSeen ? 'Sin conexión desde ' + new Date(r.lastSeen * 1000).toLocaleString('es-ES') : 'Sin vincular';
+    if (!r.mdns) estado += ' · falta avahi-utils para que lo encuentre solo';
+  } catch (e) { estado = 'Error: ' + e.message; }
+  $('#hakey-info').replaceChildren(el('dt', { textContent: 'Estado' }), el('dd', { textContent: estado }));
+}
+$('#hakey-new').replaceChildren(sureBtn({ class: 'btn' }, 'Desvincular Home Assistant', '¿Seguro? Habrá que volver a vincularlo', async () => {
+  try { await api('POST', '/api/ha-key'); loadHaKey(); } catch (e) { msg(e.message, 'err'); }
+}));
 async function load() {
   const cfg = await api('GET', '/api/config');
   fill(cfg); isDirty = false; msg('');
@@ -1909,6 +1939,7 @@ async function load() {
   loadRed();
   loadSpk(); loadVoz(); loadSnd();
   loadUpd();
+  loadHaKey();
   loadScripts().catch((e) => bmsg('No se pudo leer el funcionamiento de las burbujas: ' + e.message, 'err'));
 }
 

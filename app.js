@@ -1474,7 +1474,7 @@ function isNight(now = new Date()) {
  * Con el ayudante de la Pi (panel-helper.py en 127.0.0.1:8766) se cambia el brillo real y se apaga
  * la pantalla de verdad. Sin él, se oscurece con una capa negra (funciona en cualquier pantalla). */
 const HELPER = window.PANEL_HELPER_URL || 'http://127.0.0.1:8766';
-const SCREEN = { off: false, lastTouch: Date.now(), helper: null, level: null };
+const SCREEN = { off: false, lastTouch: Date.now(), helper: null, level: null, forcedOff: false };
 async function helperInit() {
   try {
     const r = await fetch(HELPER + '/status', { cache: 'no-store' });
@@ -1509,10 +1509,14 @@ function screenTick() {
     if (SET.screenOffMinutes > 0 && idle >= Math.max(0, SET.idleSeconds) + SET.screenOffMinutes * 60) off = true;
     if (night && SET.night.screenOff && idle >= Math.max(60, SET.idleSeconds)) off = true;
   }
+  if (SCREEN.forcedOff && !alert) off = true;   // apagada a mano (botón o Home Assistant): hasta tocarla o un aviso
   setScreenOff(off);
   setBrightness(alert ? 100 : night ? SET.night.brightness : SET.brightness);
+  reportState();
 }
-function wakeScreen() { SCREEN.lastTouch = Date.now(); screenTick(); }
+/** Apagar la pantalla ya (botón, mando a distancia o Home Assistant): sigue apagada hasta que la toquen. */
+function screenOffNow() { SCREEN.lastTouch = 0; SCREEN.forcedOff = true; screenTick(); }
+function wakeScreen() { SCREEN.lastTouch = Date.now(); SCREEN.forcedOff = false; screenTick(); }
 /** Al arrancar o al encenderse la pantalla: si suena algo, «Sonando»; si no, el modo ambiente. */
 function enterScreen() {
   if (alertOpen()) return;
@@ -1698,7 +1702,7 @@ function renderSettings() {
           SET.screenOffMinutes, (v) => { SET.screenOffMinutes = v; saveSettings(); })),
       h('div', { class: 'btn-row' },
         h('button', { class: 'big-action', onclick: () => showAmbient() }, icon('mdi-image-filter-hdr'), 'Modo ambiente'),
-        h('button', { class: 'big-action', onclick: () => { SCREEN.lastTouch = 0; setScreenOff(true); } }, icon('mdi-monitor-off'), 'Apagar ahora'))),
+        h('button', { class: 'big-action', onclick: () => { screenOffNow(); } }, icon('mdi-monitor-off'), 'Apagar ahora'))),
 
     soundCard(),
 
@@ -2563,7 +2567,7 @@ function shadeFill() {
       h('div', { class: 'sh-when' }, h('b', null, now.toLocaleTimeString('es-ES', { hour: '2-digit', minute: '2-digit' })),
         h('span', null, cap(now.toLocaleDateString('es-ES', { weekday: 'long', day: 'numeric', month: 'long' })))),
       h('div', { class: 'sh-ibtns' },
-        iconBtn('mdi-monitor-off', 'Apagar la pantalla', () => { SCREEN.lastTouch = 0; setScreenOff(true); }),
+        iconBtn('mdi-monitor-off', 'Apagar la pantalla', () => { screenOffNow(); }),
         iconBtn('mdi-cog', 'Ajustes', () => {   // desde el modo ambiente o «Sonando» también
           if ($('#np').classList.contains('show')) hideNowPlaying(true);
           if (S.ambient) hideAmbient('settings'); else go('settings');
@@ -2634,6 +2638,7 @@ function shadeGestures() {
   bg.addEventListener('click', () => shade(false));
 }
 function showAmbient() {
+  setTimeout(reportState, 0);   // Home Assistant lo sabe al momento
   closeSheet();
   if (SH.open) shade(false);
   S.ambient = true;
@@ -2662,6 +2667,7 @@ function swallowTouch() {
 }
 /** Sale del modo ambiente a Inicio, o a la vista de la burbuja que se haya tocado. */
 function hideAmbient(view = 'home') {
+  setTimeout(reportState, 0);
   S.ambient = false;
   $('#ambient').classList.remove('show');
   view = tabFor(view);
@@ -3217,11 +3223,25 @@ async function applyRemoteSettings() {
   renderAmbientChips();
   if (SH.open) { SH.open = false; shade(true); }   // el panel de acceso rápido, con los accesos y colores nuevos
 }
-function runRemote(type) {
+/* Estado del panel para la integración de Home Assistant: se manda al ayudante cuando cambia.
+ * El último toque, como mucho cada 30 s (para no estar mandándolo con cada dedo). */
+let LAST_TOUCH = 0;
+const PSTATE = { sent: '', touch: 0 };
+function reportState() {
+  if (!window.PANEL_HELPER) return;
+  if (LAST_TOUCH - PSTATE.touch > 30000) PSTATE.touch = LAST_TOUCH;
+  const body = JSON.stringify({ screen_on: !SCREEN.off, brightness: SET.brightness, ambient: !!S.ambient,
+    last_touch: PSTATE.touch ? new Date(PSTATE.touch).toISOString() : null });
+  if (body === PSTATE.sent) return;
+  PSTATE.sent = body;
+  fetch(HELPER + '/estado', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body }).catch(() => { PSTATE.sent = ''; });
+}
+function runRemote(type, value) {
   if (type === 'recargar') location.reload();
+  else if (type === 'brillo' && value) { SET.brightness = value; saveSettings(true); wakeScreen(); }
   else if (type === 'ambiente') showAmbient();
   else if (type === 'inicio') { hideAmbient('home'); wakeScreen(); }
-  else if (type === 'pantalla_off') { SCREEN.lastTouch = 0; setScreenOff(true); }
+  else if (type === 'pantalla_off') { screenOffNow(); }
   else if (type === 'pantalla_on') { wakeScreen(); }
 }
 async function pollHelper() {
@@ -3234,7 +3254,7 @@ async function pollHelper() {
   try {
     const r = await (await fetch(HELPER + '/poll', { cache: 'no-store' })).json();
     if (REMOTE.command === null) REMOTE.command = r.command.id;          // al arrancar no se repiten órdenes viejas
-    else if (r.command.id !== REMOTE.command) { REMOTE.command = r.command.id; runRemote(r.command.type); }
+    else if (r.command.id !== REMOTE.command) { REMOTE.command = r.command.id; runRemote(r.command.type, r.command.value); }
     // Cambiaron algo desde la web: si fue la conexión, las entidades, las fotos o el código, se recarga;
     // si solo fueron ajustes (brillo, tema, sonido, burbujas, pestañas…), se aplican al momento sin recargar
     if (REMOTE.version !== null && r.version !== REMOTE.version) {
@@ -3243,6 +3263,7 @@ async function pollHelper() {
     }
     REMOTE.version = r.version; REMOTE.reload = r.reload || 0;
     showPin(r.pin || null);
+    showHaCode(r.haCode || null);
     if (r.update && r.update !== UPDATE_SEEN) toast(`Hay una actualización del panel: web de configuración → Actualizaciones`);
     UPDATE_SEEN = r.update || 0;
   } catch (e) { /* ayudante reiniciándose */ }
@@ -3268,6 +3289,24 @@ function showPin(code) {
   }
   box.classList.add('show');
   wakeScreen(); resetIdle();
+}
+
+/* Código para vincular con Home Assistant: la integración lo pide y sale aquí en grande hasta que se escribe allí. */
+const HACODE = { code: null };
+function showHaCode(code) {
+  const box = $('#hacode');
+  if (!code) { if (HACODE.code) { HACODE.code = null; box.classList.remove('show'); } return; }
+  if (code !== HACODE.code) {
+    HACODE.code = code;
+    box.replaceChildren(h('div', { class: 'pin-card' },
+      h('button', { class: 'icon-btn', onclick: () => box.classList.remove('show') }, icon('mdi-close')),
+      icon('mdi-home-assistant'),
+      h('div', { class: 'pin-title' }, 'Vincular con Home Assistant'),
+      h('div', { class: 'pin-hint' }, 'Escribe este código en Home Assistant para añadir el panel'),
+      h('div', { class: 'pin-code' }, code.slice(0, 3) + ' ' + code.slice(3))));
+    box.classList.add('show');
+    wakeScreen(); resetIdle();
+  }
 }
 
 /* ====================== Arranque ====================== */
@@ -3326,10 +3365,10 @@ function start() {
     swallowTouch();
     hideAmbient(chip && chip.bubble && chip.bubble.go ? chip.bubble.go : 'home');
   });
-  document.addEventListener('pointerdown', () => { SCREEN.lastTouch = Date.now(); resetIdle(); }, true);
+  document.addEventListener('pointerdown', () => { SCREEN.lastTouch = LAST_TOUCH = Date.now(); resetIdle(); }, true);
   $('#blackout').addEventListener('pointerdown', (e) => { e.preventDefault(); e.stopPropagation(); swallowTouch(); wakeScreen(); });
   helperInit();
-  setInterval(pollHelper, 5000);
+  setInterval(pollHelper, 1000);   // órdenes del mando y de Home Assistant, al momento
 
   tick(); setInterval(tick, 5000);
   if (photoSources().length) loadPhotos().then(nextBackground); else nextBackground();

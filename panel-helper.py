@@ -32,6 +32,8 @@ import ipaddress
 import os
 import re
 import secrets
+import shutil
+import signal
 import socket
 import subprocess
 import sys
@@ -71,7 +73,7 @@ GOOGLE_HOSTS = ('photos.app.goo.gl', 'photos.google.com', 'goo.gl')
 
 LOCK = threading.Lock()
 SESSIONS = {}                        # cookie -> caducidad
-COMMAND = {'id': 0, 'type': None}    # orden para el panel (recargar, apagar pantalla…)
+COMMAND = {'id': 0, 'type': None, 'value': None}    # orden para el panel (recargar, apagar pantalla, brillo…)
 
 
 # ---------------------------------------------------------------- configuración
@@ -780,6 +782,8 @@ def _restart_after_update(before):
         _user_ctl('restart', VOICE_UNIT)
     if 'panel-helper.py' in changed:
         sys.stdout.flush()
+        if MDNS['proc']:
+            MDNS['proc'].terminate()
         os.execv(sys.executable, [sys.executable, str(HERE / 'panel-helper.py')])   # mismo proceso, código nuevo
 
 
@@ -824,6 +828,156 @@ def apply_update():
         _later(lambda: _restart_after_update(before), 3)
     finally:
         UPD['applying'] = False
+
+
+# ---------------------------------------------------------------- integración de Home Assistant
+# La integración «Panel Hogar» (custom_components/panel_hogar) habla con el panel por la web (puerto 8080):
+#   GET  /api/v1/info                      -> {id, name, version}
+#   GET  /api/v1/state?rev=N&timeout=25     -> {rev, screen_on, brightness, ambient, last_touch}; si rev es el actual, espera a que cambie
+#   POST /api/v1/command {command, value}   -> screen_on | screen_off | brightness (5–100) | ambient_on | ambient_off | reload
+# Con la cabecera «Authorization: Bearer <clave>»; la clave se ve (y se cambia) en la web → General.
+HA_KEY_FILE = DATA / 'ha_api.json'
+PANEL_STATE = {'rev': 0, 'screen_on': None, 'brightness': None, 'ambient': None, 'last_touch': None}
+STATE_COND = threading.Condition()
+HA_COMMANDS = {'screen_on': 'pantalla_on', 'screen_off': 'pantalla_off', 'ambient_on': 'ambiente', 'ambient_off': 'inicio',
+               'reload': 'recargar', 'brightness': 'brillo'}
+
+
+def ha_api_key(regenerate=False):
+    """Clave para la integración de Home Assistant (se crea la primera vez)."""
+    try:
+        key = json.loads(HA_KEY_FILE.read_text(encoding='utf-8')).get('key')
+    except (OSError, ValueError):
+        key = None
+    if regenerate or not key:
+        key = secrets.token_urlsafe(24)
+        DATA.mkdir(parents=True, exist_ok=True)
+        HA_KEY_FILE.write_text(json.dumps({'key': key}), encoding='utf-8')
+        try:
+            os.chmod(HA_KEY_FILE, 0o600)
+        except OSError:
+            pass
+    return key
+
+
+def panel_id():
+    """Identificador estable de este panel (no cambia aunque le cambies el nombre)."""
+    try:
+        seed = Path('/etc/machine-id').read_text().strip()
+    except OSError:
+        seed = socket.gethostname()
+    return hashlib.sha256(('panel-hogar:' + seed).encode()).hexdigest()[:12]
+
+
+HA_EXPOSE = ('screen', 'ambient', 'last_touch', 'reload')
+
+
+def ha_expose():
+    """Lo que se ve en Home Assistant (web → General → Integración); por defecto, todo."""
+    chosen = load_config()['ajustes'].get('haExpose') or {}
+    return [k for k in HA_EXPOSE if chosen.get(k) is not False]
+
+
+def panel_info():
+    code, out, _ = _git('rev-parse', '--short', 'HEAD', timeout=5)
+    return {'id': panel_id(), 'name': 'Panel ' + socket.gethostname().split('.')[0], 'version': out.strip() if code == 0 else '',
+            'expose': ha_expose()}
+
+
+def set_panel_state(body):
+    """El panel cuenta cómo está (pantalla, brillo, modo ambiente, último toque); avisa a quien esté esperando."""
+    with STATE_COND:
+        changed = False
+        for k in ('screen_on', 'brightness', 'ambient', 'last_touch'):
+            if k in body and body[k] != PANEL_STATE[k]:
+                PANEL_STATE[k] = body[k]
+                changed = True
+        if changed:
+            PANEL_STATE['rev'] += 1
+            STATE_COND.notify_all()
+        return PANEL_STATE['rev']
+
+
+def wait_panel_state(rev, timeout):
+    """El estado; si rev es el actual, espera (como mucho timeout s) a que cambie."""
+    with STATE_COND:
+        if rev is not None and rev == PANEL_STATE['rev'] and timeout > 0:
+            STATE_COND.wait(timeout)
+        return dict(PANEL_STATE)
+
+
+def send_command(command, value=None):
+    """Una orden de Home Assistant para el panel (le llega en su próxima consulta, como mucho en 1 s)."""
+    if command not in HA_COMMANDS:
+        raise ValueError('unknown command')
+    if command == 'brightness':
+        value = _int(value, 5, 100, 100)
+    with LOCK:
+        COMMAND['id'] += 1
+        COMMAND['type'] = HA_COMMANDS[command]
+        COMMAND['value'] = value
+
+
+# Vincular con Home Assistant sin copiar claves: la integración encuentra el panel en la red (mDNS, _panel-hogar._tcp)
+# y pide un código (POST /api/v1/pair/start). El panel lo enseña en grande; al escribirlo en Home Assistant
+# (POST /api/v1/pair/finish {code}) se le da la clave. El código vale 3 minutos y 5 intentos.
+PAIR = {'code': None, 'until': 0.0, 'tries': 0, 'last_start': 0.0}
+MDNS = {'proc': None}             # avahi-publish (se cierra antes de relanzar el ayudante)
+HA_SEEN = {'at': 0.0}
+
+
+def pair_start():
+    with LOCK:
+        now = time.time()
+        if now - PAIR['last_start'] < 3:
+            raise ValueError('too many requests')
+        PAIR.update(code=f'{secrets.randbelow(10 ** 6):06d}', until=now + 180, tries=0, last_start=now)
+    return {'id': panel_id(), 'name': panel_info()['name']}
+
+
+def pair_finish(code):
+    with LOCK:
+        if not PAIR['code'] or time.time() > PAIR['until']:
+            PAIR['code'] = None
+            raise ValueError('expired')
+        PAIR['tries'] += 1
+        ok = hmac.compare_digest(str(code).replace(' ', ''), PAIR['code'])
+        if not ok and PAIR['tries'] >= 5:
+            PAIR['code'] = None
+        if not ok:
+            raise PermissionError('wrong code')
+        PAIR['code'] = None
+    return {'key': ha_api_key(), 'id': panel_id(), 'name': panel_info()['name']}
+
+
+def pair_code():
+    """El código que tiene que enseñar el panel ahora mismo (o None)."""
+    return PAIR['code'] if PAIR['code'] and time.time() < PAIR['until'] else None
+
+
+def _die_with_parent():
+    """En Linux: si el ayudante se cierra (p. ej. al reiniciar el kiosko), el hijo también."""
+    try:
+        import ctypes
+        ctypes.CDLL('libc.so.6').prctl(1, signal.SIGTERM)   # PR_SET_PDEATHSIG
+    except (OSError, AttributeError):
+        pass
+
+
+def mdns_announce():
+    """Anuncia el panel en la red (avahi-publish, de avahi-utils) para que Home Assistant lo encuentre solo."""
+    if SIMULATE:
+        return
+    while True:
+        exe = shutil.which('avahi-publish')
+        if exe:
+            try:
+                MDNS['proc'] = subprocess.Popen([exe, '-s', panel_info()['name'], '_panel-hogar._tcp', str(WEB_PORT), f'id={panel_id()}'],
+                                                stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL, preexec_fn=_die_with_parent)
+                MDNS['proc'].wait()
+            except OSError:
+                pass
+        time.sleep(30)          # si se corta (o aún no está instalado), se vuelve a intentar
 
 
 def update_info():
@@ -1127,7 +1281,7 @@ class LocalHandler(Base):
             return self._json(200, update_info())
         if u.path == '/poll':
             cfg = load_config()
-            return self._json(200, {'version': cfg['version'], 'reload': cfg.get('reload', 0), 'command': COMMAND, 'pin': speaker_pin(),
+            return self._json(200, {'version': cfg['version'], 'reload': cfg.get('reload', 0), 'command': COMMAND, 'pin': speaker_pin(), 'haCode': pair_code(),
                                     'update': len(UPD['available']) if update_settings()['mode'] == 'avisar' else 0})
         if u.path == '/proxy':
             return self._proxy(parse_qs(u.query).get('url', [''])[0])
@@ -1144,6 +1298,8 @@ class LocalHandler(Base):
         u = urlparse(self.path)
         q = parse_qs(u.query)
         try:
+            if u.path == '/estado':     # el panel cuenta cómo está (para la integración de Home Assistant)
+                return self._json(200, {'rev': set_panel_state(self._body())})
             if u.path == '/brightness':
                 return self._json(200, {'ok': set_brightness(int(q.get('value', ['100'])[0]))})
             if u.path == '/power':
@@ -1213,8 +1369,38 @@ class WebHandler(Base):
             return False
         return True
 
+    def _ha_auth(self):
+        """Integración de Home Assistant: «Authorization: Bearer <clave>»."""
+        got = (self.headers.get('Authorization') or '').removeprefix('Bearer ').strip()
+        if got and hmac.compare_digest(got, ha_api_key()):
+            HA_SEEN['at'] = time.time()
+            return True
+        time.sleep(0.5)
+        self._json(401, {'error': 'invalid key'})
+        return False
+
     def do_GET(self):
         u = urlparse(self.path)
+        if u.path.startswith('/api/v1/'):
+            if not self._ha_auth():
+                return
+            if u.path == '/api/v1/info':
+                return self._json(200, panel_info())
+            if u.path == '/api/v1/state':
+                q = parse_qs(u.query)
+                try:
+                    rev = int(q['rev'][0]) if 'rev' in q else None
+                    timeout = max(0.0, min(55.0, float(q.get('timeout', ['0'])[0])))
+                except ValueError:
+                    return self._json(400, {'error': 'bad rev or timeout'})
+                return self._json(200, dict(wait_panel_state(rev, timeout), expose=ha_expose()))
+            return self._json(404)
+        if u.path == '/api/ha-key':      # la clave para la integración, en la web
+            if not self._guard():
+                return
+            seen = HA_SEEN['at']
+            return self._json(200, {'linked': seen > 0 and time.time() - seen < 120, 'lastSeen': seen or None,
+                                    'mdns': SIMULATE or bool(shutil.which('avahi-publish'))})
         if u.path in ('/', '/index.html'):
             try:
                 data = (HERE / 'config.html').read_bytes()
@@ -1302,6 +1488,27 @@ class WebHandler(Base):
             body = self._body()
         except ValueError:
             return self._json(400)
+        if u.path == '/api/v1/pair/start':
+            try:
+                return self._json(200, pair_start())
+            except ValueError as e:
+                return self._json(429, {'error': str(e)})
+        if u.path == '/api/v1/pair/finish':
+            try:
+                return self._json(200, pair_finish(body.get('code', '')))
+            except PermissionError as e:
+                time.sleep(1)
+                return self._json(403, {'error': str(e)})
+            except ValueError as e:
+                return self._json(410, {'error': str(e)})
+        if u.path == '/api/v1/command':
+            if not self._ha_auth():
+                return
+            try:
+                send_command(str(body.get('command', '')), body.get('value'))
+            except ValueError as e:
+                return self._json(400, {'error': str(e)})
+            return self._json(200, {'ok': True})
         if u.path == '/api/login':
             if not PASS_FILE.exists():
                 return self._json(409, {'error': 'Aún no hay contraseña. En la Pi ejecuta: python3 ~/ha-panel/panel-helper.py --set-password'})
@@ -1374,6 +1581,10 @@ class WebHandler(Base):
                 return self._json(400, {'error': str(e)})
         if u.path == '/api/actualizaciones':   # comprobar, actualizar ya, o modo (avisar / automático) y hora
             return self._json(*update_action(body))
+        if u.path == '/api/ha-key':        # desvincular: otra clave (Home Assistant tendrá que volver a vincularse)
+            ha_api_key(regenerate=True)
+            HA_SEEN['at'] = 0.0
+            return self._json(200, {'ok': True})
         if u.path == '/api/orden':         # recargar, apagar/encender pantalla, modo ambiente, inicio
             tipo = body.get('tipo')
             if tipo not in ('recargar', 'pantalla_off', 'pantalla_on', 'ambiente', 'inicio'):
@@ -1462,6 +1673,7 @@ def main():
         print('Panel Hogar · ayudante en MODO SIMULACIÓN (pantalla y red simuladas; no se cambia nada del equipo)', flush=True)
     threading.Thread(target=serve, args=(WEB_PORT, WebHandler, '0.0.0.0'), daemon=True).start()
     threading.Thread(target=update_loop, daemon=True).start()
+    threading.Thread(target=mdns_announce, daemon=True).start()   # para que Home Assistant lo encuentre solo
     master_restore()
     serve(LOCAL_PORT, LocalHandler, '127.0.0.1')
 

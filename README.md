@@ -112,6 +112,21 @@ Todo se guarda con **Guardar**, abajo.
 
 **Altavoz:** si no lo instalaste con `install.sh`, lanza `bash ~/ha-panel/scripts/setup-sendspin.sh` y actívalo en la web → Sonido → Altavoz.
 
+## Home Assistant: el panel como dispositivo
+
+Instala la integración **Panel Hogar**: en HACS, añade este repositorio como repositorio personalizado (tipo *Integración*), o copia `custom_components/panel_hogar` a tu carpeta `config/custom_components`. Reinicia Home Assistant.
+
+El panel aparece solo en **Ajustes → Dispositivos → Descubiertos**. Al añadirlo, sale un código en la pantalla del panel: escríbelo en Home Assistant y listo.
+
+| Entidad | Qué hace |
+|---|---|
+| Pantalla | encender, apagar y brillo |
+| Modo ambiente | entrar o salir |
+| Último toque | cuándo se tocó la pantalla por última vez |
+| Recargar | recarga el panel |
+
+En la web → 🏠 General → **Integración de Home Assistant** eliges qué entidades se ven y puedes desvincularlo.
+
 ## Probarlo en el ordenador
 
 Con Python instalado: `python dev.py`. El panel se abre en el navegador y la web de configuración está en `http://127.0.0.1:8080` (contraseña `panel`).

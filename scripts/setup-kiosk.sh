@@ -8,7 +8,7 @@ PANEL_DIR="$(cd "$(dirname "$0")/.." && pwd)"   # la carpeta del panel (estos sc
 echo "==> Panel en: $PANEL_DIR"
 
 sudo apt-get update
-sudo apt-get install -y --no-install-recommends cage curl fonts-noto-core wlr-randr
+sudo apt-get install -y --no-install-recommends cage curl fonts-noto-core wlr-randr avahi-utils
 # 64 bits (aarch64) siempre tiene NEON, aunque /proc/cpuinfo lo llame «asimd»
 if [ "$(uname -m)" != aarch64 ] && ! grep -qwE "neon|asimd" /proc/cpuinfo; then
   echo "!!  Esta Raspberry no puede ejecutar Chromium (Pi 1 / Zero). Usa una Pi 3, 4 o 5."
