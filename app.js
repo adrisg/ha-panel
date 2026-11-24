@@ -1245,6 +1245,12 @@ function showNotif() {
   modal.classList.remove('hidden');
 }
 
+/** Vuelve a abrir un aviso del historial, en grande y sin sonido, hasta que se cierre. */
+function reopenNotif(n) {
+  const c = { ...n, nivel: n.nivel === 'info' ? 'aviso' : n.nivel, duracion: 0, sonido: false };
+  N.queue = [c, ...N.queue.filter((x) => x.id !== c.id)];
+  showNotif();
+}
 async function runNotifAction(n, a) {
   if (a.servicio) {
     const [dom, svc] = String(a.servicio).split('.');
@@ -2385,9 +2391,11 @@ function shadeTabs(main) {
     if (SH.tab === 0) { N.unread = 0; renderBell(); }
     badge.textContent = N.unread > 0 ? N.unread : '';
     if (!N.history.length) { notif.replaceChildren(h('div', { class: 'sht-empty' }, icon('mdi-bell-check-outline'), 'No hay avisos')); return; }
-    notif.replaceChildren(...N.history.map((n) => h('div', { class: 'hist-row ' + n.nivel }, icon(n.icono),
+    // tocar un aviso lo vuelve a abrir entero (con su imagen y sus botones); la × lo quita de la lista
+    notif.replaceChildren(...N.history.map((n) => h('div', { class: 'hist-row tappable ' + n.nivel, onclick: () => { shade(false); reopenNotif(n); } }, icon(n.icono),
       h('div', { class: 'hist-text' }, h('b', null, n.titulo), n.mensaje ? h('div', { class: 'muted small' }, n.mensaje) : null),
-      h('span', { class: 'muted small' }, hhmm(n.at)))),
+      h('span', { class: 'muted small' }, hhmm(n.at)),
+      h('button', { class: 'hist-x', title: 'Quitar', onclick: (e) => { e.stopPropagation(); N.history = N.history.filter((x) => x !== n); renderBell(); paintNotif(); } }, icon('mdi-close')))),
     h('button', { class: 'sht-clear', onclick: () => { N.history = []; N.unread = 0; renderBell(); paintNotif(); } }, icon('mdi-delete-sweep'), 'Borrar todos'));
   };
   // Accesos rápidos: los elegidos como baldosas y, al final, una para añadir o quitar
