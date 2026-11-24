@@ -10,6 +10,8 @@ set -euo pipefail
 PANEL_DIR="$(cd "$(dirname "$0")/.." && pwd)"   # la carpeta del panel (estos scripts van en scripts/)
 VENV="$HOME/.local/share/panel-hogar/voz"
 
+echo "!!  El asistente de voz está en BETA: funciona, pero puede fallar o cambiar en próximas versiones."
+echo
 echo "==> Programas de audio..."
 if ! command -v arecord >/dev/null || ! python3 -c 'import ensurepip' 2>/dev/null; then
   sudo apt-get install -y --no-install-recommends alsa-utils python3-venv

@@ -2340,7 +2340,7 @@ function voiceMicBlock() {
     const estado = !r.installed ? 'Sin instalar: bash ~/ha-panel/scripts/setup-voz.sh' : r.active ? 'Escuchando' : s.enabled ? 'No está funcionando (mira el registro en la web)' : 'Apagado';
     const opts = (list, ic) => list.map((o) => [o.id, o.name, ic, '']);
     box.replaceChildren(
-      setBlock('Escuchar con el micro de este panel', estado, switchBtn(s.enabled, (v) => save({ enabled: v }))),
+      setBlock('Escuchar con el micro de este panel (beta)', estado, switchBtn(s.enabled, (v) => save({ enabled: v }))),
       setBlock('Micrófono', null, pickList(opts(r.inputs, 'mdi-microphone'), s.mic, (v) => save({ mic: v }))),
       setBlock('Por dónde contesta', null, pickList(opts(r.outputs, 'mdi-speaker'), s.output, (v) => save({ output: v }))),
       setBlock('Palabra para despertarlo', null, segmented(r.wakeWords.map((w) => [w.id, w.name]), s.wake, (v) => save({ wake: v }))));

@@ -92,18 +92,19 @@ En la pantalla: cortina → ⚙. Desde el móvil: la web de configuración (el Q
 | 🏠 **General** | mando a distancia, Home Assistant, favoritos y entidades ocultas, accesos rápidos de la cortina |
 | 🖥️ **Pantalla** | brillo, aspecto, cuándo pasa a modo ambiente y cuándo se apaga, modo noche |
 | 🖼️ **Modo ambiente** | altavoces por prioridad, fotos (álbumes, cada cuánto cambian, cómo se ven) y burbujas |
-| 🔊 **Sonido** | por dónde suena la Pi y su volumen (el límite), música, avisos y alarmas, altavoz de Music Assistant, «Sonando», voz en la pantalla y asistente de voz |
+| 🔊 **Sonido** | por dónde suena la Pi y su volumen (el límite), música, avisos y alarmas, altavoz de Music Assistant, «Sonando» y voz en la pantalla |
 | 🗂️ **Pestañas** | las pestañas del panel y qué lleva cada una |
 | 🧩 **Componentes** | crear y editar componentes |
 | 🛠️ **Sistema** | red (WiFi, IP, nombre) y actualizaciones |
+| 🧪 **Beta** | lo que está en pruebas: el asistente de voz con el micro de la Pi |
 
-Todo se guarda con **Guardar**, abajo. La red y los botones del mando a distancia son acciones al momento.
+Todo se guarda con **Guardar**, abajo.
 
 **Altavoces por prioridad:** tanto el reproductor del modo ambiente como la pantalla «Sonando» usan una lista ordenada de altavoces («Este panel» incluido):
 - **Modo ambiente:** sale el primero de la lista que esté sonando; si no suena ninguno, el primero en pausa y, si no, el primero.
 - **«Sonando»:** se abre al empezar a sonar uno de la lista. Si ya se ve otro, cambia solo si el nuevo está más arriba o si el que se ve no suena. Al parar, pasa al siguiente que siga sonando o se cierra sola (tiempo a elegir).
 
-**Asistente de voz:** con un micro USB, `bash ~/ha-panel/scripts/setup-voz.sh` convierte la Pi en satélite de Assist («Okay Nabu»). En Home Assistant necesitas un motor de voz a texto (Speech-to-Phrase o Whisper) y añadir la Pi en la integración **Wyoming**. Luego elígela en Ajustes → Asistente de voz (o en la web → Sonido → Voz en la pantalla) y saldrá una barra encima de la pantalla mientras escucha y contesta.
+**Asistente de voz (beta):** con un micro USB, `bash ~/ha-panel/scripts/setup-voz.sh` convierte la Pi en satélite de Assist («Okay Nabu»). En Home Assistant necesitas un motor de voz a texto (Speech-to-Phrase o Whisper) y añadir la Pi en la integración **Wyoming**. Se configura en la web → 🧪 Beta. Luego elígela en Ajustes → Asistente de voz (o en la web → Sonido → Voz en la pantalla) y saldrá una barra encima de la pantalla mientras escucha y contesta.
 
 **Altavoz:** si no lo instalaste con `install.sh`, lanza `bash ~/ha-panel/scripts/setup-sendspin.sh` y actívalo en la web → Sonido → Altavoz.
 

@@ -314,6 +314,7 @@
       <button type="button" data-page="pantallas">🗂️ Pestañas</button>
       <button type="button" data-page="componentes">🧩 Componentes</button>
       <button type="button" data-page="sistema">🛠️ Sistema</button>
+      <button type="button" data-page="beta">🧪 Beta</button>
     </nav>
     <div class="card sim hidden" id="sim-banner">🧪 <b>Modo simulación (ordenador).</b> El brillo, el apagado de pantalla y la red se simulan: puedes probarlo todo sin que cambie nada de este equipo.</div>
 
@@ -321,7 +322,7 @@
     <div class="card">
       <h2>🧩 Componentes</h2>
       <div class="hint">Lo que se coloca en las pestañas (botones, tarjetas, tiempo…). Cada uno es código: declara sus campos,
-        qué vigila y qué pinta. Se guardan en la Pi y el panel los descarga solo. Se colocan en 🗂️ Pantallas.</div>
+        qué vigila y qué pinta. Se colocan en 🗂️ Pestañas.</div>
       <div id="cscripts" class="bubs"></div>
       <div class="sub" style="margin-top:14px;font-weight:600">Nuevo componente</div>
       <div class="add" style="margin-top:6px">
@@ -531,7 +532,7 @@ go = 'home' | 'rooms' | 'sensors' | 'media' | 'printers' | 'scooter' | 'settings
       <div class="field">
         <label for="spk-device">Por dónde suena la Pi</label>
         <select id="spk-device"></select>
-        <span class="hint">Jack, HDMI o un altavoz USB. Al guardar, la música se corta un momento.</span>
+        <span class="hint">Jack, HDMI o un altavoz USB.</span>
       </div>
       <div id="snd-master" class="field hidden">
         <div class="row" style="padding:0"><label for="snd-master-vol">Volumen de la salida <span class="hint" id="snd-master-card"></span></label><span class="val" id="snd-master-vol-v"></span></div>
@@ -584,7 +585,7 @@ go = 'home' | 'rooms' | 'sensors' | 'media' | 'printers' | 'scooter' | 'settings
       </div>
       <div class="field">
         <label>Desfase con otros altavoces</label>
-        <span class="hint">Se ajusta en Music Assistant: ajustes del reproductor de este altavoz → retraso. Se aplica al momento y se guarda en la Pi.</span>
+        <span class="hint">Se ajusta en Music Assistant: ajustes del reproductor de este altavoz → retraso.</span>
       </div>
       <div id="spk-msg" class="hint"></div>
       <details id="spk-log-box" class="hidden"><summary>Registro</summary><pre id="spk-log"></pre></details>
@@ -618,6 +619,11 @@ go = 'home' | 'rooms' | 'sensors' | 'media' | 'printers' | 'scooter' | 'settings
         <select id="voiceStyle"><option value="onda">Onda</option><option value="micro">Micrófono</option><option value="luz">Línea de luz</option><option value="eq">Ecualizador</option></select>
       </div>
     </div>
+
+    </div>
+
+    <div data-pg="beta" class="hidden">
+    <div class="card sim">🧪 <b>En pruebas.</b> Funciona, pero puede fallar o cambiar en próximas versiones.</div>
 
     <div class="card">
       <h2>🎙️ Asistente de voz (micro de la Pi)</h2>
@@ -1070,7 +1076,7 @@ function codeEditor(name, say, getValues = () => ({})) {
   };
   const save = async () => {
     try { PM.compile(ta.value); } catch (e) { if (!confirm('Tiene un error: ' + e.message + '\n¿Guardar igualmente?')) return; }
-    try { await saveCode(name, ta.value); say('Guardado. El panel se actualiza solo ✓', 'ok'); renderAll(); }
+    try { await saveCode(name, ta.value); say('Guardado ✓', 'ok'); renderAll(); }
     catch (e) { say(e.message, 'err'); }
   };
   const restore = async () => {
@@ -1322,7 +1328,7 @@ async function delBullet(i) {
   try {
     if (b.script in files && !isDefault(b.script) && !bullets.some((x) => x.script === b.script) && !usedInTabs(b.script)) await deleteCode(b.script);
   } catch (e) { bmsg(e.message, 'err'); }
-  renderAll(); dirty(); bmsg(`Borrada${rows ? ` (y quitada de ${rows} fila${rows > 1 ? 's' : ''} de burbujas de las pestañas)` : ''}. Pulsa Guardar para que desaparezca del panel.`);
+  renderAll(); dirty(); bmsg(`Borrada${rows ? ` (y quitada de ${rows} fila${rows > 1 ? 's' : ''} de burbujas de las pestañas)` : ''}.`);
 }
 /** Nueva burbuja con su funcionamiento (código nuevo, de una URL o de un archivo). */
 async function addBullet(title, code, viaUrl) {
@@ -1334,7 +1340,7 @@ async function addBullet(title, code, viaUrl) {
   const id = 'b-' + Date.now().toString(36);
   bullets.push({ id, type: 'script', script: name, name: title, ambient: true });
   openBullet = id; renderAll(); dirty();
-  bmsg(`Creada «${title}». Revisa su funcionamiento y pulsa Guardar para que salga en el panel.`, 'ok');
+  bmsg(`Creada «${title}».`, 'ok');
 }
 const EMPTY = '{\n  watch: [],\n  render(ha) {\n    return null;\n  },\n}\n';
 $('#bullet-add').onclick = async () => {
@@ -1421,7 +1427,7 @@ async function addComp(title, code, viaUrl) {
   if (viaUrl) { const r = await api('POST', '/api/scripts/importar', { url: viaUrl, name }); name = r.name; scripts[name] = files[name] = r.code; }
   else await saveCode(name, code);
   openCard = name; renderAll();
-  cmsg(isCard(name) ? `Creado «${title}». Ya lo puedes colocar en 🗂️ Pantallas.` : `Guardado «${title}», pero no es un componente (le falta type: 'card').`, isCard(name) ? 'ok' : 'err');
+  cmsg(isCard(name) ? `Creado «${title}». Ya lo puedes colocar en 🗂️ Pestañas.` : `Guardado «${title}», pero no es un componente (le falta type: 'card').`, isCard(name) ? 'ok' : 'err');
 }
 $('#cscript-add').onclick = async () => {
   const title = $('#cscript-title').value.trim(), from = $('#cscript-tpl').value;
@@ -1728,7 +1734,7 @@ function convertViews() {
     visible: (id) => !lists.hiddenEntities.includes(id) && !lists.excludePlatforms.includes((info[id] || {}).platform) && (info[id] || {}).platform !== 'mi_scooter_ble' };
   tabs.forEach((t) => { t.cards = PM.expandViews(t.cards, testHA(), opts); });
   dirty();
-  msg((panelData && panelData.info ? '' : '⚠ El panel no está encendido: sin zonas. ') + 'Las pestañas se han montado con componentes. Pulsa Guardar para quedártelas.');
+  msg((panelData && panelData.info ? '' : '⚠ El panel no está encendido: sin zonas. ') + 'Las pestañas se han montado con componentes.');
 }
 function renderTabs() {
   convertViews();
@@ -2201,7 +2207,7 @@ $('#guardar').onclick = async () => {
     }
     await load();
     if (errs.length) msg('Guardado, pero: ' + errs.join(' · '), 'err');
-    else msg('Guardado ✓ El panel lo aplica en unos segundos', 'ok');
+    else msg('Guardado ✓', 'ok');
   } catch (e) { msg(e.message, 'err'); }
 };
 $('#probar').onclick = async () => {
