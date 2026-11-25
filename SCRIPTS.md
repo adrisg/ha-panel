@@ -1,112 +1,114 @@
-# Scripts: burbujas y componentes a tu medida
+# Scripts: bubbles and components your way
 
-Las burbujas y los componentes de las pestañas (botones, tarjetas, tiempo…) son pequeños archivos JavaScript.
-**Todas las burbujas funcionan así**, también las de serie (`weather.js`, `alarm.js`, `printers-bambu.js`, `printers-klipper.js`, `vehicle.js`, `music.js`, `lights.js`, `openings.js`). Si editas una, se guarda tu versión. Con «Restaurar» vuelves a la de serie.
+The bubbles and the tab components (buttons, cards, weather…) are small JavaScript files.
+**All bubbles work this way**, the built-in ones too (`weather.js`, `alarm.js`, `printers-bambu.js`, `printers-klipper.js`, `vehicle.js`, `music.js`, `lights.js`, `openings.js`). If you edit one, your version is saved. "Restore" brings back the built-in one.
 
-- **Dónde:** en la web de configuración, pestaña **🖼️ Modo ambiente** (tarjeta 🫧 Burbujas). Cada burbuja tiene un título; al tocarla se despliega su **funcionamiento** (el código), que puedes editar, **probar** con los datos actuales de tu casa, descargar o, en las de serie, restaurar.
-- **Nuevas:** pon un título y «Crear», tráela de una URL o sube un archivo `.js`. Después pulsa **Guardar**.
-- **Cómo funcionan:** se guardan en la Pi; el panel las descarga y las ejecuta **en el navegador**. Para pintar solo leen; a Home Assistant solo se manda algo cuando tocas la burbuja o el botón (`onTap`).
-- **Componentes:** en **🧩 Componentes** (los de serie: `button.js`, `info.js`, `list.js`, `card.js`, `weather-card.js`, `vehicle-card.js`, `greeting.js`, `scenes.js`, `printer.js`, `player.js`, `camera.js`, `slider.js` y `summary-example.js`). Se colocan en **🗂️ Pestañas**. Ver [Componentes](#componentes).
+- **Where:** in the configuration web, **🖼️ Ambient mode** tab (🫧 Bubbles card). Each bubble has a title; tapping it opens its **script** (the code), which you can edit, **test** with the current data of your home, download or, for the built-in ones, restore.
+- **New ones:** enter a title and "Create", get one from a URL or upload a `.js` file. Then press **Save**.
+- **How they work:** they are saved on the Pi; the panel downloads them and runs them **in the browser**. To paint they only read; something is only sent to Home Assistant when you tap the bubble or the button (`onTap`).
+- **Components:** in **🧩 Components** (the built-in ones: `button.js`, `info.js`, `list.js`, `card.js`, `weather-card.js`, `vehicle-card.js`, `greeting.js`, `scenes.js`, `printer.js`, `player.js`, `camera.js`, `slider.js` and `summary-example.js`). They are placed in **🗂️ Tabs**. See [Components](#components).
 
-## Forma de un script
+## Shape of a script
 
 ```js
 {
-  watch: ['sensor.temperatura_salon'],     // entidades que lo actualizan (admite *). Sin watch: cualquier cambio
+  watch: ['sensor.living_room_temperature'],   // entities that update it (* allowed). Without watch: any change
   render(ha, screen) {
-    const t = ha.num('sensor.temperatura_salon');
-    if (isNaN(t)) return null;             // null = no se muestra
+    const t = ha.num('sensor.living_room_temperature');
+    if (isNaN(t)) return null;                 // null = it does not show
     return {
-      icon: 'mdi:thermometer', text: 'Salón ' + ha.fmt('sensor.temperatura_salon'),
-      textColor: t > 26 ? 'rojo' : null,          // color del texto
-      iconEnd: t > 26 ? 'mdi:alert' : null,       // icono al final
-      onTap: (ha) => ha.call('fan.toggle', { entity_id: 'fan.salon' }),   // al tocar
+      icon: 'mdi:thermometer', text: 'Living room ' + ha.fmt('sensor.living_room_temperature'),
+      textColor: t > 26 ? 'red' : null,          // text colour
+      iconEnd: t > 26 ? 'mdi:alert' : null,      // icon at the end
+      onTap: (ha) => ha.call('fan.toggle', { entity_id: 'fan.living_room' }),   // on tap
     };
   },
 }
 ```
 
-Recibe dos variables:
+It gets two variables:
 
 **`ha`: Home Assistant**
 
 | | |
 |---|---|
-| `ha.state(id)`, `ha.num(id)`, `ha.attr(id, 'x')` | estado (texto o número) y atributos |
-| `ha.name(id)`, `ha.fmt(id)` | nombre visible y estado con su unidad (`21,5 °C`) |
-| `ha.isOn(id)`, `ha.ok(id)` | ¿encendido/abierto? ¿disponible? |
-| `ha.find('light.*', filtro)`, `ha.count('light.*', 'on')` | buscar y contar entidades |
-| `ha.info(id)` | de qué es: `{ platform, device, deviceId, area, areaId, key }` |
-| `ha.devices('bambu_lab')` | aparatos de una integración: `[{ id, name, area, entities }]` |
-| `ha.minutesSince(id)`, `ha.entity(id)`, `ha.states` | último cambio, estado completo, todo |
-| `ha.number(n)`, `ha.duration(segundos)` | `21,5` y `1 h 20 min` |
-| `ha.call('light.turn_off', { entity_id })` | mandar a Home Assistant. **Solo dentro de `onTap`** |
+| `ha.state(id)`, `ha.num(id)`, `ha.attr(id, 'x')` | state (text or number) and attributes |
+| `ha.name(id)`, `ha.fmt(id)` | visible name and state with its unit (`21.5 °C`) |
+| `ha.isOn(id)`, `ha.ok(id)` | on/open? available? |
+| `ha.find('light.*', filter)`, `ha.count('light.*', 'on')` | find and count entities |
+| `ha.info(id)` | what it belongs to: `{ platform, device, deviceId, area, areaId, key }` |
+| `ha.devices('bambu_lab')` | devices of an integration: `[{ id, name, area, entities }]` |
+| `ha.minutesSince(id)`, `ha.entity(id)`, `ha.states` | last change, full state, everything |
+| `ha.number(n)`, `ha.duration(seconds)` | `21.5` and `1 h 20 min` (in the panel's format) |
+| `ha.call('light.turn_off', { entity_id })` | send to Home Assistant. **Only inside `onTap`** |
 
-**`screen`: la pantalla** (lo que no es de Home Assistant)
+**`screen`: the screen** (what does not belong to Home Assistant)
 
 | | |
 |---|---|
-| `screen.place` | dónde se pinta: `'ambient'` (debajo del reloj), `'home'` (en una Fila de burbujas de una pestaña) o `'card'` (un componente) |
-| `screen.brightness`, `screen.on`, `screen.night`, `screen.ambient` | brillo, encendida, modo noche, modo ambiente |
-| `screen.alarms`, `screen.nextAlarm()` | alarmas del panel: `{ name, time, days, enabled, when, text }` |
-| `screen.light` | luz ambiente del sensor de la pantalla (de momento `null`) |
-| `screen.visible(id)` | ¿la entidad no está oculta en el panel? |
-| `screen.go('media')`, `screen.now()` | ir a una pestaña; hora actual |
-| `screen.nowPlaying(id)` | abrir la pantalla «Sonando» de un reproductor (p. ej. `tap=${(ha, screen) => screen.nowPlaying(id)}`) |
-| `screen.notices`, `screen.openNotices()` | avisos del panel `{ unread, total, last }` y abrir el panel de acceso rápido en Avisos (lo usa la burbuja **Avisos**) |
+| `screen.place` | where it paints: `'ambient'` (under the clock), `'home'` (in a Row of bubbles of a tab) or `'card'` (a component) |
+| `screen.brightness`, `screen.on`, `screen.night`, `screen.ambient` | brightness, on, night mode, ambient mode |
+| `screen.alarms`, `screen.nextAlarm()` | panel alarms: `{ name, time, days, enabled, when, text }` |
+| `screen.light` | ambient light from the screen sensor (`null` for now) |
+| `screen.visible(id)` | is the entity not hidden on the panel? |
+| `screen.go('media')`, `screen.now()` | go to a tab; current time |
+| `screen.nowPlaying(id)` | open the "Now playing" screen of a player (e.g. `tap=${(ha, screen) => screen.nowPlaying(id)}`) |
+| `screen.notices`, `screen.openNotices()` | panel notifications `{ unread, total, last }` and open the quick access panel on Notifications (the **Notifications** bubble uses it) |
 
-## Ajustes (`config`)
+**Languages:** write the texts in English. The panel translates the texts it knows; for your own, `I18N.t('Text')` gives the translation if it exists in `translations/`.
 
-Un script puede declarar campos que se rellenan en la web (**🖼️ Modo ambiente → 🫧 Burbujas → la burbuja → Ajustes**), sin tocar el código. Llegan como tercer parámetro de `render`:
+## Settings (`config`)
+
+A script can declare fields that are filled in in the web (**🖼️ Ambient mode → 🫧 Bubbles → the bubble → Settings**), without touching the code. They arrive as the third parameter of `render`:
 
 ```js
 {
   config: {
-    entity:   { type: 'entity', domain: 'weather', label: 'Entidad del tiempo' },
-    showText: { type: 'bool', label: 'Mostrar descripción', default: true },
+    entity:   { type: 'entity', domain: 'weather', label: 'Weather entity' },
+    showText: { type: 'bool', label: 'Show the description', default: true },
   },
-  watch: (config) => [config.entity],      // watch puede depender de los ajustes (y de ha: (config, ha) => …)
+  watch: (config) => [config.entity],      // watch can depend on the settings (and on ha: (config, ha) => …)
   render(ha, screen, config) { … config.entity … },
 }
 ```
 
-| Tipo | Opciones | Valor |
+| Kind | Options | Value |
 |---|---|---|
-| `entity` | `domain`, `deviceClass`, `multiple` | id (vacío = la primera que encaje) o lista de ids (vacía = todas) |
-| `device` | `integration`, `has: { key }` o `{ suffix }`, `multiple` | id del aparato o lista (vacía = todos los de esa integración) |
-| `text`, `number` | `default`, `min`, `max`, `step` | texto o número |
+| `entity` | `domain`, `deviceClass`, `multiple` | id (empty = the first one that fits) or list of ids (empty = all) |
+| `device` | `integration`, `has: { key }` or `{ suffix }`, `multiple` | device id or list (empty = all of that integration) |
+| `text`, `number` | `default`, `min`, `max`, `step` | text or number |
 | `bool` | `default` | `true` / `false` |
-| `select` | `options: ['a', 'b']` o `[{ value, label }]` | la opción elegida |
+| `select` | `options: ['a', 'b']` or `[{ value, label }]` | the chosen option |
 
-Todos admiten `label`, `default` y `hint`. Los valores se guardan en la burbuja, no en el script: si actualizas o restauras el script, se conservan.
+They all accept `label`, `default` and `hint`. The values are saved in the bubble, not in the script: if you update or restore the script, they are kept.
 
-Se recalculan cuando cambia algo de su `watch` y, como mínimo, una vez por minuto.
+They are recalculated when something in their `watch` changes and, at least, once a minute.
 
-**Una burbuja devuelve** un objeto, una lista de objetos o `null`. Estos son sus campos:
+**A bubble returns** an object, a list of objects or `null`. These are its fields:
 
 | | |
 |---|---|
-| `icon`, `color` | icono del principio y su color |
-| `text`, `textColor` | texto y su color |
-| `iconEnd`, `iconEndColor` | icono del final y su color |
-| `progress` | barrita de progreso (0–100) |
-| `go`, `onTap` | al tocarla: ir a una pestaña o `onTap(ha, screen)` |
+| `icon`, `color` | icon at the start and its colour |
+| `text`, `textColor` | text and its colour |
+| `iconEnd`, `iconEndColor` | icon at the end and its colour |
+| `progress` | small progress bar (0–100) |
+| `go`, `onTap` | on tap: go to a tab or `onTap(ha, screen)` |
 
-- `go`: a qué pestaña lleva al tocar (`home`, `rooms`, `sensors`, `media`, `printers`, `scooter`, `settings` o el id de una pestaña tuya).
-- `onTap(ha, screen)`: lo que se hace al tocar, por ejemplo `(ha) => ha.call('light.turn_off', { entity_id: 'light.salon' })`.
-- Colores: `green`, `red`, `yellow`, `blue`, `orange`, `grey`, `purple` o cualquier color CSS.
+- `go`: the tab it leads to on tap (`home`, `rooms`, `sensors`, `media`, `printers`, `scooter`, `settings` or the id of one of your tabs).
+- `onTap(ha, screen)`: what happens on tap, for example `(ha) => ha.call('light.turn_off', { entity_id: 'light.living_room' })`.
+- Colours: `green`, `red`, `yellow`, `blue`, `orange`, `grey`, `purple` or any CSS colour.
 
-## Componentes
+## Components
 
-Un componente es un script con `type: 'card'`: sus **campos** (`config`), qué **vigila** (`watch`), su **CSS** (`style`) y su **HTML** (`render`).
+A component is a script with `type: 'card'`: its **fields** (`config`), what it **watches** (`watch`), its **CSS** (`style`) and its **HTML** (`render`).
 
 ```js
 {
-  type: 'card', name: 'Botón', icon: 'mdi:gesture-tap-button', width: '1/4',   // ancho al añadirlo
+  type: 'card', name: 'Button', icon: 'mdi:gesture-tap-button', width: '1/4',   // width when added
   config: {
-    entity: { type: 'entity', auto: false, label: 'Entidad' },
-    tap:  { type: 'action', label: 'Al pulsar', default: 'toggle' },
-    hold: { type: 'action', label: 'Al mantener pulsado', default: 'more-info' },
+    entity: { type: 'entity', auto: false, label: 'Entity' },
+    tap:  { type: 'action', label: 'On tap', default: 'toggle' },
+    hold: { type: 'action', label: 'On hold', default: 'more-info' },
   },
   watch: (config) => [config.entity],
   style: `
@@ -125,59 +127,59 @@ Un componente es un script con `type: 'card'`: sus **campos** (`config`), qué *
 }
 ```
 
-**HTML (`render`)** devuelve `html\`…\``. Lo que metes con `${…}` se escapa solo; para meter HTML dentro de HTML, usa otro `html\`…\`` (también listas: `${lista.map((x) => html\`<li>${x}</li>\`)}`).
+**HTML (`render`)** returns `html\`…\``. What you put in with `${…}` is escaped by itself; to put HTML inside HTML, use another `html\`…\`` (lists too: `${list.map((x) => html\`<li>${x}</li>\`)}`).
 
-| En el HTML | Qué hace |
+| In the HTML | What it does |
 |---|---|
-| `<ha-icon icon="mdi:lightbulb">` | un icono (también `icon=${ha.icon(id)}`) |
-| `tap=…`, `hold=…` | al pulsar / mantener: `${config.tap}` (lo elegido en ajustes), `"toggle"`, `"more-info"`, `"none"`, `${{ action: 'navigate', go: 'media' }}`, el nombre de una función de `actions` o una función `${(ha) => ha.call(…)}` |
-| `entity=…` | sobre qué entidad actúan `tap` y `hold` |
-| `<slot></slot>` | aquí van los componentes de dentro (si el script lleva `children: true`, como **Tarjeta**) |
-| `<ha-tile entity=…>` | ficha del panel (pulsar = encender/apagar, mantener = detalle) |
-| `<ha-sensor entity=…>` | ficha de sensor con su valor (mantener = historial) |
-| `<ha-camera entity=…>` | imagen de una cámara que se refresca sola |
-| `change=${(ha, screen, valor) => …}` | en un `<input>` (deslizadores…): se ejecuta al soltarlo, con su valor |
+| `<ha-icon icon="mdi:lightbulb">` | an icon (also `icon=${ha.icon(id)}`) |
+| `tap=…`, `hold=…` | on tap / hold: `${config.tap}` (what was chosen in the settings), `"toggle"`, `"more-info"`, `"none"`, `${{ action: 'navigate', go: 'media' }}`, the name of a function in `actions` or a function `${(ha) => ha.call(…)}` |
+| `entity=…` | the entity `tap` and `hold` act on |
+| `<slot></slot>` | the inner components go here (if the script has `children: true`, like **Card**) |
+| `<ha-tile entity=…>` | panel tile (tap = on/off, hold = details) |
+| `<ha-sensor entity=…>` | sensor tile with its value (hold = history) |
+| `<ha-camera entity=…>` | camera image that refreshes by itself |
+| `change=${(ha, screen, value) => …}` | on an `<input>` (sliders…): runs on release, with its value |
 
-**CSS (`style`)** solo afecta a ese componente. Clases que ya existen: `card` (fondo de tarjeta) y `hint` (texto gris). Colores del panel:
+**CSS (`style`)** only affects that component. Classes that already exist: `card` (card background) and `hint` (grey text). Panel colours:
 
-| Variable | Qué es |
+| Variable | What it is |
 |---|---|
-| `--bg`, `--surface`, `--surface-2`, `--surface-3` | fondo y fondos de tarjeta, de más oscuro a más claro |
-| `--text`, `--muted`, `--accent`, `--ok`, `--danger` | texto, texto gris, azul, verde, rojo |
-| `--on-light`, `--on-media`, `--on-climate`, `--on-cover`, `--on-lock`, `--on-default` (y `…-ink` para el texto) | colores de «encendido» |
-| `--radius` | redondeo de las tarjetas |
+| `--bg`, `--surface`, `--surface-2`, `--surface-3` | background and card backgrounds, from darker to lighter |
+| `--text`, `--muted`, `--accent`, `--ok`, `--danger` | text, grey text, accent, green, red |
+| `--on-light`, `--on-media`, `--on-climate`, `--on-cover`, `--on-lock`, `--on-default` (and `…-ink` for the text) | "on" colours |
+| `--radius` | corner rounding of the cards |
 
-**`actions`**: funciones con nombre para `tap="apagar"`:
+**`actions`**: named functions for `tap="off"`:
 
 ```js
-actions: { apagar: (ha, screen) => ha.call('light.turn_off', { entity_id: 'all' }) },
+actions: { off: (ha, screen) => ha.call('light.turn_off', { entity_id: 'all' }) },
 ```
 
-Para pintar, además de lo de siempre: `ha.mediaOrder(ids)` (reproductores sin repetidos, lo que suena primero), `ha.printers()` (cada impresora con su estado y sus entidades: `e.progress`, `e.camera`, `e.pause`…), `ha.picture(id)` (dirección de su imagen: carátula, miniatura…), `screen.favorites` (Favoritos de los Ajustes), `ha.text(id)` (estado traducido: «Encendido», «21,5 °C»), `ha.icon(id)`, `ha.active(id)`, `ha.color(id)` (`{ bg, ink }`: color real de una luz encendida), `ha.forecast(id)` (previsión diaria).
+To paint, besides the usual: `ha.mediaOrder(ids)` (players without duplicates, what is playing first), `ha.printers()` (each printer with its state and its entities: `e.progress`, `e.camera`, `e.pause`…), `ha.picture(id)` (address of its image: artwork, thumbnail…), `screen.favorites` (Favourites from the Settings), `ha.text(id)` (translated state: "On", "21.5 °C"), `ha.icon(id)`, `ha.active(id)`, `ha.color(id)` (`{ bg, ink }`: real colour of a light that is on), `ha.forecast(id)` (daily forecast).
 
-- **Dónde:** **🧩 Componentes**. Cada uno se despliega con «Probar con estos ajustes», cómo se ve y su código. Para crear uno: desde cero, copiando otro, de una URL o subiendo un `.js`. Se guardan en la Pi y el panel los descarga solo.
-- **Colocarlos:** **🗂️ Pestañas → + Añadir**. Cada sitio donde lo pones tiene sus propios ajustes y su ancho (completo, 3/4, 2/3, 1/2, 1/3, 1/4).
-- Campos de más: `icon` (un icono `mdi:…`) y `action` (qué hacer al pulsar).
-- `refresh: 60`: se repinta solo cada esos segundos (para horas y fechas), aunque no cambie nada de su `watch`.
+- **Where:** **🧩 Components**. Each one opens with "Test with these settings", how it looks and its code. To create one: from scratch, copying another, from a URL or uploading a `.js`. They are saved on the Pi and the panel downloads them by itself.
+- **Placing them:** **🗂️ Tabs → + Add**. Each place you put it has its own settings and width (full, 3/4, 2/3, 1/2, 1/3, 1/4).
+- Extra fields: `icon` (an `mdi:…` icon) and `action` (what to do on tap).
+- `refresh: 60`: it repaints by itself every those seconds (for times and dates), even if nothing in its `watch` changes.
 
-## Pestañas
+## Tabs
 
-En **🗂️ Pestañas** eliges las pestañas de la barra lateral y, en cada una, una rejilla con lo que lleva: componentes, filas de burbujas, dispositivos o una cámara. Toca una tarjeta para cambiar su ancho, sus ajustes, moverla, duplicarla o borrarla.
+In **🗂️ Tabs** you choose the tabs of the side bar and, in each one, a grid with what it has: components, rows of bubbles, devices or a camera. Tap a card to change its width or its settings, move it, duplicate it or delete it.
 
-Las pestañas de serie (Inicio, Casa, Sensores, Multimedia, Impresoras y Patinete) se montan con tus datos y con los componentes de siempre, uno por cosa:
-Casa = una **Tarjeta** por zona con un **Botón** por aparato; Sensores = una Tarjeta por zona con una **Información** por sensor; Multimedia = un **Reproductor** y una **Cámara** por cada uno; Impresoras = una **Impresora** por cada una; Patinete = **Vehículo** y Tarjetas con Información, **Deslizador** y Botones; Inicio = Saludo, burbujas, Tiempo, Vehículo, Escenas y una Tarjeta de Favoritos.
+The built-in tabs (Home, House, Sensors, Media, Printers and Scooter) are built with your data and the usual components, one per thing:
+House = a **Card** per area with a **Button** per device; Sensors = a Card per area with an **Information** per sensor; Media = a **Player** and a **Camera** for each one; Printers = a **Printer** for each one; Scooter = **Vehicle** and Cards with Information, **Slider** and Buttons; Home = Greeting, bubbles, Weather, Vehicle, Scenes and a Favourites Card.
 
-Las pestañas antiguas («vistas del panel») se convierten así al abrir **🗂️ Pestañas**; pulsa **Guardar** para quedártelas y cambiar lo que quieras. Hasta entonces, el panel las monta igual por su cuenta.
+The old tabs ("panel views") are converted this way when **🗂️ Tabs** opens; press **Save** to keep them and change whatever you like. Until then, the panel builds them the same way by itself.
 
-## Mostrar solo si…
+## Only show if…
 
-Cada tarjeta colocada (en **🗂️ Pestañas**, al tocarla) puede llevar condiciones para aparecer o no:
+Each placed card (in **🗂️ Tabs**, when you tap it) can have conditions to show or not:
 
-| Condición | Ejemplo |
+| Condition | Example |
 |---|---|
-| Estado de una entidad | `light.salon` está encendida / apagada / disponible, es igual a `home`, mayor que `25`… |
-| Entre dos horas | de 07:00 a 09:00 (o de 22:00 a 07:00) |
-| Modo noche | está activo / no está activo |
-| Código | `ha.isOn('light.salon') && !screen.night` |
+| State of an entity | `light.living_room` is on / off / available, is equal to `home`, greater than `25`… |
+| Between two times | from 07:00 to 09:00 (or from 22:00 to 07:00) |
+| Night mode | is on / is not on |
+| Code | `ha.isOn('light.living_room') && !screen.night` |
 
-Con varias: «Se cumplen todas» o «Se cumple alguna». En el panel aparece y desaparece al momento; en la rejilla se marca con 👁 y se ve atenuada si ahora no saldría.
+With several: "All are met" or "Any is met". On the panel it shows and hides at once; in the grid it is marked with 👁 and looks dimmed if it would not show right now.

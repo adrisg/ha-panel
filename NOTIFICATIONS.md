@@ -1,148 +1,148 @@
-# Avisos en el panel desde Home Assistant
+# Notifications on the panel from Home Assistant
 
-Cualquier automatización de Home Assistant puede mostrar un aviso en el panel lanzando el evento `panel_notification`. El aviso puede llevar **botones que ejecutan acciones** de Home Assistant, por ejemplo abrir la puerta del telefonillo.
+Any Home Assistant automation can show a notification on the panel by firing the `panel_notification` event. The notification can have **buttons that run Home Assistant actions**, for example opening the door from the intercom.
 
-## Cómo se ve cada nivel
+## How each level looks
 
 <p align="center">
-  <img src="docs/aviso.png" width="49%"> <img src="docs/aviso-info.png" width="49%">
+  <img src="docs/notification.png" width="49%"> <img src="docs/notification-info.png" width="49%">
 </p>
 
-| `level` | En el panel | Sonido | Se cierra solo |
+| `level` | On the panel | Sound | Closes by itself |
 |---|---|---|---|
-| `info` | Banner arriba; no interrumpe | Un pitido corto | A los 10 s |
-| `warning` | Ventana en el centro. Saca el panel del modo ambiente y quita el modo noche | "Ding-dong" cada 6 s durante 30 s | A los 120 s |
-| `critical` | Pantalla en rojo parpadeando | Pitido continuo hasta cerrarlo | No: hay que tocarlo |
+| `info` | Banner at the top; it does not interrupt | A short beep | After 10 s |
+| `warning` | Window in the centre. It takes the panel out of ambient mode and turns off night mode | "Ding-dong" every 6 s for 30 s | After 120 s |
+| `critical` | Flashing red screen | Continuous beep until you close it | No: you have to tap it |
 
-Mientras hay un aviso abierto, el panel no pasa al modo ambiente y la pantalla no se oscurece. Los últimos 30 avisos quedan en el **panel de acceso rápido**, ventana **Avisos** (desliza desde arriba o toca la campana de la barra superior): tocar uno lo vuelve a abrir con sus botones y la × lo quita.
+While a notification is open, the panel does not go to ambient mode and the screen does not dim. The last 30 notifications stay in the **quick access panel**, **Notifications** window (swipe down from the top or tap the bell on the top bar): tapping one opens it again with its buttons and the × removes it.
 
-## Datos del evento
+## Event data
 
 ```yaml
 - event: panel_notification
   event_data:
-    id: telefonillo            # opcional. Si llega otro con el mismo id, sustituye al anterior
-    title: Llaman al telefonillo
-    message: Entrada principal # opcional
+    id: intercom               # optional. If another one arrives with the same id, it replaces the previous one
+    title: Someone is at the door
+    message: Main entrance     # optional
     level: warning             # info | warning | critical
-    icon: mdi:doorbell         # cualquier icono mdi:
-    image: camera.entrada      # opcional: una cámara (se refresca cada 2 s), una entidad image.* o una URL
-    timeout: 60                # opcional: segundos hasta cerrarse solo (0 = hasta que lo toques)
-    sound: true                # opcional
-    actions:                   # opcional: botones (si no pones ninguno sale "Entendido")
-      - title: Abrir puerta
+    icon: mdi:doorbell         # any mdi: icon
+    image: camera.entrance     # optional: a camera (refreshes every 2 s), an image.* entity or a URL
+    timeout: 60                # optional: seconds until it closes by itself (0 = until you tap it)
+    sound: true                # optional
+    actions:                   # optional: buttons (with none, "OK" shows)
+      - title: Open the door
         icon: mdi:door-open
-        service: button.press               # cualquier acción de HA: dominio.servicio
-        entity_id: button.entrada_principal_abrir_puerta
-        data: {}                            # opcional: datos del servicio
-        confirm: false                      # true = pide un segundo toque
-        style: primary                      # primary | danger (el primero es primary por defecto)
-      - title: Ignorar                      # sin service: solo cierra el aviso
+        service: button.press               # any HA action: domain.service
+        entity_id: button.main_entrance_open_door
+        data: {}                            # optional: service data
+        confirm: false                      # true = asks for a second tap
+        style: primary                      # primary | danger (the first one is primary by default)
+      - title: Ignore                       # no service: it only closes the notification
 ```
 
-- **Cerrar un aviso desde Home Assistant:** `event: panel_notification_close` con `event_data: { id: telefonillo }`.
-- **Saber qué botón se pulsó:** el panel lanza `panel_notification_action` con `{ id, action }` (`action` es el `title` del botón). Puedes usarlo como disparador o con `wait_for_trigger` en tus automatizaciones.
+- **Close a notification from Home Assistant:** `event: panel_notification_close` with `event_data: { id: intercom }`.
+- **Know which button was pressed:** the panel fires `panel_notification_action` with `{ id, action }` (`action` is the button's `title`). You can use it as a trigger or with `wait_for_trigger` in your automations.
 
-## Telefonillo Ring: abrir la puerta desde el panel
+## Ring intercom: open the door from the panel
 
-Pega esto en **Ajustes → Automatizaciones → Crear → ⋮ → Editar en YAML**:
+Paste this in **Settings → Automations → Create → ⋮ → Edit in YAML**:
 
 ```yaml
-alias: "Panel: llaman al telefonillo"
-description: Aviso en el panel con botón para abrir la puerta del portal
+alias: "Panel: someone is at the door"
+description: Notification on the panel with a button to open the street door
 triggers:
   - trigger: state
-    entity_id: event.entrada_principal_timbre
+    entity_id: event.main_entrance_ding
     not_from: unavailable
 actions:
   - event: panel_notification
     event_data:
-      id: telefonillo
-      title: Llaman al telefonillo
-      message: Entrada principal
+      id: intercom
+      title: Someone is at the door
+      message: Main entrance
       level: warning
       icon: mdi:doorbell
       timeout: 60
       actions:
-        - title: Abrir puerta
+        - title: Open the door
           icon: mdi:door-open
           service: button.press
-          entity_id: button.entrada_principal_abrir_puerta
-        - title: Ignorar
+          entity_id: button.main_entrance_open_door
+        - title: Ignore
           icon: mdi:close
 mode: single
 ```
 
-Para que el aviso desaparezca si abres desde la app de Ring o desde el propio telefonillo:
+So the notification goes away if you open from the Ring app or from the intercom itself:
 
 ```yaml
-alias: "Panel: cerrar aviso del telefonillo"
+alias: "Panel: close the intercom notification"
 triggers:
   - trigger: state
-    entity_id: event.entrada_principal_desbloqueo_del_intercomunicador
+    entity_id: event.main_entrance_intercom_unlock
     not_from: unavailable
 actions:
   - event: panel_notification_close
     event_data:
-      id: telefonillo
+      id: intercom
 mode: single
 ```
 
-## Más ideas
+## More ideas
 
-**Patinete cargado** (aviso informativo):
+**Scooter charged** (info notification):
 
 ```yaml
 triggers:
   - trigger: state
-    entity_id: binary_sensor.mi_patinete_cargado
+    entity_id: binary_sensor.my_scooter_charged
     to: "on"
 actions:
   - event: panel_notification
     event_data:
-      title: Patinete cargado
-      message: "{{ states('sensor.mi_patinete_bateria') }} % de batería"
+      title: Scooter charged
+      message: "{{ states('sensor.my_scooter_battery') }} % battery"
       level: info
       icon: mdi:scooter
 ```
 
-**Puerta abierta más de 10 minutos**, con un botón que te avisa al móvil si no estás en casa:
+**Door open for more than 10 minutes**, with a button that tells your phone if you are not home:
 
 ```yaml
 triggers:
   - trigger: state
-    entity_id: binary_sensor.ikea_door_sensor_kitchen_contact
+    entity_id: binary_sensor.kitchen_door_contact
     to: "on"
     for: "00:10:00"
 actions:
   - event: panel_notification
     event_data:
-      id: puerta_cocina
-      title: La puerta de la cocina lleva 10 min abierta
+      id: kitchen_door
+      title: The kitchen door has been open for 10 min
       level: warning
       icon: mdi:door-open
       actions:
-        - title: Avisar al móvil
+        - title: Tell my phone
           icon: mdi:cellphone-message
-          service: notify.mobile_app_mi_movil
+          service: notify.mobile_app_my_phone
           data:
-            message: La puerta de la cocina sigue abierta
-        - title: Vale
+            message: The kitchen door is still open
+        - title: OK
 ```
 
-**Algo grave** (crítico: pantalla en rojo y pitido hasta que lo cierres):
+**Something serious** (critical: red screen and beeping until you close it):
 
 ```yaml
 actions:
   - event: panel_notification
     event_data:
-      title: ¡Fuga de agua!
-      message: Sensor bajo el fregadero
+      title: Water leak!
+      message: Sensor under the sink
       level: critical
       icon: mdi:water-alert
 ```
 
-## Notas
+## Notes
 
-- En la Pi el sonido suena sin tocar antes la pantalla, gracias a una opción que pone `scripts/setup-kiosk.sh` en Chromium. La Pi necesita un altavoz, ya sea por el jack o por HDMI si tu pantalla tiene.
-- Los botones ejecutan lo que diga la automatización con el token del panel. Pon solo acciones que te parezca bien que cualquiera delante de la pantalla pueda pulsar. Para las delicadas usa `confirm: true`.
+- On the Pi the sound plays without touching the screen first, thanks to an option `scripts/setup-kiosk.sh` sets in Chromium. The Pi needs a speaker, through the jack or through HDMI if your screen has one.
+- The buttons run whatever the automation says with the panel's token. Only add actions you are happy for anyone in front of the screen to press. For sensitive ones use `confirm: true`.

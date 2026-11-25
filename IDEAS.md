@@ -1,28 +1,29 @@
 # Ideas
 
-Lista de cosas por hacer. 🚧 = en marcha · ✅ = hecho.
+List of things to do. 🚧 = in progress · ✅ = done.
 
-## En la pantalla
+## On the screen
 
-1. **Calendario**: burbuja con lo próximo («Dentista a las 17:00») y tarjeta con la semana (`calendar.*` de Home Assistant).
-2. **Temporizadores de cocina**: crearlos con dos toques, verlos en el modo ambiente y que suenen al acabar.
-3. **Lista de la compra** (`todo.*`): cuarta ventana del panel de acceso rápido para ver, tachar y añadir.
-4. **Energía**: tarjeta con el consumo de la casa, gráfica del día y producción solar si la hay.
-5. **Telefonillo con vídeo**: la cámara a pantalla completa al llamar, con «Abrir puerta» encima.
+1. **Calendar**: bubble with what is next ("Dentist at 17:00") and a card with the week (Home Assistant `calendar.*`).
+2. **Kitchen timers**: create them with two taps, see them in ambient mode and have them ring when they end.
+3. **Shopping list** (`todo.*`): a fourth window of the quick access panel to see, tick off and add.
+4. **Energy**: card with the home's consumption, a graph of the day and solar production if there is any.
+5. **Video intercom**: the camera full screen when someone rings, with "Open the door" on top.
 
-## Que el panel se adapte solo
+## A panel that adapts by itself
 
-6. **Despertar al acercarse**: encender la pantalla con un sensor de movimiento de Home Assistant o un radar mmWave en la Pi.
-7. **Brillo automático**: sensor de luz por I²C (BH1750); `screen.light` ya está preparado.
-8. **Pantalla según la hora**: por la mañana tiempo y calendario; por la noche un reloj tenue en rojo.
+6. **Wake up when someone comes close**: turn the screen on with a Home Assistant motion sensor or an mmWave radar on the Pi.
+7. **Automatic brightness**: I²C light sensor (BH1750); `screen.light` is already prepared.
+8. **Screen by the time of day**: weather and calendar in the morning; a dim red clock at night.
 
-## Integración con Home Assistant
+## Home Assistant integration
 
-9. ✅ **El panel como dispositivo en Home Assistant**, por MQTT (descubrimiento automático): pantalla y brillo, modo ambiente, último toque y recargar.
-10. **PIN para acciones delicadas**: pedir un código para abrir la puerta o desarmar la alarma.
+9. ✅ **The panel as a device in Home Assistant**, over MQTT (automatic discovery): screen and brightness, volumes, ambient mode, last touch and reload.
+10. **PIN for sensitive actions**: ask for a code to open the door or disarm the alarm.
 
-## Para que lo use más gente
+## So more people use it
 
-11. ✅ **Internacional**: inglés y español (carpeta `translations/`, en JSON; otro idioma = otro archivo).
-12. **Copia de seguridad de los ajustes**: descargarlos y subirlos desde la web.
-13. **Imagen lista para grabar**: Raspberry Pi OS con todo instalado.
+11. ✅ **International**: English and Spanish (`translations/` folder, in JSON; another language = another file).
+12. ✅ **Everything in English by default**: code, comments, file names and base texts; Spanish comes from `translations/es.json`.
+13. **Settings backup**: download and upload them from the web.
+14. **Ready-to-flash image**: Raspberry Pi OS with everything installed.
