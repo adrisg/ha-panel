@@ -756,7 +756,13 @@ function speakerEntity() {
   return found.find((id) => reg(id).platform === 'music_assistant') || found[0] || null;
 }
 const resolveSpk = (x) => (x === '@panel' ? speakerEntity() : x);
-const spkPlaying = (x) => (S.states[x] || {}).state === 'playing';
+/** Is it playing something that opens “Now playing”? Not with an ignored source (web → Sound → Now playing), e.g. the TV
+ * sound on a soundbar: source “TV” (or Music Assistant's app_id “tv”). */
+function npIgnored(st) {
+  const a = (st && st.attributes) || {}, list = ((SPK && SPK.npIgnore) || []).map((x) => String(x).trim().toLowerCase());
+  return [a.source, a.app_id, a.app_name].some((v) => v != null && list.includes(String(v).trim().toLowerCase()));
+}
+const spkPlaying = (x) => (S.states[x] || {}).state === 'playing' && !npIgnored(S.states[x]);
 /** Speakers that open “Now playing”, by priority (web → Sound → Now playing). '@panel' = this panel's. */
 function watchedSpeakers() {
   if (!SPK) return [];
@@ -769,7 +775,9 @@ function onSpeaker(id, old, st) {
   if (!SPK || domain(id) !== 'media_player') return;
   const w = watchedSpeakers();
   if (!w.includes(id)) return;
-  const was = old && old.state, now = st && st.state;
+  // an ignored source (the TV on a soundbar…) counts as not playing
+  const was = old && (old.state === 'playing' && npIgnored(old) ? 'idle' : old.state);
+  const now = st && (st.state === 'playing' && npIgnored(st) ? 'idle' : st.state);
   if (now === 'playing') {
     if (NP.id === id) { clearTimeout(NP.closeTimer); return; }   // playing again: it no longer closes
     if (!was || was === 'playing' || alertOpen()) return;          // an alarm or an important notification comes first
@@ -1539,7 +1547,7 @@ function wakeScreen() { SCREEN.lastTouch = Date.now(); SCREEN.forcedOff = false;
 /** On start or when the screen turns on: if something plays, “Now playing”; otherwise ambient mode. */
 function enterScreen() {
   if (alertOpen()) return;
-  const playing = watchedSpeakers().find((x) => (S.states[x] || {}).state === 'playing');
+  const playing = watchedSpeakers().find(spkPlaying);
   if (playing) {
     if (NP.id === playing) return;
     showAmbient();             // so the ✕ of “Now playing” goes back to ambient mode

@@ -748,7 +748,9 @@
         "not_connected": " (not connected)",
         "speaker_error_prefix": "Could not read the speaker: ",
         "sound_error_prefix": "Could not read the sound: ",
-        "speaker": "Speaker"
+        "speaker": "Speaker",
+        "np_ignore": "Do not open it with these sources",
+        "np_ignore_hint": "Separated by commas. For example “TV”: a soundbar playing the TV sound does not open it."
       },
       "beta": {
         "testing": "In testing.",

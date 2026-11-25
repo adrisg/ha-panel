@@ -748,7 +748,9 @@
         "not_connected": " (no está conectado)",
         "speaker_error_prefix": "No se pudo leer el altavoz: ",
         "sound_error_prefix": "No se pudo leer el sonido: ",
-        "speaker": "Altavoz"
+        "speaker": "Altavoz",
+        "np_ignore": "No abrirla con estas fuentes",
+        "np_ignore_hint": "Separadas por comas. Por ejemplo «TV»: una barra de sonido con el sonido de la tele no la abre."
       },
       "beta": {
         "testing": "En pruebas.",

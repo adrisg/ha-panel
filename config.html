@@ -642,6 +642,11 @@ go = 'home' | 'rooms' | 'sensors' | 'media' | 'printers' | 'scooter' | 'settings
         <div id="np-speakers"></div>
         <span class="hint" data-i18n="web.sound.when_one_starts">When one starts playing, its “Now playing” appears. If another one is shown, it only switches if the new one is higher on the list or the shown one is not playing; when it stops, it moves to the next one still playing.</span>
       </div>
+      <div class="field">
+        <label for="np-ignore" data-i18n="web.sound.np_ignore">Do not open it with these sources</label>
+        <input id="np-ignore" type="text" placeholder="TV, HDMI…">
+        <span class="hint" data-i18n="web.sound.np_ignore_hint">Separated by commas. For example “TV”: a soundbar playing the TV sound does not open it.</span>
+      </div>
     </div>
 
     <div class="card">
@@ -1936,7 +1941,8 @@ const EXTRA = {
     save: async (cur, old) => { const d = {}; for (const k in cur) if (cur[k] !== old[k]) d[k] = cur[k]; await api('POST', '/api/sound', d); } },
   speaker: { label: I18N.t('web.sound.speaker'), snap: null,
     get: () => ({ enabled: $('#spk-enabled').checked, name: $('#spk-name').value.trim(), device: $('#spk-device').value, entity: $('#spk-entity').value,
-      closeAfter: +$('#spk-close').value, npSpeakers: npSpk.slice() }),
+      closeAfter: +$('#spk-close').value, npSpeakers: npSpk.slice(),
+      npIgnore: $('#np-ignore').value.split(',').map((x) => x.trim()).filter(Boolean) }),
     save: async (cur) => { const r = await api('POST', '/api/speaker', cur); spkMsg(r.message, true); } },
   voice: { label: I18N.t('panel.settings.voice_assistant'), snap: null,
     get: () => ({ enabled: $('#voice-enabled').checked, name: $('#voice-name').value.trim(), mic: $('#voice-mic').value, output: $('#voice-out').value, wake: $('#voice-wake').value }),
@@ -2166,6 +2172,7 @@ function spkFill(r) {
   sel.replaceChildren(...outs.map((o) => tOption(o.name, o.id)));
   sel.value = s.device; sel.dispatchEvent(new Event('change'));
   spkEntity = s.entity; npSpk = (s.npSpeakers || []).slice(); spkEntities();
+  $('#np-ignore').value = (s.npIgnore || []).join(', ');
   const cl = $('#spk-close');
   if (![...cl.options].some((o) => +o.value === s.closeAfter)) cl.append(tOption(s.closeAfter + ' s', s.closeAfter));
   cl.value = String(s.closeAfter); cl.dispatchEvent(new Event('change'));
