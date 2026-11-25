@@ -66,6 +66,7 @@
   .ord-row { display: flex; align-items: center; gap: 8px; padding: 6px 6px 6px 10px; border-radius: 12px; background: var(--surface-2); }
   .ord-n { flex: none; width: 22px; height: 22px; border-radius: 50%; background: var(--surface-3); font-size: 12px; font-weight: 700; display: grid; place-items: center; color: var(--muted); }
   .ord-label { flex: 1; min-width: 0; font-size: 14px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .ord-id { color: var(--muted); font-size: 12px; }
   .ord-row button { flex: none; width: 30px; height: 30px; border: 0; border-radius: 50%; background: var(--surface-3); color: var(--text); cursor: pointer; font-size: 18px; display: grid; place-items: center; }
   .ord-row button:disabled { opacity: .3; cursor: default; }
   .ms-chips .chip { background: var(--surface-3); }
@@ -1307,7 +1308,8 @@ function orderSelect(opts, list, set, emptyText) {
   const save = () => { set(list.slice()); paint(); };
   const paint = () => {
     rows.replaceChildren(...list.map((x, i) => el('div', { class: 'ord-row' }, el('span', { class: 'ord-n', textContent: String(i + 1) }),
-      el('span', { class: 'ord-label', textContent: labelOf(x), title: x }),
+      // the entity id in brackets: two devices can have the same name
+      el('span', { class: 'ord-label', title: x }, labelOf(x), x.includes('.') ? el('span', { class: 'ord-id', textContent: ' (' + x + ')' }) : ''),
       el('button', { type: 'button', title: I18N.t('panel.sheets.up'), disabled: i === 0, onclick: () => { [list[i - 1], list[i]] = [list[i], list[i - 1]]; save(); } }, el('i', { class: 'mdi mdi-chevron-up' })),
       el('button', { type: 'button', title: I18N.t('panel.sheets.down'), disabled: i === list.length - 1, onclick: () => { [list[i + 1], list[i]] = [list[i], list[i + 1]]; save(); } }, el('i', { class: 'mdi mdi-chevron-down' })),
       el('button', { type: 'button', title: I18N.t('panel.quick.remove'), onclick: () => { list.splice(i, 1); save(); } }, el('i', { class: 'mdi mdi-close' })))));
