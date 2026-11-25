@@ -434,7 +434,7 @@ function tap(id, el) {
   if (TOGGLE.includes(d)) {
     el.classList.add('pending');
     el.classList.toggle('on');
-    toggleChecked(d, id);
+    toggleChecked(d, id, el);
     return;
   }
   if (d === 'scene') return call('scene', 'turn_on', {}, id).then((r) => r !== null && toast(I18N.t('panel.states.scene_activated')));
@@ -564,17 +564,21 @@ function mediaCard(id, scope) {
 
 /* ====================== Details sheet (long press) ====================== */
 /** Toggle and check that it changed: some devices accept the order but do nothing (a Sonos soundbar's crossfade with
- * the TV source…). If the state is the same 4 s later, it says so and repaints (an optimistic tile goes back).
+ * the TV source…). If the state is the same 3 s later, it says so and the tile that was tapped (el) goes back to its colour.
  * Two taps in a row (on and off again) are not checked. */
 const TOGGLE_WAIT = new Map();
-function toggleChecked(d, id) {
+function toggleChecked(d, id, el) {
   if (TOGGLE_WAIT.has(id)) { clearTimeout(TOGGLE_WAIT.get(id)); TOGGLE_WAIT.delete(id); return call(d, 'toggle', {}, id); }
   const before = S.states[id] && S.states[id].state;
   TOGGLE_WAIT.set(id, setTimeout(() => {
     TOGGLE_WAIT.delete(id);
     const st = S.states[id];
-    if (st && st.state === before && st.state !== 'unavailable') { toast(I18N.t('panel.status.not_changed', { name: nameOf(id, false) }), true); fire(id); }
-  }, 4000));
+    if (!st || st.state !== before || st.state === 'unavailable') return;
+    toast(I18N.t('panel.status.not_changed', { name: nameOf(id, false) }), true);
+    // the colour changed on tapping (so it answers at once): back to the real one; components too (their repaint does not touch it)
+    if (el) { el.classList.remove('pending'); el.classList.toggle('on', isActive(st)); }
+    fire(id); markCode(id);
+  }, 3000));
   return call(d, 'toggle', {}, id).then((r) => {   // an error already says so itself
     if (r === null && TOGGLE_WAIT.has(id)) { clearTimeout(TOGGLE_WAIT.get(id)); TOGGLE_WAIT.delete(id); }
     return r;
