@@ -14,6 +14,7 @@ List of things to do. 🚧 = in progress · ✅ = done.
 17. **Blinds together**: component with a slider and open / stop / close for several covers at once (today, one by one in their details).
 18. **Sensor bubbles**: a bubble for any sensor ("🌡 21.4° living room"), chosen in the web, for ambient mode and Home.
 19. 🚧 **Gestures in ambient mode** (beta, web → 🧪 Beta): swipe ← → song or photo, ↑ ↓ on the right half volume, hold to pause.
+22. **Photo collages**: in ambient mode, several photos at once (2–4 in a mosaic) instead of one, mixing vertical and horizontal ones.
 
 ## A panel that adapts by itself
 
