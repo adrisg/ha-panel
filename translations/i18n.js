@@ -113,6 +113,7 @@
         if (n.nodeType === 3) {
           if (n.parentNode && /^(SCRIPT|STYLE|CODE|PRE|TEXTAREA)$/.test(n.parentNode.nodeName)) continue;
           if (n.parentNode && n.parentNode.dataset && n.parentNode.dataset.i18n) continue;
+          if (n.parentNode && n.parentNode.closest && n.parentNode.closest('[translate=no]')) continue;   // names (a shopping item…)
           if (n.nodeValue.trim()) n.nodeValue = I18N.t(n.nodeValue);
         } else for (const a of ['title', 'placeholder', 'aria-label']) if (n.hasAttribute && n.hasAttribute(a)) n.setAttribute(a, I18N.t(n.getAttribute(a)));
       }

@@ -461,6 +461,13 @@
         "scooter": "Scooter"
       },
       "builtin": {
+        "entity_list": "Entity list",
+        "todo_list": "To-do list",
+        "the_list_s_name": "Empty: the list’s name",
+        "show_the_completed_ones": "Show the completed ones",
+        "maximum_rows": "Maximum rows",
+        "choose_a_todo_list": "Choose a to-do list",
+        "nothing_pending": "Nothing pending",
         "show_the_description_clear": "Show the description (Clear, Rain…)",
         "empty_home_assistant_s": "Empty: Home Assistant’s",
         "empty_the_entity_s": "Empty: the entity’s",

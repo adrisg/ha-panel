@@ -461,6 +461,13 @@
         "scooter": "Patinete"
       },
       "builtin": {
+        "entity_list": "Lista de entidades",
+        "todo_list": "Lista de tareas",
+        "the_list_s_name": "Vacío: el nombre de la lista",
+        "show_the_completed_ones": "Mostrar las completadas",
+        "maximum_rows": "Máximo de filas",
+        "choose_a_todo_list": "Elige una lista de tareas",
+        "nothing_pending": "Nada pendiente",
         "show_the_description_clear": "Mostrar la descripción (Despejado, Lluvia…)",
         "empty_home_assistant_s": "Vacío: el de Home Assistant",
         "empty_the_entity_s": "Vacío: el de la entidad",

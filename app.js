@@ -2760,6 +2760,7 @@ function entInfo(id) {
     area: areaId ? (S.areaById[areaId] || {}).name || null : null, areaId, key: e.translation_key || null };
 }
 const FC_LOADING = new Set();
+const TODOS = {}, TODO_LOADING = new Set();   // items per to-do list: { id: { list, state, t } }
 const HA_OPTS = {
   name: (id) => (S.states[id] ? nameOf(id) : id), info: entInfo,
   format: (id) => (S.states[id] ? fmtState(S.states[id]) : '—'),
@@ -2782,6 +2783,19 @@ const HA_OPTS = {
       getForecast(id).then(() => { FC_LOADING.delete(id); markCode(id); });
     }
     return c ? c.list : (S.states[id] && S.states[id].attributes.forecast) || [];
+  },
+  /** Items of a to-do list: the saved ones; asked again when its state (the number pending) changes or every 5 min */
+  todo(id) {
+    const c = TODOS[id], st = S.states[id];
+    if (st && (!c || c.state !== st.state || Date.now() - c.t > 300e3) && !TODO_LOADING.has(id)) {
+      TODO_LOADING.add(id);
+      const state = st.state;
+      api.callService('todo', 'get_items', {}, id, true)
+        .then((r) => (r && r.response && r.response[id] && r.response[id].items) || [])
+        .catch(() => (c ? c.list : []))
+        .then((list) => { TODOS[id] = { list, state, t: Date.now() }; TODO_LOADING.delete(id); markCode(id); });
+    }
+    return c ? c.list : [];
   },
 };
 const HA = PM.makeHA(() => S.states, HA_OPTS);

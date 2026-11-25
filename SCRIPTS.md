@@ -6,7 +6,7 @@ The bubbles and the tab components (buttons, cards, weather…) are small JavaSc
 - **Where:** in the configuration web, **🖼️ Ambient mode** tab (🫧 Bubbles card). Each bubble has a title; tapping it opens its **script** (the code), which you can edit, **test** with the current data of your home, download or, for the built-in ones, restore.
 - **New ones:** enter a title and "Create", get one from a URL or upload a `.js` file. Then press **Save**.
 - **How they work:** they are saved on the Pi; the panel downloads them and runs them **in the browser**. To paint they only read; something is only sent to Home Assistant when you tap the bubble or the button (`onTap`).
-- **Components:** in **🧩 Components** (the built-in ones: `button.js`, `info.js`, `list.js`, `card.js`, `weather-card.js`, `vehicle-card.js`, `greeting.js`, `scenes.js`, `printer.js`, `player.js`, `camera.js`, `slider.js` and `summary-example.js`). They are placed in **🗂️ Tabs**. See [Components](#components).
+- **Components:** in **🧩 Components** (the built-in ones: `button.js`, `info.js`, `entity-list.js`, `todo-list.js`, `card.js`, `weather-card.js`, `vehicle-card.js`, `greeting.js`, `scenes.js`, `printer.js`, `player.js`, `camera.js`, `slider.js` and `summary-example.js`). They are placed in **🗂️ Tabs**. See [Components](#components).
 
 ## Shape of a script
 
