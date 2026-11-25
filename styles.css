@@ -339,11 +339,10 @@ main { display: flex; flex-direction: column; min-width: 0; min-height: 0; heigh
 .np-vbtn { pointer-events: auto; flex: none; width: 60px; height: 60px; margin-right: 3px; border-radius: 50%; border: 0; background: #3a3a3c; box-shadow: 0 4px 18px rgba(0,0,0,.45);
   color: inherit; font-size: 30px; display: grid; place-items: center; transition: background .2s; }
 .np-vol.open .np-vbtn { background: #58585a; }
-.np-vpanel { flex: 1; min-height: 0; display: flex; padding: 8px;
-  background: rgba(62,62,66,.92); border: 1px solid rgba(255,255,255,.14); border-radius: 26px; box-shadow: 0 6px 24px rgba(0,0,0,.5);
-  clip-path: inset(100% 0 0 0 round 26px); opacity: 0; transform: translateY(24px);
+.np-vpanel { flex: 1; min-height: 0; display: flex; padding: 0 9px;   /* no frame: just the bar, centred over the button */
+  clip-path: inset(100% 0 0 0 round 18px); opacity: 0; transform: translateY(24px);
   transition: clip-path .35s cubic-bezier(.2,.8,.2,1), opacity .25s, transform .35s cubic-bezier(.2,.8,.2,1); }
-.np-vol.open .np-vpanel { clip-path: inset(0 0 0 0 round 26px); opacity: 1; transform: none; pointer-events: auto; }
+.np-vol.open .np-vpanel { clip-path: inset(0 0 0 0 round 18px); opacity: 1; transform: none; pointer-events: auto; }
 .np-vtrack { position: relative; flex: none; width: 48px; border-radius: 18px; background: #1e1e20; overflow: hidden; touch-action: none; cursor: pointer; isolation: isolate; }
 .np-vtrack > i { position: absolute; left: 0; right: 0; bottom: 0; background: rgba(255,255,255,.9); }
 .vb-ic, .vb-val { position: absolute; left: 0; right: 0; text-align: center; color: #fff; mix-blend-mode: difference; pointer-events: none; }
@@ -351,7 +350,6 @@ main { display: flex; flex-direction: column; min-width: 0; min-height: 0; heigh
 .vb-val { bottom: 10px; font-size: 15px; font-weight: 700; font-variant-numeric: tabular-nums; }
 :root.light .np-vbtn { background: #fff; box-shadow: 0 4px 18px rgba(0,0,0,.16); }
 :root.light .np-vol.open .np-vbtn { background: #e4e7ec; }
-:root.light .np-vpanel { background: rgba(255,255,255,.94); border-color: rgba(0,0,0,.08); box-shadow: 0 6px 24px rgba(0,0,0,.14); }
 :root.light .np-vtrack { background: #e2e5ea; }
 :root.light .np-vtrack > i { background: #15181d; }
 .vol-bubble { position: fixed; top: 8px; left: 50%; z-index: 39; display: flex; align-items: center; gap: 10px; padding: 8px 20px 8px 16px;
