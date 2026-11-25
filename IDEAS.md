@@ -6,7 +6,7 @@ List of things to do. 🚧 = in progress · ✅ = done.
 
 1. **Calendar**: bubble with what is next ("Dentist at 17:00") and a card with the week (Home Assistant `calendar.*`).
 2. **Kitchen timers**: create them with two taps, see them in ambient mode and have them ring when they end.
-3. **Shopping list** (`todo.*`): a fourth window of the quick access panel to see, tick off and add.
+3. ✅ **Shopping list** (`todo.*`): the **To-do list** component shows a list in a tab and a tap ticks items off.
 4. **Energy**: card with the home's consumption, a graph of the day and solar production if there is any.
 5. **Video intercom**: the camera full screen when someone rings, with "Open the door" on top.
 
