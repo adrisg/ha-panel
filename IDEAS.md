@@ -25,5 +25,5 @@ List of things to do. 🚧 = in progress · ✅ = done.
 
 11. ✅ **International**: English and Spanish (`translations/` folder, in JSON; another language = another file).
 12. ✅ **Everything in English by default**: code, comments, file names and base texts; Spanish comes from `translations/es.json`.
-13. **Settings backup**: download and upload them from the web.
+13. ✅ **Settings backup**: download and upload them from the web.
 14. **Ready-to-flash image**: Raspberry Pi OS with everything installed.

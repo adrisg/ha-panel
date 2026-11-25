@@ -809,6 +809,73 @@ def set_update_settings(body):
     return update_settings()
 
 
+# ---------------------------------------------------------------- backup
+# One JSON file with the settings, tabs, your scripts and the speaker, voice, sound and update options.
+# Secrets (Home Assistant token, MQTT password, API keys, web password) never go in it: restoring keeps the Pi's.
+BACKUP_TYPE = 'ha-panel-backup'
+BACKUP_FORMAT = 1
+BACKUP_MAX = 5 * 1024 * 1024
+SECRET_KEYS = ('token', 'immichApiKey', 'mqttPassword')
+
+
+def make_backup():
+    cfg = load_config()
+    panel = {k: v for k, v in cfg['panel'].items() if k not in SECRET_KEYS}
+    if isinstance(panel.get('photoSources'), list):
+        panel['photoSources'] = [{k: v for k, v in src.items() if k != 'apiKey'}
+                                 for src in panel['photoSources'] if isinstance(src, dict)]
+    return {'type': BACKUP_TYPE, 'format': BACKUP_FORMAT, 'created': time.strftime('%Y-%m-%dT%H:%M:%S%z'),
+            'panel': panel, 'settings': cfg['settings'], 'scripts': list_scripts(),
+            'speaker': speaker_settings(), 'voice': voice_settings(),
+            'sound': {'master': master_get().get('value')}, 'updates': update_settings()}
+
+
+def restore_backup(b):
+    """Puts a backup back. Returns the parts that could not be restored (e.g. an audio output this Pi does not have)."""
+    if not isinstance(b, dict) or b.get('type') != BACKUP_TYPE:
+        raise ValueError('this file is not a panel backup')
+    if not isinstance(b.get('format'), int) or b['format'] > BACKUP_FORMAT:
+        raise ValueError('the backup is from a newer version: update the panel first')
+    skipped = []
+    scripts = b.get('scripts') if isinstance(b.get('scripts'), dict) else {}
+    for name, code in scripts.items():
+        try:
+            save_script(name, code)
+        except ValueError:
+            skipped.append(str(name)[:40])
+    with LOCK:
+        cfg = load_config()
+        if isinstance(b.get('panel'), dict):   # secrets: the ones on the Pi stay
+            cfg['panel'] = clean_panel({k: v for k, v in b['panel'].items() if k not in SECRET_KEYS}, current=cfg['panel'])
+        if isinstance(b.get('settings'), dict):
+            cfg['settings'] = b['settings']
+        migrate_config(cfg)                    # a backup from an older version
+        save_config(cfg)
+    # audio devices may not exist on this Pi: then the rest is restored and the current device stays
+    for key, apply, devices in (('speaker', set_speaker, ('device',)), ('voice', set_voice, ('mic', 'output'))):
+        s = b.get(key)
+        if not isinstance(s, dict):
+            continue
+        try:
+            apply(s)
+        except (ValueError, RuntimeError):
+            try:
+                apply({k: v for k, v in s.items() if k not in devices})
+            except (ValueError, RuntimeError):
+                pass
+            skipped.append(key)
+    sound = b.get('sound')
+    if isinstance(sound, dict) and sound.get('master') is not None:
+        master_set(sound['master'])
+    if isinstance(b.get('updates'), dict):
+        try:
+            set_update_settings(b['updates'])
+        except ValueError:
+            skipped.append('updates')
+    threading.Thread(target=mqtt_restart, daemon=True).start()
+    return skipped
+
+
 def _git(*args, timeout=60):
     try:
         r = subprocess.run(['git', '-C', str(HERE), *args], capture_output=True, text=True, encoding='utf-8', errors='replace', timeout=timeout)
@@ -1553,9 +1620,9 @@ class Base(BaseHTTPRequestHandler):
         data = read_translation(path)
         return self._json(200, data) if data is not None else self._json(404, {'error': 'does not exist'})
 
-    def _body(self):
+    def _body(self, limit=256 * 1024):
         n = int(self.headers.get('Content-Length') or 0)
-        if n > 256 * 1024:
+        if n > limit:
             raise ValueError('demasiado grande')
         return json.loads(self.rfile.read(n) or b'{}') if n else {}
 
@@ -1779,6 +1846,11 @@ class WebHandler(Base):
                 panel['photoSources'] = [dict({k: v for k, v in src.items() if k != 'apiKey'}, hasApiKey=bool(src.get('apiKey')))
                                          for src in panel['photoSources'] if isinstance(src, dict)]
             return self._json(200, {'panel': panel, 'settings': cfg['settings'], 'version': cfg['version']})
+        if u.path == '/api/backup':       # download a backup (without secrets)
+            if not self._guard():
+                return
+            name = 'ha-panel-backup-' + time.strftime('%Y-%m-%d') + '.json'
+            return self._json(200, make_backup(), {'Content-Disposition': f'attachment; filename="{name}"'})
         if u.path == '/api/network':
             if not self._guard():
                 return
@@ -1813,7 +1885,7 @@ class WebHandler(Base):
     def do_POST(self):
         u = urlparse(self.path)
         try:
-            body = self._body()
+            body = self._body(BACKUP_MAX if u.path == '/api/backup' and self._session() else 256 * 1024)
         except ValueError:
             return self._json(400)
         if u.path == '/api/login':
@@ -1888,6 +1960,11 @@ class WebHandler(Base):
                 return self._json(400, {'error': str(e)})
         if u.path == '/api/updates':   # check, update now, or mode (notify / automatic) and time
             return self._json(*update_action(body))
+        if u.path == '/api/backup':          # restore a backup
+            try:
+                return self._json(200, {'ok': True, 'skipped': restore_backup(body)})
+            except ValueError as e:
+                return self._json(400, {'error': str(e)})
         if u.path == '/api/command':         # reload, turn the screen off/on, ambient mode, home
             kind = body.get('type')
             if kind not in ('reload', 'screen_off', 'screen_on', 'ambient', 'home'):

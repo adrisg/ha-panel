@@ -914,6 +914,15 @@
         "watch_any": "any change"
       },
       "system": {
+        "backup": "Backup",
+        "backup_hint": "Settings, tabs, bubbles, your scripts and the speaker, voice and sound options in one file. Without the Home Assistant token or passwords: restoring keeps the ones on this Pi.",
+        "backup_download": "Download backup",
+        "backup_pick": "Restore from a file",
+        "backup_restore": "Restore",
+        "backup_info": "Backup from {date} · {scripts} scripts",
+        "backup_sure": "Tap again: it replaces the current settings",
+        "backup_done": "Restored. Reloading…",
+        "backup_done_except": "Restored, except: {list}. Reloading…",
         "pi_network": "Pi network",
         "gateway": "Gateway",
         "web": "This web",
@@ -970,6 +979,8 @@
         "sudo_hint": "So it can install the system packages a new version needs, run this once on the Pi:"
       },
       "helper": {
+        "not_backup": "this file is not a panel backup",
+        "backup_newer": "the backup is from a newer version: update the panel first",
         "invalid_name_lowercase_letters": "invalid name: lowercase letters, numbers, - and _ (e.g. living-room-temperature)",
         "script_too_big_max": "the script is too big (max. 100 KB)",
         "enter_https_address": "enter an https:// address",

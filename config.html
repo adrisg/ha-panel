@@ -756,6 +756,21 @@ go = 'home' | 'rooms' | 'sensors' | 'media' | 'printers' | 'scooter' | 'settings
       <div id="upd-msg" class="hint"></div>
       <details id="upd-log-box" class="hidden"><summary data-i18n="web.system.last_update">Last update</summary><pre id="upd-log"></pre></details>
     </div>
+
+    <div class="card">
+      <h2>💾 Backup</h2>
+      <p class="hint" data-i18n="web.system.backup_hint">Settings, tabs, bubbles, your scripts and the speaker, voice and sound options in one file. Without the Home Assistant token or passwords: restoring keeps the ones on this Pi.</p>
+      <div class="btns">
+        <a class="btn" id="bk-download" href="/api/backup" download data-i18n="web.system.backup_download">Download backup</a>
+        <button class="btn" id="bk-pick" data-i18n="web.system.backup_pick">Restore from a file</button>
+        <input id="bk-file" type="file" accept=".json,application/json" class="hidden">
+      </div>
+      <div id="bk-ready" class="field hidden">
+        <span class="hint" id="bk-info"></span>
+        <div class="btns"><button class="btn primary" id="bk-restore" data-i18n="web.system.backup_restore">Restore</button></div>
+      </div>
+      <div id="bk-msg" class="hint"></div>
+    </div>
     </div>
 
   </div>
@@ -2245,6 +2260,32 @@ async function loadVoice() {
 }
 
 /* ---------- actualizaciones ---------- */
+/* ---------- backup ---------- */
+function bkMsg(t, ok) { const m = $('#bk-msg'); m.textContent = I18N.t(t); m.style.color = ok === false ? 'var(--danger)' : ok ? 'var(--ok)' : ''; }
+let bkData = null;
+$('#bk-pick').addEventListener('click', () => $('#bk-file').click());
+$('#bk-file').addEventListener('change', async () => {
+  const f = $('#bk-file').files[0];
+  $('#bk-file').value = '';
+  bkData = null; $('#bk-ready').classList.add('hidden'); bkMsg('');
+  if (!f) return;
+  try { bkData = JSON.parse(await f.text()); } catch (e) { bkData = null; }
+  if (!bkData || bkData.type !== 'ha-panel-backup') { bkData = null; return bkMsg('web.helper.not_backup', false); }
+  const when = bkData.created ? new Date(bkData.created.replace(/([+-]\d\d)(\d\d)$/, '$1:$2')) : null;
+  $('#bk-info').textContent = I18N.t('web.system.backup_info', { date: when && !isNaN(when) ? when.toLocaleString(I18N.locale()) : '?',
+    scripts: Object.keys(bkData.scripts || {}).length });
+  $('#bk-ready').classList.remove('hidden');
+});
+{ const r = $('#bk-restore'), yes = sureBtn({ class: 'btn primary', id: 'bk-restore' }, r.textContent, I18N.t('web.system.backup_sure'), async () => {
+  if (!bkData) return;
+  bkMsg('web.login.loading');
+  try {
+    const res = await api('POST', '/api/backup', bkData);
+    $('#bk-ready').classList.add('hidden'); bkData = null;
+    bkMsg(res.skipped && res.skipped.length ? I18N.t('web.system.backup_done_except', { list: res.skipped.join(', ') }) : I18N.t('web.system.backup_done'), true);
+    setTimeout(() => location.reload(), 2500);   // the forms show what was restored
+  } catch (e) { if (e.message !== 'LOGIN') bkMsg(e.message, false); }
+}); r.replaceWith(yes); }
 function updMsg(t, ok) { const m = $('#upd-msg'); m.textContent = I18N.t(t); m.style.color = ok === false ? 'var(--danger)' : ok ? 'var(--ok)' : ''; }
 let updFilling = false, updTimer = null;
 function updFill(r) {

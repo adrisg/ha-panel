@@ -914,6 +914,15 @@
         "watch_any": "cualquier cambio"
       },
       "system": {
+        "backup": "Copia de seguridad",
+        "backup_hint": "Ajustes, pestañas, burbujas, tus scripts y las opciones del altavoz, la voz y el sonido en un archivo. Sin el token de Home Assistant ni contraseñas: al restaurar se quedan las de esta Pi.",
+        "backup_download": "Descargar copia",
+        "backup_pick": "Restaurar desde un archivo",
+        "backup_restore": "Restaurar",
+        "backup_info": "Copia del {date} · {scripts} scripts",
+        "backup_sure": "Toca otra vez: sustituye los ajustes actuales",
+        "backup_done": "Restaurada. Recargando…",
+        "backup_done_except": "Restaurada, menos: {list}. Recargando…",
         "pi_network": "Red de la Pi",
         "gateway": "Puerta de enlace",
         "web": "Esta web",
@@ -970,6 +979,8 @@
         "sudo_hint": "Para que pueda instalar los paquetes del sistema que necesite una versión nueva, lanza esto una vez en la Pi:"
       },
       "helper": {
+        "not_backup": "este archivo no es una copia del panel",
+        "backup_newer": "la copia es de una versión más nueva: actualiza antes el panel",
         "invalid_name_lowercase_letters": "nombre no válido: letras minúsculas, números, - y _ (p. ej. temperatura-salon)",
         "script_too_big_max": "el script es demasiado grande (máx. 100 KB)",
         "enter_https_address": "pon una dirección https://",
