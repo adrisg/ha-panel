@@ -178,6 +178,12 @@
         "clean_rooms": "Limpiar {n} habitaciones"
       },
       "ambient": {
+        "next_song": "Siguiente canción",
+        "previous_song": "Canción anterior",
+        "next_photo": "Siguiente foto",
+        "previous_photo": "Foto anterior",
+        "paused": "En pausa",
+        "playing": "Reproduciendo",
         "panel": "Este panel",
         "screen_s_speaker": "El altavoz de esta pantalla",
         "not_music_assistant": "Aún no está en Music Assistant",
@@ -766,6 +772,13 @@
         "np_ignore_hint": "Separadas por comas. Por ejemplo «TV»: una barra de sonido con el sonido de la tele no la abre."
       },
       "beta": {
+        "gestures": "Gestos en el modo ambiente",
+        "gestures_hint": "Desliza ← → para cambiar de canción (o de foto), ↑ ↓ en la mitad derecha para el volumen y mantén pulsado para pausar. Tocar sigue saliendo del ambiente.",
+        "gestures_on": "Usar gestos",
+        "swipe_changes": "Deslizar ← → cambia",
+        "swipe_auto": "Automático: la canción si suena música; si no, la foto",
+        "swipe_music": "Solo la canción",
+        "swipe_photos": "Solo la foto",
         "testing": "En pruebas.",
         "works_but_may": "Funciona, pero puede fallar o cambiar en próximas versiones.",
         "voice_assistant_pi": "Asistente de voz (micro de la Pi)",

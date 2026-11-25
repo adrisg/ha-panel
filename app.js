@@ -885,10 +885,12 @@ function npVolume(id) {
    What you change on the panel itself does not show it. */
 const OSD = { known: null, sent: -1, sentAt: 0, timer: null };
 function volMarkSent(v) { OSD.sent = v; OSD.sentAt = Date.now(); }
-function volBubble(v) {
+function volBubble(v) { osdBubble(volIconOf(v), String(v)); }
+/** The same bubble with any icon and text (what an ambient gesture did). Numbers go big. */
+function osdBubble(ic, text) {
   let el = $('#vol-bubble');
   if (!el) { el = h('div', { id: 'vol-bubble', class: 'vol-bubble' }); document.body.append(el); }
-  el.replaceChildren(icon(volIconOf(v)), h('b', null, String(v)));
+  el.replaceChildren(icon(ic), /^\d+$/.test(text) ? h('b', null, text) : h('span', null, text));
   el.classList.add('show');
   clearTimeout(OSD.timer);
   OSD.timer = setTimeout(() => el.classList.remove('show'), 2000);
@@ -1416,6 +1418,8 @@ const DEFAULTS = () => ({
   defaultSpeaker: '',   // (from before) the first of ambientSpeakers
   ambientSpeakers: null,   // ambient mode speakers by priority ('@panel' = this panel's); null = [defaultSpeaker]
   ambientSameAsNp: false,  // true = the ambient player uses the “Now playing” speakers (web → Sound) instead of its own list
+  ambientGestures: false,  // 🧪 beta: swipe / hold gestures in ambient mode (web → Beta)
+  ambientSwipe: 'auto',    // what swiping ← → changes: auto (music if it plays, otherwise photos) | music | photos
   quick: [],            // quick access (entity_id)
   bullets: null,        // bubbles (built-in and script ones); null = the usual ones
   tabs: null,           // tabs with their cards; null = one per view
@@ -2962,6 +2966,69 @@ function renderAmbientPlayer() {
       btn('vol+', 'mdi-volume-plus', 'small')),
     ...(vol ? [h('div', { class: 'amb-pvol' }, vol)] : []));
 }
+/* 🧪 Beta: gestures in ambient mode (SET.ambientGestures; web → Beta). The background then does not leave on touching it
+ * but on lifting the finger without moving it: swipe ← → = next / previous song (or photo), ↑ ↓ on the right half = volume,
+ * holding it = play / pause. Bubbles, the player and the top strip work as always. */
+function swallowClick() {   // the “click” of the finger just lifted must not tap what is underneath
+  const stop = (e) => { e.preventDefault(); e.stopPropagation(); };
+  window.addEventListener('click', stop, true);
+  setTimeout(() => window.removeEventListener('click', stop, true), 400);
+}
+function ambientSwipe(dir, st) {
+  const what = SET.ambientSwipe || 'auto', music = !!st && !['off', 'unavailable'].includes(st.state);
+  const photos = photosOn() && PHOTOS.length > 1;
+  const useMusic = what === 'music' ? music : what === 'photos' ? false : (music && st.state === 'playing') || (music && !photos);
+  if (useMusic) {
+    ambientPlayerAction(dir);
+    osdBubble(dir === 'next' ? 'mdi-skip-next' : 'mdi-skip-previous', I18N.t(dir === 'next' ? 'panel.ambient.next_song' : 'panel.ambient.previous_song'));
+  } else if (photos && what !== 'music') {
+    if (dir === 'prev') photoIdx = (photoIdx - 2 + 2 * PHOTOS.length) % PHOTOS.length;
+    nextBackground();
+    osdBubble('mdi-image', I18N.t(dir === 'next' ? 'panel.ambient.next_photo' : 'panel.ambient.previous_photo'));
+  }
+}
+function ambientGesture(e0) {
+  const x0 = e0.clientX, y0 = e0.clientY, right = x0 > innerWidth / 2;
+  const id = ambientSpeaker(), st = id && S.states[id];
+  const vol0 = st && st.state !== 'unavailable' && st.attributes.volume_level != null ? st.attributes.volume_level : null;
+  let mode = null, vol = vol0;   // null (a tap so far) | 'h' | 'v' | 'hold' | 'none'
+  const hold = setTimeout(() => {
+    if (mode || !st || ['off', 'unavailable'].includes(st.state)) return;
+    mode = 'hold';
+    const playing = st.state === 'playing';
+    ambientPlayerAction('play');
+    osdBubble(playing ? 'mdi-pause' : 'mdi-play', I18N.t(playing ? 'panel.ambient.paused' : 'panel.ambient.playing'));
+  }, 600);
+  const move = (e) => {
+    const dx = e.clientX - x0, dy = e.clientY - y0;
+    if (!mode && Math.hypot(dx, dy) > 14) {
+      clearTimeout(hold);
+      mode = Math.abs(dx) > Math.abs(dy) ? 'h' : right && vol0 != null ? 'v' : 'none';
+    }
+    if (mode === 'v') {
+      vol = Math.round(Math.max(0, Math.min(1, vol0 - dy / 300)) * 100) / 100;
+      volBubble(Math.round(vol * 100));
+    }
+  };
+  const up = (e) => {
+    ['pointermove', 'pointerup', 'pointercancel'].forEach((t) => window.removeEventListener(t, t === 'pointermove' ? move : up, true));
+    clearTimeout(hold);
+    swallowClick();
+    resetIdle();
+    if (e.type === 'pointercancel') return;
+    const dx = e.clientX - x0;
+    if (mode === 'h') { if (Math.abs(dx) > 70) ambientSwipe(dx < 0 ? 'next' : 'prev', st); return; }
+    if (mode === 'v') {
+      if (vol !== vol0) { volMarkSent(Math.round(vol * 100)); call('media_player', 'volume_set', { volume_level: vol }, id); }
+      return;
+    }
+    if (mode) return;   // held, or a movement that does nothing
+    hideAmbient('home');
+  };
+  window.addEventListener('pointermove', move, true);
+  window.addEventListener('pointerup', up, true);
+  window.addEventListener('pointercancel', up, true);
+}
 function ambientPlayerAction(act) {
   const id = ambientSpeaker(), st = id && S.states[id];
   if (!st) return;
@@ -3433,6 +3500,7 @@ function start() {
     if (e.target.closest('#amb-player')) { resetIdle(); return; }
     const chip = e.target.closest('.amb-chip');
     if (chip && chip.bubble && (chip.bubble.action || chip.bubble.onTap)) { e.stopPropagation(); swallowTouch(); runBubble(chip.bubble); resetIdle(); return; }
+    if (SET.ambientGestures && !chip) { ambientGesture(e); return; }   // 🧪 beta
     swallowTouch();
     hideAmbient(chip && chip.bubble && chip.bubble.go ? chip.bubble.go : 'home');
   });

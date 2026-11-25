@@ -178,6 +178,12 @@
         "clean_rooms": "Clean {n} rooms"
       },
       "ambient": {
+        "next_song": "Next song",
+        "previous_song": "Previous song",
+        "next_photo": "Next photo",
+        "previous_photo": "Previous photo",
+        "paused": "Paused",
+        "playing": "Playing",
         "panel": "This panel",
         "screen_s_speaker": "This screen's speaker",
         "not_music_assistant": "Not in Music Assistant yet",
@@ -766,6 +772,13 @@
         "np_ignore_hint": "Separated by commas. For example “TV”: a soundbar playing the TV sound does not open it."
       },
       "beta": {
+        "gestures": "Gestures in ambient mode",
+        "gestures_hint": "Swipe ← → to change song (or photo), ↑ ↓ on the right half for the volume and hold to pause. Tapping still leaves ambient mode.",
+        "gestures_on": "Use gestures",
+        "swipe_changes": "Swiping ← → changes",
+        "swipe_auto": "Automatic: the song if music plays, otherwise the photo",
+        "swipe_music": "Only the song",
+        "swipe_photos": "Only the photo",
         "testing": "In testing.",
         "works_but_may": "It works, but it may fail or change in future versions.",
         "voice_assistant_pi": "Voice assistant (Pi microphone)",

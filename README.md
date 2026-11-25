@@ -101,7 +101,7 @@ On the screen: quick access panel → ⚙. From the phone: the configuration web
 | 🗂️ **Tabs** | the panel tabs and what each one has |
 | 🧩 **Components** | create and edit components |
 | 🛠️ **System** | network (WiFi, IP, name), updates and backup (download / restore the settings; with a password, everything encrypted, token included) |
-| 🧪 **Beta** | what is being tested: the voice assistant with the Pi's mic |
+| 🧪 **Beta** | what is being tested: the voice assistant with the Pi's mic and gestures in ambient mode (swipe ← → song or photo, ↑ ↓ volume, hold to pause) |
 
 Everything is saved with **Save**, at the bottom.
 

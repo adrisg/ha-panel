@@ -693,6 +693,16 @@ go = 'home' | 'rooms' | 'sensors' | 'media' | 'printers' | 'scooter' | 'settings
       <div id="voice-msg" class="hint"></div>
       <details id="voice-log-box" class="hidden"><summary data-i18n="web.sound.log">Log</summary><pre id="voice-log"></pre></details>
     </div>
+
+    <div class="card">
+      <h2>👆 Gestures in ambient mode</h2>
+      <p class="hint" data-i18n="web.beta.gestures_hint">Swipe ← → to change song (or photo), ↑ ↓ on the right half for the volume and hold to pause. Tapping still leaves ambient mode.</p>
+      <div class="row"><label for="ambient-gestures" data-i18n="web.beta.gestures_on">Use gestures</label><label class="switch"><input id="ambient-gestures" type="checkbox"><span></span></label></div>
+      <div class="field">
+        <label for="ambient-swipe" data-i18n="web.beta.swipe_changes">Swiping ← → changes</label>
+        <select id="ambient-swipe"><option value="auto" data-i18n="web.beta.swipe_auto">Automatic: the song if music plays, otherwise the photo</option><option value="music" data-i18n="web.beta.swipe_music">Only the song</option><option value="photos" data-i18n="web.beta.swipe_photos">Only the photo</option></select>
+      </div>
+    </div>
     </div>
 
     <div data-pg="system" class="hidden">
@@ -1926,6 +1936,8 @@ function fill(cfg) {
   if (![...$('#voiceSatellite').options].some((o) => o.value === (a.voiceSatellite || ''))) $('#voiceSatellite').append(tOption(a.voiceSatellite, a.voiceSatellite));
   $('#voiceSatellite').value = a.voiceSatellite || '';
   $('#voiceStyle').value = a.voiceStyle || 'wave';
+  $('#ambient-gestures').checked = !!a.ambientGestures;
+  $('#ambient-swipe').value = a.ambientSwipe || 'auto';
   window.__settings = cfg.settings || {};
 }
 function collect() {
@@ -1954,6 +1966,7 @@ function collect() {
     ambientSpeakers: ambSpk.slice(), defaultSpeaker: ambSpk[0] || '', ambientSameAsNp: $('#ambient-same').checked,
     voiceSatellite: $('#voiceSatellite').value,
     voiceStyle: $('#voiceStyle').value,
+    ambientGestures: $('#ambient-gestures').checked, ambientSwipe: $('#ambient-swipe').value,
     theme: $('#theme').value, language: $('#language').value, accent, quick: lists.quick,
     haExpose: Object.fromEntries(EXPOSE_KEYS.map((k) => [k, $('#expose-' + k).checked])),
   };

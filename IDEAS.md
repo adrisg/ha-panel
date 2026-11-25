@@ -13,7 +13,7 @@ List of things to do. 🚧 = in progress · ✅ = done.
 16. **Mini graph**: component with the last 24 h of a sensor (temperature, power…), using the history the details already ask for.
 17. **Blinds together**: component with a slider and open / stop / close for several covers at once (today, one by one in their details).
 18. **Sensor bubbles**: a bubble for any sensor ("🌡 21.4° living room"), chosen in the web, for ambient mode and Home.
-19. **Gestures in ambient mode**: swipe left / right to change song, double tap to pause.
+19. 🚧 **Gestures in ambient mode** (beta, web → 🧪 Beta): swipe ← → song or photo, ↑ ↓ on the right half volume, hold to pause.
 
 ## A panel that adapts by itself
 

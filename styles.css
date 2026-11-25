@@ -357,6 +357,7 @@ main { display: flex; flex-direction: column; min-width: 0; min-height: 0; heigh
   opacity: 0; transform: translate(-50%, -24px) scale(.9); pointer-events: none; transition: opacity .25s, transform .3s cubic-bezier(.2,.8,.2,1); }
 .vol-bubble.show { opacity: 1; transform: translate(-50%, 0); }
 .vol-bubble .mdi { font-size: 26px; }
+.vol-bubble span { font-size: 18px; font-weight: 600; white-space: nowrap; }
 /* Ajustes → Pantalla → Color */
 .accents { display: flex; flex-wrap: wrap; gap: 12px; }
 .accent-sw { width: 46px; height: 46px; border-radius: 50%; display: grid; place-items: center; font-size: 24px; box-shadow: 0 0 0 2px var(--surface); }
