@@ -1389,6 +1389,7 @@ const DEFAULTS = () => ({
   voiceStyle: 'wave',   // voice bar animation: wave | mic | light | eq
   defaultSpeaker: '',   // (from before) the first of ambientSpeakers
   ambientSpeakers: null,   // ambient mode speakers by priority ('@panel' = this panel's); null = [defaultSpeaker]
+  ambientSameAsNp: false,  // true = the ambient player uses the “Now playing” speakers (web → Sound) instead of its own list
   quick: [],            // quick access (entity_id)
   bullets: null,        // bubbles (built-in and script ones); null = the usual ones
   tabs: null,           // tabs with their cards; null = one per view
@@ -2886,6 +2887,7 @@ const paintBullets = renderAmbientChips;
  * tapping its artwork or the title goes back to the “Now playing” screen. */
 /** Ambient mode speakers, by priority (Settings → Ambient mode speakers). */
 function ambientSpeakers() {
+  if (SET.ambientSameAsNp) return watchedSpeakers();
   const list = SET.ambientSpeakers || (SET.defaultSpeaker ? [SET.defaultSpeaker] : []);
   return [...new Set(list.map(resolveSpk))].filter((x) => x && S.states[x]);
 }
@@ -2948,6 +2950,7 @@ function speakerCard() {
   const cur = () => (SET.ambientSpeakers || (SET.defaultSpeaker ? [SET.defaultSpeaker] : [])).map((x) => (x === own && own ? '@panel' : x));
   const save = (arr) => { SET.ambientSpeakers = arr; SET.defaultSpeaker = arr[0] || ''; saveSettings(); paint(); renderAmbientPlayer(); };
   const paint = () => {
+    if (SET.ambientSameAsNp) return box.replaceChildren(h('div', { class: 'muted small' }, I18N.t('panel.settings.ambient_same_as_np')));
     const list = cur();
     const rows = list.map((x, i) => {
       const o = options.find((op) => op[0] === x) || [x, nameOf(x), 'mdi-speaker', I18N.t('panel.status.does_not_exist')];

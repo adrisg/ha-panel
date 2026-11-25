@@ -185,6 +185,7 @@
         "next_photo": "Next photo"
       },
       "settings": {
+        "ambient_same_as_np": "The same as “Now playing” (configuration web → 🔊 Sound).",
         "light": "Light",
         "screen": "Screen",
         "language": "Language",
@@ -652,6 +653,8 @@
       },
       "ambient": {
         "ambient_mode_player": "Ambient mode player",
+        "same_as_np": "Same speakers as “Now playing”",
+        "same_as_np_hint": "(the 🔊 Sound list: you only set it up once)",
         "speakers_by_priority": "Speakers, by priority",
         "their_controls_appear": "(their controls appear in ambient mode)",
         "first_one_list": "The first one on the list that is playing wins; if none is playing, the first paused one, otherwise the first one.",

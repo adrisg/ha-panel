@@ -358,7 +358,8 @@
     <div data-pg="ambient" class="hidden">
     <div class="card">
       <h2>🎵 Ambient mode player</h2>
-      <div class="field">
+      <div class="row"><label for="ambient-same">Same speakers as “Now playing” <span class="hint" data-i18n="web.ambient.same_as_np_hint">(the 🔊 Sound list: you only set it up once)</span></label><label class="switch"><input id="ambient-same" type="checkbox"><span></span></label></div>
+      <div class="field" id="ambient-own">
         <label>Speakers, by priority <span class="hint" data-i18n="web.ambient.their_controls_appear">(their controls appear in ambient mode)</span></label>
         <div id="ambientSpeakers"></div>
         <span class="hint" data-i18n="web.ambient.first_one_list">The first one on the list that is playing wins; if none is playing, the first paused one, otherwise the first one.</span>
@@ -1326,6 +1327,7 @@ function orderSelect(opts, list, set, emptyText) {
 const speakerOpts = () => [{ value: '@panel', label: I18N.t('panel.ambient.panel') }]
   .concat(Object.keys(names).filter((id) => id.startsWith('media_player.')).map((id) => ({ value: id, label: names[id] || id })));
 let ambSpk = [], npSpk = [];
+$('#ambient-same').addEventListener('change', () => $('#ambient-own').classList.toggle('hidden', $('#ambient-same').checked));
 function ambSpkPaint() { $('#ambientSpeakers').replaceChildren(orderSelect(speakerOpts(), ambSpk, (v) => { ambSpk = v; dirty(); }, I18N.t('web.sound.none_one_playing'))); }
 function npSpkPaint() { $('#np-speakers').replaceChildren(orderSelect(speakerOpts(), npSpk, (v) => { npSpk = v; dirty(); }, I18N.t('web.sound.none_now_playing'))); }
 function msShow(btn, opts, getList, toggle) {
@@ -1918,6 +1920,8 @@ function fill(cfg) {
   renderBullets(); renderTabs();
   ambSpk = Array.isArray(a.ambientSpeakers) ? a.ambientSpeakers.slice() : a.defaultSpeaker ? [a.defaultSpeaker] : [];
   ambSpkPaint();
+  $('#ambient-same').checked = !!a.ambientSameAsNp;
+  $('#ambient-own').classList.toggle('hidden', !!a.ambientSameAsNp);
   $('#voiceSatellite').dataset.value = a.voiceSatellite || '';
   if (![...$('#voiceSatellite').options].some((o) => o.value === (a.voiceSatellite || ''))) $('#voiceSatellite').append(tOption(a.voiceSatellite, a.voiceSatellite));
   $('#voiceSatellite').value = a.voiceSatellite || '';
@@ -1947,7 +1951,7 @@ function collect() {
     sound: { enabled: $('#sound-enabled').checked, volume: +$('#sound-volume').value },
     photos: { enabled: $('#photos-enabled').checked, seconds: +$('#photos-seconds').value, fit: $('#photos-fit').value },
     bullets, tabs,
-    ambientSpeakers: ambSpk.slice(), defaultSpeaker: ambSpk[0] || '',
+    ambientSpeakers: ambSpk.slice(), defaultSpeaker: ambSpk[0] || '', ambientSameAsNp: $('#ambient-same').checked,
     voiceSatellite: $('#voiceSatellite').value,
     voiceStyle: $('#voiceStyle').value,
     theme: $('#theme').value, language: $('#language').value, accent, quick: lists.quick,

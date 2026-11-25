@@ -185,6 +185,7 @@
         "next_photo": "Siguiente foto"
       },
       "settings": {
+        "ambient_same_as_np": "Los mismos que «Sonando» (web de configuración → 🔊 Sonido).",
         "light": "Luz",
         "screen": "Pantalla",
         "language": "Idioma",
@@ -652,6 +653,8 @@
       },
       "ambient": {
         "ambient_mode_player": "Reproductor del modo ambiente",
+        "same_as_np": "Los mismos altavoces que «Sonando»",
+        "same_as_np_hint": "(la lista de 🔊 Sonido: se configura una sola vez)",
         "speakers_by_priority": "Altavoces, por prioridad",
         "their_controls_appear": "(sus controles salen en el modo ambiente)",
         "first_one_list": "Manda el primero de la lista que esté sonando; si no suena ninguno, el primero en pausa y, si no, el primero.",
