@@ -100,7 +100,7 @@ On the screen: quick access panel → ⚙. From the phone: the configuration web
 | 🔊 **Sound** | where the Pi plays and its volume (the limit), music, notifications and alarms, Music Assistant speaker, "Now playing" and voice on the screen |
 | 🗂️ **Tabs** | the panel tabs and what each one has |
 | 🧩 **Components** | create and edit components |
-| 🛠️ **System** | network (WiFi, IP, name), updates and backup (download / restore the settings; without the token or passwords) |
+| 🛠️ **System** | network (WiFi, IP, name), updates and backup (download / restore the settings; with a password, everything encrypted, token included) |
 | 🧪 **Beta** | what is being tested: the voice assistant with the Pi's mic |
 
 Everything is saved with **Save**, at the bottom.

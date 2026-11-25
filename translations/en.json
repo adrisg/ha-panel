@@ -914,8 +914,12 @@
         "watch_any": "any change"
       },
       "system": {
+        "backup_password": "Password (optional)",
+        "backup_password_hint": "Without a password the Home Assistant token and the passwords do not go in (restoring keeps the ones on this Pi). With one, everything goes in, encrypted; without it the backup cannot be restored: keep it safe.",
+        "backup_its_password": "Its password",
+        "backup_info_encrypted": "Encrypted backup from {date}",
         "backup": "Backup",
-        "backup_hint": "Settings, tabs, bubbles, your scripts and the speaker, voice and sound options in one file. Without the Home Assistant token or passwords: restoring keeps the ones on this Pi.",
+        "backup_hint": "Settings, tabs, bubbles, your scripts and the speaker, voice and sound options in one file.",
         "backup_download": "Download backup",
         "backup_pick": "Restore from a file",
         "backup_restore": "Restore",
@@ -979,6 +983,10 @@
         "sudo_hint": "So it can install the system packages a new version needs, run this once on the Pi:"
       },
       "helper": {
+        "backup_encrypted_needs": "this backup is encrypted: enter its password",
+        "backup_wrong_password": "wrong password or damaged file",
+        "backup_password_short": "the backup password is too short (at least 4 characters)",
+        "backup_needs_crypto": "encrypting needs python3-cryptography: sudo apt install python3-cryptography",
         "not_backup": "this file is not a panel backup",
         "backup_newer": "the backup is from a newer version: update the panel first",
         "invalid_name_lowercase_letters": "invalid name: lowercase letters, numbers, - and _ (e.g. living-room-temperature)",

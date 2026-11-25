@@ -914,8 +914,12 @@
         "watch_any": "cualquier cambio"
       },
       "system": {
+        "backup_password": "Contraseña (opcional)",
+        "backup_password_hint": "Sin contraseña no van el token de Home Assistant ni las contraseñas (al restaurar se quedan las de esta Pi). Con ella va todo, cifrado; sin ella la copia no se puede restaurar: guárdala bien.",
+        "backup_its_password": "Su contraseña",
+        "backup_info_encrypted": "Copia cifrada del {date}",
         "backup": "Copia de seguridad",
-        "backup_hint": "Ajustes, pestañas, burbujas, tus scripts y las opciones del altavoz, la voz y el sonido en un archivo. Sin el token de Home Assistant ni contraseñas: al restaurar se quedan las de esta Pi.",
+        "backup_hint": "Ajustes, pestañas, burbujas, tus scripts y las opciones del altavoz, la voz y el sonido en un archivo.",
         "backup_download": "Descargar copia",
         "backup_pick": "Restaurar desde un archivo",
         "backup_restore": "Restaurar",
@@ -979,6 +983,10 @@
         "sudo_hint": "Para que pueda instalar los paquetes del sistema que necesite una versión nueva, lanza esto una vez en la Pi:"
       },
       "helper": {
+        "backup_encrypted_needs": "esta copia está cifrada: escribe su contraseña",
+        "backup_wrong_password": "contraseña incorrecta o archivo dañado",
+        "backup_password_short": "la contraseña de la copia es demasiado corta (mínimo 4 caracteres)",
+        "backup_needs_crypto": "para cifrar hace falta python3-cryptography: sudo apt install python3-cryptography",
         "not_backup": "este archivo no es una copia del panel",
         "backup_newer": "la copia es de una versión más nueva: actualiza antes el panel",
         "invalid_name_lowercase_letters": "nombre no válido: letras minúsculas, números, - y _ (p. ej. temperatura-salon)",

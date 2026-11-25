@@ -759,7 +759,12 @@ go = 'home' | 'rooms' | 'sensors' | 'media' | 'printers' | 'scooter' | 'settings
 
     <div class="card">
       <h2>💾 Backup</h2>
-      <p class="hint" data-i18n="web.system.backup_hint">Settings, tabs, bubbles, your scripts and the speaker, voice and sound options in one file. Without the Home Assistant token or passwords: restoring keeps the ones on this Pi.</p>
+      <p class="hint" data-i18n="web.system.backup_hint">Settings, tabs, bubbles, your scripts and the speaker, voice and sound options in one file.</p>
+      <div class="field">
+        <label for="bk-pass" data-i18n="web.system.backup_password">Password (optional)</label>
+        <input id="bk-pass" type="password" autocomplete="new-password">
+        <span class="hint" data-i18n="web.system.backup_password_hint">Without a password the Home Assistant token and the passwords do not go in (restoring keeps the ones on this Pi). With one, everything goes in, encrypted; without it the backup cannot be restored: keep it safe.</span>
+      </div>
       <div class="btns">
         <a class="btn" id="bk-download" href="/api/backup" download data-i18n="web.system.backup_download">Download backup</a>
         <button class="btn" id="bk-pick" data-i18n="web.system.backup_pick">Restore from a file</button>
@@ -767,6 +772,7 @@ go = 'home' | 'rooms' | 'sensors' | 'media' | 'printers' | 'scooter' | 'settings
       </div>
       <div id="bk-ready" class="field hidden">
         <span class="hint" id="bk-info"></span>
+        <input id="bk-restore-pass" type="password" autocomplete="off" class="hidden" placeholder="Its password">
         <div class="btns"><button class="btn primary" id="bk-restore" data-i18n="web.system.backup_restore">Restore</button></div>
       </div>
       <div id="bk-msg" class="hint"></div>
@@ -2264,6 +2270,24 @@ async function loadVoice() {
 function bkMsg(t, ok) { const m = $('#bk-msg'); m.textContent = I18N.t(t); m.style.color = ok === false ? 'var(--danger)' : ok ? 'var(--ok)' : ''; }
 let bkData = null;
 $('#bk-pick').addEventListener('click', () => $('#bk-file').click());
+// with a password: everything, encrypted (the helper encrypts it and the browser saves the file)
+$('#bk-download').addEventListener('click', async (e) => {
+  const pw = $('#bk-pass').value;
+  if (!pw) return;                 // without a password: the normal link (without secrets)
+  e.preventDefault();
+  bkMsg('web.login.loading');
+  try {
+    const r = await fetch('/api/backup/export', { method: 'POST', credentials: 'same-origin',
+      headers: { 'Content-Type': 'application/json', 'X-Panel': '1' }, body: JSON.stringify({ password: pw }) });
+    if (r.status === 401) return showLogin();
+    if (!r.ok) throw new Error((await r.json().catch(() => ({}))).error || 'Error ' + r.status);
+    const name = ((r.headers.get('Content-Disposition') || '').match(/filename="([^"]+)"/) || [])[1] || 'ha-panel-backup.json';
+    const a = el('a', { href: URL.createObjectURL(await r.blob()), download: name });
+    document.body.append(a); a.click(); a.remove();
+    setTimeout(() => URL.revokeObjectURL(a.href), 5000);
+    bkMsg('');
+  } catch (err) { bkMsg(err.message, false); }
+});
 $('#bk-file').addEventListener('change', async () => {
   const f = $('#bk-file').files[0];
   $('#bk-file').value = '';
@@ -2272,15 +2296,18 @@ $('#bk-file').addEventListener('change', async () => {
   try { bkData = JSON.parse(await f.text()); } catch (e) { bkData = null; }
   if (!bkData || bkData.type !== 'ha-panel-backup') { bkData = null; return bkMsg('web.helper.not_backup', false); }
   const when = bkData.created ? new Date(bkData.created.replace(/([+-]\d\d)(\d\d)$/, '$1:$2')) : null;
-  $('#bk-info').textContent = I18N.t('web.system.backup_info', { date: when && !isNaN(when) ? when.toLocaleString(I18N.locale()) : '?',
-    scripts: Object.keys(bkData.scripts || {}).length });
+  const date = when && !isNaN(when) ? when.toLocaleString(I18N.locale()) : '?';
+  $('#bk-info').textContent = bkData.encrypted ? I18N.t('web.system.backup_info_encrypted', { date })
+    : I18N.t('web.system.backup_info', { date, scripts: Object.keys(bkData.scripts || {}).length });
+  $('#bk-restore-pass').value = '';
+  $('#bk-restore-pass').classList.toggle('hidden', !bkData.encrypted);
   $('#bk-ready').classList.remove('hidden');
 });
 { const r = $('#bk-restore'), yes = sureBtn({ class: 'btn primary', id: 'bk-restore' }, r.textContent, I18N.t('web.system.backup_sure'), async () => {
   if (!bkData) return;
   bkMsg('web.login.loading');
   try {
-    const res = await api('POST', '/api/backup', bkData);
+    const res = await api('POST', '/api/backup', bkData.encrypted ? Object.assign({}, bkData, { password: $('#bk-restore-pass').value }) : bkData);
     $('#bk-ready').classList.add('hidden'); bkData = null;
     bkMsg(res.skipped && res.skipped.length ? I18N.t('web.system.backup_done_except', { list: res.skipped.join(', ') }) : I18N.t('web.system.backup_done'), true);
     setTimeout(() => location.reload(), 2500);   // the forms show what was restored

@@ -10,7 +10,7 @@ SENDSPIN_VENV="$SHARE/sendspin"
 UNITS="$HOME/.config/systemd/user"
 
 # System packages the panel needs (and the speaker, if it is installed)
-need=(cage curl fonts-noto-core wlr-randr grim)
+need=(cage curl fonts-noto-core wlr-randr grim python3-cryptography)
 [ -x "$SENDSPIN_VENV/bin/pip" ] && need+=(libportaudio2 alsa-utils python3-venv)
 
 missing=()

@@ -23,6 +23,8 @@ Usage:
   python3 panel-helper.py --set-password   # set or change the web password
 """
 import argparse
+import base64
+import binascii
 import getpass
 import glob
 import hashlib
@@ -811,17 +813,19 @@ def set_update_settings(body):
 
 # ---------------------------------------------------------------- backup
 # One JSON file with the settings, tabs, your scripts and the speaker, voice, sound and update options.
-# Secrets (Home Assistant token, MQTT password, API keys, web password) never go in it: restoring keeps the Pi's.
+# Without a password the secrets (Home Assistant token, MQTT password, API keys) do not go in it and restoring keeps
+# the Pi's. With a password everything goes in, encrypted (AES-256-GCM, key from the password with scrypt).
+# The web password never goes in.
 BACKUP_TYPE = 'ha-panel-backup'
 BACKUP_FORMAT = 1
 BACKUP_MAX = 5 * 1024 * 1024
 SECRET_KEYS = ('token', 'immichApiKey', 'mqttPassword')
 
 
-def make_backup():
+def make_backup(with_secrets=False):
     cfg = load_config()
-    panel = {k: v for k, v in cfg['panel'].items() if k not in SECRET_KEYS}
-    if isinstance(panel.get('photoSources'), list):
+    panel = dict(cfg['panel']) if with_secrets else {k: v for k, v in cfg['panel'].items() if k not in SECRET_KEYS}
+    if not with_secrets and isinstance(panel.get('photoSources'), list):
         panel['photoSources'] = [{k: v for k, v in src.items() if k != 'apiKey'}
                                  for src in panel['photoSources'] if isinstance(src, dict)]
     return {'type': BACKUP_TYPE, 'format': BACKUP_FORMAT, 'created': time.strftime('%Y-%m-%dT%H:%M:%S%z'),
@@ -830,12 +834,59 @@ def make_backup():
             'sound': {'master': master_get().get('value')}, 'updates': update_settings()}
 
 
-def restore_backup(b):
+def _aesgcm():
+    try:
+        from cryptography.hazmat.primitives.ciphers.aead import AESGCM
+    except ImportError:
+        raise ValueError('encrypting needs python3-cryptography: sudo apt install python3-cryptography') from None
+    return AESGCM
+
+
+def _backup_key(password, salt, n=2 ** 15, r=8, p=1):
+    if len(password) < 4:
+        raise ValueError('the backup password is too short (at least 4 characters)')
+    return hashlib.scrypt(password.encode(), salt=salt, n=n, r=r, p=p, dklen=32, maxmem=128 * 1024 * 1024)
+
+
+def encrypt_backup(password):
+    """Everything, secrets included, encrypted with the password."""
+    aes = _aesgcm()
+    b = make_backup(with_secrets=True)
+    salt, nonce = secrets.token_bytes(16), secrets.token_bytes(12)
+    data = aes(_backup_key(password, salt)).encrypt(nonce, json.dumps(b, ensure_ascii=False).encode(), BACKUP_TYPE.encode())
+    enc = lambda x: base64.b64encode(x).decode()
+    return {'type': BACKUP_TYPE, 'format': BACKUP_FORMAT, 'created': b['created'],
+            'encrypted': {'cipher': 'AES-256-GCM', 'kdf': 'scrypt', 'n': 2 ** 15, 'r': 8, 'p': 1,
+                          'salt': enc(salt), 'nonce': enc(nonce), 'data': enc(data)}}
+
+
+def decrypt_backup(b, password):
+    e = b.get('encrypted')
+    if not isinstance(e, dict):
+        raise ValueError('this file is not a panel backup')
+    if not password:
+        raise ValueError('this backup is encrypted: enter its password')
+    aes = _aesgcm()
+    try:
+        from cryptography.exceptions import InvalidTag
+        key = _backup_key(str(password), base64.b64decode(e['salt']), int(e.get('n', 2 ** 15)), int(e.get('r', 8)), int(e.get('p', 1)))
+        plain = aes(key).decrypt(base64.b64decode(e['nonce']), base64.b64decode(e['data']), BACKUP_TYPE.encode())
+        return json.loads(plain)
+    except (InvalidTag, KeyError, TypeError, ValueError, binascii.Error):
+        raise ValueError('wrong password or damaged file') from None
+
+
+def restore_backup(b, password=None):
     """Puts a backup back. Returns the parts that could not be restored (e.g. an audio output this Pi does not have)."""
     if not isinstance(b, dict) or b.get('type') != BACKUP_TYPE:
         raise ValueError('this file is not a panel backup')
     if not isinstance(b.get('format'), int) or b['format'] > BACKUP_FORMAT:
         raise ValueError('the backup is from a newer version: update the panel first')
+    full = 'encrypted' in b               # encrypted = with the secrets
+    if full:
+        b = decrypt_backup(b, password)
+        if not isinstance(b, dict) or b.get('type') != BACKUP_TYPE:
+            raise ValueError('wrong password or damaged file')
     skipped = []
     scripts = b.get('scripts') if isinstance(b.get('scripts'), dict) else {}
     for name, code in scripts.items():
@@ -845,8 +896,9 @@ def restore_backup(b):
             skipped.append(str(name)[:40])
     with LOCK:
         cfg = load_config()
-        if isinstance(b.get('panel'), dict):   # secrets: the ones on the Pi stay
-            cfg['panel'] = clean_panel({k: v for k, v in b['panel'].items() if k not in SECRET_KEYS}, current=cfg['panel'])
+        if isinstance(b.get('panel'), dict):   # without encryption the Pi's secrets stay
+            panel = b['panel'] if full else {k: v for k, v in b['panel'].items() if k not in SECRET_KEYS}
+            cfg['panel'] = clean_panel(panel, current=cfg['panel'])
         if isinstance(b.get('settings'), dict):
             cfg['settings'] = b['settings']
         migrate_config(cfg)                    # a backup from an older version
@@ -1960,9 +2012,16 @@ class WebHandler(Base):
                 return self._json(400, {'error': str(e)})
         if u.path == '/api/updates':   # check, update now, or mode (notify / automatic) and time
             return self._json(*update_action(body))
-        if u.path == '/api/backup':          # restore a backup
+        if u.path == '/api/backup/export':   # download everything, encrypted with a password
             try:
-                return self._json(200, {'ok': True, 'skipped': restore_backup(body)})
+                name = 'ha-panel-backup-' + time.strftime('%Y-%m-%d') + '-encrypted.json'
+                return self._json(200, encrypt_backup(str(body.get('password') or '')),
+                                  {'Content-Disposition': f'attachment; filename="{name}"'})
+            except ValueError as e:
+                return self._json(400, {'error': str(e)})
+        if u.path == '/api/backup':          # restore a backup (“password” if it is encrypted)
+            try:
+                return self._json(200, {'ok': True, 'skipped': restore_backup(body, body.get('password'))})
             except ValueError as e:
                 return self._json(400, {'error': str(e)})
         if u.path == '/api/command':         # reload, turn the screen off/on, ambient mode, home
