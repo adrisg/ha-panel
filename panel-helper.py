@@ -889,6 +889,10 @@ def restore_backup(b, password=None):
             raise ValueError('wrong password or damaged file')
     skipped = []
     scripts = b.get('scripts') if isinstance(b.get('scripts'), dict) else {}
+    # old names (in Spanish) get the current ones, like the settings that point to them;
+    # if the backup has both, the one with the current name wins
+    renamed = {OLD_SCRIPTS[n]: c for n, c in scripts.items() if n in OLD_SCRIPTS and OLD_SCRIPTS[n] not in scripts}
+    scripts = dict({n: c for n, c in scripts.items() if n not in OLD_SCRIPTS}, **renamed)
     for name, code in scripts.items():
         try:
             save_script(name, code)
