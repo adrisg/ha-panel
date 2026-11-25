@@ -580,15 +580,20 @@ function toggleChecked(d, id, el) {
     fire(id); markCode(id);
   }, 3000));
   return call(d, 'toggle', {}, id).then((r) => {   // an error already says so itself
-    if (r === null && TOGGLE_WAIT.has(id)) { clearTimeout(TOGGLE_WAIT.get(id)); TOGGLE_WAIT.delete(id); }
+    if (r === null && TOGGLE_WAIT.has(id)) {
+      clearTimeout(TOGGLE_WAIT.get(id)); TOGGLE_WAIT.delete(id);
+      const st = S.states[id];
+      if (el && st) { el.classList.remove('pending'); el.classList.toggle('on', isActive(st)); }
+    }
     return r;
   });
 }
 function bigToggle(id) {
   const d = domain(id);
-  const b = h('button', { class: 'big-toggle', onclick: () => toggleChecked(d, id) });
+  // changes colour at once (like the tiles); toggleChecked puts it back if the device has not changed in 3 s
+  const b = h('button', { class: 'big-toggle', onclick: () => { b.classList.add('pending'); b.classList.toggle('on'); toggleChecked(d, id, b); } });
   b.dataset.kind = kindOf(d);
-  bind('sheet', id, (st) => { b.replaceChildren(icon(iconOf(st)), h('span', null, fmtState(st))); b.classList.toggle('on', isActive(st)); paintLight(b, st); });
+  bind('sheet', id, (st) => { b.classList.remove('pending'); b.replaceChildren(icon(iconOf(st)), h('span', null, fmtState(st))); b.classList.toggle('on', isActive(st)); paintLight(b, st); });
   return b;
 }
 const COLORS = [[255, 147, 41], [255, 214, 170], [255, 255, 255], [255, 80, 80], [255, 60, 180], [150, 90, 255], [60, 130, 255], [40, 210, 200], [80, 220, 100], [255, 220, 60]];
