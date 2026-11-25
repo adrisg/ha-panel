@@ -1343,7 +1343,8 @@ function msShow(btn, opts, getList, toggle) {
       return el('div', { class: 'fs-opt ms-opt' + (on ? ' sel' : '') + (i === active ? ' fs-act' : ''),
         onmousedown: (e) => e.preventDefault(), onclick: () => { active = i; toggle(o.value); render(); place(); },
         onmousemove: () => { if (active !== i) { active = i; mark(); } } },
-        el('i', { class: 'mdi ' + (on ? 'mdi-checkbox-marked' : 'mdi-checkbox-blank-outline') }), el('span', { textContent: o.label }));
+        el('i', { class: 'mdi ' + (on ? 'mdi-checkbox-marked' : 'mdi-checkbox-blank-outline') }),
+        el('span', {}, o.label, o.value.includes('.') && o.label !== o.value ? el('span', { class: 'ord-id', textContent: ' (' + o.value + ')' }) : ''));
     }) : [el('div', { class: 'fs-empty', textContent: I18N.t('web.editor.nothing_matches', { q: search ? search.value : '' }) })]));
   };
   const mark = () => [...list.children].forEach((c, i) => c.classList.toggle('fs-act', i === active));
