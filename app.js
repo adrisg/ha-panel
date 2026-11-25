@@ -993,6 +993,7 @@ function showNowPlaying(id) {
 }
 /** From “Now playing” to ambient mode without showing the panel in between: ambient is already underneath and “Now playing” fades on top. */
 function npToAmbient(quiet) {
+  if (STAY.on && !S.ambient) { hideNowPlaying(quiet); return; }
   const a = $('#ambient');
   a.style.transition = 'none';
   showAmbient();
@@ -1532,7 +1533,7 @@ function screenTick() {
   const night = isNight(), alert = alertOpen();
   const idle = (Date.now() - SCREEN.lastTouch) / 1000;
   let off = false;
-  if (!alert && !npPlaying()) {
+  if (!alert && !npPlaying() && !STAY.on) {
     if (SET.screenOffMinutes > 0 && idle >= Math.max(0, SET.idleSeconds) + SET.screenOffMinutes * 60) off = true;
     if (night && SET.night.screenOff && idle >= Math.max(60, SET.idleSeconds)) off = true;
   }
@@ -1546,7 +1547,7 @@ function screenOffNow() { SCREEN.lastTouch = 0; SCREEN.forcedOff = true; screenT
 function wakeScreen() { SCREEN.lastTouch = Date.now(); SCREEN.forcedOff = false; screenTick(); }
 /** On start or when the screen turns on: if something plays, “Now playing”; otherwise ambient mode. */
 function enterScreen() {
-  if (alertOpen()) return;
+  if (alertOpen() || STAY.on) return;
   const playing = watchedSpeakers().find(spkPlaying);
   if (playing) {
     if (NP.id === playing) return;
@@ -2395,8 +2396,21 @@ function voiceDemo() {
 
 /* ====================== Modo ambiente ====================== */
 let idleTimer;
+/** 📌 on the top bar: the panel stays on the current tab (no ambient mode and the screen does not turn off by itself)
+ * until it is tapped again or ambient mode is opened by hand. */
+const STAY = { on: false };
+function setStay(on) {
+  STAY.on = !!on;
+  const b = $('#stay');
+  if (b) {
+    b.classList.toggle('on', STAY.on);
+    b.querySelector('i').className = 'mdi ' + (STAY.on ? 'mdi-pin' : 'mdi-pin-outline');
+  }
+  resetIdle(); screenTick();
+}
 function resetIdle() {
   clearTimeout(idleTimer);
+  if (STAY.on) return;
   if (SET.idleSeconds > 0) idleTimer = setTimeout(() => !S.sheetId && !NP.id && !alertOpen() && showAmbient(), SET.idleSeconds * 1000);
 }
 /** Menu of the three dots at the top right: it opens with an animation. */
@@ -2667,6 +2681,7 @@ function shadeGestures() {
   bg.addEventListener('click', () => shade(false));
 }
 function showAmbient() {
+  if (STAY.on) setStay(false);
   setTimeout(reportState, 0);   // Home Assistant knows at once
   closeSheet();
   if (SH.open) shade(false);
@@ -3361,7 +3376,8 @@ function start() {
 
   $('#view').replaceChildren(empty('mdi-home-assistant', I18N.t('panel.status.connecting')));
   $('#sheet').addEventListener('click', (e) => { if (e.target.id === 'sheet') closeSheet(); });
-  $('#bell').addEventListener('click', () => shade(true, 0));   // the quick access panel, on the notifications
+  $('#bell').addEventListener('click', () => shade(true, 0));
+  $('#stay').addEventListener('click', () => setStay(!STAY.on));   // the quick access panel, on the notifications
   shadeGestures();
   // Tapping the background goes back to Home; tapping a bubble opens its view (scooter, printers, music…)
   $('#ambient').addEventListener('pointerdown', (e) => {

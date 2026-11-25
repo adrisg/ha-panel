@@ -395,6 +395,7 @@
         "loading_error_prefix": "Error cargando datos: ",
         "connecting": "Conectando con Home Assistant…",
         "ha_connection": "Conexión con Home Assistant",
+        "stay": "Quedarse en esta pestaña",
         "not_available": "{name} no está disponible"
       },
       "setup": {

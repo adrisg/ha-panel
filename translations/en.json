@@ -395,6 +395,7 @@
         "loading_error_prefix": "Error loading data: ",
         "connecting": "Connecting to Home Assistant…",
         "ha_connection": "Connection to Home Assistant",
+        "stay": "Stay on this tab",
         "not_available": "{name} is not available"
       },
       "setup": {
