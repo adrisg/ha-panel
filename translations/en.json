@@ -396,7 +396,7 @@
         "loading_error_prefix": "Error loading data: ",
         "connecting": "Connecting to Home Assistant…",
         "ha_connection": "Connection to Home Assistant",
-        "not_changed": "{name} has not changed: the device did not accept it",
+        "not_changed": "{name} is not responding",
         "stay": "Stay on this tab",
         "not_available": "{name} is not available"
       },
