@@ -33,3 +33,4 @@ List of things to do. 🚧 = in progress · ✅ = done.
 12. ✅ **Everything in English by default**: code, comments, file names and base texts; Spanish comes from `translations/es.json`.
 13. ✅ **Settings backup**: download and upload them from the web.
 14. **Ready-to-flash image**: Raspberry Pi OS with everything installed.
+21. **Community store**: browse and install bubbles and components shared by others from the web (a list in a GitHub repository, with preview and updates). Today they can only be imported one by one from an address.
