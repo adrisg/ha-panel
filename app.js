@@ -434,7 +434,7 @@ function tap(id, el) {
   if (TOGGLE.includes(d)) {
     el.classList.add('pending');
     el.classList.toggle('on');
-    call(d, 'toggle', {}, id);
+    toggleChecked(d, id);
     return;
   }
   if (d === 'scene') return call('scene', 'turn_on', {}, id).then((r) => r !== null && toast(I18N.t('panel.states.scene_activated')));
@@ -563,9 +563,26 @@ function mediaCard(id, scope) {
 }
 
 /* ====================== Details sheet (long press) ====================== */
+/** Toggle and check that it changed: some devices accept the order but do nothing (a Sonos soundbar's crossfade with
+ * the TV source…). If the state is the same 4 s later, it says so and repaints (an optimistic tile goes back).
+ * Two taps in a row (on and off again) are not checked. */
+const TOGGLE_WAIT = new Map();
+function toggleChecked(d, id) {
+  if (TOGGLE_WAIT.has(id)) { clearTimeout(TOGGLE_WAIT.get(id)); TOGGLE_WAIT.delete(id); return call(d, 'toggle', {}, id); }
+  const before = S.states[id] && S.states[id].state;
+  TOGGLE_WAIT.set(id, setTimeout(() => {
+    TOGGLE_WAIT.delete(id);
+    const st = S.states[id];
+    if (st && st.state === before && st.state !== 'unavailable') { toast(I18N.t('panel.status.not_changed', { name: nameOf(id, false) }), true); fire(id); }
+  }, 4000));
+  return call(d, 'toggle', {}, id).then((r) => {   // an error already says so itself
+    if (r === null && TOGGLE_WAIT.has(id)) { clearTimeout(TOGGLE_WAIT.get(id)); TOGGLE_WAIT.delete(id); }
+    return r;
+  });
+}
 function bigToggle(id) {
   const d = domain(id);
-  const b = h('button', { class: 'big-toggle', onclick: () => call(d, 'toggle', {}, id) });
+  const b = h('button', { class: 'big-toggle', onclick: () => toggleChecked(d, id) });
   b.dataset.kind = kindOf(d);
   bind('sheet', id, (st) => { b.replaceChildren(icon(iconOf(st)), h('span', null, fmtState(st))); b.classList.toggle('on', isActive(st)); paintLight(b, st); });
   return b;
