@@ -2936,11 +2936,15 @@ function ambientSpeakers() {
   return [...new Set(list.map(resolveSpk))].filter((x) => x && S.states[x]);
 }
 function ambientSpeaker() {
-  // the first on the list that is playing; otherwise the first paused; otherwise the first that is on
-  const st = (x) => (S.states[x] || {}).state, l = ambientSpeakers();
-  if (!l.length) { const w = watchedSpeakers(); return w.find((x) => st(x) === 'playing') || w.find((x) => st(x) === 'paused') || null; }
+  // the first on the list that is playing; otherwise the first paused; otherwise the first that is on.
+  // Speakers on an ignored source (the TV on a sound bar…, web → Sound → Now playing) count as not playing.
+  const st = (x) => (S.states[x] || {}).state, ok = (x) => !npIgnored(S.states[x]), l = ambientSpeakers().filter(ok);
+  if (!l.length && !ambientSpeakers().length) {
+    const w = watchedSpeakers().filter(ok);
+    return w.find((x) => st(x) === 'playing') || w.find((x) => st(x) === 'paused') || null;
+  }
   return l.find((x) => st(x) === 'playing') || l.find((x) => st(x) === 'paused') ||
-    l.find((x) => !['unavailable', 'off', 'unknown'].includes(st(x))) || l[0];
+    l.find((x) => !['unavailable', 'off', 'unknown'].includes(st(x))) || l[0] || null;
 }
 function renderAmbientPlayer() {
   const box = $('#amb-player'), id = ambientSpeaker(), st = id && S.states[id];
