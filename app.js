@@ -800,7 +800,7 @@ function watchedSpeakers() {
 function onSpeaker(id, old, st) {
   if (!SPK || domain(id) !== 'media_player') return;
   const w = watchedSpeakers();
-  if (!w.includes(id)) return;
+  if (!w.includes(id) && id !== NP.id) return;
   // an ignored source (the TV on a soundbar…) counts as not playing
   const was = old && (old.state === 'playing' && npIgnored(old) ? 'idle' : old.state);
   const now = st && (st.state === 'playing' && npIgnored(st) ? 'idle' : st.state);
@@ -808,6 +808,8 @@ function onSpeaker(id, old, st) {
     if (NP.id === id) { clearTimeout(NP.closeTimer); return; }   // playing again: it no longer closes
     if (!was || was === 'playing' || alertOpen()) return;          // an alarm or an important notification comes first
     if (!NP.id) { if (was !== 'paused') showNowPlaying(id); return; }   // resuming a pause does not open it
+    if (NP.manual === NP.id && spkPlaying(NP.id)) return;            // chosen by hand in the ▾ picker: it stays
+    if (!w.includes(id)) return;
     const cur = w.indexOf(NP.id);
     if (!spkPlaying(NP.id) || (cur >= 0 && w.indexOf(id) < cur)) { clearTimeout(NP.closeTimer); showNowPlaying(id); }
   } else if (NP.id === id && was === 'playing') {
@@ -824,7 +826,7 @@ function onSpeaker(id, old, st) {
 }
 
 /* “Now playing” screen: big artwork with the blurred background, title, progress and controls (the volume, in the quick access panel) */
-const NP = { id: null, timer: null, closeTimer: null, fromAmbient: false };
+const NP = { id: null, timer: null, closeTimer: null, fromAmbient: false, manual: null };   // manual = chosen in the ▾ picker
 const npPlaying = () => !!NP.id && (S.states[NP.id] || {}).state === 'playing';
 function fmtTime(s) {
   s = Math.max(0, Math.floor(s || 0));
@@ -960,8 +962,11 @@ function showNowPlaying(id) {
   const vol = id !== speakerEntity() ? npVolume(id) : null;
   const root = $('#np');
   root.classList.toggle('has-vol', !!vol);
+  // the speaker's name: with ▾ (if there are others to choose from) it opens the picker
+  const spkBtn = h('button', { class: 'np-spk-btn', onclick: () => spkBtn.classList.contains('can') && npPickOpen(spkBtn) },
+    icon('mdi-speaker'), h('span', { class: 'np-spk', translate: 'no' }, nameOf(id, false)), icon('mdi-menu-down'));
   root.replaceChildren(bg,
-    h('div', { class: 'np-top' }, icon('mdi-speaker'), h('span', { class: 'np-spk' }, nameOf(id, false)), clock,
+    h('div', { class: 'np-top' }, spkBtn, clock,
       h('button', { class: 'np-close', onclick: () => { if (NP.fromAmbient && !alertOpen()) npToAmbient(); else hideNowPlaying(); } }, icon('mdi-close'))),
     h('div', { class: 'np-main' }, art, h('div', { class: 'np-info' }, title, sub,
       h('div', { class: 'np-ctrls' }, h('button', { onclick: svc('media_previous_track') }, icon('mdi-skip-previous')), play,
@@ -994,6 +999,7 @@ function showNowPlaying(id) {
   });
   // Progress and clock, every second
   const tick = () => {
+    spkBtn.classList.toggle('can', npChoices().length > 1);
     clock.textContent = new Date().toLocaleTimeString(I18N.locale(), { hour: '2-digit', minute: '2-digit' });
     const st = S.states[id], a = (st && st.attributes) || {};
     const total = +a.media_duration || 0;
@@ -1020,6 +1026,41 @@ function showNowPlaying(id) {
   wakeScreen(); resetIdle();
 }
 /** From “Now playing” to ambient mode without showing the panel in between: ambient is already underneath and “Now playing” fades on top. */
+/* Speaker picker in “Now playing” (▾ by the speaker's name): which speakers it lists (web → Sound → Now playing).
+ * Playing ones first, then the paused ones (if they are on), then the rest (only with “All”). Ignored sources count as not playing. */
+function npChoices() {
+  const mode = (SPK && SPK.npPick) || 'list', paused = !SPK || SPK.npPaused !== false;
+  const ids = mode === 'list' ? watchedSpeakers() : Object.keys(S.states).filter((x) => domain(x) === 'media_player');
+  const rank = (x) => {
+    const st = S.states[x];
+    if (!st || ['unavailable', 'unknown'].includes(st.state)) return -1;
+    if (st.state === 'playing' && !npIgnored(st)) return 0;
+    if (st.state === 'paused' && !npIgnored(st)) return paused ? 1 : -1;
+    return mode === 'all' && st.state !== 'off' ? 2 : -1;
+  };
+  const l = ids.map((x, i) => [x, rank(x), i]).filter((x) => x[1] >= 0 || x[0] === NP.id);
+  l.sort((a, b) => (a[0] === NP.id ? -1 : b[0] === NP.id ? 1 : 0) || a[1] - b[1] || a[2] - b[2]);
+  return [...new Set(l.map((x) => x[0]))];
+}
+function npPickOpen(anchor) {
+  const root = $('#np'), old = $('.np-pick', root);
+  if (old) { old.remove(); return; }
+  const rows = npChoices().map((x) => {
+    const st = S.states[x], a = (st && st.attributes) || {};
+    const pic = h('span', { class: 'np-pick-art' }, icon('mdi-speaker'));
+    if (a.entity_picture) { pic.style.backgroundImage = `url("${absUrl(a.entity_picture)}")`; pic.classList.add('has'); }
+    const what = st.state === 'playing' && !npIgnored(st) ? a.media_title || T[st.state] : a.media_title && st.state === 'paused' ? a.media_title : T[st.state] || st.state;
+    return h('button', { class: 'np-pick-row' + (x === NP.id ? ' on' : ''), translate: 'no',
+      onclick: (e) => { e.stopPropagation(); pick.remove(); if (x !== NP.id) { showNowPlaying(x); NP.manual = x; } } },
+      pic, h('span', { class: 'np-pick-txt' }, h('b', null, nameOf(x, false)), h('span', null, what || '')),
+      icon(st.state === 'playing' && !npIgnored(st) ? 'mdi-play' : st.state === 'paused' ? 'mdi-pause' : ''));
+  });
+  const pick = h('div', { class: 'np-pick' }, ...rows);
+  root.append(pick);
+  const away = (e) => { if (!pick.contains(e.target) && !anchor.contains(e.target)) { pick.remove(); } if (!pick.isConnected) window.removeEventListener('pointerdown', away, true); };
+  window.addEventListener('pointerdown', away, true);
+  resetIdle();
+}
 function npToAmbient(quiet) {
   if (STAY.on && !S.ambient) { hideNowPlaying(quiet); return; }
   const a = $('#ambient');
@@ -1034,7 +1075,7 @@ function hideNowPlaying(quiet) {
   clearTimeout(NP.closeTimer);
   B.np.clear();
   const was = NP.id;
-  NP.id = null;
+  NP.id = null; NP.manual = null;
   $('#np').classList.remove('show');
   if (was && !quiet) resetIdle();
 }

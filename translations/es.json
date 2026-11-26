@@ -769,6 +769,12 @@
         "sound_error_prefix": "No se pudo leer el sonido: ",
         "speaker": "Altavoz",
         "np_ignore": "No abrirla con estas fuentes",
+        "np_pick": "Altavoces en el selector ▾",
+        "np_pick_list": "Los de arriba que estén sonando",
+        "np_pick_playing": "Cualquier altavoz que esté sonando",
+        "np_pick_all": "Todos los altavoces",
+        "np_pick_hint": "Al tocar el nombre del altavoz arriba en «Ahora suena» salen para cambiar a otro al instante.",
+        "np_paused": "También los que están en pausa (al final)",
         "np_ignore_hint": "Separadas por comas. Por ejemplo «TV»: una barra de sonido con el sonido de la tele no la abre."
       },
       "beta": {

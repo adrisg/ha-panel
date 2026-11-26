@@ -649,6 +649,12 @@ go = 'home' | 'rooms' | 'sensors' | 'media' | 'printers' | 'scooter' | 'settings
         <input id="np-ignore" type="text" placeholder="TV, HDMI…">
         <span class="hint" data-i18n="web.sound.np_ignore_hint">Separated by commas. For example “TV”: a soundbar playing the TV sound does not open it.</span>
       </div>
+      <div class="field">
+        <label for="np-pick" data-i18n="web.sound.np_pick">Speakers in the ▾ picker</label>
+        <select id="np-pick"><option value="list" data-i18n="web.sound.np_pick_list">The ones above that are playing</option><option value="playing" data-i18n="web.sound.np_pick_playing">Any speaker that is playing</option><option value="all" data-i18n="web.sound.np_pick_all">All the speakers</option></select>
+        <span class="hint" data-i18n="web.sound.np_pick_hint">Tapping the speaker's name at the top of “Now playing” shows them to switch to another at once.</span>
+      </div>
+      <div class="row"><label for="np-paused" data-i18n="web.sound.np_paused">Also the paused ones (at the end)</label><label class="switch"><input id="np-paused" type="checkbox"><span></span></label></div>
     </div>
 
     <div class="card">
@@ -1983,7 +1989,8 @@ const EXTRA = {
   speaker: { label: I18N.t('web.sound.speaker'), snap: null,
     get: () => ({ enabled: $('#spk-enabled').checked, name: $('#spk-name').value.trim(), device: $('#spk-device').value, entity: $('#spk-entity').value,
       closeAfter: +$('#spk-close').value, npSpeakers: npSpk.slice(),
-      npIgnore: $('#np-ignore').value.split(',').map((x) => x.trim()).filter(Boolean) }),
+      npIgnore: $('#np-ignore').value.split(',').map((x) => x.trim()).filter(Boolean),
+      npPick: $('#np-pick').value, npPaused: $('#np-paused').checked }),
     save: async (cur) => { const r = await api('POST', '/api/speaker', cur); spkMsg(r.message, true); } },
   voice: { label: I18N.t('panel.settings.voice_assistant'), snap: null,
     get: () => ({ enabled: $('#voice-enabled').checked, name: $('#voice-name').value.trim(), mic: $('#voice-mic').value, output: $('#voice-out').value, wake: $('#voice-wake').value }),
@@ -2214,6 +2221,8 @@ function spkFill(r) {
   sel.value = s.device; sel.dispatchEvent(new Event('change'));
   spkEntity = s.entity; npSpk = (s.npSpeakers || []).slice(); spkEntities();
   $('#np-ignore').value = (s.npIgnore || []).join(', ');
+  $('#np-pick').value = s.npPick || 'list';
+  $('#np-paused').checked = s.npPaused !== false;
   const cl = $('#spk-close');
   if (![...cl.options].some((o) => +o.value === s.closeAfter)) cl.append(tOption(s.closeAfter + ' s', s.closeAfter));
   cl.value = String(s.closeAfter); cl.dispatchEvent(new Event('change'));

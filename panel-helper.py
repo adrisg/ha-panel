@@ -400,6 +400,8 @@ def speaker_settings():
         close_after = max(-1, min(3600, int(s.get('closeAfter', 60))))
     except (TypeError, ValueError):
         close_after = 60
+    # the speaker picker in “Now playing”: which ones it lists ('list' = those above | 'playing' = any playing | 'all')
+    pick = s.get('npPick') if s.get('npPick') in ('list', 'playing', 'all') else 'list'
     return {'enabled': bool(s.get('enabled')), 'name': str(s.get('name') or '').strip()[:60],
             'device': str(s.get('device') or '').strip()[:120], 'delay': delay,
             'entity': entity if entity.startswith('media_player.') else '', 'open': s.get('open', True) is not False,
@@ -407,7 +409,8 @@ def speaker_settings():
             # other speakers that also open “Now playing” when they start playing (e.g. the bedroom one)
             'watch': watch,
             # speakers that open “Now playing”, by priority ('@panel' = this panel's)
-            'npSpeakers': np_list, 'npIgnore': ignore}
+            'npSpeakers': np_list, 'npIgnore': ignore,
+            'npPick': pick, 'npPaused': s.get('npPaused', True) is not False}   # … and whether paused ones show (at the end)
 
 
 def speaker_pin():
@@ -427,7 +430,8 @@ def speaker_panel():
     """What the panel needs: the name it has in Music Assistant and whether it opens the player when it plays."""
     s = speaker_settings()
     return {'enabled': s['enabled'], 'name': s['name'] or speaker_default_name(), 'entity': s['entity'], 'open': s['open'],
-            'closeAfter': s['closeAfter'], 'watch': s['watch'], 'npSpeakers': s['npSpeakers'], 'npIgnore': s['npIgnore']}
+            'closeAfter': s['closeAfter'], 'watch': s['watch'], 'npSpeakers': s['npSpeakers'], 'npIgnore': s['npIgnore'],
+            'npPick': s['npPick'], 'npPaused': s['npPaused']}
 
 
 def speaker_default_name():
@@ -490,7 +494,8 @@ def set_speaker(body):
            'closeAfter': body.get('closeAfter', cur['closeAfter']),
            'watch': body.get('watch', cur['watch']) if isinstance(body.get('watch', cur['watch']), list) else cur['watch'],
            'npSpeakers': body['npSpeakers'] if isinstance(body.get('npSpeakers'), list) else cur['npSpeakers'],
-           'npIgnore': body['npIgnore'] if isinstance(body.get('npIgnore'), list) else cur['npIgnore']}
+           'npIgnore': body['npIgnore'] if isinstance(body.get('npIgnore'), list) else cur['npIgnore'],
+           'npPick': body.get('npPick', cur['npPick']), 'npPaused': bool(body.get('npPaused', cur['npPaused']))}
     if new['device'] and new['device'] not in {o['id'] for o in audio_outputs()}:
         raise ValueError('that audio output does not exist')
     DATA.mkdir(parents=True, exist_ok=True)

@@ -297,6 +297,26 @@ main { display: flex; flex-direction: column; min-width: 0; min-height: 0; heigh
 .np-top { position: absolute; top: 18px; left: 26px; right: 18px; display: flex; align-items: center; gap: 10px; font-size: 18px; }
 .np-top .mdi { font-size: 22px; opacity: .8; }
 .np-spk { opacity: .85; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.np-spk-btn { display: flex; align-items: center; gap: 10px; min-width: 0; min-height: 50px; padding: 0 14px 0 0; border: 0; background: none;
+  color: inherit; font: inherit; border-radius: 25px; }
+.np-spk-btn > .mdi:last-child { display: none; font-size: 26px; margin-left: -4px; }
+.np-spk-btn.can { padding-left: 14px; margin-left: -14px; background: rgba(255,255,255,.1); }
+.np-spk-btn.can > .mdi:last-child { display: inline-block; }
+.np-pick { position: absolute; top: 76px; left: 14px; z-index: 5; width: min(440px, calc(100% - 28px)); max-height: calc(100% - 96px); overflow-y: auto;
+  padding: 6px; border-radius: 18px; background: rgba(20,20,24,.92); backdrop-filter: blur(14px); box-shadow: 0 10px 40px rgba(0,0,0,.45); }
+.np-pick-row { width: 100%; display: grid; grid-template-columns: 52px 1fr 28px; align-items: center; gap: 12px; padding: 8px; border: 0;
+  border-radius: 12px; background: none; color: #fff; text-align: left; font: inherit; }
+.np-pick-row.on { background: rgba(255,255,255,.12); }
+.np-pick-row > .mdi { font-size: 22px; opacity: .7; }
+.np-pick-art { width: 52px; height: 52px; border-radius: 8px; background: rgba(255,255,255,.1) center / cover; display: grid; place-items: center; font-size: 26px; }
+.np-pick-art.has .mdi { display: none; }
+.np-pick-txt { min-width: 0; display: flex; flex-direction: column; gap: 2px; }
+.np-pick-txt b, .np-pick-txt span { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.np-pick-txt b { font-size: 17px; font-weight: 600; }
+.np-pick-txt span { font-size: 14px; opacity: .7; }
+:root.light .np-pick { background: rgba(250,250,252,.95); }
+:root.light .np-pick-row { color: #111; }
+:root.light .np-pick-row.on, :root.light .np-spk-btn.can { background: rgba(0,0,0,.07); }
 .np-clock { margin-left: auto; font-variant-numeric: tabular-nums; opacity: .85; margin-right: 8px; }
 .np-close { flex: none; width: 50px; height: 50px; border-radius: 50%; border: 0; background: rgba(255,255,255,.14); color: inherit; font-size: 26px; display: grid; place-items: center; }
 .np-main { position: absolute; inset: 84px 5% 96px 5%; display: flex; align-items: center; gap: 5%; }

@@ -769,6 +769,12 @@
         "sound_error_prefix": "Could not read the sound: ",
         "speaker": "Speaker",
         "np_ignore": "Do not open it with these sources",
+        "np_pick": "Speakers in the ▾ picker",
+        "np_pick_list": "The ones above that are playing",
+        "np_pick_playing": "Any speaker that is playing",
+        "np_pick_all": "All the speakers",
+        "np_pick_hint": "Tapping the speaker's name at the top of “Now playing” shows them to switch to another at once.",
+        "np_paused": "Also the paused ones (at the end)",
         "np_ignore_hint": "Separated by commas. For example “TV”: a soundbar playing the TV sound does not open it."
       },
       "beta": {
