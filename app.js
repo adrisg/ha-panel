@@ -331,6 +331,7 @@ function iconOf(st) {
     return isNaN(n) ? 'mdi-battery' : n >= 100 ? 'mdi-battery' : n <= 0 ? 'mdi-battery-outline' : 'mdi-battery-' + n;
   }
   if (d === 'media_player' && a.device_class === 'tv') return 'mdi-television';
+  if (d === 'media_player' && (a.group_members || []).length > 1) return 'mdi-speaker-multiple';   // a speaker group
   return DC_ICON[a.device_class] || DOMAIN_ICON[d] || 'mdi-help-circle-outline';
 }
 /** Text of an entity state, already translated. */
@@ -964,7 +965,7 @@ function showNowPlaying(id) {
   root.classList.toggle('has-vol', !!vol);
   // the speaker's name: with ▾ (if there are others to choose from) it opens the picker
   const spkBtn = h('button', { class: 'np-spk-btn', onclick: () => spkBtn.classList.contains('can') && npPickOpen(spkBtn) },
-    icon('mdi-speaker'), h('span', { class: 'np-spk', translate: 'no' }, nameOf(id, false)), icon('mdi-menu-down'));
+    icon(iconOf(S.states[id])), h('span', { class: 'np-spk', translate: 'no' }, nameOf(id, false)), icon('mdi-menu-down'));
   root.replaceChildren(bg,
     h('div', { class: 'np-top' }, spkBtn, clock,
       h('button', { class: 'np-close', onclick: () => { if (NP.fromAmbient && !alertOpen()) npToAmbient(); else hideNowPlaying(); } }, icon('mdi-close'))),
@@ -1047,7 +1048,7 @@ function npPickOpen(anchor) {
   if (old) { old.remove(); return; }
   const rows = npChoices().map((x) => {
     const st = S.states[x], a = (st && st.attributes) || {};
-    const pic = h('span', { class: 'np-pick-art' }, icon('mdi-speaker'));
+    const pic = h('span', { class: 'np-pick-art' }, icon(iconOf(st)));
     if (a.entity_picture) { pic.style.backgroundImage = `url("${absUrl(a.entity_picture)}")`; pic.classList.add('has'); }
     const what = st.state === 'playing' && !npIgnored(st) ? a.media_title || T[st.state] : a.media_title && st.state === 'paused' ? a.media_title : T[st.state] || st.state;
     return h('button', { class: 'np-pick-row' + (x === NP.id ? ' on' : ''), translate: 'no',
@@ -2500,7 +2501,7 @@ function tmPlayer() {
   const btn = (ic, svc, cls = '') => h('button', { class: 'tm-pbtn ' + cls, onclick: (e) => { e.stopPropagation(); call('media_player', svc, {}, id); } }, icon(ic));
   const play = btn('mdi-play', 'media_play_pause', 'main');
   const box = h('div', { class: 'tm-player', onclick: () => { shade(false); showNowPlaying(id); } }, bg, art,
-    h('div', { class: 'tm-ptext' }, h('div', { class: 'tm-pspk' }, icon('mdi-speaker'), nameOf(id, false)), title, sub),
+    h('div', { class: 'tm-ptext' }, h('div', { class: 'tm-pspk' }, icon(iconOf(S.states[id])), nameOf(id, false)), title, sub),
     h('div', { class: 'tm-pctrls' }, btn('mdi-skip-previous', 'media_previous_track'), play, btn('mdi-skip-next', 'media_next_track')));
   TM.id = id;
   TM.paint = () => {
