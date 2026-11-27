@@ -330,8 +330,12 @@ function iconOf(st) {
     const n = Math.round(parseFloat(s) / 10) * 10;
     return isNaN(n) ? 'mdi-battery' : n >= 100 ? 'mdi-battery' : n <= 0 ? 'mdi-battery-outline' : 'mdi-battery-' + n;
   }
-  if (d === 'media_player' && a.device_class === 'tv') return 'mdi-television';
-  if (d === 'media_player' && (a.group_members || []).length > 1) return 'mdi-speaker-multiple';   // a speaker group
+  if (d === 'media_player') {   // as Home Assistant shows it: by its kind (tv, speaker, receiver…) and state
+    const set = { tv: 'television', speaker: 'speaker', receiver: 'audio-video' }[a.device_class];
+    if (a.device_class === 'receiver') return s === 'off' ? 'mdi-audio-video-off' : 'mdi-audio-video';
+    if (set) return 'mdi-' + set + ({ off: '-off', paused: '-pause', playing: '-play' }[s] || '');
+    return s === 'off' ? 'mdi-cast-off' : s === 'playing' ? 'mdi-cast-connected' : 'mdi-cast';
+  }
   return DC_ICON[a.device_class] || DOMAIN_ICON[d] || 'mdi-help-circle-outline';
 }
 /** Text of an entity state, already translated. */
@@ -991,6 +995,7 @@ function showNowPlaying(id) {
     sub.textContent = [a.media_artist, a.media_album_name].filter(Boolean).join(' · ');
     play.replaceChildren(icon(st.state === 'playing' ? 'mdi-pause' : 'mdi-play'));
     if (vol) vol.update(st);
+    spkBtn.firstChild.replaceWith(icon(iconOf(st)));   // playing / paused, as Home Assistant shows it
     if (a.entity_picture !== pic) {
       pic = a.entity_picture;
       const url = pic ? `url("${absUrl(pic)}")` : '';
