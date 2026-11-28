@@ -27,6 +27,7 @@ List of things to do. 🚧 = in progress · ✅ = done.
 9. ✅ **The panel as a device in Home Assistant**, over MQTT (automatic discovery): screen and brightness, volumes, ambient mode, last touch and reload.
 10. **PIN for sensitive actions**: ask for a code to open the door or disarm the alarm.
 20. **Speaker groups**: join or split speakers (Sonos…) from “Now playing” with a tap.
+23. **Home Assistant tab**: a tab with a Home Assistant dashboard inside (iframe through the Pi as a proxy, so it is the same address and logs in without a keyboard), with ambient mode, the quick access panel and “Now playing” still on top.
 
 ## So more people use it
 
